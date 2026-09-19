@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>qwen-worker — ローカル Qwen を親エージェントのワーカーにする</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F1; --surface:#FFFFFF; --surface-2:#E3E9EB; --surface-3:#D9E1E4;
+  --ink:#14212B; --ink-2:#4E6170; --ink-3:#7A8C97;
+  --line:#C9D4D8; --line-2:#AEBFC6;
+  --accent:#10627C; --accent-2:#0B4A5E; --accent-soft:#D6E8EE;
+  --ok:#256B48; --ok-soft:#D6E9DE; --ok-bar:#3E8F63;
+  --warn:#845407; --warn-soft:#F4E5C4; --warn-bar:#C28A22;
+  --bad:#93222D; --bad-soft:#F2D7DA; --bad-bar:#B8434F;
+  --term-bg:#101E26; --term-ink:#D9E6EC; --term-dim:#7D97A3; --term-line:#243A45; --term-cue:#63B6D4;
+  --f-body:"IBM Plex Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E171D; --surface:#16232B; --surface-2:#1D2E38; --surface-3:#243945;
+    --ink:#E6EDF1; --ink-2:#A9BCC6; --ink-3:#7A8F9B;
+    --line:#2A3F4B; --line-2:#3A5462;
+    --accent:#63B6D4; --accent-2:#8CCDE4; --accent-soft:#16333F;
+    --ok:#7FCFA1; --ok-soft:#17302345; --ok-bar:#3E8F63;
+    --warn:#E3B968; --warn-soft:#3A2D1145; --warn-bar:#C28A22;
+    --bad:#EE9AA3; --bad-soft:#3A181C45; --bad-bar:#B8434F;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E171D; --surface:#16232B; --surface-2:#1D2E38; --surface-3:#243945;
+  --ink:#E6EDF1; --ink-2:#A9BCC6; --ink-3:#7A8F9B;
+  --line:#2A3F4B; --line-2:#3A5462;
+  --accent:#63B6D4; --accent-2:#8CCDE4; --accent-soft:#16333F;
+  --ok:#7FCFA1; --ok-soft:#17302345; --ok-bar:#3E8F63;
+  --warn:#E3B968; --warn-soft:#3A2D1145; --warn-bar:#C28A22;
+  --bad:#EE9AA3; --bad-soft:#3A181C45; --bad-bar:#B8434F;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);line-height:1.85;font-size:15.5px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px 96px}
+header.top{padding:52px 0 28px;border-bottom:2px solid var(--line-2);margin-bottom:8px}
+h1{font-size:30px;margin:0 0 10px;letter-spacing:.01em}
+.lede{color:var(--ink-2);margin:0;max-width:74ch}
+.meta{margin-top:16px;color:var(--ink-3);font-size:13px;font-family:var(--f-mono)}
+h2{font-size:21px;margin:56px 0 14px;padding-bottom:9px;border-bottom:1px solid var(--line);scroll-margin-top:20px}
+h2 .num{color:var(--accent);font-family:var(--f-mono);font-size:16px;margin-right:10px}
+h3{font-size:16.5px;margin:30px 0 10px;color:var(--accent-2)}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:1.4em}
+li{margin:5px 0}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--surface-2);padding:2px 6px;border-radius:4px;border:1px solid var(--line)}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:26px 0}
+.toc ol{margin:0;padding-left:1.3em;columns:2;column-gap:36px}
+.toc li{margin:4px 0;break-inside:avoid}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-3);font-weight:600;font-size:13px;letter-spacing:.02em}
+tr:last-child td{border-bottom:none}
+td code{background:var(--surface-2)}
+.term{background:var(--term-bg);color:var(--term-ink);border-radius:9px;padding:15px 17px;overflow-x:auto;font-family:var(--f-mono);font-size:13px;line-height:1.7;margin:14px 0;border:1px solid var(--term-line)}
+.term .c{color:var(--term-dim)}
+.term .p{color:var(--term-cue)}
+.note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.warn{border-left:4px solid var(--warn-bar);background:var(--warn-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.bad{border-left:4px solid var(--bad-bar);background:var(--bad-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.ok{border-left:4px solid var(--ok-bar);background:var(--ok-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.note b,.warn b,.bad b,.ok b{display:block;margin-bottom:4px}
+.note b{color:var(--accent-2)} .warn b{color:var(--warn)} .bad b{color:var(--bad)} .ok b{color:var(--ok)}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:11.5px;padding:2px 9px;border-radius:99px;border:1px solid currentColor;font-weight:600}
+.p-ok{color:var(--ok)} .p-warn{color:var(--warn)} .p-bad{color:var(--bad)} .p-acc{color:var(--accent)}
+figure{margin:22px 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+figcaption{font-size:12.5px;color:var(--ink-3);margin-top:12px;font-family:var(--f-mono)}
+.bars{display:flex;flex-direction:column;gap:11px;margin:4px 0}
+.barrow{display:grid;grid-template-columns:96px 1fr 168px;gap:12px;align-items:center}
+.barlabel{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2);text-align:right}
+.bartrack{position:relative;height:26px;background:var(--surface-3);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.barfill{position:absolute;inset:0 auto 0 0;border-radius:4px 0 0 4px}
+.barnote{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.flow{display:flex;flex-direction:column;gap:0;font-family:var(--f-mono);font-size:12.5px}
+.fstep{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start;padding:9px 0}
+.fwho{text-align:right;color:var(--accent);font-weight:600}
+.fwhat{border-left:2px solid var(--line-2);padding-left:14px;color:var(--ink-2)}
+.fstep.hl .fwhat{border-left-color:var(--ok-bar);color:var(--ink)}
+footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--ink-3);font-size:13px}
+@media(max-width:720px){
+  .toc ol{columns:1}
+  .barrow{grid-template-columns:72px 1fr;gap:8px}
+  .barrow .barnote{grid-column:1/-1;text-align:right}
+  .fstep{grid-template-columns:1fr}
+  .fwho{text-align:left}
+  .fwhat{border-left:none;border-top:2px solid var(--line-2);padding-left:0;padding-top:6px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>qwen-worker</h1>
+  <p class="lede">ローカルの Qwen3.8-27B を、Claude Code と Codex の<b>両方</b>から呼べる
+  コード調査・実装ワーカーにする。親（クラウド AI）が設計とレビューを持ち、
+  Qwen が調査・実装・テストコード作成を担当する。</p>
+  <p class="meta">構築日 2026-09-19 / NVIDIA A30 24GiB / Ollama 0.34.2 / qwen3.8:27b (Q4_K_M) / this-host <server-ip></p>
+</header>
+
+<div class="bad">
+  <b>先に断っておくこと</b>
+  推論はローカルの Ollama で動く。しかし Qwen が返した<b>要約と差分は親エージェント経由でクラウドへ送られる</b>。
+  「すべてのコードがローカルだけに留まる」という説明は成り立たない。
+</div>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s1">何ができるか</a></li>
+    <li><a href="#s2">確認できた現状</a></li>
+    <li><a href="#s3">作成・変更したファイル</a></li>
+    <li><a href="#s4">最終的に有効な設定</a></li>
+    <li><a href="#s5">文脈長の実測</a></li>
+    <li><a href="#s6">入力が黙って消える罠</a></li>
+    <li><a href="#s7">安全の境界</a></li>
+    <li><a href="#s8">呼び出し例</a></li>
+    <li><a href="#s9">起動・停止・設定変更</a></li>
+    <li><a href="#s10">元に戻す手順</a></li>
+    <li><a href="#s11">未実施・要人手</a></li>
+    <li><a href="#s12">他の PC から使う</a></li>
+    <li><a href="#s13">ブラウザチャット</a></li>
+  </ol>
+</nav>
+
+<h2 id="s1"><span class="num">01</span>何ができるか</h2>
+
+<p>MCP（stdio）サーバー <code>qwen-worker</code> が 3 つのツールを公開する。
+いずれも今回作った独自ツールで、既存のものではない。</p>
+
+<table>
+<tr><th>ツール</th><th>できること</th><th>書き込み</th></tr>
+<tr><td><code>qwen_research</code></td><td>コード・資料・ログを調査し、根拠となるファイルと行番号を付けて返す</td><td><span class="pill p-ok">読み取り専用</span></td></tr>
+<tr><td><code>qwen_implement</code></td><td>実装とテストコード作成。隔離された作業コピーで編集し、差分を返す</td><td><span class="pill p-warn">作業コピー内のみ</span></td></tr>
+<tr><td><code>qwen_status</code></td><td>接続先・モデル・有効プロファイル・検証状況・ロック保持者を返す</td><td><span class="pill p-acc">推論しない</span></td></tr>
+</table>
+
+<p>単に Ollama へ 1 回質問して答えを返すだけのものではない。
+Qwen 自身が検索・読み取り・編集を<b>要求し、その結果を見て次の手を決める</b>
+ツール呼び出しループが入っている（上限 12 ラウンド）。</p>
+
+<figure>
+<div class="flow">
+  <div class="fstep"><div class="fwho">親（Claude / Codex）</div><div class="fwhat">目的・範囲・制約・完了条件を 1 タスクにまとめて委譲。親の会話全体は渡さない</div></div>
+  <div class="fstep"><div class="fwho">qwen-worker</div><div class="fwhat">許可ルートを検証 → 排他ロック取得 → 入力予算を検査 → 作業コピーを作成</div></div>
+  <div class="fstep hl"><div class="fwho">Qwen ⇄ ワーカー</div><div class="fwhat">search_text / read_file / replace_in_file を Qwen 自身が呼び、結果を見て次を決める（最大 12 往復）</div></div>
+  <div class="fstep"><div class="fwho">qwen-worker</div><div class="fwhat">baseline と work を比較して差分を生成。思考ログは別ファイルへ落とす</div></div>
+  <div class="fstep"><div class="fwho">親</div><div class="fwhat">要約・根拠・差分パスを受け取る。<b>適用とテスト実行は親の権限で行う</b></div></div>
+</div>
+<figcaption>1 タスクの流れ。ワーカーは元リポジトリに書かず、commit も push もしない。</figcaption>
+</figure>
+
+<h2 id="s2"><span class="num">02</span>確認できた現状</h2>
+
+<table>
+<tr><th>項目</th><th>実測値</th></tr>
+<tr><td>実行ユーザー</td><td><code>mt</code> (uid=1000)。root ではない。<code>sudo</code> は端末が無く通らない</td></tr>
+<tr><td>GPU</td><td>NVIDIA A30 / VRAM 24576 MiB / compute 8.0 / ドライバ 595.91.07</td></tr>
+<tr><td>RAM</td><td><b>31 GiB</b>（依頼文の 64GB とは異なる。<code>free -h</code> の実測）</td></tr>
+<tr><td>Ollama</td><td>0.34.2 / <code>ollama.service</code> は enabled かつ active / <code>127.0.0.1:11434</code> のみ待受</td></tr>
+<tr><td>既存 drop-in</td><td><code>override.conf</code> に <code>OLLAMA_CONTEXT_LENGTH=65536</code> のみ</td></tr>
+<tr><td>モデル</td><td><code>qwen3.8:27b</code> / qwen35 / 27.3B / Q4_K_M / 学習時文脈 262144</td></tr>
+<tr><td>能力</td><td>completion, vision, tools, thinking（<code>ollama show</code> の申告。tools と thinking は実機で動作確認済み）</td></tr>
+<tr><td>Claude Code</td><td>2.1.278 / <code>~/.local/bin/claude</code> / 既存 MCP 登録は claude.ai コネクタのみ</td></tr>
+<tr><td>Codex</td><td>codex-cli 0.155.0-alpha.9 / <code>/usr/lib/chatgpt/resources/codex</code>（ChatGPT アプリ同梱。PATH に無い）</td></tr>
+<tr><td>CODEX_HOME</td><td>未設定 → 既定の <code>~/.codex</code>。既存 MCP 登録 3 件（node_repl, cua_repl, codex_app）</td></tr>
+<tr><td>既存ワーカー</td><td>無し。二重構築にはあたらない</td></tr>
+</table>
+
+<div class="warn">
+<b>公開仕様と実動作を分けて書く</b>
+<code>ollama show</code> が申告する文脈長 262144 は<b>モデルの仕様</b>であって、この機械で使える値ではない。
+この環境で 100% GPU を保てるのは 65536 まで（→ <a href="#s5">05</a>）。
+</div>
+
+<h2 id="s3"><span class="num">03</span>作成・変更したファイル</h2>
+
+<h3>新規作成</h3>
+<table>
+<tr><th>パス</th><th>内容</th></tr>
+<tr><td><code>~/.local/share/qwen-worker/</code></td><td>実装（Python 12 モジュール）、venv、起動スクリプト、README、境界テスト</td></tr>
+<tr><td><code>~/.config/qwen-worker/config.toml</code></td><td>許可ルート、秘密パターン、プロファイル、サンプリング、各種上限</td></tr>
+<tr><td><code>~/.local/state/qwen-worker/</code></td><td>タスク成果物、排他ロック、検証記録、バックアップ、未適用の root 変更</td></tr>
+<tr><td><code>~/.codex/AGENTS.md</code></td><td>Codex 向けの委譲ルール（新規。既存ファイルは無かった）</td></tr>
+</table>
+
+<h3>既存ファイルへの追記（上書きしていない）</h3>
+<table>
+<tr><th>パス</th><th>変更</th><th>バックアップ</th></tr>
+<tr><td><code>~/.claude.json</code></td><td><code>mcpServers.qwen-worker</code> を user スコープで追加</td><td>あり</td></tr>
+<tr><td><code>~/.claude/settings.json</code></td><td><code>env</code> に MCP タイムアウト 2 件。hooks / model / theme は無傷</td><td>あり</td></tr>
+<tr><td><code>~/.claude/CLAUDE.md</code></td><td>末尾に「ローカル Qwen への委譲」節を追記</td><td>あり</td></tr>
+<tr><td><code>~/.codex/config.toml</code></td><td><code>[mcp_servers.qwen-worker]</code> を追加。既存 3 サーバーは無傷</td><td>あり</td></tr>
+</table>
+
+<p>バックアップは <code>~/.local/state/qwen-worker/backup/&lt;日時&gt;/</code> に日時付きで置いてある。
+既存ファイルをテンプレートで丸ごと置き換えたものは無い。</p>
+
+<h2 id="s4"><span class="num">04</span>最終的に有効な設定</h2>
+
+<h3>プロファイル</h3>
+<table>
+<tr><th>名前</th><th>num_ctx</th><th>num_predict</th><th>think</th><th>入力予算(推定)</th><th>状態</th></tr>
+<tr><td><code>standard</code></td><td>65536</td><td>8192</td><td>有効</td><td>24000</td><td><span class="pill p-ok">既定</span></td></tr>
+<tr><td><code>extract</code></td><td>65536</td><td>4096</td><td>無効</td><td>24000</td><td><span class="pill p-ok">抜き出し用</span></td></tr>
+<tr><td><code>large</code></td><td>131072</td><td>16384</td><td>有効</td><td>—</td><td><span class="pill p-bad">使用不可</span></td></tr>
+</table>
+
+<h3>サンプリング</h3>
+<p>モデル同梱の既定値（<code>ollama show --parameters</code>）は Qwen 公式の<b>思考モード</b>推奨値と一致していた。
+非思考モードの値は毎回明示送信する。</p>
+<table>
+<tr><th>Qwen 公式の名前</th><th>Ollama の名前</th><th>思考モード</th><th>非思考モード</th></tr>
+<tr><td>temperature</td><td><code>temperature</code></td><td>1.0</td><td>0.7</td></tr>
+<tr><td>top_p</td><td><code>top_p</code></td><td>0.95</td><td>0.80</td></tr>
+<tr><td>top_k</td><td><code>top_k</code></td><td>20</td><td>20</td></tr>
+<tr><td>min_p</td><td><code>min_p</code></td><td>0.0</td><td>0.0</td></tr>
+<tr><td>presence_penalty</td><td><code>presence_penalty</code></td><td>0.0</td><td>1.5</td></tr>
+<tr><td><b>repetition_penalty</b></td><td><b><code>repeat_penalty</code></b></td><td>1.0</td><td>1.0</td></tr>
+</table>
+<div class="note">
+<b>名前の違い</b>
+Ollama は <code>repetition_penalty</code> を受け付けない。<code>repeat_penalty</code> が対応名。
+未対応のパラメーター名を送っても Ollama は<b>黙って無視する</b>ので、効いているつもりにならないこと。
+<code>temperature=0</code> をコーディング用の万能設定にはしていない。
+</div>
+
+<h3>think の置き場所</h3>
+<p><code>think</code> は <code>options</code> の中ではなく<b>リクエストのトップレベル</b>に置く。
+一次情報（docs.ollama.com/api/chat）と実機の挙動が一致した。</p>
+<div class="term">
+<span class="c"># 正しい</span><br>
+{ "model": "qwen3.8:27b", <span class="p">"think": true</span>, "options": { "num_ctx": 65536 } }<br><br>
+<span class="c"># 間違い（options の中に入れても効かない）</span><br>
+{ "model": "qwen3.8:27b", "options": { <span class="p">"think": true</span> } }
+</div>
+
+<h3>ツール結果の返し方</h3>
+<div class="term">
+{"role": "tool", <span class="p">"tool_name"</span>: "search_text", "content": "…"}
+</div>
+<p>応答の <code>tool_calls[].id</code> は返るが、結果の対応付けは <code>tool_name</code> で行う。</p>
+
+<h3>タイムアウトの整合</h3>
+<table>
+<tr><th>層</th><th>設定</th><th>値</th></tr>
+<tr><td>Ollama 1 リクエスト</td><td><code>config.toml</code> の <code>read_timeout_sec</code></td><td>900 秒</td></tr>
+<tr><td>ジョブ全体</td><td><code>config.toml</code> の <code>job_deadline_sec</code></td><td>1800 秒</td></tr>
+<tr><td>Claude Code のツール実行</td><td><code>settings.json</code> の <code>MCP_TOOL_TIMEOUT</code></td><td>2100000 ミリ秒</td></tr>
+<tr><td>Claude Code の起動</td><td><code>settings.json</code> の <code>MCP_TIMEOUT</code></td><td>30000 ミリ秒</td></tr>
+<tr><td>Codex のツール実行</td><td><code>config.toml</code> の <code>tool_timeout_sec</code></td><td>2100 秒</td></tr>
+<tr><td>Codex の起動</td><td><code>config.toml</code> の <code>startup_timeout_sec</code></td><td>30 秒</td></tr>
+</table>
+<p>外側のツール実行期限（2100 秒）はジョブ期限（1800 秒）より長い。起動タイムアウトとツール実行タイムアウトは別物として設定してある。</p>
+
+<h2 id="s5"><span class="num">05</span>文脈長の実測</h2>
+
+<p>各 <code>num_ctx</code> で 1 回 ping を投げ、<code>ollama ps</code> の PROCESSOR 列を読んだ。</p>
+
+<figure>
+<div class="bars">
+  <div class="barrow">
+    <div class="barlabel">65536</div>
+    <div class="bartrack"><div class="barfill" style="width:100%;background:var(--ok-bar)"></div></div>
+    <div class="barnote">100% GPU &nbsp;<span class="pill p-ok">合格</span></div>
+  </div>
+  <div class="barrow">
+    <div class="barlabel">81920</div>
+    <div class="bartrack"><div class="barfill" style="width:91%;background:var(--warn-bar)"></div></div>
+    <div class="barnote">9% / 91% CPU/GPU &nbsp;<span class="pill p-bad">不合格</span></div>
+  </div>
+  <div class="barrow">
+    <div class="barlabel">98304</div>
+    <div class="bartrack"><div class="barfill" style="width:81%;background:var(--warn-bar)"></div></div>
+    <div class="barnote">19% / 81% CPU/GPU &nbsp;<span class="pill p-bad">不合格</span></div>
+  </div>
+  <div class="barrow">
+    <div class="barlabel">131072</div>
+    <div class="bartrack"><div class="barfill" style="width:72%;background:var(--bad-bar)"></div></div>
+    <div class="barnote">28% / 72% CPU/GPU &nbsp;<span class="pill p-bad">不合格</span></div>
+  </div>
+</div>
+<figcaption>棒の長さ = GPU に載った割合。128K が駄目なので 96K を追加候補として測り、それも駄目だったので 64K に確定した。</figcaption>
+</figure>
+
+<div class="warn">
+<b>VRAM 使用量で限界を判定してはいけない</b>
+上の 4 条件の VRAM 使用量は 22053 / 22211 / 22533 / 22553 MiB と、どれも 22 GiB 前後で<b>頭打ち</b>になる。
+CPU に溢れても VRAM の数字は増えない。<code>ollama ps</code> の PROCESSOR 列だけが限界を教えてくれる。
+</div>
+
+<p><code>large</code> プロファイルは実測に不合格のため<b>無効のまま</b>。指定すると理由付きで <code>blocked</code> が返る。
+256K への拡大も q4_0 への変更も行っていない。文脈が足りないときはタスク分割で対応する。</p>
+
+<h3>長い入力での測定</h3>
+<table>
+<tr><th>入力</th><th>実測 prompt_eval_count</th><th>配置</th><th>VRAM</th><th>生成</th></tr>
+<tr><td>実ソース 72990 文字</td><td>20328 トークン</td><td>100% GPU</td><td>22209 MiB</td><td>33.0 tok/s</td></tr>
+</table>
+<p>これが「実際に試した入力トークン数」。短い質問が通ったことを 128K 検証済みとは扱っていない。</p>
+
+<h2 id="s6"><span class="num">06</span>入力が黙って消える罠</h2>
+
+<div class="bad">
+<b>Ollama はプロンプトを <code>num_ctx / 2</code> で打ち切り、入力の先頭を黙って捨てる</b>
+エラーも警告も出ない。<code>done_reason</code> は <code>stop</code> のまま。
+</div>
+
+<p>再現性のある実測：</p>
+<table>
+<tr><th>num_ctx</th><th>実測 prompt_eval_count</th><th>num_ctx / 2</th><th>比率</th></tr>
+<tr><td>32768</td><td>16386</td><td>16384</td><td>0.500</td></tr>
+<tr><td>65536</td><td>32770</td><td>32768</td><td>0.500</td></tr>
+</table>
+
+<p>巨大な入力の先頭と末尾にマーカーを置いて確かめた。</p>
+<div class="term">
+先頭マーカー MARKER_ALPHA_7391 が応答に現れた : <span style="color:#EE9AA3">False</span><br>
+末尾マーカー MARKER_OMEGA_2648 が応答に現れた : <span style="color:#7FCFA1">True</span>
+</div>
+
+<p>サーバログで原因を切り分けた。<code>num_parallel</code> による分割ではない。</p>
+<div class="term">
+srv load_model: initializing, <span class="p">n_slots = 1, n_ctx_slot = 65536</span>, kv_unified = 'false'<br>
+slot operator(): id 0 | task 49 | new prompt, n_ctx_slot = 65536, n_keep = 4, <span class="p">task.n_tokens = 32770</span><br>
+cmn common_init_: <span class="p">KV cache shifting is not supported for this context, disabling KV cache shifting</span>
+</div>
+
+<div class="ok">
+<b>ワーカーの対処</b>
+推定トークン数が入力予算（既定 24000）を超えたら <code>blocked</code> を返して<b>止まる</b>。
+ツール結果が積もった場合に備え、毎ラウンドの開始時にも同じ検査をする。
+<b>黙って切り捨てることはしない。</b>超えたら渡す範囲を絞るか、親でタスクを分割する。
+</div>
+
+<div class="note">
+<b>トークン数は推定である</b>
+Ollama 0.34.2 に <code>/api/tokenize</code> は無い（404 を実測）。qwen35 のトークナイザーも手元に無い。
+そのため推定値を使い、必ず「推定」と明記している。校正値は実ソース 72990 文字で
+推定 26743 / 実測 20328 = <b>1.32 倍</b>（多めに出る側）。実測は応答の <code>prompt_eval_count</code> を使う。
+</div>
+
+<h2 id="s7"><span class="num">07</span>安全の境界</h2>
+
+<table>
+<tr><th>守るもの</th><th>やり方</th><th>検証</th></tr>
+<tr><td>許可ルート</td><td><code>project_root</code> は <code>allowed_roots</code> 配下に限る。モデルの申告だけを根拠にしない</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>パストラバーサル</td><td>判定は <code>realpath</code>（シンボリックリンク解決後）で行う</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>リンク経由の脱出</td><td>同上。範囲外を指すリンクは拒否</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>秘密ファイル</td><td><code>.env</code> / 鍵 / 認証設定は読み込み・複製の対象外</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>元ツリーの保護</td><td>元の作業ツリーには一切書かない。sha256 を前後比較して確認</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>未コミット変更</td><td>破棄・stash・reset しない。作業コピーには現在のディスク内容を反映</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>競合検出</td><td>取り込んだ各ファイルの sha256 を記録し、適用前に変化を検出</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>シェル実行</td><td>Qwen に任意シェル実行権限を渡さない。未提供のツール名は拒否</td><td><span class="pill p-ok">合格</span></td></tr>
+<tr><td>同時実行</td><td><code>flock</code> でプロセスをまたいで 1 件。取れなければ <code>busy</code></td><td><span class="pill p-ok">合格</span></td></tr>
+</table>
+
+<div class="note">
+<b>git worktree を使っていない</b>
+worktree は元リポジトリの <code>.git</code> 配下にメタデータを書く。
+代わりに <code>baseline/</code>（原本スナップショット）と <code>work/</code>（作業コピー）の 2 つを作り、
+<code>git diff --no-index</code> で差分を取る。元リポジトリへの書き込みが<b>ゼロ</b>になり、git 管理外のプロジェクトでも動く。
+差分のパスは <code>a/</code> <code>b/</code> に直してあるので <code>git apply -p1</code> がそのまま通る。
+</div>
+
+<h3>実際に通した受け入れテスト</h3>
+<table>
+<tr><th>項目</th><th>結果</th></tr>
+<tr><td>Qwen 自身のツール呼び出しで検索・読み取り</td><td>合格（3 ラウンドで根拠 5 件）</td></tr>
+<tr><td>報告された行番号が実ファイルと一致</td><td>合格（<code>stats.py:6,13,14,20</code> / <code>report.py:8</code> 全一致）</td></tr>
+<tr><td>作業コピー内でのバグ修正とテスト追加</td><td>合格（2 タスクとも差分生成）</td></tr>
+<tr><td>元の作業ツリーが変更されない</td><td>合格（sha256 全一致。未コミットの README.md も保持）</td></tr>
+<tr><td>差分がそのまま適用できる</td><td>合格（<code>git apply --check -p1</code>）</td></tr>
+<tr><td>作業コピーでテストが通る</td><td>合格（pytest 3 passed。既存 1 + 新規 2）</td></tr>
+<tr><td>範囲外・秘密ファイルへのアクセス拒否</td><td>合格（境界テスト 17 件 + 実地 6 種）</td></tr>
+<tr><td>別プロセスからの同時依頼が直列化</td><td>合格（B は A の解放を 19 秒待ってから実行）</td></tr>
+<tr><td>予算超過を <code>blocked</code> で拒否</td><td>合格（推定 76279 トークンを拒否）</td></tr>
+</table>
+
+<h2 id="s8"><span class="num">08</span>呼び出し例</h2>
+
+<h3>Claude Code から</h3>
+<div class="term">
+<span class="c"># 調査</span><br>
+qwen_research で調べて。<br>
+&nbsp;&nbsp;project_root = /home/mt/Proj/xxx<br>
+&nbsp;&nbsp;task = "認証トークンの検証がどこで行われているか特定して"<br>
+&nbsp;&nbsp;allowed_read_paths = ["src/auth", "src/middleware"]<br>
+&nbsp;&nbsp;acceptance_criteria = ["検証関数のファイルと行番号", "呼び出し元の一覧"]<br>
+<br>
+<span class="c"># 実装</span><br>
+qwen_implement で直して。<br>
+&nbsp;&nbsp;project_root = /home/mt/Proj/xxx<br>
+&nbsp;&nbsp;task = "…"<br>
+&nbsp;&nbsp;allowed_write_paths = ["src/auth/token.py", "tests/test_token.py"]<br>
+&nbsp;&nbsp;constraints = ["公開 API を変えない"]<br>
+&nbsp;&nbsp;acceptance_criteria = ["期限切れトークンが拒否される", "テストが追加されている"]
+</div>
+
+<h3>Codex から</h3>
+<p>ツール名は同じ。<code>~/.codex/config.toml</code> に登録済み。</p>
+
+<h3>クライアントを介さず単体で</h3>
+<div class="term">
+<span class="p">cd</span> ~/.local/share/qwen-worker<br>
+./.venv/bin/python mcp_call.py qwen_status '{}' 60<br>
+./.venv/bin/python mcp_call.py qwen_research <span class="p">'@/tmp/args.json'</span> 1800 &nbsp;<span class="c"># 大きい引数はファイルで渡す</span>
+</div>
+
+<h3>返ってくるもの</h3>
+<p>親の文脈を圧迫しないよう、長い思考出力と全ログは別ファイルに落としてパスだけ返す。</p>
+<table>
+<tr><th>フィールド</th><th>内容</th></tr>
+<tr><td><code>status</code></td><td><code>completed</code> / <code>needs_review</code> / <code>failed</code> / <code>blocked</code> / <code>busy</code></td></tr>
+<tr><td><code>summary</code></td><td>短い要約</td></tr>
+<tr><td><code>evidence</code></td><td>根拠のファイル・行番号（調査時）</td></tr>
+<tr><td><code>changed_files</code> / <code>diff_path</code></td><td>変更ファイル一覧と差分の保存先（実装時）</td></tr>
+<tr><td><code>apply_conflicts</code></td><td>取り込み後に元ファイルが変わっていたら中身が入る</td></tr>
+<tr><td><code>verification_not_done</code></td><td>未実施の検証。テスト実行と差分適用は常にここに入る</td></tr>
+<tr><td><code>unresolved</code> / <code>next_decision_needed</code></td><td>未解決事項と、次に必要な判断</td></tr>
+<tr><td><code>transcript_path</code> / <code>metrics_path</code></td><td>全対話と計測値。必要なときだけ読む</td></tr>
+</table>
+
+<div class="warn">
+<b>completed を鵜呑みにしない</b>
+生成上限に達した、差分が空だった、根拠が 1 件も付かなかった場合は
+<code>needs_review</code> に格下げされ、理由が <code>unresolved</code> に入る。
+それでも最終判断は親がすること。Qwen が書いたテストだけでなく、既存テストと完了条件も確認する。
+</div>
+
+<h2 id="s9"><span class="num">09</span>起動・停止・設定変更</h2>
+
+<p>サーバーは stdio。常駐しない。親が必要なときに起動し、セッション終了で落ちる。</p>
+
+<div class="term">
+<span class="c"># 状態を見る</span><br>
+claude mcp get qwen-worker<br>
+/usr/lib/chatgpt/resources/codex mcp get qwen-worker<br>
+<br>
+<span class="c"># 設定変更（次回起動から有効）</span><br>
+$EDITOR ~/.config/qwen-worker/config.toml<br>
+<br>
+<span class="c"># 境界テストを回す</span><br>
+~/.local/share/qwen-worker/.venv/bin/python ~/.local/share/qwen-worker/tests/test_sandbox.py<br>
+<br>
+<span class="c"># ロックが誰かに握られていないか</span><br>
+flock -n ~/.local/state/qwen-worker/inference.lock true <span class="p">&amp;&amp;</span> echo 空き <span class="p">||</span> echo 推論中
+</div>
+
+<div class="note">
+<b>設定ファイルの落とし穴</b>
+TOML ではテーブル見出し（<code>[xxx]</code>）より後ろに書いた <code>key = value</code> は
+そのテーブルの中に入る。<code>allowed_roots</code> のようなトップレベルの値は必ずファイルの先頭側に置くこと。
+（構築中に実際にこれで <code>allowed_roots</code> が <code>[limits]</code> の中に吸い込まれた。）
+</div>
+
+<h2 id="s10"><span class="num">10</span>元に戻す手順</h2>
+
+<div class="term">
+<span class="c"># 1. MCP 登録を外す</span><br>
+claude mcp remove qwen-worker -s user<br>
+/usr/lib/chatgpt/resources/codex mcp remove qwen-worker<br>
+<br>
+<span class="c"># 2. 追記した設定を戻す（バックアップから）</span><br>
+BK=$(cat ~/.local/state/qwen-worker/LAST_BACKUP)<br>
+cp "$BK/claude-settings.json.before-env"      ~/.claude/settings.json<br>
+cp "$BK/claude-CLAUDE.md.before-delegation"   ~/.claude/CLAUDE.md<br>
+cp "$BK/codex-config.toml.before-timeout"     ~/.codex/config.toml<br>
+<br>
+<span class="c"># 3. AGENTS.md は新規作成なので消してよい</span><br>
+rm ~/.codex/AGENTS.md<br>
+<br>
+<span class="c"># 4. 本体を消す</span><br>
+rm -rf ~/.local/share/qwen-worker ~/.config/qwen-worker ~/.local/state/qwen-worker
+</div>
+
+<p>Ollama 側は<b>何も変更していない</b>ので戻す作業は無い。</p>
+
+<h2 id="s11"><span class="num">11</span>未実施・要人手</h2>
+
+<div class="bad">
+<b>sudo が要るため実行していない</b>
+このセッションは通常ユーザー <code>mt</code> で動いており、<code>sudo</code> はパスワード入力の端末が無く通らない。
+承認を迂回する手段は取っていない。
+</div>
+
+<table>
+<tr><th>項目</th><th>状況</th><th>次にやること</th></tr>
+<tr><td><code>OLLAMA_NUM_PARALLEL=1</code><br><code>OLLAMA_MAX_LOADED_MODELS=1</code><br><code>OLLAMA_KEEP_ALIVE=30m</code></td><td>drop-in の案は用意済み。<b>未適用</b></td><td><code>~/.local/state/qwen-worker/pending-root-changes/APPLY.md</code> の手順を人手で実行</td></tr>
+<tr><td><code>OLLAMA_FLASH_ATTENTION=1</code><br><code>OLLAMA_KV_CACHE_TYPE=q8_0</code></td><td>効果<b>未検証</b>。案ではコメントアウトしてある</td><td>適用したらログで <code>flash_attn</code> と <code>type_k</code>/<code>type_v</code> を確認。効かなければ<b>q4_0 に落とさず</b>元に戻す</td></tr>
+<tr><td>Codex 対話セッションからの実呼び出し</td><td><b>未実施</b></td><td>登録と設定読み取りは確認済み。実呼び出しはクラウド課金を伴うため実行していない</td></tr>
+<tr><td>Claude Code の <code>env</code> 反映</td><td>ファイルには書いた</td><td><b>Claude Code の再起動が必要</b>。env はセッション開始時に読まれる</td></tr>
+<tr><td>128K での品質・安定性</td><td><b>未検証</b></td><td>CPU オフロードのため採用しない。検証の予定も無い</td></tr>
+</table>
+
+<div class="note">
+<b>現状の Ollama 設定について</b>
+<code>OLLAMA_NUM_PARALLEL</code> は未設定だが、サーバログで <code>n_slots = 1</code> を確認済み。
+つまり<b>今の時点で既に同時スロットは 1 本</b>で、明示設定は念のための固定にあたる。
+再起動は推論を中断するので、実行中の依頼が無いことを確かめてから行うこと。
+</div>
+
+
+<h2 id="s12"><span class="num">12</span>他の PC から使う</h2>
+
+<p>他の PC の Claude Code / Codex は、<b>SSH でこのホストに繋いで stdio のまま MCP をやり取りする</b>。
+他 PC 側に Python も Ollama も要らない。コードもこのホスト側にあるものを触る。</p>
+
+<figure>
+<div class="flow">
+  <div class="fstep"><div class="fwho">他の PC</div><div class="fwhat"><code>claude mcp add -s user qwen-worker -- ssh -T qwen-worker</code> の 1 行だけ登録する</div></div>
+  <div class="fstep hl"><div class="fwho">ssh (22)</div><div class="fwhat">鍵に強制コマンドが付いており、<code>run-qwen-worker</code> の起動以外はできない</div></div>
+  <div class="fstep"><div class="fwho">このホスト</div><div class="fwhat">ワーカーが立ち上がり、<code>/home/mt/Proj/...</code> を読んで Qwen に投げる</div></div>
+  <div class="fstep"><div class="fwho">他の PC</div><div class="fwhat">要約・根拠・差分本文が返る。ファイルを開きたいときは SMB <code>\\<server-ip>\mt</code></div></div>
+</div>
+<figcaption>Ollama は LAN に出さない。外から見えるのは SSH（22）・Samba（445）・Open WebUI（8080）だけ。</figcaption>
+</figure>
+
+<h3>鍵の受け入れと取り消し（このホスト側）</h3>
+<div class="term">
+<span class="c"># 受け入れ</span><br>
+bash ~/.local/share/qwen-worker/remote/add-remote-key.sh &lt;PC名&gt; &lt;公開鍵ファイル&gt;<br>
+<br>
+<span class="c"># 一覧と取り消し</span><br>
+bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh --list<br>
+bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh &lt;PC名&gt;
+</div>
+
+<p><code>authorized_keys</code> に書かれる行はこの形になる。</p>
+<div class="term">
+<span class="p">command="/home/mt/.local/share/qwen-worker/run-qwen-worker"</span>,<span class="p">no-pty</span>,no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-ed25519 AAAA... qwen-worker@&lt;PC名&gt;
+</div>
+
+<div class="ok">
+<b>実測で確かめたこと</b>
+この鍵で <code>ssh ... 'id'</code> を投げても <code>id</code> は実行されず、MCP の <code>initialize</code> 応答が返った。
+SSH 越しに <code>qwen_status</code> と <code>qwen_implement</code> を実呼び出しし、差分生成まで通した（34.7 秒、30 行の差分）。
+</div>
+
+<h3>他の PC 側のセットアップ</h3>
+<p>配布物は <code>~/.local/share/qwen-worker/remote/</code>。SMB <code>\\<server-ip>\mt\.local\share\qwen-worker\remote\</code> から取る。</p>
+<table>
+<tr><th>ファイル</th><th>対象</th><th>やること</th></tr>
+<tr><td><code>setup-remote.sh</code></td><td>macOS / Linux</td><td>鍵作成 → ssh config → MCP 登録 → タイムアウト設定 → 公開鍵表示</td></tr>
+<tr><td><code>setup-remote.ps1</code></td><td>Windows</td><td>同上（標準の OpenSSH クライアントを使う）</td></tr>
+<tr><td><code>README-remote.md</code></td><td>全 OS</td><td>手順、パス対応表、委譲ルール</td></tr>
+</table>
+
+<div class="warn">
+<b>パスはこのホスト側の絶対パスで渡す</b>
+<code>project_root</code> と <code>allowed_*_paths</code> は <code>/home/mt/Proj/xxx</code> の形。
+<code>\\<server-ip>\mt\Proj\xxx</code> や <code>Z:\Proj\xxx</code> は受け付けない（許可ルートの検証で弾かれる）。
+</div>
+
+<table>
+<tr><th>他の PC で開くとき</th><th>ワーカーに渡すとき</th></tr>
+<tr><td><code>\\<server-ip>\mt\Proj\localai</code></td><td><code>/home/mt/Proj/localai</code></td></tr>
+<tr><td><code>/Volumes/mt/Proj/localai</code>（mac）</td><td><code>/home/mt/Proj/localai</code></td></tr>
+<tr><td><code>Z:\Proj\localai</code>（割り当て済みドライブ）</td><td><code>/home/mt/Proj/localai</code></td></tr>
+</table>
+
+<p>リモートの親が成果物ディレクトリを開かなくて済むよう、<b>400 行以下の差分は結果の <code>diff_text</code> に本文が入る</b>。
+超えたら <code>diff_text_omitted</code> になり <code>diff_path</code> を読む。
+<code>qwen_status</code> はホスト名・LAN アドレス・SMB 共有のパスも返す。</p>
+
+<h2 id="s13"><span class="num">13</span>ブラウザチャット</h2>
+
+<p>同じホストで <b>Open WebUI 0.11.3</b> が <code>systemd --user</code> のサービスとして動く。
+ChatGPT 風の画面で、アカウント・会話履歴・モデル切替・画像入力が使える。</p>
+
+<table>
+<tr><th>項目</th><th>値</th></tr>
+<tr><td>URL</td><td><code>http://<server-ip>:8080</code></td></tr>
+<tr><td>設定</td><td><code>~/.config/open-webui/open-webui.env</code></td></tr>
+<tr><td>ユニット</td><td><code>~/.config/systemd/user/open-webui.service</code></td></tr>
+<tr><td>データ</td><td><code>~/.local/share/open-webui/data</code>（webui.db ほか）</td></tr>
+<tr><td>版の記録</td><td><code>~/.local/share/open-webui/requirements.lock.txt</code>（282 行）</td></tr>
+<tr><td>接続先</td><td><code>OLLAMA_BASE_URL=http://127.0.0.1:11434</code>。Ollama は LAN に出していない</td></tr>
+</table>
+
+<div class="term">
+systemctl --user status open-webui<br>
+systemctl --user restart open-webui<br>
+journalctl --user -u open-webui -n 50
+</div>
+
+<h3>意図的に切ってある設定</h3>
+<p>次の 4 つを <code>false</code> にしてある。いずれも<b>同じモデルで裏側の追加推論を走らせる</b>機能で、
+Ollama が生成を 1 本ずつ処理する以上、1 発言ごとに順番待ちが増えるため。</p>
+<table>
+<tr><th>変数</th><th>効果</th></tr>
+<tr><td><code>ENABLE_TITLE_GENERATION</code></td><td>会話タイトルの自動生成</td></tr>
+<tr><td><code>ENABLE_TAGS_GENERATION</code></td><td>タグの自動生成</td></tr>
+<tr><td><code>ENABLE_FOLLOW_UP_GENERATION</code></td><td>追質問の候補生成</td></tr>
+<tr><td><code>ENABLE_AUTOCOMPLETE_GENERATION</code></td><td>入力補完</td></tr>
+</table>
+<p>変数名はインストール済みの <code>open_webui/env.py</code> / <code>config.py</code> に実在することを確認済み。
+一般に紹介される <code>SCARF_NO_ANALYTICS</code> と <code>ANONYMIZED_TELEMETRY</code> は
+この版のコードに存在しなかったので書いていない。</p>
+
+<div class="warn">
+<b>最初の 1 人を登録したら登録を閉じる</b>
+<code>ENABLE_SIGNUP=true</code> のまま起動している。最初に登録した人が管理者になる。
+登録したら次を実行すること。
+<div class="term" style="margin-top:8px">
+sed -i 's/^ENABLE_SIGNUP=true/ENABLE_SIGNUP=false/' ~/.config/open-webui/open-webui.env<br>
+systemctl --user restart open-webui
+</div>
+</div>
+
+<h3>GPU の共有</h3>
+<p>ワーカーとブラウザチャットは同じ GPU・同じモデルを使う。<b>Ollama は生成を 1 本ずつ直列に処理する。</b></p>
+
+<figure>
+<div class="bars">
+  <div class="barrow">
+    <div class="barlabel">B</div>
+    <div class="bartrack"><div class="barfill" style="width:50%;background:var(--ok-bar)"></div></div>
+    <div class="barnote">0 → 18.5 秒（先に処理された）</div>
+  </div>
+  <div class="barrow">
+    <div class="barlabel">A</div>
+    <div class="bartrack"><div class="barfill" style="left:50%;width:50%;background:var(--warn-bar);border-radius:0 4px 4px 0"></div></div>
+    <div class="barnote">18.5 → 36.9 秒（待たされた）</div>
+  </div>
+</div>
+<figcaption>同時に投げた同じ長さの生成 2 本（各 1092 トークン）。エラーにはならず順番待ちになる。</figcaption>
+</figure>
+
+<div class="note">
+<b>ワーカー実行中でもブラウザは応答することが多い</b>
+ワーカーはモデル生成とローカルのファイル操作を交互に行うため、ファイルを読んでいる間は Ollama が空く。
+実測では、ワーカーのジョブ（16.2 秒）が走っている最中にブラウザ相当の短い質問を送ったところ
+<b>2 秒で返った</b>。待たされるのは「相手の 1 回の生成が終わるまで」であって、ジョブ全体ではない。
+</div>
+
+<div class="bad">
+<b>Open WebUI 側で <code>num_ctx</code> を上げないこと</b>
+既定は Ollama 側の <code>OLLAMA_CONTEXT_LENGTH=65536</code>。
+これを超えると KV キャッシュが CPU に溢れる（→ <a href="#s5">05</a>）。
+</div>
+
+<footer>
+qwen-worker 0.1.0 — 2026-09-19 構築 / 検証記録は <code>~/.local/state/qwen-worker/verification.json</code> /
+実装と詳細は <code>~/.local/share/qwen-worker/README.md</code> / 他の PC 向けは <code>remote/README-remote.md</code>
+</footer>
+
+</div>
+</body>
+</html>

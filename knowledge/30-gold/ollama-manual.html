@@ -1,0 +1,659 @@
+<title>Qwen3.8-27B 運用マニュアル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;600;700&display=swap">
+<style>
+:root{
+  --bg:#EDF0F1; --surface:#FFFFFF; --surface-2:#E3E9EB; --surface-3:#D9E1E4;
+  --ink:#14212B; --ink-2:#4E6170; --ink-3:#7A8C97;
+  --line:#C9D4D8; --line-2:#AEBFC6;
+  --accent:#10627C; --accent-2:#0B4A5E; --accent-soft:#D6E8EE;
+  --ok:#256B48; --ok-soft:#D6E9DE; --ok-bar:#3E8F63;
+  --warn:#845407; --warn-soft:#F4E5C4; --warn-bar:#C28A22;
+  --bad:#93222D; --bad-soft:#F2D7DA; --bad-bar:#B8434F;
+  --term-bg:#101E26; --term-ink:#D9E6EC; --term-dim:#7D97A3; --term-line:#243A45; --term-cue:#63B6D4;
+  --f-body:"IBM Plex Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1418; --surface:#121D23; --surface-2:#18262D; --surface-3:#1F303880;
+    --ink:#DEE8EC; --ink-2:#9BADB6; --ink-3:#71858F;
+    --line:#22333B; --line-2:#33474F;
+    --accent:#57B2D2; --accent-2:#7FC8E2; --accent-soft:#0E2F3C;
+    --ok:#6FC493; --ok-soft:#112F20; --ok-bar:#4E9E72;
+    --warn:#DFA748; --warn-soft:#32260D; --warn-bar:#B8862A;
+    --bad:#E67F8B; --bad-soft:#331319; --bad-bar:#A8434F;
+    --term-bg:#091015; --term-ink:#D2E2E9; --term-line:#1D2F38;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1418; --surface:#121D23; --surface-2:#18262D; --surface-3:#1F303880;
+  --ink:#DEE8EC; --ink-2:#9BADB6; --ink-3:#71858F;
+  --line:#22333B; --line-2:#33474F;
+  --accent:#57B2D2; --accent-2:#7FC8E2; --accent-soft:#0E2F3C;
+  --ok:#6FC493; --ok-soft:#112F20; --ok-bar:#4E9E72;
+  --warn:#DFA748; --warn-soft:#32260D; --warn-bar:#B8862A;
+  --bad:#E67F8B; --bad-soft:#331319; --bad-bar:#A8434F;
+  --term-bg:#091015; --term-ink:#D2E2E9; --term-line:#1D2F38;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.85;margin:0;
+  -webkit-font-smoothing:antialiased;font-feature-settings:"palt" 1}
+.wrap{max-width:1140px;margin-inline:auto;padding-inline:20px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.4}
+p{margin:0}
+a{color:var(--accent);text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+/* masthead */
+.mast{border-bottom:1px solid var(--line-2);padding-block:40px 24px;margin-bottom:36px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.mast h1{font-size:clamp(26px,5.2vw,38px);font-weight:700;letter-spacing:-.02em;margin-block:10px 12px}
+.mast .lede{color:var(--ink-2);max-width:62ch;font-size:15px}
+.mast-meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:18px;font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+.mast-meta b{color:var(--ink-2);font-weight:600}
+
+/* layout */
+.layout{display:grid;grid-template-columns:1fr;gap:34px;padding-bottom:64px}
+@media (min-width:960px){.layout{grid-template-columns:186px minmax(0,1fr);gap:56px}}
+nav ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+nav a{display:block;font-size:13px;line-height:1.5;padding:5px 10px;border:1px solid var(--line);border-radius:2px;
+  background:var(--surface);color:var(--ink-2);text-decoration:none}
+nav a:hover{border-color:var(--accent);color:var(--accent)}
+@media (min-width:960px){
+  nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start}
+  nav ul{flex-direction:column;gap:1px}
+  nav a{border:0;border-left:2px solid var(--line);border-radius:0;background:none;padding:5px 0 5px 12px}
+  nav a:hover{border-left-color:var(--accent);background:none}
+}
+main{display:flex;flex-direction:column;gap:52px;min-width:0}
+section{scroll-margin-top:24px}
+.sec-h{margin-bottom:18px}
+.sec-h h2{font-size:21px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
+.sec-h p{color:var(--ink-2);margin-top:8px;max-width:64ch;font-size:14px}
+h3{font-size:15px;font-weight:600;margin-top:28px;margin-bottom:10px}
+h3:first-child{margin-top:0}
+.prose{max-width:66ch;color:var(--ink-2);font-size:14px}
+.prose + .prose{margin-top:10px}
+.stack{display:flex;flex-direction:column;gap:14px}
+
+/* key-value spec list */
+.spec{display:grid;grid-template-columns:1fr;border-top:1px solid var(--line)}
+@media (min-width:560px){.spec{grid-template-columns:auto 1fr}}
+.spec dt{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);padding:9px 20px 0 0;border-bottom:0}
+.spec dd{margin:0;padding:0 0 9px;border-bottom:1px solid var(--line);font-size:14px}
+@media (min-width:560px){.spec dt{padding-block:9px;border-bottom:1px solid var(--line)}}
+.spec dd b{font-family:var(--f-mono);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* terminal block */
+.term{margin:0;background:var(--term-bg);border:1px solid var(--term-line);border-radius:3px;overflow:hidden}
+.term figcaption{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:7px 12px;border-bottom:1px solid var(--term-line);
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--term-dim)}
+.term pre{margin:0;padding:12px;overflow-x:auto;font-family:var(--f-mono);font-size:12.5px;line-height:1.75;
+  color:var(--term-ink);-webkit-overflow-scrolling:touch}
+.term code{font-family:inherit}
+.term .c{color:var(--term-dim)}
+.term .p{color:var(--term-cue)}
+.copy{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--term-dim);
+  background:transparent;border:1px solid var(--term-line);border-radius:2px;padding:2px 8px;cursor:pointer;flex:none}
+.copy:hover{color:var(--term-ink);border-color:var(--term-dim)}
+.copy[data-state="done"]{color:#6FC493;border-color:#2C5B42}
+.copy[data-state="fail"]{color:#E67F8B;border-color:#5B2C33}
+
+/* callouts */
+.note{border:1px solid var(--line);border-radius:3px;background:var(--surface);padding:14px 16px;font-size:14px}
+.note .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px}
+.note.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.note.warn .lbl{color:var(--warn)}
+.note.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 32%,transparent)}
+.note.ok .lbl{color:var(--ok)}
+.note.info .lbl{color:var(--accent)}
+
+/* chips */
+.chip{display:inline-block;font-family:var(--f-mono);font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:2px;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.mute{background:var(--surface-2);color:var(--ink-3)}
+
+/* vram chart */
+.chart{border-top:1px solid var(--line-2);margin-top:6px}
+.vrow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;
+  padding-block:13px;border-bottom:1px solid var(--line)}
+.vrow .k{font-family:var(--f-mono);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.vrow .k small{display:block;font-family:var(--f-body);font-size:11px;font-weight:400;color:var(--ink-3);letter-spacing:0}
+.vrow .track{grid-column:1/-1;position:relative;height:16px;background:var(--surface-2);border-radius:2px;overflow:hidden}
+.vrow .fill{position:absolute;inset-block:0;left:0;border-radius:2px 0 0 2px}
+.vrow .fill.ok{background:var(--ok-bar)}
+.vrow .fill.warn{background:var(--warn-bar)}
+.vrow .v{grid-column:1/-1;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+@media (min-width:660px){
+  .vrow{grid-template-columns:118px minmax(0,1fr) 92px 126px}
+  .vrow .track{grid-column:auto}
+  .vrow .v{grid-column:auto;text-align:right;color:var(--ink-2)}
+  .vrow .c{text-align:right}
+}
+.scale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);
+  padding-top:7px;font-variant-numeric:tabular-nums}
+.limit{position:absolute;top:0;bottom:0;width:2px;background:var(--bad)}
+
+/* flow diagram */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin-top:4px}
+.node{flex:1 1 150px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:11px 13px}
+.node .nt{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:3px}
+.node .nb{font-family:var(--f-mono);font-size:12.5px;font-weight:600;word-break:break-all;line-height:1.5}
+.node .nn{font-size:11.5px;color:var(--ink-3);line-height:1.6;margin-top:4px}
+.node.gpu{border-color:var(--accent);background:var(--accent-soft)}
+.node.gpu .nb{color:var(--accent-2)}
+.arrow{flex:none;align-self:center;font-family:var(--f-mono);color:var(--ink-3);font-size:15px}
+@media (max-width:659px){.arrow{transform:rotate(90deg);align-self:center;width:100%;text-align:center;height:12px;line-height:12px}}
+
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{font-family:var(--f-mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+  background:var(--surface-2);border-bottom:1px solid var(--line-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td code,p code,li code,dd code,.prose code{font-family:var(--f-mono);font-size:.88em;background:var(--surface-2);
+  padding:1px 5px;border-radius:2px;word-break:break-word}
+.sym{font-family:var(--f-mono);font-weight:600;color:var(--ink);white-space:nowrap}
+
+ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:16px}
+ol.steps>li{counter-increment:s;display:grid;grid-template-columns:26px minmax(0,1fr);gap:12px;align-items:start}
+ol.steps>li::before{content:counter(s);font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--accent);
+  border:1px solid var(--line-2);border-radius:2px;text-align:center;line-height:24px;height:26px}
+ol.steps .st{font-weight:600;font-size:14px;margin-bottom:8px}
+ul.plain{margin:0;padding-left:1.15em;color:var(--ink-2);font-size:14px}
+ul.plain li{margin-bottom:5px}
+ul.plain li::marker{color:var(--ink-3)}
+.foot{border-top:1px solid var(--line);padding-block:20px 8px;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <span class="eyebrow">localai / 運用</span>
+    <h1>Qwen3.8-27B 運用マニュアル</h1>
+    <p class="lede">NVIDIA A30 1 枚の上で Ollama が Qwen3.8-27B を常駐させている。
+      この文書は日々の呼び出し方と、VRAM 24576 MiB という器に対して何がどう収まっているかを書いたもの。
+      数値はすべて 2026-09-19 にこの機体で測った実測値で、公称値や推定は含まない。</p>
+    <div class="mast-meta">
+      <span><b>Ollama</b> 0.34.2</span>
+      <span><b>モデル</b> qwen3.8:27b</span>
+      <span><b>GPU</b> NVIDIA A30 24576 MiB</span>
+      <span><b>測定日</b> 2026-09-19</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav aria-label="目次">
+      <ul>
+        <li><a href="#spec">構成</a></li>
+        <li><a href="#check">起動確認</a></li>
+        <li><a href="#call">呼び出す</a></li>
+        <li><a href="#vram">VRAM と文脈長</a></li>
+        <li><a href="#features">3 つの機能</a></li>
+        <li><a href="#config">設定変更</a></li>
+        <li><a href="#admin">保守</a></li>
+        <li><a href="#trouble">困ったとき</a></li>
+        <li><a href="#scope">未着手</a></li>
+      </ul>
+    </nav>
+
+    <main>
+
+      <!-- 構成 -->
+      <section id="spec">
+        <div class="sec-h">
+          <span class="eyebrow">構成</span>
+          <h2>いま何が動いているか</h2>
+          <p>systemd が <code>ollama.service</code> を常時起動している。マシンを再起動しても自動で上がる。
+             呼び出し側は待つだけでよく、モデルの起動を意識する必要はない。</p>
+        </div>
+
+        <div class="flow">
+          <div class="node">
+            <span class="nt">呼び出し側</span>
+            <span class="nb">curl / ollama<br>OpenAI SDK</span>
+            <span class="nn">同じ 1 台の中から</span>
+          </div>
+          <span class="arrow" aria-hidden="true">→</span>
+          <div class="node">
+            <span class="nt">待ち受け</span>
+            <span class="nb">127.0.0.1:11434</span>
+            <span class="nn">ループバックのみ。LAN からは届かない</span>
+          </div>
+          <span class="arrow" aria-hidden="true">→</span>
+          <div class="node">
+            <span class="nt">サービス</span>
+            <span class="nb">ollama.service</span>
+            <span class="nn">User=ollama。モデル実体は /usr/share/ollama/.ollama/models（17 GB）</span>
+          </div>
+          <span class="arrow" aria-hidden="true">→</span>
+          <div class="node gpu">
+            <span class="nt">演算</span>
+            <span class="nb">NVIDIA A30</span>
+            <span class="nn">cuda_v13 を自動選択。24576 MiB / compute 8.0</span>
+          </div>
+        </div>
+
+        <h3>諸元</h3>
+        <dl class="spec">
+          <dt>モデル</dt><dd><b>qwen3.8:27b</b>（ID <code>22130167c4c2</code>）／ 27.3B パラメータ ／ 量子化 <b>Q4_K_M</b> ／ 実サイズ <b>17 GB</b></dd>
+          <dt>アーキテクチャ</dt><dd><code>qwen35</code>。線形アテンション 3 層ごとに全アテンション 1 層。KV キャッシュを持つのは全アテンション層だけで、これが文脈長の伸びに効いている</dd>
+          <dt>画像側</dt><dd>projector は <code>clip</code> 460.73M、埋め込み 1152 → 5120 次元</dd>
+          <dt>文脈長</dt><dd>モデル上限 <b>262144</b> ／ このサーバの設定値 <b>65536</b>（理由は<a href="#vram">VRAM と文脈長</a>）</dd>
+          <dt>生成速度</dt><dd><b>23〜26 tok/s</b>（モデルが載った状態での実測）</dd>
+          <dt>既定の生成パラメータ</dt><dd><code>temperature 1</code> / <code>top_k 20</code> / <code>top_p 0.95</code> / <code>min_p 0</code> / <code>repeat_penalty 1</code></dd>
+          <dt>ホスト</dt><dd>Ubuntu 24.04.5 LTS ／ i7-12700（20 スレッド）／ RAM 32 GB ／ ドライバ 595.91.07 ／ CUDA 13.2</dd>
+        </dl>
+      </section>
+
+      <!-- 起動確認 -->
+      <section id="check">
+        <div class="sec-h">
+          <span class="eyebrow">確認</span>
+          <h2>使う前に、動いているか見る</h2>
+          <p>順番に意味がある。上から実行して、どこで止まるかで原因が切り分けられる。</p>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <div>
+              <div class="st">サービスが上がっているか</div>
+              <figure class="term">
+                <figcaption><span>systemd の状態</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>systemctl is-active ollama
+<span class="c"># active と返れば動いている</span></code></pre>
+              </figure>
+            </div>
+          </li>
+          <li>
+            <div>
+              <div class="st">API が応答するか</div>
+              <figure class="term">
+                <figcaption><span>版を聞く</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>curl -s localhost:11434/api/version
+<span class="c"># {"version":"0.34.2"}</span></code></pre>
+              </figure>
+            </div>
+          </li>
+          <li>
+            <div>
+              <div class="st">モデルが GPU に載っているか</div>
+              <figure class="term">
+                <figcaption><span>いま常駐しているモデル</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>ollama ps</code></pre>
+              </figure>
+              <p class="prose" style="margin-top:10px"><span class="sym">PROCESSOR</span> 列が
+                <span class="chip ok">100% GPU</span> なら正常。<span class="chip warn">n%/m% CPU/GPU</span> と出たら
+                CPU に溢れていて、生成が数分の一に落ちる。<span class="sym">UNTIL</span> 列は常駐が切れるまでの残り時間。
+                何も表示されなければ、まだ誰も呼んでいないだけで異常ではない。</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- 呼び出す -->
+      <section id="call">
+        <div class="sec-h">
+          <span class="eyebrow">呼び出し</span>
+          <h2>3 通りの呼び方</h2>
+          <p>どれも同じモデルを叩く。用途で選ぶだけで、性能差はない。</p>
+        </div>
+
+        <div class="stack">
+          <h3>1. 対話する — CLI</h3>
+          <figure class="term">
+            <figcaption><span>その場で 1 往復</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>ollama run qwen3.8:27b <span class="p">"日本の四季を 200 字で説明して"</span>
+
+<span class="c"># 引数なしで起動すると対話モードに入る。/bye で抜ける</span>
+ollama run qwen3.8:27b</code></pre>
+          </figure>
+
+          <h3>2. 自分のスクリプトから — ネイティブ API</h3>
+          <p class="prose">Ollama 固有の形式。<code>think</code>（思考の有無）や <code>images</code> を渡せるのはこちらだけ。</p>
+          <figure class="term">
+            <figcaption><span>POST /api/chat</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>curl -s localhost:11434/api/chat -d <span class="p">'{
+  "model": "qwen3.8:27b",
+  "stream": false,
+  "think": false,
+  "messages": [{"role":"user","content":"1+1="}]
+}'</span></code></pre>
+          </figure>
+          <p class="prose">応答 JSON の <code>eval_count</code> ÷ <code>eval_duration</code>（ナノ秒）で生成速度が出る。
+            <code>load_duration</code> が大きければ、そのリクエストでモデルを読み込み直している。</p>
+
+          <h3>3. 既存のツールに繋ぐ — OpenAI 互換 API</h3>
+          <p class="prose">OpenAI SDK を使うライブラリやアプリは、宛先と鍵を差し替えるだけで繋がる。
+            鍵は検証されないので中身は何でもよい。</p>
+          <figure class="term">
+            <figcaption><span>POST /v1/chat/completions</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>curl -s localhost:11434/v1/chat/completions \
+  -H <span class="p">'Content-Type: application/json'</span> \
+  -d <span class="p">'{"model":"qwen3.8:27b","messages":[{"role":"user","content":"ping"}]}'</span>
+
+<span class="c"># Python の OpenAI SDK から</span>
+<span class="c">#   base_url="http://localhost:11434/v1"</span>
+<span class="c">#   api_key="ollama"   # 何でもよい</span></code></pre>
+          </figure>
+        </div>
+      </section>
+
+      <!-- VRAM -->
+      <section id="vram">
+        <div class="sec-h">
+          <span class="eyebrow">資源</span>
+          <h2>VRAM と文脈長</h2>
+          <p>この構成でいちばん重要な制約。24576 MiB の器に 17 GB の重みを置いた残りが、
+             会話を覚えておくための KV キャッシュに使える分になる。文脈長はそこから決まる。</p>
+        </div>
+
+        <div class="chart">
+          <div class="vrow">
+            <div class="k">32768<small>Ollama の既定</small></div>
+            <div class="track"><div class="fill ok" style="width:81.3%"></div></div>
+            <div class="v">19987 MiB</div>
+            <div class="c"><span class="chip ok">100% GPU</span></div>
+          </div>
+          <div class="vrow">
+            <div class="k">65536<small>いまの設定値</small></div>
+            <div class="track"><div class="fill ok" style="width:90.3%"></div></div>
+            <div class="v">22201 MiB</div>
+            <div class="c"><span class="chip ok">100% GPU</span></div>
+          </div>
+          <div class="vrow">
+            <div class="k">81920</div>
+            <div class="track"><div class="fill warn" style="width:91.8%"></div></div>
+            <div class="v">22569 MiB</div>
+            <div class="c"><span class="chip warn">9% / 91% CPU/GPU</span></div>
+          </div>
+          <div class="vrow">
+            <div class="k">131072</div>
+            <div class="track"><div class="fill warn" style="width:91.7%"></div></div>
+            <div class="v">22533 MiB</div>
+            <div class="c"><span class="chip warn">28% / 72% CPU/GPU</span></div>
+          </div>
+          <div class="vrow">
+            <div class="k">262144<small>モデル上限</small></div>
+            <div class="track"><div class="fill warn" style="width:91.5%"></div></div>
+            <div class="v">22497 MiB</div>
+            <div class="c"><span class="chip bad">59% / 41% CPU/GPU</span></div>
+          </div>
+          <div class="scale"><span>0</span><span>12288 MiB</span><span>24576 MiB</span></div>
+        </div>
+
+        <div class="note info" style="margin-top:20px">
+          <span class="lbl">グラフの読み方</span>
+          バーは 81920 以上でほぼ同じ長さになる。<b>VRAM が余っているのではない。</b>
+          Ollama が「これ以上は載らない」と判断して層を CPU 側へ移した結果、VRAM の消費が
+          そこで頭打ちになっている。つまり<b>バーの長さでは限界を判定できない</b>。
+          判定に使うのは <code>ollama ps</code> の <span class="sym">PROCESSOR</span> 列だけ。
+        </div>
+
+        <div class="note ok" style="margin-top:12px">
+          <span class="lbl">結論</span>
+          <b>65536 が、この機体で全層を GPU に載せられる上限。</b>
+          81920 では既に 9% が CPU に落ちる。残り約 2375 MiB は画像処理と同時リクエストの余地として空けてある。
+        </div>
+      </section>
+
+      <!-- 機能 -->
+      <section id="features">
+        <div class="sec-h">
+          <span class="eyebrow">機能</span>
+          <h2>思考・道具・画像</h2>
+          <p>このモデルは 3 つとも使える。いずれもこの機体で応答を確認済み。</p>
+        </div>
+
+        <div class="stack">
+          <h3>思考（thinking）— 既定で有効</h3>
+          <p class="prose">答える前の推論が <code>message.thinking</code> に、結論が <code>message.content</code> に分かれて返る。
+            そのぶんトークンを消費して遅くなるので、単純な変換や分類では切る。</p>
+          <figure class="term">
+            <figcaption><span>思考を切る</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>curl -s localhost:11434/api/chat -d <span class="p">'{
+  "model":"qwen3.8:27b", "stream":false,
+  "think": false,
+  "messages":[{"role":"user","content":"17*23 は？"}]
+}'</span></code></pre>
+          </figure>
+          <p class="prose"><code>"think": true</code> のときの実際の応答:
+            <code>thinking</code> に「17 × 23 = 17 × 20 + 17 × 3 = 340 + 51 = 391」、
+            <code>content</code> に「17 × 23 = <b>391</b>」。</p>
+
+          <h3>道具（tools）— 関数呼び出し</h3>
+          <p class="prose">関数の定義を渡すと、モデルは呼ぶべき関数と引数を <code>message.tool_calls</code> に入れて返す。
+            実際に関数を実行するのは呼び出し側の仕事で、結果を <code>role:"tool"</code> のメッセージとして戻すと会話が続く。</p>
+          <figure class="term">
+            <figcaption><span>関数を 1 つ渡す</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>curl -s localhost:11434/api/chat -d <span class="p">'{
+  "model":"qwen3.8:27b", "stream":false, "think":false,
+  "messages":[{"role":"user","content":"東京の天気を調べて"}],
+  "tools":[{"type":"function","function":{
+    "name":"get_weather",
+    "description":"指定した都市の天気を返す",
+    "parameters":{"type":"object",
+      "properties":{"city":{"type":"string"}},
+      "required":["city"]}}}]
+}'</span>
+
+<span class="c"># 実際の応答:</span>
+<span class="c"># "tool_calls":[{"function":{"name":"get_weather",</span>
+<span class="c">#                "arguments":{"city":"東京"}}}]</span></code></pre>
+          </figure>
+
+          <h3>画像（vision）</h3>
+          <p class="prose">画像は <code>images</code> 配列に <b>base64 文字列そのもの</b>を入れる。
+            <code>data:image/png;base64,</code> の接頭辞は付けない。</p>
+          <figure class="term">
+            <figcaption><span>画像 1 枚を送る</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>B64=$(base64 -w0 photo.png)
+curl -s localhost:11434/api/chat -d @- &lt;&lt;JSON
+{"model":"qwen3.8:27b","stream":false,"think":false,
+ "messages":[{"role":"user",
+   "content":"この画像に何が写っているか日本語で答えて",
+   "images":["$B64"]}]}
+JSON</code></pre>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 設定 -->
+      <section id="config">
+        <div class="sec-h">
+          <span class="eyebrow">設定</span>
+          <h2>設定を変える</h2>
+          <p>サーバ全体の既定値は systemd の drop-in で決める。1 回のリクエストだけ変えたいなら
+             <code>options</code> を渡す。</p>
+        </div>
+
+        <h3>サーバ全体（再起動が要る）</h3>
+        <figure class="term">
+          <figcaption><span>/etc/systemd/system/ollama.service.d/override.conf</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code><span class="c"># 編集し、必ず daemon-reload と restart をこの順で</span>
+sudo nano /etc/systemd/system/ollama.service.d/override.conf
+sudo systemctl daemon-reload
+sudo systemctl restart ollama</code></pre>
+        </figure>
+        <p class="prose" style="margin-top:12px">いま入っているのは次の 1 行だけ。</p>
+        <figure class="term" style="margin-top:8px">
+          <figcaption><span>現在の内容</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>[Service]
+Environment="OLLAMA_CONTEXT_LENGTH=65536"</code></pre>
+        </figure>
+
+        <div class="tw" style="margin-top:18px">
+          <table>
+            <thead><tr><th>変数</th><th>いまの値</th><th>効果と注意</th></tr></thead>
+            <tbody>
+              <tr><td class="sym">OLLAMA_CONTEXT_LENGTH</td><td class="sym">65536</td>
+                  <td>文脈長の既定。<b>上げると CPU に溢れる</b>。変更したら必ず <code>ollama ps</code> で 100% GPU を確認する</td></tr>
+              <tr><td class="sym">OLLAMA_KEEP_ALIVE</td><td class="sym">未設定（5 分）</td>
+                  <td>無操作で常駐を解く時間。<code>-1</code> で常駐しっぱなしになるが、VRAM を 22 GB 占有し続ける</td></tr>
+              <tr><td class="sym">OLLAMA_HOST</td><td class="sym">未設定（127.0.0.1）</td>
+                  <td><code>0.0.0.0</code> にすると LAN に開く。認証機構は無いので、開く前に到達範囲を決めること</td></tr>
+              <tr><td class="sym">OLLAMA_IGPU_ENABLE</td><td class="sym">未設定</td>
+                  <td><code>1</code> で内蔵 GPU（Intel UHD 770）も候補に入る。A30 があるので入れる理由は無い</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>1 リクエストだけ変える</h3>
+        <figure class="term">
+          <figcaption><span>options で上書き</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>curl -s localhost:11434/api/chat -d <span class="p">'{
+  "model":"qwen3.8:27b", "stream":false, "think":false,
+  "options":{
+    "temperature": 0.2,     <span class="c">/* 既定 1。決まった答えが欲しいとき下げる */</span>
+    "num_predict": 200,     <span class="c">/* 生成する最大トークン数 */</span>
+    "num_ctx": 8192         <span class="c">/* この呼び出しだけ文脈を狭める */</span>
+  },
+  "messages":[{"role":"user","content":"..."}]
+}'</span></code></pre>
+        </figure>
+        <div class="note warn" style="margin-top:14px">
+          <span class="lbl">注意</span>
+          <code>num_ctx</code> を既定と違う値で呼ぶと、Ollama はその長さでモデルを<b>載せ直す</b>。
+          17 GB の読み込みに約 60 秒かかるため、値を混ぜて使うと毎回待たされる。
+          基本は既定の 65536 のまま使い、変えるなら統一する。
+        </div>
+      </section>
+
+      <!-- 保守 -->
+      <section id="admin">
+        <div class="sec-h">
+          <span class="eyebrow">保守</span>
+          <h2>サービスとモデルの管理</h2>
+          <p><code>systemctl</code> と <code>/etc</code> 配下の編集には root 権限が要る。
+             モデルの操作（<code>pull</code> や <code>rm</code>）には要らない。</p>
+        </div>
+
+        <div class="stack">
+          <figure class="term">
+            <figcaption><span>サービス操作</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>sudo systemctl restart ollama   <span class="c"># 設定を変えたあと</span>
+sudo systemctl stop ollama      <span class="c"># GPU を他の用途に空けたいとき</span>
+sudo systemctl start ollama
+
+journalctl -u ollama -f         <span class="c"># ログを追う（root 不要）</span>
+journalctl -u ollama -n 50      <span class="c"># 直近 50 行</span></code></pre>
+          </figure>
+
+          <figure class="term">
+            <figcaption><span>モデル操作</span><button class="copy" type="button">コピー</button></figcaption>
+<pre><code>ollama list                  <span class="c"># 手元にあるモデル</span>
+ollama show qwen3.8:27b      <span class="c"># 諸元と既定パラメータ</span>
+ollama ps                    <span class="c"># いま載っているもの</span>
+ollama stop qwen3.8:27b      <span class="c"># VRAM を即座に解放する</span>
+ollama pull qwen3.8:27b      <span class="c"># 更新があれば取り直す</span>
+ollama rm &lt;name&gt;             <span class="c"># 消す</span></code></pre>
+          </figure>
+
+          <div class="note info">
+            <span class="lbl">別のモデルを試すとき</span>
+            <code>/usr/share/ollama/.ollama/models</code> に置かれる。ディスクは 1.5 TB 空いているので容量の心配は要らないが、
+            <b>24576 MiB に収まるかどうかが唯一の基準</b>。目安として 4bit 量子化で 18 GB 前後までしか載らない。
+            入れたら <code>ollama ps</code> で 100% GPU を確認すること。
+          </div>
+        </div>
+      </section>
+
+      <!-- 困ったとき -->
+      <section id="trouble">
+        <div class="sec-h">
+          <span class="eyebrow">障害</span>
+          <h2>困ったとき</h2>
+          <p>左の症状はいずれもこの機体で実際に観測したもの。</p>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th style="width:26%">症状</th><th style="width:34%">原因</th><th>対処</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>最初の 1 回だけ異常に遅い</b><br><span class="chip mute">正常</span></td>
+                <td>17 GB の重みをディスクから VRAM へ読み込んでいる。<b>約 60 秒</b>かかる</td>
+                <td>待つ。2 回目以降は 23〜26 tok/s に戻る。応答 JSON の <code>load_duration</code> で読み込み時間が確認できる</td>
+              </tr>
+              <tr>
+                <td><b>しばらく放置したらまた遅くなった</b><br><span class="chip mute">正常</span></td>
+                <td><code>OLLAMA_KEEP_ALIVE</code> の既定が 5 分。無操作で VRAM から降ろされる</td>
+                <td>常用するなら drop-in に <code>OLLAMA_KEEP_ALIVE=-1</code> を足す。残り時間は <code>ollama ps</code> の UNTIL 列</td>
+              </tr>
+              <tr>
+                <td><b>生成が数分の一に落ちた</b></td>
+                <td>CPU に溢れている。文脈長を上げすぎたか、他のプロセスが VRAM を使っている</td>
+                <td><code>ollama ps</code> の PROCESSOR を見る。100% GPU でなければ文脈長を下げる。<code>nvidia-smi</code> で他の占有者も確認する</td>
+              </tr>
+              <tr>
+                <td><b>接続できない</b></td>
+                <td>サービスが落ちているか、LAN の別マシンから叩いている</td>
+                <td><code>systemctl is-active ollama</code> を見る。待ち受けは 127.0.0.1 のみで、外部からは届かない</td>
+              </tr>
+              <tr>
+                <td><b>画像を送っても認識されない</b></td>
+                <td><code>data:image/png;base64,</code> の接頭辞が付いている</td>
+                <td>base64 文字列だけを <code>images</code> に入れる。<code>base64 -w0</code> で改行を除く</td>
+              </tr>
+              <tr>
+                <td><b>思考が邪魔／遅い</b></td>
+                <td>thinking が既定で有効</td>
+                <td>リクエストに <code>"think": false</code> を足す</td>
+              </tr>
+              <tr>
+                <td><b>原因が分からない</b></td>
+                <td>—</td>
+                <td><code>journalctl -u ollama -n 50</code>。GPU 認識は起動時の <code>inference compute</code> 行に出る</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 未着手 -->
+      <section id="scope">
+        <div class="sec-h">
+          <span class="eyebrow">範囲</span>
+          <h2>やっていないこと</h2>
+          <p>意図的に手を付けていない。必要になったら個別に決める。</p>
+        </div>
+        <ul class="plain">
+          <li><b>LAN への公開。</b>待ち受けは 127.0.0.1 のみ。Ollama に認証機構は無いので、開くなら到達範囲を先に決める必要がある</li>
+          <li><b>常駐の延長。</b><code>OLLAMA_KEEP_ALIVE</code> は既定の 5 分のまま。延ばすと 22 GB を占有し続けるため、GPU を他に使うかどうかで決まる</li>
+          <li><b>vLLM / llama.cpp。</b>同時リクエストのスループットが要るなら vLLM に利がある。A30 は compute 8.0 で FP8 の演算器が無いため、量子化は AWQ か GPTQ になる</li>
+          <li><b>Claude Code をこのモデルで動かす。</b>Ollama は <code>ollama launch claude --model qwen3.8</code> という起動方法を案内しているが、<span class="chip warn">未検証</span>。この機体では試していない</li>
+          <li><b>リモートへの push。</b>2026-09-19 に <code>git init</code> し、初回コミット <code>806c326</code> を作った。リモートは設定していない</li>
+        </ul>
+      </section>
+
+      <div class="foot">
+        localai / knowledge/30-gold/ollama-manual.html — 実測 2026-09-19。
+        恒久的な事実は knowledge/10-silver/areas/env.md、測定の経緯は work/setup-inference.md にある。
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll(".copy").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    var pre = btn.closest("figure").querySelector("pre");
+    if(!pre) return;
+    var text = Array.from(pre.querySelectorAll("code")).map(function(c){return c.innerText;}).join("\n") || pre.innerText;
+    var done = function(ok){
+      btn.dataset.state = ok ? "done" : "fail";
+      btn.textContent = ok ? "コピー済" : "失敗";
+      setTimeout(function(){ btn.removeAttribute("data-state"); btn.textContent = "コピー"; }, 1600);
+    };
+    try{
+      navigator.clipboard.writeText(text).then(function(){done(true);},function(){done(false);});
+    }catch(e){ done(false); }
+  });
+});
+</script>

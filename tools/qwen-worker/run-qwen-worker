@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# qwen-worker MCP サーバー（stdio）の起動スクリプト。
+# 標準出力は MCP プロトコル専用。ログは標準エラーへ出る。
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$HERE/.venv/bin/python" -m qwen_worker.server
