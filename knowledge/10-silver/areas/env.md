@@ -37,4 +37,5 @@
   `OLLAMA_CONTEXT_LENGTH` で設定する。変更したら daemon-reload と restart が要る。
 - モデルの実体は /usr/share/ollama/.ollama/models。サービスは ollama ユーザーで動く。
 - sudo が要る操作（systemctl、/etc 配下の編集）は、root で起動した Claude か、ユーザーが手で行う。
-- このディレクトリは git 管理外。.gitignore は効いていない。
+- リモート origin は /mnt/nas 配下の bare リポジトリ。/mnt/nas は //<nas>/<share> の
+  CIFS マウントで、マウントされていないと push / fetch が失敗する。
