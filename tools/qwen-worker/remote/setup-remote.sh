@@ -108,5 +108,5 @@ echo "      または Samba 共有 \\\\$server_ip\\mt からファイルを渡�
 echo
 cat "$key_file.pub"
 echo
-echo "受け入れ後の疎通確認:  ssh -T qwen-worker </dev/null   （JSON が返らず即終了すれば OK。エラーが出なければ接続は通っている）"
+echo "受け入れ後の疎通確認:  ssh -n -T qwen-worker   （JSON が返らず即終了すれば OK。エラーが出なければ接続は通っている）"
 echo "MCP の確認:            claude mcp get qwen-worker      （Connected になること）"

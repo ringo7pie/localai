@@ -16,12 +16,26 @@ $pcName  = $env:COMPUTERNAME
 
 New-Item -ItemType Directory -Force -Path $sshDir | Out-Null
 
-# 1. 鍵
+# 1. 鍵（パスフレーズ無し。MCP の ssh 呼び出しは対話できないので、パスフレーズ付きだと使えない）
+# 注意: PowerShell 7.3 以降は `-N '""'` が文字列 "" そのものをパスフレーズにしてしまう。
+#       `--%`（停止解析）で ssh-keygen にそのまま渡し、%VAR% は環境変数として展開させる。
+$env:QW_KEYFILE = $keyFile
+$env:QW_COMMENT = "qwen-worker@$pcName"
 if (Test-Path $keyFile) {
     Write-Host "[1/4] 鍵は既にあります: $keyFile"
 } else {
-    & ssh-keygen -t ed25519 -N '""' -f $keyFile -C "qwen-worker@$pcName" | Out-Null
+    & ssh-keygen --% -q -t ed25519 -N "" -f "%QW_KEYFILE%" -C "%QW_COMMENT%"
+    if ($LASTEXITCODE -ne 0) { throw "ssh-keygen が失敗しました（終了コード $LASTEXITCODE）" }
     Write-Host "[1/4] 鍵を作りました: $keyFile"
+}
+# パスフレーズ無しで読めるか確認する（読めなければ MCP から使えない）
+# （--% の後ろにリダイレクトを書くと引数として渡ってしまうので、代入で出力を捨てる）
+$null = & ssh-keygen --% -y -P "" -f "%QW_KEYFILE%"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "      !! この鍵はパスフレーズ付きです。MCP からは使えません。次のどちらかで直してください:"
+    Write-Host "         a) パスフレーズを外す:  ssh-keygen -p -f $keyFile   （旧パスフレーズを入れ、新は Enter を 2 回）"
+    Write-Host "         b) 作り直す: $keyFile と $keyFile.pub を削除して、このスクリプトを再実行。"
+    Write-Host "            その場合サーバ側で remove-remote-key.sh <PC名> で古い鍵を消してから、新しい公開鍵を受け入れ直す。"
 }
 
 # 2. ssh config
@@ -103,5 +117,5 @@ Write-Host "      または \\$ServerIp\mt の共有経由でファイルを渡�
 Write-Host ""
 Get-Content "$keyFile.pub"
 Write-Host ""
-Write-Host "受け入れ後の疎通確認:  ssh -T qwen-worker < NUL   （エラー無く即終了すれば OK）"
+Write-Host "受け入れ後の疎通確認:  ssh -n -T qwen-worker   （エラー無く即終了すれば OK）"
 Write-Host "MCP の確認:            claude mcp get qwen-worker  （Connected になること）"

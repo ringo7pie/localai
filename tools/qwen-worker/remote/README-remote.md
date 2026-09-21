@@ -60,11 +60,23 @@ bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh <PC名>    # 取り�
 ## 3. 疎通確認
 
 ```bash
-ssh -T qwen-worker < /dev/null     # エラーなく即終了すれば接続 OK（Windows は < NUL）
+ssh -n -T qwen-worker     # エラーなく即終了すれば接続 OK（bash / PowerShell / cmd 共通。PowerShell では "< NUL" は使えない）
 claude mcp get qwen-worker         # Connected
 ```
 
 Claude Code で `qwen_status` を呼び、`host.lan_address` が `<server-ip>` なら通っている。
+
+**`Enter passphrase for key` と聞かれる場合**: 鍵にパスフレーズが付いている。サーバーのログイン
+パスワードではないので何を入れても通らない。MCP は対話できないため、パスフレーズ無しに直す:
+
+```powershell
+ssh-keygen -p -f $HOME\.ssh\qwen-worker   # 旧パスフレーズを入れ、新しいものは Enter を 2 回（空）
+```
+
+旧パスフレーズが分からなければ `qwen-worker` と `qwen-worker.pub` を削除して setup-remote.ps1 を再実行し、
+サーバー側で `remove-remote-key.sh <PC名>` で古い鍵を消してから新しい公開鍵を受け入れ直す。
+原因は PowerShell 7.3 以降で `-N '""'` が文字列 `""` をパスフレーズにしてしまう挙動。修正済みの
+setup-remote.ps1 は `--%` で渡すので新規作成では起きない。
 
 ## 4. パスの扱い（重要）
 
