@@ -18,7 +18,8 @@ from pathlib import Path
 from typing import Any
 
 from . import config as config_module
-from . import opencode, procs, verify, worktree
+from . import opencode, procs, worktree
+from . import verify as verify_module
 from .errors import BridgeError, DuplicateRequestError, NotFoundError
 from .ledger import TERMINAL_STATES, Ledger
 
@@ -515,6 +516,128 @@ def _verify_brief(record: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
+def apply_task(cfg: config_module.Config, task_id: str, *, verify: bool = True) -> dict[str, Any]:
+    """判定 → git apply --check → 作業ツリーへ適用 → 登録済みコマンドで再検証 →
+
+    不合格なら git apply -R で戻す、の一連を task_id だけで完結させる。
+    run_task（委譲直後の自動適用）と CLI の apply サブコマンド（後からの手動適用）の
+    両方から呼ぶ。判定に使う条件は result() が返す 6 つだけで、ここで新しい基準を
+    作らない。commit / push / stash / reset / clean は行わない。
+
+    verify=False なら適用後の再検証を省く（適用だけ行って判定は人に任せる）。
+    """
+    ledger = Ledger(cfg.ledger_path)
+    task = ledger.get(task_id)
+    if task is None:
+        raise NotFoundError(f"task_id {task_id!r} は台帳にありません。")
+    workspace_id = task["workspace_id"]
+
+    outcome = result(cfg, task_id, include_diff=False)
+    reasons = _run_checks(outcome)
+    payload: dict[str, Any] = {
+        "task_id": task_id,
+        "workspace_id": workspace_id,
+        "applied": False,
+        "reasons": reasons,
+        "verification": _verify_brief(outcome.get("verification")),
+        "apply_hint": outcome.get("apply_hint"),
+    }
+    if reasons:
+        return payload
+
+    workspace = cfg.workspace(workspace_id)
+    diff_raw = task["diff_path"]
+    if not diff_raw:
+        payload["reasons"] = ["台帳に差分ファイルの記録が無い"]
+        return payload
+
+    diff_path = Path(diff_raw)
+    git = config_module.git_binary()
+    applies, apply_error = worktree.verify_applies(workspace.path, diff_path)
+    if not applies:
+        already = subprocess.run(
+            [git, "-C", str(workspace.path), "apply", "--check", "-R", "-p1", str(diff_path)],
+            capture_output=True,
+            text=True,
+        )
+        if already.returncode == 0:
+            payload["reasons"] = ["already_applied"]
+            return payload
+        payload["reasons"] = ["git apply --check が失敗"]
+        ledger.add_event(task_id, "apply_check_failed", {"detail": apply_error[:400]})
+        return payload
+
+    try:
+        subprocess.run(
+            [git, "-C", str(workspace.path), "apply", "-p1", str(diff_path)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        # --check を通ったのに当たらなかった場合。握りつぶさない。
+        raise BridgeError(
+            f"git apply が失敗しました（{exc.returncode}）: "
+            f"{(exc.stderr or '').strip()[:400]}"
+        ) from exc
+    payload["applied"] = True
+
+    if not verify:
+        return payload
+
+    profile = workspace.profile(task["verify_profile"])
+    if profile is None:
+        # 適用は済ませたまま人の確認へ回す。勝手に戻さない。
+        payload["reasons"] = ["検証プロファイル未登録のため再検証していない"]
+        return payload
+
+    verify_result = verify_module.run_profile(
+        profile=profile,
+        cwd=workspace.path,
+        log_path=cfg.tasks_dir / task_id / "verify-applied.log",
+        tree_hash=None,
+        timeout_sec=min(profile.timeout_sec, cfg.limits.verify_timeout_sec),
+    )
+    payload["verification"] = _verify_brief(verify_result.as_dict())
+    if verify_result.passed:
+        ledger.compare_and_set_state(task_id, "awaiting_approval", "succeeded", ended_at=_now())
+        ledger.add_event(
+            task_id,
+            "applied_by_run",
+            {
+                "workspace_id": workspace_id,
+                "workspace_path": str(workspace.path),
+                "diff_path": str(diff_path),
+                "verify_profile": profile.name,
+                "verify_exit_code": verify_result.exit_code,
+            },
+        )
+        return payload
+
+    reverted = subprocess.run(
+        [git, "-C", str(workspace.path), "apply", "-R", "-p1", str(diff_path)],
+        capture_output=True,
+        text=True,
+    )
+    payload["applied"] = reverted.returncode != 0
+    revert_reasons = [f"適用後の再検証が不合格（終了コード {verify_result.exit_code}）"]
+    if reverted.returncode != 0:
+        revert_reasons.append("戻し（git apply -R）も失敗した。作業ツリーを人が確認すること")
+    payload["reasons"] = revert_reasons
+    ledger.add_event(
+        task_id,
+        "apply_reverted",
+        {
+            "workspace_path": str(workspace.path),
+            "diff_path": str(diff_path),
+            "verify_exit_code": verify_result.exit_code,
+            "revert_ok": reverted.returncode == 0,
+            "revert_error": reverted.stderr.strip()[:400],
+        },
+    )
+    return payload
+
+
 def run_task(
     cfg: config_module.Config,
     *,
@@ -581,91 +704,13 @@ def run_task(
     verify_record = _verify_brief(outcome.get("verification"))
 
     if not reasons and apply:
-        workspace = cfg.workspace(workspace_id)
-        ledger = Ledger(cfg.ledger_path)
-        task = ledger.get(task_id)
-        diff_raw = task["diff_path"] if task is not None else None
-        if not diff_raw:
-            reasons.append("台帳に差分ファイルの記録が無い")
-        else:
-            diff_path = Path(diff_raw)
-            applies, apply_error = worktree.verify_applies(workspace.path, diff_path)
-            if not applies:
-                reasons.append("git apply --check が失敗")
-                ledger.add_event(
-                    task_id, "apply_check_failed", {"detail": apply_error[:400]}
-                )
-            else:
-                git = config_module.git_binary()
-                try:
-                    subprocess.run(
-                        [git, "-C", str(workspace.path), "apply", "-p1", str(diff_path)],
-                        check=True,
-                        capture_output=True,
-                        text=True,
-                    )
-                except subprocess.CalledProcessError as exc:
-                    # --check を通ったのに当たらなかった場合。握りつぶさない。
-                    raise BridgeError(
-                        f"git apply が失敗しました（{exc.returncode}）: "
-                        f"{(exc.stderr or '').strip()[:400]}"
-                    ) from exc
-                applied = True
-
-                profile = workspace.profile(verify_profile or workspace.default_verify)
-                if profile is None:
-                    # 適用は済ませたまま人の確認へ回す。勝手に戻さない。
-                    reasons.append("検証プロファイル未登録のため再検証していない")
-                else:
-                    verify_result = verify.run_profile(
-                        profile=profile,
-                        cwd=workspace.path,
-                        log_path=cfg.tasks_dir / task_id / "verify-applied.log",
-                        tree_hash=None,
-                        timeout_sec=min(profile.timeout_sec, cfg.limits.verify_timeout_sec),
-                    )
-                    verify_record = _verify_brief(verify_result.as_dict())
-                    if verify_result.passed:
-                        ledger.compare_and_set_state(
-                            task_id, "awaiting_approval", "succeeded", ended_at=_now()
-                        )
-                        ledger.add_event(
-                            task_id,
-                            "applied_by_run",
-                            {
-                                "workspace_id": workspace_id,
-                                "workspace_path": str(workspace.path),
-                                "diff_path": str(diff_path),
-                                "verify_profile": profile.name,
-                                "verify_exit_code": verify_result.exit_code,
-                            },
-                        )
-                        final_state = "succeeded"
-                    else:
-                        reverted = subprocess.run(
-                            [git, "-C", str(workspace.path), "apply", "-R", "-p1", str(diff_path)],
-                            capture_output=True,
-                            text=True,
-                        )
-                        applied = reverted.returncode != 0
-                        reasons.append(
-                            f"適用後の再検証が不合格（終了コード {verify_result.exit_code}）"
-                        )
-                        if reverted.returncode != 0:
-                            reasons.append(
-                                "戻し（git apply -R）も失敗した。作業ツリーを人が確認すること"
-                            )
-                        ledger.add_event(
-                            task_id,
-                            "apply_reverted",
-                            {
-                                "workspace_path": str(workspace.path),
-                                "diff_path": str(diff_path),
-                                "verify_exit_code": verify_result.exit_code,
-                                "revert_ok": reverted.returncode == 0,
-                                "revert_error": reverted.stderr.strip()[:400],
-                            },
-                        )
+        applied_result = apply_task(cfg, task_id, verify=True)
+        applied = applied_result["applied"]
+        reasons = applied_result["reasons"]
+        if applied_result.get("verification") is not None:
+            verify_record = applied_result["verification"]
+        if applied and not reasons:
+            final_state = "succeeded"
 
     changes = outcome.get("changes") or {}
     summary = outcome.get("summary") or ""

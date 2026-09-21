@@ -51,6 +51,11 @@ EXAMPLES = """\
   # 6. 大きなログを範囲指定で取る
   local-ai-task artifact task_xxxxxxxx --name verify-1.log --start 1 --lines 50
 
+  # 6b. run --no-apply や承認待ちのタスクを、後から task_id だけで適用・再検証する
+  local-ai-task apply task_xxxxxxxx
+  local-ai-task apply task_xxxxxxxx --no-verify
+  #     終了コード: 0 適用して合格 / 1 不合格または適用せず / 2 設定エラー
+
   # 7. 停止 / 再開
   local-ai-task cancel task_xxxxxxxx
   local-ai-task resume task_xxxxxxxx
@@ -142,6 +147,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument(
         "--no-apply", action="store_true", help="判定だけ行い、作業ツリーへ適用しない"
+    )
+
+    apply_parser = sub.add_parser(
+        "apply", help="判定・適用・再検証を task_id だけで後から行う"
+    )
+    _add_config_arg(apply_parser)
+    apply_parser.add_argument("task_id")
+    apply_parser.add_argument(
+        "--no-verify", action="store_true", help="適用後の再検証を省く"
     )
 
     status_parser = sub.add_parser("status", help="状態を見る")
@@ -358,6 +372,13 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             if report.get("timed_out"):
                 return 4
+            return 1
+
+        if args.command == "apply":
+            report = core.apply_task(cfg, args.task_id, verify=not args.no_verify)
+            _print(report)
+            if report.get("applied") and not report.get("reasons"):
+                return 0
             return 1
 
         if args.command == "status":
