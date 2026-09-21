@@ -91,19 +91,30 @@ $BRIDGE/run-local-ai-task doctor
 
 ## 差分を当てる（承認後）
 
-連携層は元のリポジトリへ書き込まない。適用は人が行う。
+いつ: `submit` 経路（`run` / `run_task` を使わなかったとき）で、結果を見て差分を当てると決めたとき。
+`run` / `run_task` は合格時に自分で適用するので、この節は要らない。
 
 ```bash
-TASK=task_xxxxxxxx
-DIFF=~/.local/state/local-ai-bridge/tasks/$TASK/changes.diff
-REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
-
-git -C "$REPO" apply --check -p1 "$DIFF"    # 先に当たるか確かめる
-git -C "$REPO" apply -p1 "$DIFF"            # 当てる
-git -C "$REPO" diff                          # 自分の目で見る
+# 6 フラグ判定 → git apply --check → 適用 → 登録済みコマンドで再検証（落ちたら git apply -R で戻す）
+./run-local-ai-task apply <task_id>
+./run-local-ai-task apply <task_id> --no-verify   # 再検証を省く（勧めない）
 ```
 
-commit / push は連携層はしない。
+終了コード: 0 = 適用して再検証も合格 / 1 = 不合格または適用せず（`reasons` に理由。既に当たっていれば `already_applied`）/ 2 = 設定エラー。
+MCP には載せていない。適用は人が起動する。
+
+## 承認が要る作業（sudo）
+
+いつ: ufw で 8080 を開ける、`loginctl enable-linger`、Ollama の drop-in を変える、Open WebUI の新規登録を閉じる、と決めたとき。
+既定は表示だけで何も変えない。
+
+```bash
+./scripts/server-approvals.sh                  # 4 項目の差分・影響・戻し方・今の状態を表示
+./scripts/server-approvals.sh --apply ufw-8080     # 対話で yes と答えたときだけ実行。sudo のパスワードは sudo が聞く
+./scripts/server-approvals.sh --apply linger
+./scripts/server-approvals.sh --apply ollama-dropin   # 実行中の委譲や読み込み中のモデルがあれば中止（終了コード 3）
+./scripts/server-approvals.sh --apply close-signup    # sudo 不要
+```
 
 ## 後片付け
 
