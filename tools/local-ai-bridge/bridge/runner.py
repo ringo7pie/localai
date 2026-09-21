@@ -54,6 +54,60 @@ def _failing_names(result) -> set[str]:
     return {name for name in names if name and not name.startswith("(")}
 
 
+def classify_outcome(
+    verify_passed: bool,
+    new_failures,
+    unfixed,
+    baseline_failures,
+    changes_empty: bool,
+    no_verify: bool,
+    baseline_failed: bool | None = None,
+) -> tuple[str, str]:
+    """検証結果から (state, headline) を決める純関数。副作用なし。
+
+    引数:
+      verify_passed     検証が合格したか（未実施なら False）
+      new_failures      このタスクで新しく落ちた項目
+      unfixed           基準コミットでも落ちていて、今も落ちている項目
+      baseline_failures 基準コミットの時点で落ちていた項目
+      changes_empty     差分が空か
+      no_verify         検証が未実施か
+      baseline_failed   基準の検証が不合格だったか（省略時は baseline_failures の有無）
+
+    実測で見つかった欠陥への対応: 基準で 3 件落ちていて変更後も同じ 3 件が落ちている
+    （＝1 つも直っていない）状態を、以前は「基準時点で既に同じ失敗」として
+    awaiting_approval にし「実装は完了」と書いていた。これは failed に分類する。
+    """
+    new_failures = set(new_failures or ())
+    unfixed = set(unfixed or ())
+    baseline_failures = set(baseline_failures or ())
+    if baseline_failed is None:
+        baseline_failed = bool(baseline_failures)
+
+    if changes_empty:
+        return "failed", "変更が生成されなかった"
+    if no_verify:
+        return "awaiting_approval", "実装は完了。自動検証は未登録のため未実施"
+    if verify_passed:
+        return "awaiting_approval", "実装と検証が完了。差分の適用には承認が必要"
+    if not new_failures and baseline_failed:
+        if baseline_failures and unfixed == baseline_failures:
+            # 基準で落ちていたものが 1 つも直っていない。何も直っていないのだから
+            # 「実装は完了」とは書けない。
+            return "failed", "基準コミットで落ちていた検証が直っていない"
+        if unfixed and unfixed < baseline_failures:
+            return (
+                "awaiting_approval",
+                f"一部の検証は直ったが {len(unfixed)} 件が未修正",
+            )
+        # 失敗項目の名前が拾えなかった場合を含む。従来どおり人の判断へ回す。
+        return (
+            "awaiting_approval",
+            "実装は完了。検証は不合格だが、基準コミットの時点で既に同じ失敗があった",
+        )
+    return "failed", "検証が不合格のまま上限に達した"
+
+
 def _out_of_scope(changed: list[str], allowed_scope: list[str]) -> list[str]:
     """変更可能範囲として渡されたパターンから外れたファイルを返す。
 
@@ -376,11 +430,18 @@ class Runner:
                 work_dir, base_commit, self.task_dir / "changes.diff"
             )
             self.ledger.mark_verifications_stale(self.task_id, changes.tree_hash)
-            new_failures = _failing_names(verify_result) - self.baseline_failures
+            verify_failures = _failing_names(verify_result)
+            new_failures = verify_failures - self.baseline_failures
+            unfixed = verify_failures & self.baseline_failures
             # 基準の時点で落ちていたものは、このタスクの責任ではない。
-            # 新しく壊れたものがあるときだけ修正へ回す。
+            # 新しく壊れたものがあるときだけ修正へ回す。ただし、基準で落ちていたものが
+            # 1 つも直っていない段階（＝何も直せていない）も修正ラウンドへ回す。
+            nothing_fixed = bool(self.baseline_failures) and unfixed == self.baseline_failures
             need_repair = verify_result is not None and not verify_result.passed and (
-                bool(new_failures) or baseline_result is None or baseline_result.passed
+                bool(new_failures)
+                or baseline_result is None
+                or baseline_result.passed
+                or nothing_fixed
             )
 
             if mode in ("deep", "exhaustive") and not need_repair:
@@ -502,28 +563,27 @@ class Runner:
 
         verified_ok = verify_result is not None and verify_result.passed
         no_verify = verify_result is None
-        new_failures = _failing_names(verify_result) - getattr(self, "baseline_failures", set())
+        baseline_failures = getattr(self, "baseline_failures", set())
+        verify_failures = _failing_names(verify_result)
+        new_failures = verify_failures - baseline_failures
+        unfixed = verify_failures & baseline_failures
         baseline_failed = baseline_result is not None and not baseline_result.passed
-        if changes.is_empty:
-            state = "failed"
-            headline = "変更が生成されなかった"
-        elif no_verify:
-            state = "awaiting_approval"
-            headline = "実装は完了。自動検証は未登録のため未実施"
-        elif verified_ok:
-            state = "awaiting_approval"
-            headline = "実装と検証が完了。差分の適用には承認が必要"
-        elif not new_failures and baseline_failed:
-            # 元から落ちていたものだけが落ちている。成功扱いにはしないが、
-            # このタスクが壊したわけでもない。人の判断へ回す。
-            state = "awaiting_approval"
-            headline = "実装は完了。検証は不合格だが、基準コミットの時点で既に同じ失敗があった"
-        else:
-            state = "failed"
-            headline = "検証が不合格のまま上限に達した"
+        state, headline = classify_outcome(
+            verified_ok,
+            new_failures,
+            unfixed,
+            baseline_failures,
+            changes.is_empty,
+            no_verify,
+            baseline_failed=baseline_failed,
+        )
         if new_failures:
             self.open_questions.append(
                 "このタスクで新しく落ちた検証: " + ", ".join(sorted(new_failures))
+            )
+        if unfixed and not verified_ok and not no_verify and not changes.is_empty:
+            self.open_questions.append(
+                "基準コミットでも落ちていて、今も直っていない検証: " + ", ".join(sorted(unfixed))
             )
 
         summary = self._compose_summary(headline, changes, verify_result, attempt, findings)
@@ -537,7 +597,7 @@ class Runner:
             },
             # クラウド側の実トークン数はこのプロセスからは取得できない。推定で埋めない。
             "cloud_tokens": None,
-            "cloud_tokens_note": "クラウド側の消費は親（Claude Code / Codex）でしか測れない。未取得。",
+            "cloud_tokens_note": "クラウド側の消費は Claude Code のセッション記録から bench/measure_cloud_tokens.py で測る。この値には入れない。",
             "returned_bytes": None,  # core.result() が確定させる
         }
         self.ledger.update(
@@ -572,6 +632,7 @@ class Runner:
                     "renamed": changes.renamed,
                     "binary": changes.binary,
                     "blocked_secret_paths": changes.blocked_secret_paths,
+                    "ignored_build_artifacts": changes.ignored_build_artifacts,
                     "diff_path": changes.diff_path,
                     "diff_line_count": len(changes.diff_text.splitlines()),
                     "applies_to_original": applies,
@@ -579,6 +640,7 @@ class Runner:
                 },
                 "verification": verify_result.as_dict() if verify_result else None,
                 "baseline_verification": baseline_result.as_dict() if baseline_result else None,
+                "unfixed_baseline_failures": sorted(unfixed),
                 "new_failures": sorted(new_failures),
                 "verify_summary": verify_summary,
                 "baseline_summary": baseline_summary,

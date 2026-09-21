@@ -49,6 +49,7 @@ def _error(exc: Exception) -> dict[str, Any]:
         "この応答を待っている必要はない。workspace_id と verify_profile は"
         "設定に登録済みの名前だけを受け付ける（任意のパスやコマンドは指定できない）。"
         "目的・変更可能範囲・変更禁止事項・合格条件を明示すること。"
+        "進捗は wait_for_task で完了まで待てる。長い作業は get_task_status でも確認できる。"
     ),
 )
 def submit_task(
@@ -86,6 +87,52 @@ def submit_task(
 
 
 @server.tool(
+    name="run_task",
+    description=(
+        "1 回の呼び出しで 委譲→完了待ち→6 フラグ判定→作業ツリーへ適用→"
+        "登録済みコマンドで再検証→短い要約 まで行う。親はこれだけ呼べばよい。"
+        "commit はしない。上限秒を過ぎたら timed_out=true で task_id を返す。"
+    ),
+)
+def run_task(
+    request_id: str,
+    workspace_id: str,
+    goal: str,
+    client_id: str = "mcp",
+    allowed_scope: list[str] | None = None,
+    forbidden: list[str] | None = None,
+    acceptance: list[str] | None = None,
+    base_commit: str | None = None,
+    verify_profile: str | None = None,
+    mode: str = "deep",
+    on_dirty: str = "wait",
+    max_wait_sec: int | None = None,
+    apply: bool = True,
+) -> dict[str, Any]:
+    try:
+        return core.run_task(
+            _config(),
+            request_id=request_id,
+            client_id=client_id,
+            workspace_id=workspace_id,
+            goal=goal,
+            allowed_scope=allowed_scope,
+            forbidden=forbidden,
+            acceptance=acceptance,
+            base_commit=base_commit,
+            verify_profile=verify_profile,
+            mode=mode,
+            on_dirty=on_dirty,
+            max_wait_sec=max_wait_sec,
+            apply=apply,
+        )
+    except DuplicateRequestError as exc:
+        return {"ok": False, "duplicate": True, "task_id": exc.task_id, "error": str(exc)}
+    except BridgeError as exc:
+        return _error(exc)
+
+
+@server.tool(
     name="get_task_status",
     description="task_id の状態・段階・経過時間を返す。結果本文は含まない。",
 )
@@ -106,6 +153,24 @@ def get_task_status(task_id: str) -> dict[str, Any]:
 def get_task_result(task_id: str, include_diff: bool = False) -> dict[str, Any]:
     try:
         return core.result(_config(), task_id, include_diff=include_diff)
+    except BridgeError as exc:
+        return _error(exc)
+
+
+@server.tool(
+    name="wait_for_task",
+    description=(
+        "task_id が終わるまで待って get_task_result と同じ形で返す。"
+        "上限秒を過ぎたら timed_out=true で状態だけ返す。"
+    ),
+)
+def wait_for_task(
+    task_id: str, max_wait_sec: int | None = None, include_diff: bool = True
+) -> dict[str, Any]:
+    try:
+        return core.wait_for_task(
+            _config(), task_id, max_wait_sec=max_wait_sec, include_diff=include_diff
+        )
     except BridgeError as exc:
         return _error(exc)
 

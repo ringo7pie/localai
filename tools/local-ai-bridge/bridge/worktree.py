@@ -52,6 +52,25 @@ SECRET_EXCEPTIONS = (
     "**/*.env.example",
 )
 
+# ビルド・テストの生成物。作業中に必ず書き換わるので、変更として数えない。
+# 基準コミットに誤って入っていると「変更あり」「範囲外」に化けて合格判定を落とす（実測）。
+BUILD_ARTIFACT_GLOBS = (
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyo",
+    "**/.pytest_cache/**",
+    "**/*.egg-info/**",
+)
+
+
+def is_build_artifact(relative_path: str) -> bool:
+    """リポジトリ相対パスがビルド生成物か。判定の仕方は is_secret_path と同じ。"""
+    text = relative_path.removeprefix("./")
+    for pattern in BUILD_ARTIFACT_GLOBS:
+        if fnmatch.fnmatch(text, pattern) or fnmatch.fnmatch(text, pattern.removeprefix("**/")):
+            return True
+    return False
+
 
 def is_secret_path(relative_path: str) -> bool:
     """リポジトリ相対パスが秘密情報の既定パターンに当たるか。
@@ -83,6 +102,7 @@ class ChangeSet:
     renamed: list[str] = field(default_factory=list)
     binary: list[str] = field(default_factory=list)
     blocked_secret_paths: list[str] = field(default_factory=list)
+    ignored_build_artifacts: list[str] = field(default_factory=list)
     tree_hash: str | None = None
 
     @property
@@ -249,6 +269,9 @@ def collect_changes(worktree: Path, base_commit: str, diff_path: Path | None = N
         if is_secret_path(path):
             changes.blocked_secret_paths.append(path)
             continue
+        if is_build_artifact(path):
+            changes.ignored_build_artifacts.append(path)
+            continue
         if code.startswith("A"):
             changes.added.append(path)
         elif code.startswith("M"):
@@ -262,9 +285,15 @@ def collect_changes(worktree: Path, base_commit: str, diff_path: Path | None = N
     for line in numstat.splitlines():
         fields = line.split("\t")
         if len(fields) >= 3 and fields[0] == "-" and fields[1] == "-":
-            changes.binary.append(fields[2])
+            path = fields[2]
+            if is_secret_path(path) or is_build_artifact(path):
+                continue
+            changes.binary.append(path)
 
-    exclusions = [f":(exclude){path}" for path in changes.blocked_secret_paths]
+    exclusions = [
+        f":(exclude){path}"
+        for path in (*changes.blocked_secret_paths, *changes.ignored_build_artifacts)
+    ]
     changes.diff_text = _git(
         worktree,
         "diff",

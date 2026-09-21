@@ -197,6 +197,20 @@ def test_secret_changes_are_excluded_from_diff(tmp_path):
     assert "leaked-value-xyz" not in changes.diff_text
 
 
+def test_build_artifacts_are_not_counted_as_changes(tmp_path):
+    # テスト実行で書き換わる __pycache__/*.pyc が変更に化けると合格判定を落とす（実測）。
+    repo = _make_repo(tmp_path)
+    prepared = worktree.prepare(repo=repo, worktree=tmp_path / "wt", base_commit=None)
+    cache_dir = prepared.worktree / "src" / "__pycache__"
+    cache_dir.mkdir(parents=True)
+    (cache_dir / "x.cpython-312.pyc").write_bytes(b"\x00compiled-bytecode\x00")
+    changes = worktree.collect_changes(prepared.worktree, prepared.base_commit, tmp_path / "b.diff")
+    assert "src/__pycache__/x.cpython-312.pyc" in changes.ignored_build_artifacts
+    assert not any(".pyc" in path for path in changes.added + changes.modified)
+    assert ".pyc" not in changes.diff_text
+    assert changes.is_empty
+
+
 def test_base_commit_must_exist(tmp_path):
     repo = _make_repo(tmp_path)
     with pytest.raises(BridgeError):
@@ -281,13 +295,21 @@ def test_verify_timeout_is_not_success(tmp_path):
 
 
 # --- 台帳 ------------------------------------------------------------
-def _insert(ledger: Ledger, task_id: str, request_id: str, client_id: str = "c1") -> None:
+def _insert(
+    ledger: Ledger,
+    task_id: str,
+    request_id: str,
+    client_id: str = "c1",
+    state: str = "queued",
+    runner_boot_id: str | None = None,
+) -> None:
     ledger.insert_task(
         {
             "task_id": task_id, "request_id": request_id, "client_id": client_id,
             "workspace_id": "w", "workspace_path": "/tmp", "goal": "g",
             "scope_json": "[]", "forbidden_json": "[]", "acceptance_json": "[]",
-            "mode": "deep", "budget_json": "{}", "state": "queued",
+            "mode": "deep", "budget_json": "{}", "state": state,
+            "runner_boot_id": runner_boot_id,
             "created_at": time.time(),
         }
     )
@@ -511,3 +533,50 @@ def test_failing_names_extracts_unittest_failures(tmp_path):
         log_path=str(log), tree_hash=None,
     )
     assert _failing_names(passed) == set()
+
+
+# --- 完了待ち --------------------------------------------------------
+def test_wait_for_task_returns_result_when_already_finished(tmp_path, monkeypatch):
+    # 待ち終わり状態（承認待ち）なら、一度も眠らずに result() と同じ形を返す。
+    cfg = _minimal_config(tmp_path)
+    cfg.ensure_dirs()
+    ledger = Ledger(cfg.ledger_path)
+    _insert(ledger, "t1", "req-1", state="awaiting_approval")
+    monkeypatch.setattr(core.time, "sleep", _forbidden_sleep)
+    payload = core.wait_for_task(cfg, "t1", max_wait_sec=600)
+    assert payload["state"] == "awaiting_approval"
+    assert "summary" in payload
+    assert payload["approval_required"] is True
+    assert "timed_out" not in payload
+
+
+def test_wait_for_task_times_out_while_runner_is_alive(tmp_path, monkeypatch):
+    # 実行中で実行管理プロセスも生きているなら、上限 0 で timed_out を返す。
+    cfg = _minimal_config(tmp_path)
+    cfg.ensure_dirs()
+    ledger = Ledger(cfg.ledger_path)
+    _insert(ledger, "t1", "req-1", state="running", runner_boot_id=procs.identity())
+    monkeypatch.setattr(core.time, "sleep", _forbidden_sleep)
+    payload = core.wait_for_task(cfg, "t1", max_wait_sec=0)
+    assert payload["timed_out"] is True
+    assert payload["state"] == "running"
+    assert payload["runner_alive"] is True
+    assert payload["hint"]
+
+
+def test_wait_for_task_returns_immediately_when_runner_is_dead(tmp_path, monkeypatch):
+    # 台帳は実行中だが実行管理プロセスが居ない。状態はもう進まないので即返す。
+    cfg = _minimal_config(tmp_path)
+    cfg.ensure_dirs()
+    ledger = Ledger(cfg.ledger_path)
+    _insert(ledger, "t1", "req-1", state="running", runner_boot_id="badformat")
+    monkeypatch.setattr(core.time, "sleep", _forbidden_sleep)
+    payload = core.wait_for_task(cfg, "t1", max_wait_sec=600)
+    assert payload["state_inconsistent"] is True
+    assert payload["runner_alive"] is False
+    assert payload.get("timed_out") is None
+
+
+def _forbidden_sleep(seconds: float) -> None:
+    """試験が実時間を待っていないことを担保する。呼ばれたら失敗させる。"""
+    raise AssertionError(f"実時間で待とうとした: {seconds} 秒")

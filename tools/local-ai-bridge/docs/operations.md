@@ -12,9 +12,45 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 $BRIDGE/run-local-ai-task list --limit 10
 $BRIDGE/run-local-ai-task list --state running
 
+# 委譲から適用・再検証まで 1 回で済ませる（推奨。status / wait を個別に叩かない）
+# Bash ツールから呼ぶときは --max-wait 540（Bash の 600 秒上限の内側に収める）
+$BRIDGE/run-local-ai-task run \
+  --workspace selftest --request-id <一意な id> \
+  --goal "<目的>" --scope "<変更可能範囲>" --acceptance "<合格条件>" \
+  --verify unittest --mode deep --max-wait 540
+# 終了コード: 0 合格して適用済み / 1 不合格 / 2 設定エラー / 3 重複 / 4 時間切れ
+# 時間切れ（4）のときだけ、返った task_id で wait を 1 回足す
+
+# 完了まで待って結果を受け取る（status を何度も叩かない）
+$BRIDGE/run-local-ai-task wait task_xxxxxxxx
+$BRIDGE/run-local-ai-task wait task_xxxxxxxx --max-wait 600 --no-diff
+
 # 実行中のタスクを止める（そのタスクだけ。Ollama には触らない）
 $BRIDGE/run-local-ai-task cancel task_xxxxxxxx
 ```
+
+## workspace の登録
+
+```bash
+$BRIDGE/run-local-ai-task workspace add /path/to/repo --id myrepo \
+  --verify unittest --cmd "python3 -m pytest -q"
+$BRIDGE/run-local-ai-task workspace list
+$BRIDGE/run-local-ai-task workspace which "$PWD"    # 含む workspace_id。無ければ終了コード 1
+$BRIDGE/run-local-ai-task workspace remove myrepo
+```
+
+登録できるのは `~/.config/local-ai-bridge/bridge.toml` の `[registration] allowed_roots`
+配下の Git リポジトリだけ。`submit` / `run` の `--workspace` はここで登録した id を指す。
+
+## Claude Code のスキル（`/qwen` `/qwen-read`）
+
+```bash
+$BRIDGE/scripts/install-skills.sh              # ~/.claude/skills/{qwen,qwen-read} へリンク
+$BRIDGE/scripts/install-skills.sh --uninstall  # リンクだけ外す
+```
+
+実体は `$BRIDGE/skills/qwen/`・`$BRIDGE/skills/qwen-read/`。実装の委譲は `/qwen`、
+調査だけなら `/qwen-read` を使う（README.ja.md §3）。
 
 ## 診断
 

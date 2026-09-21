@@ -68,6 +68,18 @@ $EDITOR ~/.config/local-ai-bridge/bridge.toml   # 作業場所と検証プロフ
 ### CLI
 
 ```bash
+# 委譲から適用・再検証まで 1 回で済ませる（推奨。親はこれだけ呼べばよい）
+# Bash ツールから呼ぶときは --max-wait 540（Bash の 600 秒上限の内側に収める）
+./run-local-ai-task run \
+  --workspace selftest \
+  --request-id fix-total-length-002 \
+  --goal "total_length が区間の重なりを二重に数えている。1回だけ数えるよう直す" \
+  --scope "src/interval.py" \
+  --acceptance "tests/test_interval.py の 4 件すべてが通る" \
+  --verify unittest --mode deep --max-wait 540
+# 終了コード: 0 合格して適用済み / 1 不合格 / 2 設定エラー / 3 重複 / 4 時間切れ
+
+# 個別の段階を自分で踏みたいとき（測定・調査用。通常は run を使う）
 # 依頼（受付だけ。すぐ task_id が返る）
 ./run-local-ai-task submit \
   --workspace selftest \
@@ -79,6 +91,7 @@ $EDITOR ~/.config/local-ai-bridge/bridge.toml   # 作業場所と検証プロフ
   --verify unittest --mode deep
 
 ./run-local-ai-task status  task_xxxxxxxx
+./run-local-ai-task wait    task_xxxxxxxx          # 完了まで待って結果を返す
 ./run-local-ai-task result  task_xxxxxxxx
 ./run-local-ai-task result  task_xxxxxxxx --diff
 ./run-local-ai-task artifact task_xxxxxxxx --name verify-1.log --start 1 --lines 60
@@ -90,8 +103,10 @@ $EDITOR ~/.config/local-ai-bridge/bridge.toml   # 作業場所と検証プロフ
 
 | ツール | 役割 |
 |---|---|
+| `run_task` | **推奨**。1 回の呼び出しで 委譲→完了待ち→6 フラグ判定→作業ツリーへ適用→再検証→短い要約 まで行う。commit はしない。上限秒を過ぎたら `timed_out=true` で `task_id` を返す |
 | `submit_task` | 受付。`task_id` を即返す。長い作業を 1 回の応答に閉じ込めない |
 | `get_task_status` | 状態・段階・経過。結果本文は含まない |
+| `wait_for_task` | 完了まで待って `get_task_result` と同じ形で返す。上限秒を過ぎたら `timed_out=true` で状態だけ返す |
 | `get_task_result` | 短い結果。変更概要・検証成否・未解決点・承認事項 |
 | `get_artifact` | 差分やログを**行範囲指定**で取る。任意のファイルは読めない |
 | `cancel_task` | そのタスクだけ止める |
@@ -99,6 +114,44 @@ $EDITOR ~/.config/local-ai-bridge/bridge.toml   # 作業場所と検証プロフ
 | `bridge_doctor` | 接続と実効設定の点検 |
 
 CLI と MCP は同じ `bridge/core.py` を呼ぶ。別実装ではない。
+
+### Claude Code からは: `/qwen` `/qwen-read`
+
+実装の委譲は `/qwen <依頼文>`、大きなソースの調査は `/qwen-read <調べること>`。
+実体は `skills/qwen/`・`skills/qwen-read/`。次で `~/.claude/skills/` へ登録する。
+
+```bash
+./scripts/install-skills.sh              # シンボリックリンクを張る
+./scripts/install-skills.sh --uninstall  # リンクだけ外す
+```
+
+委譲するかどうかの判断基準は §10 と同じ（文脈が大きく単独 4 ターン以上のときだけ得）。
+
+### workspace の登録（`local-ai-task workspace`）
+
+`--workspace` に渡す workspace_id は、`allowed_roots` 配下の Git リポジトリだけ登録できる。
+
+```bash
+./run-local-ai-task workspace add /path/to/repo --id myrepo \
+  --verify unittest --cmd "python3 -m pytest -q"
+./run-local-ai-task workspace list
+./run-local-ai-task workspace which /path/to/repo/subdir   # 無ければ終了コード 1
+./run-local-ai-task workspace remove myrepo
+```
+
+### 親からの推奨の使い方: one-shot を 1 回呼ぶ
+
+クラウド側からは `run_task`（MCP）を **1 回**呼ぶ。MCP が見えない会話では Bash から
+`run-local-ai-task run ... --max-wait 540` を **1 回**呼ぶ。どちらも 委譲・待ち・
+6 フラグ判定・適用・再検証までを 1 回の呼び出しに閉じ込め、親へは短い要約だけが返る。
+`submit` / `status` / `wait` / `get_artifact` を親が個別に叩かない。分けて叩くと親のターンが
+積み上がり、文脈の長い会話ではその往復だけで単独で直すより高くつく。
+
+委譲するのは「**親の文脈が大きい（会話が長い）**」かつ「**クラウド単独でやると 4 ターン以上**」の
+仕事だけ。新しい短い会話や極小の修正は親が直すほうが安い（§10）。
+
+`.claude/agents/local-delegate.md` の委譲係サブエージェントは、`run` を 1 回呼ぶ薄い包みとして
+残してある。親が Bash を持たない場合などに使う。
 
 ## 4. 実行モード
 
@@ -142,7 +195,10 @@ CLI と MCP は同じ `bridge/core.py` を呼ぶ。別実装ではない。
 - `.env`・秘密鍵・`.ssh`・`credentials.json` などは読み取りも編集も deny。
   差分からも除外して報告する
 - 子プロセスへ `ANTHROPIC_*` `OPENAI_*` などの認証情報を渡さない
-- 自動で commit / push / merge / 適用はしない。差分を出すところまで
+- 連携層自身は commit / push / merge / 適用をしない。差分を出すところまで
+- 差分の適用は、検証合格かつ範囲内（`verification.passed`・`changes.out_of_scope` が空・
+  `test_integrity.suspicious` が偽・`changes.applies_to_original` が真）のときに限り、
+  `local-delegate` が作業ツリーへ `git apply` してよい。**commit / push はしない**
 
 **できないこと（正直に書く）**
 
@@ -188,3 +244,19 @@ CLI と MCP は同じ `bridge/core.py` を呼ぶ。別実装ではない。
   書いてあっても自己委譲しないよう、`task` を deny し `subagent_depth=0` にしている
 - Windows のビルドや GUI は Linux のテストでは検証できない。
   対象プロジェクトの正しい環境で別に確認すること
+
+## 10. 費用の実測（2026-09-21・round 3）
+
+- **新しい小さい文脈の会話では 50% 削減は出ない。** one-shot 版の A/B 実測（F1/F2/F3/F5 の 4 対、
+  両群とも Opus 5 の新規サブエージェント）で 委譲/単独 は **0.81 / 0.96 / 0.82 / 1.15**、
+  合計 $0.6747 / $0.7009 = **0.96**。単独が 4〜8 ターン $0.14〜0.25 で終わるうえ、
+  委譲側にも固定費（起動時のキャッシュ書き + 待ちのターン）が同じくらいある
+- **文脈が大きい会話（親 1 ターン ≒ $0.3）では、単独 4 ターン以上の仕事で 50% 以下になる**
+  （**計算値**。実測ではない。F3 0.40、F5 0.25〜0.50）。委譲の利点は
+  **親のターン数を 2 に固定する**ことにあり、親 1 ターンが高いときだけ効く
+- したがって 50% の成立条件は「**親の文脈が大きい**」かつ「**単独で 4 ターン以上**」の 2 つ。
+  委譲ルール（`scripts/add-delegation-rules.sh`）はこの 2 条件で判断する
+- 以前の結論「難タスクは委譲が 19% 安い」（round 2）は、61 万トークン文脈の親が単独側を
+  自分で解いた値で、単独側に有利な偏りと単価の混在を含んでいた。round 3 の設計で置き換えた
+- 測り方は `docs/usage-comparison.md` §1.1、生データは `bench/results.json` の `round3`、
+  詳細は `knowledge/30-gold/verification-report.md` §1.12

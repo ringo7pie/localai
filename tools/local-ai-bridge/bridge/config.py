@@ -74,6 +74,9 @@ class Limits:
     verify_timeout_sec: int = 600
     result_summary_max_chars: int = 600
     result_max_bytes: int = 8192
+    # wait_for_task が 1 回の呼び出しでブロックしてよい秒数の上限。
+    # MCP_TOOL_TIMEOUT=2,100,000ms（35 分）の内側に収める。
+    wait_for_task_max_sec: int = 1200
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,7 @@ class Config:
     state_root: Path
     limits: Limits
     workspaces: dict[str, Workspace]
+    registration_roots: tuple[Path, ...] = ()
 
     # --- 派生パス -------------------------------------------------------
     @property
@@ -229,15 +233,31 @@ def load(path: Path | None = None) -> Config:
         verify_timeout_sec=int(limits_raw.get("verify_timeout_sec", 600)),
         result_summary_max_chars=int(limits_raw.get("result_summary_max_chars", 600)),
         result_max_bytes=int(limits_raw.get("result_max_bytes", 8192)),
+        wait_for_task_max_sec=int(limits_raw.get("wait_for_task_max_sec", 1200)),
     )
     for name, value in (
         ("max_job_seconds", limits.max_job_seconds),
         ("max_model_calls", limits.max_model_calls),
         ("max_tool_calls", limits.max_tool_calls),
         ("max_concurrent_jobs", limits.max_concurrent_jobs),
+        # 0 以下だと wait_for_task が待たずに返るか、際限なく待つ。
+        # MCP_TOOL_TIMEOUT=2,100,000ms の内側に収めるため、必ず正の上限を持たせる。
+        ("wait_for_task_max_sec", limits.wait_for_task_max_sec),
     ):
         if value <= 0:
             raise ConfigError(f"[limits] {name} は 1 以上にしてください（無制限にしない）。")
+
+    registration_raw = raw.get("registration", {})
+    if not isinstance(registration_raw, dict):
+        raise ConfigError("[registration] はテーブルである必要があります。")
+    allowed_roots_raw = registration_raw.get("allowed_roots", [])
+    if not isinstance(allowed_roots_raw, list) or not all(
+        isinstance(item, str) for item in allowed_roots_raw
+    ):
+        raise ConfigError("[registration] の allowed_roots は文字列の配列にしてください。")
+    registration_roots = tuple(
+        Path(item).expanduser().resolve() for item in allowed_roots_raw
+    )
 
     workspaces: dict[str, Workspace] = {}
     for workspace_id, body in raw.get("workspace", {}).items():
@@ -274,6 +294,7 @@ def load(path: Path | None = None) -> Config:
         state_root=state_root,
         limits=limits,
         workspaces=workspaces,
+        registration_roots=registration_roots,
     )
 
 

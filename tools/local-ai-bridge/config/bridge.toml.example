@@ -38,6 +38,8 @@ connect_timeout_sec      = 15     # Ollama への接続確認
 verify_timeout_sec       = 600    # 検証コマンドの上限（プロファイル側の値と小さい方を使う）
 result_summary_max_chars = 600
 result_max_bytes         = 8192
+wait_for_task_max_sec    = 1200   # wait_for_task が 1 回でブロックする上限。
+                                  # MCP_TOOL_TIMEOUT=2,100,000ms（35 分）の内側に収める
 
 # ---- 作業場所の登録 -------------------------------------------------
 # ここに書いた workspace_id でしか作業しない。全ディレクトリを自動では許可しない。
@@ -59,3 +61,10 @@ timeout_sec = 300
 # [workspace.localai.verify.sandbox]
 # command = ["tools/qwen-worker/.venv/bin/python", "tools/qwen-worker/tests/test_sandbox.py"]
 # timeout_sec = 300
+
+# ---- 作業場所の CLI 登録（人が書く） ---------------------------------
+# ここに無いパスは `local-ai-task workspace add` で登録できない。
+# CLI はここに列挙したルート配下の Git リポジトリだけを受け付ける
+# （モデルや依頼者が任意のパスを登録できないようにするため）。
+[registration]
+allowed_roots = ["/home/mt/Proj"]

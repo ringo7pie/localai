@@ -1,14 +1,507 @@
 {
   "measured_at": "2026-09-21",
-  "session_context_tokens_per_turn": 500000,
-  "rates": {"input_per_mtok": 5.0, "output_per_mtok": 25.0,
-            "cache_read_multiplier": 0.1, "cache_write_1h_multiplier": 2.0},
-  "arms": [
-    {"family": "F1", "size": "極小",   "arm": "B", "variant": "f1b", "turns": 8, "cache_read": 3910140, "cache_write_1h": 7491, "output": 3210, "input": 16, "usd": 2.1103, "local_seconds": 52.6,  "mode": "standard"},
-    {"family": "F1", "size": "極小",   "arm": "A", "variant": "f1a", "turns": 4, "cache_read": 1968272, "cache_write_1h": 4897, "output": 2752, "input": 8,  "usd": 1.1019, "local_seconds": 0, "mode": "-"},
-    {"family": "F2", "size": "通常",   "arm": "B", "variant": "f2b", "turns": 9, "cache_read": 4460450, "cache_write_1h": 6869, "output": 5049, "input": 18, "usd": 2.4252, "local_seconds": 44.0,  "mode": "standard"},
-    {"family": "F2", "size": "通常",   "arm": "A", "variant": "f2a", "turns": 4, "cache_read": 1995116, "cache_write_1h": 5024, "output": 1847, "input": 8,  "usd": 1.0940, "local_seconds": 0, "mode": "-"},
-    {"family": "F3", "size": "難しい", "arm": "B", "variant": "f3b", "turns": 8, "cache_read": 4020170, "cache_write_1h": 6349, "output": 6596, "input": 16, "usd": 2.2386, "local_seconds": 424.3, "mode": "deep"},
-    {"family": "F3", "size": "難しい", "arm": "A", "variant": "f3a", "turns": 4, "cache_read": 2021071, "cache_write_1h": 6650, "output": 2394, "input": 8,  "usd": 1.1369, "local_seconds": 0, "mode": "-"}
+  "session_context_tokens_per_turn": 610000,
+  "model": "Claude Fable 5.1（親）/ Opus 5（委譲係サブエージェント）",
+  "rates": {
+    "input_per_mtok": 5.0,
+    "output_per_mtok": 25.0,
+    "cache_read_multiplier": 0.1,
+    "cache_write_1h_multiplier": 2.0,
+    "cache_write_5m_multiplier": 1.25
+  },
+  "rates_note": "この rates は Claude Opus 5 の単価。round2 の親は実際には claude-fable-5-1 で動いていたため、親の金額は別単価で計算し直した（各エントリの parent_usd_repriced_fable）。モデル別の単価表は bench/rates.json にある（Fable 5.1 = 入力 $10 / 出力 $50 / キャッシュ読み 0.025x）。",
+  "round1_raw_overcounted": {
+    "description": "旧方式（親が submit→poll→取得→適用を自分で行う）の生値。測定ツールの旧版が同一 assistant メッセージを内容ブロックごとに重複計上していたため過大。参考として残す。確定値は round1_corrected を見ること。",
+    "session_context_tokens_per_turn": 500000,
+    "arms": [
+      {
+        "family": "F1",
+        "size": "極小",
+        "arm": "B",
+        "variant": "f1b",
+        "turns": 8,
+        "cache_read": 3910140,
+        "cache_write_1h": 7491,
+        "output": 3210,
+        "input": 16,
+        "usd": 2.1103,
+        "local_seconds": 52.6,
+        "mode": "standard"
+      },
+      {
+        "family": "F1",
+        "size": "極小",
+        "arm": "A",
+        "variant": "f1a",
+        "turns": 4,
+        "cache_read": 1968272,
+        "cache_write_1h": 4897,
+        "output": 2752,
+        "input": 8,
+        "usd": 1.1019,
+        "local_seconds": 0,
+        "mode": "-"
+      },
+      {
+        "family": "F2",
+        "size": "通常",
+        "arm": "B",
+        "variant": "f2b",
+        "turns": 9,
+        "cache_read": 4460450,
+        "cache_write_1h": 6869,
+        "output": 5049,
+        "input": 18,
+        "usd": 2.4252,
+        "local_seconds": 44.0,
+        "mode": "standard"
+      },
+      {
+        "family": "F2",
+        "size": "通常",
+        "arm": "A",
+        "variant": "f2a",
+        "turns": 4,
+        "cache_read": 1995116,
+        "cache_write_1h": 5024,
+        "output": 1847,
+        "input": 8,
+        "usd": 1.094,
+        "local_seconds": 0,
+        "mode": "-"
+      },
+      {
+        "family": "F3",
+        "size": "難しい",
+        "arm": "B",
+        "variant": "f3b",
+        "turns": 8,
+        "cache_read": 4020170,
+        "cache_write_1h": 6349,
+        "output": 6596,
+        "input": 16,
+        "usd": 2.2386,
+        "local_seconds": 424.3,
+        "mode": "deep"
+      },
+      {
+        "family": "F3",
+        "size": "難しい",
+        "arm": "A",
+        "variant": "f3a",
+        "turns": 4,
+        "cache_read": 2021071,
+        "cache_write_1h": 6650,
+        "output": 2394,
+        "input": 8,
+        "usd": 1.1369,
+        "local_seconds": 0,
+        "mode": "-"
+      }
+    ]
+  },
+  "round1_corrected": {
+    "description": "旧方式の確定値。重複排除後。親が submit→poll→結果取得→適用をすべて自分のターンで行う。",
+    "method": "old_parent_driven",
+    "arms": [
+      {
+        "family": "F1",
+        "size": "極小",
+        "arm": "B",
+        "variant": "f1b",
+        "turns": 6,
+        "usd": 1.5702,
+        "mode": "standard"
+      },
+      {
+        "family": "F1",
+        "size": "極小",
+        "arm": "A",
+        "variant": "f1a",
+        "turns": 2,
+        "usd": 0.5462,
+        "mode": "-"
+      },
+      {
+        "family": "F2",
+        "size": "通常",
+        "arm": "B",
+        "variant": "f2b",
+        "turns": 6,
+        "usd": 1.6038,
+        "mode": "standard"
+      },
+      {
+        "family": "F2",
+        "size": "通常",
+        "arm": "A",
+        "variant": "f2a",
+        "turns": 2,
+        "usd": 0.5466,
+        "mode": "-"
+      },
+      {
+        "family": "F3",
+        "size": "難しい",
+        "arm": "B",
+        "variant": "f3b",
+        "turns": 5,
+        "usd": 1.3689,
+        "mode": "deep"
+      },
+      {
+        "family": "F3",
+        "size": "難しい",
+        "arm": "A",
+        "variant": "f3a",
+        "turns": 5,
+        "usd": 1.6077,
+        "mode": "-"
+      }
+    ],
+    "totals": {
+      "delegation_usd": 4.543,
+      "cloud_only_usd": 2.7005,
+      "ratio_delegation_over_cloud_only": 1.68
+    },
+    "per_family_ratio": {
+      "F1": 2.87,
+      "F2": 2.93,
+      "F3": 0.85
+    }
+  },
+  "round2": {
+    "description": "新方式。親は委譲係サブエージェント（Opus 5・小文脈）を 1 回呼ぶだけ。委譲係が submit→前景待機→6 フラグ判定→適用→検証再実行までを行う。",
+    "method": "delegate_subagent",
+    "subagent_cost_source": "<session>/subagents/agent-*.jsonl（委譲係の専用記録）",
+    "parent_attributable_turns": 2,
+    "parent_attributable_turns_note": "委譲 1 件に帰属する親のターンは「起動 1 + 受領 1 = 2」。",
+    "parent_usd_per_turn": 0.377,
+    "parent_usd_per_turn_source": "F1B' 再試行の窓の実測（親 3 ターン $1.1318、キャッシュ読み 1,831,865）から 1 ターンあたりを割り出した。ただしこの $1.1318 は Opus 5 の単価で計算した誤りの値。",
+    "parent_usd_per_turn_repriced_fable": 0.2966,
+    "parent_usd_per_turn_repriced_fable_source": "同じ窓を Fable 5.1 の単価で測り直した $0.8898 ÷ 3 ターン。文脈は 1 ターンあたり約 61 万トークン。",
+    "parent_attributable_usd": 0.754,
+    "tasks": [
+      {
+        "family": "F1",
+        "variant": "f1b_prime_first",
+        "label": "F1B' 初回",
+        "subagent_turns": 11,
+        "subagent_usd": 0.3074,
+        "result": "不合格",
+        "applied": false,
+        "note": "基準コミットに .pyc が混入し範囲逸脱扱いになった。ベンチ側の不備。修正して再実行した。合計には入れない。",
+        "counted_in_total": false
+      },
+      {
+        "family": "F1",
+        "variant": "f1b_prime",
+        "label": "F1B' 再試行",
+        "subagent_turns": 7,
+        "subagent_usd": 0.2225,
+        "result": "合格",
+        "applied": true,
+        "parent_attributable_turns": 2,
+        "parent_attributable_usd": 0.754,
+        "attributable_usd": 0.98,
+        "raw_window": {
+          "parent_turns": 3,
+          "usd_mispriced_as_opus": 1.1318,
+          "parent_usd_repriced_fable": 0.8898,
+          "parent_cache_read": 1831865
+        },
+        "counted_in_total": true
+      },
+      {
+        "family": "F2",
+        "variant": "f2b_prime",
+        "label": "F2B'",
+        "subagent_turns": 7,
+        "subagent_usd": 0.2028,
+        "result": "合格",
+        "applied": true,
+        "parent_attributable_turns": 2,
+        "parent_attributable_usd": 0.754,
+        "attributable_usd": 0.96,
+        "raw_window": {
+          "parent_turns": 4,
+          "usd_mispriced_as_opus": 1.5816,
+          "parent_usd_repriced_fable": 1.44
+        },
+        "counted_in_total": true
+      },
+      {
+        "family": "F3",
+        "variant": "f3b_prime",
+        "label": "F3B'",
+        "mode": "deep",
+        "subagent_turns": 13,
+        "subagent_usd": 0.5561,
+        "result": "合格",
+        "applied": true,
+        "changes": {
+          "added": 1,
+          "modified": 2
+        },
+        "parent_attributable_turns": 2,
+        "parent_attributable_usd": 0.754,
+        "attributable_usd": 1.31,
+        "raw_window": {
+          "parent_turns": 4,
+          "usd_mispriced_as_opus": 1.4778,
+          "parent_usd_repriced_fable": 1.364,
+          "parent_turns_remeasured": 5,
+          "remeasure_note": "同じ窓を測り直すとターン数が 4 でなく 5 になった。旧値がどの範囲で数えられたかは記録に残っていない。新しい金額は 5 ターン分。"
+        },
+        "subagent_cost_breakdown": {
+          "cache_write_5m_usd": 0.3712,
+          "cache_read_usd": 0.1762
+        },
+        "counted_in_total": true
+      },
+      {
+        "family": "F4",
+        "variant": "f4",
+        "label": "F4（合格不能）",
+        "subagent_turns": 5,
+        "subagent_usd": 0.1756,
+        "result": "不合格",
+        "applied": false,
+        "note": "テストが矛盾する合格不能な課題（round_yen(10.5) に 11 と 10 の両方を要求）。失敗経路を踏ませるため意図的に作った。Qwen は銀行丸めを選び 1 件落ちた。正しく拒否した。",
+        "raw_window": {
+          "parent_turns": 2,
+          "usd_mispriced_as_opus": 0.7599,
+          "parent_usd_repriced_fable": 0.5539
+        },
+        "hypothesis2_cost_usd": 0.94,
+        "counted_in_total": false
+      }
+    ],
+    "totals": {
+      "attributable_usd": 3.24,
+      "vs_round1_corrected": {
+        "old_usd": 4.543,
+        "new_usd": 3.24,
+        "reduction_pct": 29
+      },
+      "vs_cloud_only": {
+        "cloud_only_usd": 2.7005,
+        "ratio": 1.2
+      },
+      "target_50pct_reduction": "未達"
+    },
+    "context_tokens_per_turn_subagent": 20000
+  },
+  "round3": {
+    "description": "one-shot 方式。委譲は `local-ai-task run`（CLI）/ `run_task`（MCP）を 1 回呼ぶだけで、submit→待ち→6 フラグ判定→適用→再検証→要約 までが 1 回の呼び出しに収まる。",
+    "method": "one_shot_run_task",
+    "measured_at": "2026-09-21",
+    "design": {
+      "bench_repo": "tools/local-ai-bridge/bench/ab-benchmark",
+      "branch": "round3",
+      "base_commit": "916344a",
+      "f5_commit": "926316d",
+      "families": {
+        "F1": "極小・1 行",
+        "F2": "通常・境界条件",
+        "F3": "難・新規モジュール + 2 箇所改修",
+        "F5": "中〜大・4 ファイル・13 テスト"
+      },
+      "pairing": "各対は a=単独用 / b=委譲用。題材だけ違い形は同じ。",
+      "arm_A": "クラウド単独。課題を知らない Opus 5 サブエージェント（general-purpose・新規の小さい文脈）が Read/Edit/Bash で自力実装。",
+      "arm_B": "委譲。同じく Opus 5 サブエージェントが `run-local-ai-task run ... --max-wait 540` を 1 回呼ぶだけ（時間切れ時のみ `wait` を 1 回）。",
+      "cost_source": "各群のサブエージェント専用記録ファイル（重複排除・モデル別単価）。",
+      "excluded": "オーケストレーター（親）の起動・受領ターンは両群同じ固定費として両方から除いた。",
+      "rates": "Opus 5: 入力 $5/MTok・出力 $25/MTok・キャッシュ読み 0.1×・キャッシュ書き 5m TTL 1.25×（bench/rates.json）。"
+    },
+    "tasks": [
+      {
+        "family": "F1",
+        "size": "極小・1 行",
+        "A": {
+          "agent": "agent-aa5a5c265c195f480",
+          "turns": 5,
+          "cache_read": 84227,
+          "output": 610,
+          "usd": 0.152464
+        },
+        "B": {
+          "agent": "agent-a276d056cb0808c69",
+          "turns": 3,
+          "cache_read": 44344,
+          "output": 124,
+          "usd": 0.122765
+        },
+        "ratio_b_over_a": 0.81,
+        "result": "両群ともテスト合格"
+      },
+      {
+        "family": "F2",
+        "size": "通常・境界条件",
+        "A": {
+          "agent": "agent-ae421f89d29ec6388",
+          "turns": 4,
+          "cache_read": 64209,
+          "output": 338,
+          "usd": 0.136051
+        },
+        "B": {
+          "agent": "agent-a7c848079e9b20ece",
+          "turns": 3,
+          "cache_read": 45079,
+          "output": 251,
+          "usd": 0.130795
+        },
+        "ratio_b_over_a": 0.96,
+        "result": "両群ともテスト合格"
+      },
+      {
+        "family": "F3",
+        "size": "難・新規モジュール + 2 箇所改修",
+        "A": {
+          "agent": "agent-a4a41b90e1d16f72a",
+          "turns": 5,
+          "cache_read": 89474,
+          "output": 343,
+          "usd": 0.161893
+        },
+        "B": {
+          "agent": "agent-abc2ef19e4e31c1c1",
+          "turns": 3,
+          "cache_read": 46886,
+          "output": 89,
+          "usd": 0.133104
+        },
+        "ratio_b_over_a": 0.82,
+        "result": "両群ともテスト合格"
+      },
+      {
+        "family": "F5",
+        "size": "中〜大・4 ファイル・13 テスト",
+        "A": {
+          "agent": "agent-ae65f7b8fe8026b91",
+          "turns": 8,
+          "cache_read": 179057,
+          "output": 524,
+          "usd": 0.250509
+        },
+        "B": {
+          "agent": "agent-a7b04d50fc71a4aec",
+          "turns": 4,
+          "cache_read": 51616,
+          "output": 963,
+          "usd": 0.288011
+        },
+        "ratio_b_over_a": 1.15,
+        "result": "両群ともテスト合格"
+      }
+    ],
+    "totals": {
+      "cloud_only_usd": 0.7009,
+      "delegation_usd": 0.6747,
+      "ratio_b_over_a": 0.96
+    },
+    "delegation_band_F3_F5": {
+      "note": "委譲すべき帯（難・中〜大）だけの集計。",
+      "cloud_only_usd": 0.4124,
+      "delegation_usd": 0.4211,
+      "ratio_b_over_a": 1.02
+    },
+    "large_context_projection": {
+      "is_measured": false,
+      "label": "計算値。実測ではない。",
+      "assumption": "新しい小さい文脈のサブエージェントが要したターン数を、文脈の大きい親がそのまま同じ回数使ったらどうなるか、という仮定の計算。",
+      "parent_usd_per_turn": 0.2966,
+      "parent_usd_per_turn_source": "round 2 で実測した親 1 ターン $0.2966（Claude Fable 5.1 単価、文脈 約 61 万トークン/ターン）。",
+      "B_parent_turns": 2,
+      "B_parent_turns_timed_out": 4,
+      "B_usd": 0.5932,
+      "B_usd_with_wait": 1.1864,
+      "per_family": {
+        "F1": {
+          "A_turns": 5,
+          "A_usd": 1.483,
+          "B_usd": 0.5932,
+          "ratio_b_over_a": 0.4
+        },
+        "F2": {
+          "A_turns": 4,
+          "A_usd": 1.1864,
+          "B_usd": 0.5932,
+          "ratio_b_over_a": 0.5
+        },
+        "F3": {
+          "A_turns": 5,
+          "A_usd": 1.483,
+          "B_usd": 0.5932,
+          "ratio_b_over_a": 0.4
+        },
+        "F5": {
+          "A_turns": 8,
+          "A_usd": 2.3728,
+          "B_usd": 0.5932,
+          "ratio_b_over_a": 0.25,
+          "ratio_b_over_a_with_wait": 0.5
+        }
+      },
+      "conclusion": "文脈が大きい会話（親 1 ターン ≒ $0.3）では、単独 4 ターン以上の仕事でB/A が 0.50 以下になる計算。委譲の利点は親のターン数を 2 に固定することにあり、親 1 ターンが高いときだけ効く。"
+    },
+    "conditions_for_50pct": [
+      "親の文脈が大きい（1 ターン ≒ $0.3 規模の会話）こと。",
+      "その仕事をクラウド単独でやると 4 ターン以上かかると見込めること。",
+      "この 2 条件がそろったときだけ 50% 以下になる。どちらか欠けると委譲の固定費に負ける。"
+    ],
+    "notes": [
+      "新しい小さい文脈の会話では 50% は出ない。B/A は 0.81〜1.15。クラウド単独が 4〜8 ターン $0.14〜0.25 で終わり、委譲の固定費（起動時のキャッシュ書き + 待ちのターン）が同程度あるため。",
+      "B の費用の内訳はキャッシュ書きが最大。サブエージェント起動時にプロンプトとツール定義を書くぶんが約 $0.10。F5 は 5 分 TTL が切れて再度書き込みが発生した。",
+      "B の代理（サブエージェントに run を呼ばせる）は「親が直接 run_task を呼ぶ」より起動費用のぶん高めに出る。つまり B 側に不利な、保守的な測り方である。",
+      "B の F5 は Qwen 側が 694 秒（deep）かかり、Bash ツールの 600 秒上限で `run` が時間切れになった。`wait` を 1 回足して合格したが、適用は親側で別に行った（親の追加 1 手）。",
+      "全 8 タスクとも最終的にテスト合格。Qwen 側の失敗は無し。反対仮説 2（ローカル失敗時の引き取り費用）は round 2 の F4 の値を使う。",
+      "訂正: round 2 の結論「難タスクは委譲が 19% 安い」は、61 万トークン文脈の親が A を自分で解いた値であり、A 側に有利な偏りと Opus / Fable の単価混在を含んでいた。round 3 の設計で置き換える。",
+      "large_context_projection は計算値であり実測ではない（is_measured: false）。",
+      "金額は測定ツールの出力どおり。比率は小数第 2 位に丸めた。"
+    ],
+    "known_limits_carried_over": [
+      "`wait_for_task` / `run_task` / `.claude/agents/local-delegate.md` は MCP・Agent 定義の再読込（新しい会話か `/mcp` 再接続）まで見えない。round 3 は CLI 経由で測った。",
+      "Bash ツールの 600 秒上限のため、長い deep タスクは `run` が時間切れになる。MCP の `run_task` は 35 分まで待てる（新しい会話で有効）。",
+      "runner の分類修正（基準で落ちていた検証が直っていなければ failed、一部なら未修正名を列挙）は F4 の再実行で動作確認済み。"
+    ]
+  },
+  "breakeven": {
+    "unit": "クラウド単独（A）のターン数",
+    "old_method_turns": "8.1〜9.4",
+    "new_method_turns": "約 4〜5",
+    "basis": "単独 A の 1 ターン ≒ $0.27。F3 の単独 5 ターン $1.6077 に対して新方式は $1.31。"
+  },
+  "small_context_projection": {
+    "is_measured": false,
+    "label": "計算値。実測ではない。",
+    "formula": "親 1 ターン ≒ 文脈 C × 0.5e-6 + 出力 約 2,000 トークン × 25e-6",
+    "example_context_tokens": 20000,
+    "parent_usd_per_turn": 0.06,
+    "parent_2turns_usd": 0.12,
+    "delegate_subagent_usd_range": [
+      0.2,
+      0.56
+    ],
+    "cloud_only_2to5turns_usd_range": [
+      0.12,
+      0.3
+    ],
+    "conclusion": "小文脈では差が縮む。極小タスクは依然クラウド単独が安く、難タスクは委譲が安い、という構造は変わらない。"
+  },
+  "notes": [
+    "訂正: 以前の報告「委譲は 2.03 倍」は誤り。測定ツールの旧版が同一 assistant メッセージを内容ブロックごとに重複計上していた。重複排除後の確定値は 1.68 倍。round1_raw_overcounted が旧値。",
+    "訂正: 重複排除後は F3（難しい）だけ委譲のほうが安い（$1.3689 < $1.6077）。",
+    "偏り: クラウド単独（A）は課題作成者本人が解いたため A に有利な偏りがある。",
+    "帰属費用の定義: 新方式の親側費用は「起動 1 + 受領 1 = 2 ターン × 実測 $0.377/ターン = $0.754」で帰属させた計算値。raw_window の親費用はこれより大きいが、それは並行して走らせた別サブエージェントの通知への応答ターンや診断ターンを含む「同時に複数を走らせた運用の費用」であり、委譲 1 件の費用ではない。",
+    "委譲係の費用の内訳はキャッシュ書き（5 分 TTL）が最大（F3B' で 書き $0.3712 / 読み $0.1762）。サブエージェントは起動ごとにプロンプトとツール定義をキャッシュへ書くため。委譲係の文脈は 1 ターンあたり約 2 万トークン。",
+    "round2 の委譲係は .claude/agents/local-delegate.md ではなく general-purpose（Opus 5）に本文を渡して代用した。omitClaudeMd の効果が乗っていないため、委譲係の費用は実物より高めに出ている。",
+    "「50% 削減」は未達。達成には親の 1 ターン費用（＝親の文脈長）を下げるしかない。",
+    "attributable_usd と各種の倍率・割合は小数第 2 位（率は整数%）に丸めた。",
+    "訂正: round2 の親（raw_window）の金額は Claude Opus 5 の単価で計算していたが、親の実体は claude-fable-5-1 だった。測定ツールをモデル別単価に直して測り直した。旧値は usd_mispriced_as_opus として残してある。新値: F1B' $1.1318→$0.8898、F2B' $1.5816→$1.4400、F3B' $1.4778→$1.3640、F4 $0.7599→$0.5539。Fable 5.1 は出力が 2 倍高い（$50/MTok）が、キャッシュ読みが 0.025x（$0.25/MTok）と Opus の 0.1x（$0.50/MTok）の半額であり、この測定はキャッシュ読みが支配的なので合計は下がった。",
+    "親の 1 ターンあたりの費用は Fable 5.1 単価で $0.2966（F1B' 親 $0.8898 ÷ 3 ターン、文脈 約 61 万トークン/ターン）。Opus 単価で出していた $0.377 は誤り。",
+    "委譲係（サブエージェント）は claude-opus-5 のままなので金額は変わらない。--subagent agent-aef9f839f24d75389 で測り直して $0.2225（記載値と一致）を確認した。",
+    "round1 の金額も同じ単価の問題を含む可能性があるが、当時の親のモデルを記録から確認していないため、この訂正では触っていない。"
   ]
 }

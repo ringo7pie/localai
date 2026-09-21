@@ -1,0 +1,56 @@
+{
+  "_note": "モデル別の単価表。値は claude-api skill の実ファイルから写した。推測で足さないこと。表に無いモデルが記録に出たら measure_cloud_tokens.py はエラーで止まる。",
+  "_checked_at": "2026-09-21",
+  "_skill_path": "/tmp/claude-1000/bundled-skills/2.1.278/96084ae065bd4ad208a98ce0812eaa17/claude-api",
+  "_not_recorded": {
+    "claude-haiku-4-5": "単価が skill の中に書かれていなかった（shared/models.md の Haiku 4.5 の行に $/MTok の記載なし。Current Models の表を持つ SKILL.md 本体がこのバンドルに無い）。確認できるまで書かない。",
+    "claude-sonnet-4-6": "$3/$15 と shared/model-migration.md にあるが、この計測では使っていないため省いた。"
+  },
+  "models": {
+    "claude-opus-5": {
+      "input_per_mtok": 5.0,
+      "output_per_mtok": 25.0,
+      "cache_read_multiplier": 0.1,
+      "cache_write_5m_multiplier": 1.25,
+      "cache_write_1h_multiplier": 2.0,
+      "assumption": false,
+      "source": "shared/models.md「Claude Opus 5 ... A drop-in upgrade at Opus 4.8's pricing ($5/$25 per MTok)」。倍率は shared/prompt-caching.md Economics「Cache reads cost ~0.1x base input price」「Cache writes cost 1.25x for 5-minute TTL, 2x for 1-hour TTL」。"
+    },
+    "claude-fable-5-1": {
+      "input_per_mtok": 10.0,
+      "output_per_mtok": 50.0,
+      "cache_read_multiplier": 0.025,
+      "cache_write_5m_multiplier": 1.25,
+      "cache_write_1h_multiplier": 2.0,
+      "assumption": true,
+      "source": "shared/models.md「Claude Fable 5.1 ... ($10/$50 per MTok; cache reads $0.25/MTok - 0.025x ...)」。読み 0.025x は shared/prompt-caching.md Economics「Cache reads cost ~0.1x base input price - 0.025x on Claude Fable 5.1 ($0.25/MTok)」でも確認した。書き倍率だけはモデル固有の記載が無いため一般則（5m 1.25x / 1h 2.0x）を当てた＝仮定。"
+    },
+    "claude-fable-5": {
+      "input_per_mtok": 10.0,
+      "output_per_mtok": 50.0,
+      "cache_read_multiplier": 0.1,
+      "cache_write_5m_multiplier": 1.25,
+      "cache_write_1h_multiplier": 2.0,
+      "assumption": false,
+      "source": "shared/models.md「Claude Fable 5 ... same tier, limits and per-token pricing as Claude Fable 5.1 ...（cache reads here are $1/MTok rather than Claude Fable 5.1's $0.25）」。$1/MTok ÷ $10/MTok = 0.1x。"
+    },
+    "claude-sonnet-5": {
+      "input_per_mtok": 2.0,
+      "output_per_mtok": 10.0,
+      "cache_read_multiplier": 0.1,
+      "cache_write_5m_multiplier": 1.25,
+      "cache_write_1h_multiplier": 2.0,
+      "assumption": false,
+      "source": "shared/model-migration.md「Per-token pricing is $2/$10 per MTok (Sonnet 4.6 is $3/$15)」。倍率は prompt-caching.md Economics の一般則。"
+    },
+    "<synthetic>": {
+      "input_per_mtok": 0.0,
+      "output_per_mtok": 0.0,
+      "cache_read_multiplier": 0.0,
+      "cache_write_5m_multiplier": 0.0,
+      "cache_write_1h_multiplier": 0.0,
+      "assumption": false,
+      "source": "Claude Code がローカルで作る合成メッセージ。API 呼び出しではなく課金されない（記録上も usage は 0）。集計を止めないために 0 円の行として置いてある。"
+    }
+  }
+}

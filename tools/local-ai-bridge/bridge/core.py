@@ -5,9 +5,12 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
+import tomllib
 import urllib.error
 import urllib.request
 import uuid
@@ -15,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from . import config as config_module
-from . import opencode, procs, worktree
+from . import opencode, procs, verify, worktree
 from .errors import BridgeError, DuplicateRequestError, NotFoundError
 from .ledger import TERMINAL_STATES, Ledger
 
@@ -28,6 +31,13 @@ ARTIFACTS = {
     "result": "result.json",
 }
 ARTIFACT_PREFIXES = ("verify-", "events-", "stderr-")
+
+# wait_for_task が待ち終わりとみなす状態。終端に加えて、人の判断を待つ 2 つを含める
+# （どちらも実行管理プロセスは進まないので、待ち続けても状態は変わらない）。
+WAIT_END_STATES = TERMINAL_STATES | {"awaiting_approval", "awaiting_input"}
+
+# 台帳を見に行く間隔（秒）。短くしても状態は早く進まないので、SQLite を無駄に叩かない。
+WAIT_POLL_SECONDS = 5
 
 
 def _now() -> float:
@@ -294,7 +304,10 @@ def submit(
         "budget": budget,
         "copied_uncommitted_files": prepared.copied_dirty,
         "skipped_secret_files": prepared.skipped_secrets,
-        "note": "受付のみ完了。進捗は get_task_status / local-ai-task status で確認する。",
+        "note": (
+            "進捗は wait_for_task で完了まで待てる。"
+            "長い作業は get_task_status でも確認できる。"
+        ),
     }
 
 
@@ -417,6 +430,274 @@ def result(cfg: config_module.Config, task_id: str, include_diff: bool = False) 
         payload["usage"]["returned_bytes"] = len(
             json.dumps(payload, ensure_ascii=False).encode("utf-8")
         )
+    return payload
+
+
+def wait_for_task(
+    cfg: config_module.Config,
+    task_id: str,
+    max_wait_sec: int | None = None,
+    include_diff: bool = True,
+) -> dict[str, Any]:
+    """待ち終わりまでブロックして、result() と同じ形で返す。
+
+    呼び出し側が status を何度も叩かずに済ませるためのもの。上限は設定側で決め、
+    ここで無限に待たない。上限に達したときは結果ではなく状態だけを返す。
+    """
+    limit = cfg.limits.wait_for_task_max_sec
+    if max_wait_sec is not None:
+        # 設定の上限は越えさせない（MCP 側のツールタイムアウトの内側に収めるため）。
+        limit = max(0, min(int(max_wait_sec), limit))
+
+    ledger = Ledger(cfg.ledger_path)
+    deadline = _now() + limit
+    while True:
+        task = ledger.get(task_id)
+        if task is None:
+            raise NotFoundError(f"task_id {task_id!r} は台帳にありません。")
+        state = task["state"]
+        if state in WAIT_END_STATES:
+            return result(cfg, task_id, include_diff=include_diff)
+
+        if state in ("running", "cancelling") and not procs.alive(task.get("runner_boot_id")):
+            # 実行管理プロセスが died していれば状態はもう進まない。無限に待たずに返す。
+            report = status(cfg, task_id)
+            if report.get("state_inconsistent"):
+                return report
+
+        remaining = deadline - _now()
+        if remaining <= 0:
+            report = status(cfg, task_id)
+            report["timed_out"] = True
+            report["hint"] = "get_task_status で続きを見る"
+            return report
+        time.sleep(min(WAIT_POLL_SECONDS, remaining))
+
+
+# --- run_task（一括実行） ---------------------------------------------
+# 親（クラウド側）のターン数を減らすための入口。submit → 待ち → 判定 → 適用 →
+# 再検証 までを 1 回の呼び出しで行う。判定に使う条件は result() が返す 6 つだけで、
+# ここで新しい基準を作らない。commit / push / stash / reset / clean は行わない。
+RUN_CHECK_NAMES = (
+    'state == "awaiting_approval"',
+    "verification.passed is True",
+    "changes.out_of_scope == []",
+    "test_integrity.suspicious is False",
+    "changes.blocked_secret_paths == []",
+    "changes.applies_to_original is True",
+)
+
+
+def _run_checks(outcome: dict[str, Any]) -> list[str]:
+    """合格しなかった条件名を返す。verification / changes が無いときは偽扱い。"""
+    verification = outcome.get("verification")
+    changes = outcome.get("changes")
+    integrity = outcome.get("test_integrity")
+    results = (
+        outcome.get("state") == "awaiting_approval",
+        verification is not None and verification.get("passed") is True,
+        changes is not None and changes.get("out_of_scope") == [],
+        integrity is not None and integrity.get("suspicious") is False,
+        changes is not None and changes.get("blocked_secret_paths") == [],
+        changes is not None and changes.get("applies_to_original") is True,
+    )
+    return [name for name, ok in zip(RUN_CHECK_NAMES, results) if not ok]
+
+
+def _verify_brief(record: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not record:
+        return None
+    return {
+        "command": record.get("command"),
+        "exit_code": record.get("exit_code"),
+        "passed": record.get("passed"),
+        "log_path": record.get("log_path"),
+    }
+
+
+def run_task(
+    cfg: config_module.Config,
+    *,
+    request_id: str,
+    client_id: str,
+    workspace_id: str,
+    goal: str,
+    allowed_scope: list[str] | None = None,
+    forbidden: list[str] | None = None,
+    acceptance: list[str] | None = None,
+    base_commit: str | None = None,
+    verify_profile: str | None = None,
+    mode: str = "deep",
+    on_dirty: str = "wait",
+    max_wait_sec: int | None = None,
+    apply: bool = True,
+) -> dict[str, Any]:
+    """委譲 → 完了待ち → 判定 → 適用 → 再検証 を 1 回で行う。"""
+    accepted = submit(
+        cfg,
+        request_id=request_id,
+        client_id=client_id,
+        workspace_id=workspace_id,
+        goal=goal,
+        allowed_scope=allowed_scope,
+        forbidden=forbidden,
+        acceptance=acceptance,
+        base_commit=base_commit,
+        verify_profile=verify_profile,
+        mode=mode,
+        on_dirty=on_dirty,
+    )
+    task_id = accepted["task_id"]
+
+    waited = wait_for_task(cfg, task_id, max_wait_sec=max_wait_sec, include_diff=False)
+    if waited.get("timed_out"):
+        return {
+            "task_id": task_id,
+            "state": waited.get("state"),
+            "timed_out": True,
+            "judged_ok": False,
+            "applied": False,
+            "hint": (
+                f"local-ai-task wait {task_id} --max-wait 540 を 1 回だけ呼んで続きを受け取る"
+            ),
+        }
+    if waited.get("state_inconsistent"):
+        return {
+            "task_id": task_id,
+            "state": waited.get("state"),
+            "state_inconsistent": True,
+            "judged_ok": False,
+            "applied": False,
+            "hint": (
+                f"実行管理プロセスが落ちている。resume_task('{task_id}') で引き継いでから"
+                f" wait で受け取る"
+            ),
+        }
+
+    outcome = result(cfg, task_id, include_diff=False)
+    reasons = _run_checks(outcome)
+    final_state = outcome.get("state")
+    applied = False
+    verify_record = _verify_brief(outcome.get("verification"))
+
+    if not reasons and apply:
+        workspace = cfg.workspace(workspace_id)
+        ledger = Ledger(cfg.ledger_path)
+        task = ledger.get(task_id)
+        diff_raw = task["diff_path"] if task is not None else None
+        if not diff_raw:
+            reasons.append("台帳に差分ファイルの記録が無い")
+        else:
+            diff_path = Path(diff_raw)
+            applies, apply_error = worktree.verify_applies(workspace.path, diff_path)
+            if not applies:
+                reasons.append("git apply --check が失敗")
+                ledger.add_event(
+                    task_id, "apply_check_failed", {"detail": apply_error[:400]}
+                )
+            else:
+                git = config_module.git_binary()
+                try:
+                    subprocess.run(
+                        [git, "-C", str(workspace.path), "apply", "-p1", str(diff_path)],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+                except subprocess.CalledProcessError as exc:
+                    # --check を通ったのに当たらなかった場合。握りつぶさない。
+                    raise BridgeError(
+                        f"git apply が失敗しました（{exc.returncode}）: "
+                        f"{(exc.stderr or '').strip()[:400]}"
+                    ) from exc
+                applied = True
+
+                profile = workspace.profile(verify_profile or workspace.default_verify)
+                if profile is None:
+                    # 適用は済ませたまま人の確認へ回す。勝手に戻さない。
+                    reasons.append("検証プロファイル未登録のため再検証していない")
+                else:
+                    verify_result = verify.run_profile(
+                        profile=profile,
+                        cwd=workspace.path,
+                        log_path=cfg.tasks_dir / task_id / "verify-applied.log",
+                        tree_hash=None,
+                        timeout_sec=min(profile.timeout_sec, cfg.limits.verify_timeout_sec),
+                    )
+                    verify_record = _verify_brief(verify_result.as_dict())
+                    if verify_result.passed:
+                        ledger.compare_and_set_state(
+                            task_id, "awaiting_approval", "succeeded", ended_at=_now()
+                        )
+                        ledger.add_event(
+                            task_id,
+                            "applied_by_run",
+                            {
+                                "workspace_id": workspace_id,
+                                "workspace_path": str(workspace.path),
+                                "diff_path": str(diff_path),
+                                "verify_profile": profile.name,
+                                "verify_exit_code": verify_result.exit_code,
+                            },
+                        )
+                        final_state = "succeeded"
+                    else:
+                        reverted = subprocess.run(
+                            [git, "-C", str(workspace.path), "apply", "-R", "-p1", str(diff_path)],
+                            capture_output=True,
+                            text=True,
+                        )
+                        applied = reverted.returncode != 0
+                        reasons.append(
+                            f"適用後の再検証が不合格（終了コード {verify_result.exit_code}）"
+                        )
+                        if reverted.returncode != 0:
+                            reasons.append(
+                                "戻し（git apply -R）も失敗した。作業ツリーを人が確認すること"
+                            )
+                        ledger.add_event(
+                            task_id,
+                            "apply_reverted",
+                            {
+                                "workspace_path": str(workspace.path),
+                                "diff_path": str(diff_path),
+                                "verify_exit_code": verify_result.exit_code,
+                                "revert_ok": reverted.returncode == 0,
+                                "revert_error": reverted.stderr.strip()[:400],
+                            },
+                        )
+
+    changes = outcome.get("changes") or {}
+    summary = outcome.get("summary") or ""
+    limit_chars = cfg.limits.result_summary_max_chars
+    if len(summary) > limit_chars:
+        summary = summary[: limit_chars - 1] + "…"
+
+    payload: dict[str, Any] = {
+        "task_id": task_id,
+        "state": final_state,
+        "judged_ok": not reasons,
+        "applied": applied,
+        "reasons": reasons,
+        "changed_files": {
+            "added": changes.get("added") or [],
+            "modified": changes.get("modified") or [],
+            "deleted": changes.get("deleted") or [],
+        },
+        "verify": verify_record,
+        "open_questions": outcome.get("open_questions") or [],
+        "summary": summary,
+        "local_usage": (outcome.get("usage") or {}).get("local_inference"),
+    }
+    if not applied:
+        payload["apply_hint"] = outcome.get("apply_hint")
+
+    # 8 KiB を超えるなら差分の本文ではなくファイル名の一覧を落とす（JSON は壊さない）。
+    if len(json.dumps(payload, ensure_ascii=False).encode("utf-8")) > cfg.limits.result_max_bytes:
+        payload["changed_files"] = {
+            key: f"{len(value)} 件（多いので省略。get_artifact(task_id, 'diff') で見る）"
+            for key, value in payload["changed_files"].items()
+        }
     return payload
 
 
@@ -592,3 +873,220 @@ def list_tasks(cfg: config_module.Config, limit: int = 20, state: str | None = N
         }
         for task in ledger.list_tasks(limit=limit, state=state)
     ]
+
+
+# --- workspace 登録（CLI 専用。MCP には出さない） ----------------------
+def _detect_verify_candidates(resolved: Path) -> dict[str, list[str]]:
+    """テスト実行コマンドの候補を検出する。表示するだけで、登録は明示指定のみ行う。"""
+    candidates: dict[str, list[str]] = {}
+    has_pytest_project = (
+        (resolved / "pyproject.toml").is_file()
+        or (resolved / "pytest.ini").is_file()
+        or (resolved / "tests").is_dir()
+    )
+    if has_pytest_project:
+        venv_python = resolved / ".venv" / "bin" / "python"
+        python_bin = ".venv/bin/python" if venv_python.is_file() else "python3"
+        candidates["pytest"] = [python_bin, "-m", "pytest", "-q"]
+
+    package_json = resolved / "package.json"
+    if package_json.is_file():
+        try:
+            data = json.loads(package_json.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = {}
+        scripts = data.get("scripts") if isinstance(data, dict) else None
+        if isinstance(scripts, dict) and scripts.get("test"):
+            candidates["npm"] = ["npm", "test"]
+
+    makefile = resolved / "Makefile"
+    if makefile.is_file():
+        try:
+            text = makefile.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+        if re.search(r"^test:", text, re.MULTILINE):
+            candidates["make"] = ["make", "test"]
+    return candidates
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """path と同じディレクトリに一時ファイルを書き、os.replace (mv 相当) で置き換える。"""
+    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
+            tmp_file.write(text)
+        os.replace(tmp_name, path)
+    except Exception:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+        raise
+
+
+def _backup_config_file(config_path: Path) -> Path:
+    backup_path = config_path.with_name(
+        f"{config_path.name}.{time.strftime('%Y%m%d-%H%M%S')}.bak"
+    )
+    shutil.copy2(config_path, backup_path)
+    return backup_path
+
+
+def workspace_add(
+    cfg: config_module.Config,
+    *,
+    path: str,
+    workspace_id: str | None = None,
+    verify_profiles: dict[str, list[str]] | None = None,
+    default_verify: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """許可ルート（[registration] allowed_roots）配下の Git リポジトリだけを登録する。
+
+    モデルや依頼者が任意のパスを登録できないよう、人が bridge.toml に書いた
+    allowed_roots の配下でなければ拒否する。CLI からだけ呼ぶ想定で、MCP には出さない。
+    """
+    try:
+        resolved = Path(path).expanduser().resolve(strict=True)
+    except OSError as exc:
+        raise BridgeError(f"path が存在しません: {path} ({exc})") from exc
+    if not resolved.is_dir():
+        raise BridgeError(f"path がディレクトリではありません: {resolved}")
+
+    roots = cfg.registration_roots
+    if not roots:
+        raise BridgeError(
+            "[registration] allowed_roots が未設定です。bridge.toml に人が書いてください。"
+        )
+    if not any(resolved == root or root in resolved.parents for root in roots):
+        raise BridgeError(
+            f"{resolved} は許可ルート外です。"
+            f" 登録済みルート: {', '.join(str(root) for root in roots)}"
+        )
+
+    if not worktree.is_git_repo(resolved):
+        raise BridgeError(f"{resolved} は Git リポジトリではありません。")
+
+    new_id = workspace_id or re.sub(r"[^A-Za-z0-9_-]", "-", resolved.name)
+    if new_id in cfg.workspaces:
+        raise BridgeError(f"workspace_id {new_id!r} は既に登録されています。")
+    for existing in cfg.workspaces.values():
+        if existing.path == resolved:
+            raise BridgeError(
+                f"{resolved} は既に workspace {existing.workspace_id!r} として登録されています。"
+            )
+
+    suggested = _detect_verify_candidates(resolved)
+
+    verify_profiles = dict(verify_profiles or {})
+    for name, command in verify_profiles.items():
+        if not command:
+            raise BridgeError(f"--verify {name} の --cmd が空です。")
+    if default_verify is not None and default_verify not in verify_profiles:
+        raise BridgeError(
+            f"default_verify {default_verify!r} は --verify で指定されていません。"
+        )
+
+    result: dict[str, Any] = {
+        "workspace_id": new_id,
+        "path": str(resolved),
+        "verify_profiles": verify_profiles,
+        "default_verify": default_verify,
+        "suggested_verify": suggested,
+        "config_path": str(cfg.config_path),
+        "backup_path": None,
+        "dry_run": dry_run,
+    }
+    if dry_run:
+        return result
+
+    lines = ["", f"[workspace.{new_id}]", f"path = {json.dumps(str(resolved))}"]
+    if default_verify:
+        lines.append(f"default_verify = {json.dumps(default_verify)}")
+    for name, command in verify_profiles.items():
+        lines.append("")
+        lines.append(f"[workspace.{new_id}.verify.{name}]")
+        lines.append(f"command = {json.dumps(list(command))}")
+        lines.append("timeout_sec = 600")
+    addition = "\n".join(lines) + "\n"
+
+    config_path = cfg.config_path
+    original_text = config_path.read_text(encoding="utf-8")
+    new_text = original_text + addition
+    try:
+        tomllib.loads(new_text)
+    except tomllib.TOMLDecodeError as exc:
+        raise BridgeError(f"追記後の bridge.toml が TOML として読めません: {exc}") from exc
+
+    backup_path = _backup_config_file(config_path)
+    _atomic_write_text(config_path, new_text)
+
+    result["backup_path"] = str(backup_path)
+    return result
+
+
+def workspace_list(cfg: config_module.Config) -> list[dict[str, Any]]:
+    return [
+        {
+            "workspace_id": ws.workspace_id,
+            "path": str(ws.path),
+            "verify_profiles": sorted(ws.verify_profiles),
+            "default_verify": ws.default_verify,
+        }
+        for ws in cfg.workspaces.values()
+    ]
+
+
+def workspace_which(cfg: config_module.Config, path: str) -> str | None:
+    try:
+        resolved = Path(path).expanduser().resolve()
+    except OSError:
+        return None
+    best: tuple[int, str] | None = None
+    for ws in cfg.workspaces.values():
+        if resolved == ws.path or ws.path in resolved.parents:
+            depth = len(ws.path.parts)
+            if best is None or depth > best[0]:
+                best = (depth, ws.workspace_id)
+    return best[1] if best else None
+
+
+def workspace_remove(cfg: config_module.Config, workspace_id: str) -> dict[str, Any]:
+    if workspace_id not in cfg.workspaces:
+        raise NotFoundError(f"workspace_id {workspace_id!r} は登録されていない。")
+
+    config_path = cfg.config_path
+    lines = config_path.read_text(encoding="utf-8").splitlines(keepends=True)
+    header_re = re.compile(r"^\[workspace\." + re.escape(workspace_id) + r"(\.|\])")
+    other_re = re.compile(r"^\[workspace\.")
+
+    start: int | None = None
+    end = len(lines)
+    for i, line in enumerate(lines):
+        if header_re.match(line):
+            if start is None:
+                start = i
+            continue
+        if start is not None and other_re.match(line):
+            end = i
+            break
+    if start is None:
+        raise NotFoundError(f"workspace_id {workspace_id!r} のブロックが見つかりません。")
+
+    block_start = start
+    while block_start > 0 and lines[block_start - 1].strip() == "":
+        block_start -= 1
+
+    new_text = "".join(lines[:block_start] + lines[end:])
+    try:
+        tomllib.loads(new_text)
+    except tomllib.TOMLDecodeError as exc:
+        raise BridgeError(f"削除後の bridge.toml が TOML として読めません: {exc}") from exc
+
+    backup_path = _backup_config_file(config_path)
+    _atomic_write_text(config_path, new_text)
+
+    return {
+        "workspace_id": workspace_id,
+        "config_path": str(config_path),
+        "backup_path": str(backup_path),
+    }
