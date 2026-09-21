@@ -1,7 +1,6 @@
 # localai
 
-NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せるための環境。
-推論サーバの選定・モデル・ハードの制約は knowledge/10-silver/areas/env.md にある。
+NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せるための環境。推論サーバ・モデル・ハードの制約は knowledge/10-silver/areas/env.md にある。
 
 ## 構成
 
@@ -10,6 +9,7 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 | `knowledge/` | ナレッジベース本体 |
 | `tools/qwen-worker/` | ローカル Qwen を Claude Code / Codex から直接使う MCP ワーカー |
 | `tools/local-ai-bridge/` | OpenCode 経由でローカル Qwen へ実装を委譲する連携層。スキル `/qwen` `/qwen-read` の実体も（README.ja.md） |
+| `tools/status/` | いま Qwen が何を処理しているかを見る（サーバー用 sh と、他の PC 用 sh / ps1） |
 
 新しく作るリポジトリ・試験データは必ずこの中（例 `tools/*/fixtures/`）に置く。`~/Proj` 直下には作らない。
 `~/.local/share/qwen-worker` は `tools/qwen-worker` へのシンボリックリンク。MCP 登録と authorized_keys の強制コマンドがそのパスを指す。
