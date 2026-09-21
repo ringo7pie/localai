@@ -467,6 +467,61 @@
       "runner の分類修正（基準で落ちていた検証が直っていなければ failed、一部なら未修正名を列挙）は F4 の再実行で動作確認済み。"
     ]
   },
+  "round4": {
+    "description": "round 3 の large_context_projection（計算値）を実測した回。親自身（Claude Fable 5.1、この会話そのもの）が長い会話で A と B を実際に解いた。",
+    "method": "measured_large_context",
+    "measured_at": "2026-09-21",
+    "condition": {
+      "parent": "Claude Fable 5.1（親）。文脈 約 92 万トークン/ターン（この会話そのもの）。",
+      "task": "F6: Sonnet 5 サブエージェントが作成した、答えを知らない新規課題。新規モジュール1つ・3関数、呼び出し側2ファイルの改修、テスト6件。f6a と f6b は同型で題材だけ違う。",
+      "A": "親が自力で実装（f6a）。",
+      "B": "親が `local-ai-task run --mode deep --max-wait 540` を1回呼んで解決（f6b）。",
+      "cost_source": "親の記録から（重複排除）。Fable 5.1 単価: 入力 $10/MTok・出力 $50/MTok・キャッシュ読み $0.25/MTok・キャッシュ書き 1h TTL 2×。"
+    },
+    "tasks": [
+      {
+        "family": "F6",
+        "arm": "A",
+        "variant": "f6a",
+        "turns": 2,
+        "cache_read": 1845957,
+        "output": 2501,
+        "usd": 0.7076,
+        "note": "1ターン目でTASK.mdと全ソース・テストを1つのBashで読み、2ターン目で3ファイルを書いてテスト実行。6件OK。"
+      },
+      {
+        "family": "F6",
+        "arm": "B",
+        "variant": "f6b",
+        "turns": 2,
+        "cache_read": 1855574,
+        "output": 1985,
+        "usd": 0.62,
+        "note": "1ターン目でrunを1回呼び、2ターン目で結果確認。Qwen側380.8秒（deep）、6件OK、判定合格・適用済み・再検証0。"
+      }
+    ],
+    "totals": {
+      "A_usd": 0.7076,
+      "B_usd": 0.62,
+      "ratio_b_over_a": 0.88
+    },
+    "reason": "「長い会話ならAが4〜5ターンかかる」というround3のlarge_context_projectionの前提が崩れた。Claudeは読み取りを1つのBashにまとめ、実装とテスト実行も1つにまとめられるので、この規模（3ファイル・6テスト）なら自力でも2ターンで終わる。委譲も最低2ターン（依頼・受領）なので、ターン数が同じになり、差は出力トークンのわずかな差だけになった。",
+    "all_rounds_measured_range": {
+      "round3_small_context_b_over_a": "0.81〜1.15",
+      "round4_large_context_b_over_a": 0.88,
+      "conclusion": "50%以下は一度も観測されていない。round3のlarge_context_projection「0.25〜0.50」は計算値で、その前提（Aのターン数が4〜8まで増える）が実測で否定された。"
+    },
+    "judgment": {
+      "cost_benefit": "トークン費用の削減を目的にQwenへ委譲するメリットは、実測上ほぼ無い（-12%〜+15%）。",
+      "when_delegation_wins": "委譲が費用で勝つのは「クラウドが本当に何度も往復する仕事」（原因不明のバグ追い、何度も落ちるテスト）だけだが、そのような仕事はQwenも失敗しやすく、失敗時の引き取り費用（round2 F4で$0.94）で相殺されうる。",
+      "non_cost_benefits": [
+        "ソース全文をクラウドへ送らない（要約と差分だけ）",
+        "同じ課題の別実装として比較材料になる（ただしF2でQwenの実装に死んだ分岐が残った例あり）",
+        "A30が空いていれば並行に走らせられる。速度はClaudeサブエージェント（数十秒）より遅い（6分前後）"
+      ],
+      "recommendation": "委譲ルールから「費用が下がる」という理由を外し、「ソースをクラウドへ出したくないとき」「別実装で照合したいとき」の選択肢として残す。"
+    }
+  },
   "breakeven": {
     "unit": "クラウド単独（A）のターン数",
     "old_method_turns": "8.1〜9.4",

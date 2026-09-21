@@ -153,3 +153,13 @@ python3 bench/measure_cloud_tokens.py sum --session <id> --list-subagents
 - **クラウドの実トークン数と費用**。セッション記録から実測できる（§1.1）
 - **A/B の実測値**。結果は `bench/results.json` と
   `knowledge/30-gold/verification-report.md` §1.11 にある。この文書は手順のみ
+
+## 結論（2026-09-21）
+
+round 4 で「文脈が大きい会話」を実測した。親の文脈 約 92 万トークン/ターンで新規課題 F6
+（3 ファイル・6 テスト）を解いたところ B/A = 0.88 で、round 3 の計算値「0.25〜0.50」
+（単独が 4〜5 ターンかかるという前提）は実測で崩れた。全ラウンドの実測範囲は B/A
+0.81〜1.15（round 3・小文脈）・0.88（round 4・大文脈）で、**50% 以下は一度も観測されて
+いない。** トークン費用の削減を目的にした委譲には実測上メリットが無い。委譲は「ソースを
+クラウドへ出したくない」「別実装で照合したい」ときの選択肢として残す。詳細は
+`bench/results.json` の `round4`、`knowledge/30-gold/verification-report.md` §1.13。

@@ -160,6 +160,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
     <li><a href="#s5">道具 B：local-ai-bridge を他の PC に置く</a></li>
     <li><a href="#s6">道具 C：ブラウザチャット</a></li>
     <li><a href="#s7">実行モードと予算</a></li>
+    <li><a href="#s7b">費用について（実測）</a></li>
     <li><a href="#s8">委譲ルールの貼り付け</a></li>
     <li><a href="#s9">安全の境界</a></li>
     <li><a href="#s10">困ったとき</a></li>
@@ -201,7 +202,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <tr><td>ビルド・テストの実行</td><td>しない（親が行う）</td><td><b>連携層が実行して証拠を残す</b></td><td>しない</td></tr>
 <tr><td>Claude Code / Codex から</td><td><span class="pill p-ok">MCP</span></td><td><span class="pill p-ok">MCP</span></td><td>—</td></tr>
 <tr><td>長い作業の扱い</td><td>1 回の呼び出しで完結（最大 35 分）</td><td>受付して <code>task_id</code> を返し、裏で継続</td><td>—</td></tr>
-<tr><td>この環境での検証状況</td><td><span class="pill p-warn">ループバックで実証。実機 2 台は未</span></td><td><span class="pill p-bad">サーバー上のみ実証。他 PC は未</span></td><td><span class="pill p-bad">ufw 未適用で他 PC から未到達</span></td></tr>
+<tr><td>この環境での検証状況</td><td><span class="pill p-warn">ループバックで実証。実機 2 台は未</span></td><td><span class="pill p-warn">サーバー上で 4 ラウンド実測。他 PC は未</span></td><td><span class="pill p-bad">ufw 未適用で他 PC から未到達</span></td></tr>
 </table>
 
 <div class="note">
@@ -283,9 +284,16 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <p><code>/qwen &lt;依頼文&gt;</code>（実装の委譲）・<code>/qwen-read &lt;調べること&gt;</code>（読み取り専用の調査）は、
 上の MCP ツールを 1 回だけ呼ぶ Claude Code スキル。実体は <code>tools/local-ai-bridge/skills/</code>。</p>
 
+<p><code>/qwen</code> はまず <code>workspace which "$PWD"</code> でカレントディレクトリの作業場所を判定する。
+未登録（終了コード 1）なら <code>workspace add</code> での登録手順を案内してそこで止まり、
+勝手には登録しない。</p>
+
 <h3>3-2. コマンドから（local-ai-task CLI）</h3>
 
 <p>MCP と CLI は<b>同じ処理</b>（<code>bridge/core.py</code>）を呼ぶ。別実装ではない。</p>
+
+<p><b>推奨は <code>run</code> を 1 回呼ぶこと。</b>委譲→完了待ち→6 フラグ判定→作業ツリーへ適用→
+登録済みコマンドで再検証→600 字要約、をこの 1 回で行う。</p>
 
 <div class="oshead os-srv">A30 サーバー — bash</div>
 <div class="term"><span class="c"># 毎回打つのが面倒なら変数に入れる</span>
@@ -300,7 +308,34 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
   [OK  ] 見えるモデル: ollama/qwen3.8:27b
   合計: OK 8 / NG 0 / 未取得 0</span>
 
-<span class="c"># 2. 依頼する（受付だけ。数秒で task_id が返る）</span>
+<span class="c"># 2. 委譲から適用・再検証まで 1 回で済ませる（推奨）</span>
+<span class="c"># Bash ツールの上限は 600 秒なので --max-wait 540 に収める</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task run \
+    --workspace selftest \
+    --request-id fix-total-length-002 \
+    --goal "total_length が区間の重なりを二重に数えている。1 回だけ数えるよう直す" \
+    --scope "src/interval.py" \
+    --forbid "tests/ のテストを削除・緩和しない" \
+    --acceptance "tests/test_interval.py の 4 件すべてが通る" \
+    --verify unittest --mode deep --max-wait 540
+<span class="c"># 終了コード: 0 合格して適用済み / 1 不合格 / 2 設定エラー / 3 重複 / 4 時間切れ</span>
+<span class="c"># 4（時間切れ）のときだけ、返った task_id で wait を 1 回足す</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task wait task_xxxxxxxx --max-wait 540</div>
+
+<div class="note">
+  <b>MCP なら待てる時間が長い</b>
+  Bash ツールから呼ぶときは 600 秒上限の内側に収めるため <code>--max-wait 540</code> を使う。
+  MCP の <code>run_task</code> なら 1200 秒（20 分）まで待てる。
+</div>
+
+<h4>個別の段階を自分で追いたいとき</h4>
+
+<p>長い作業を分けて進捗を追いたいときの補助として、<code>submit</code>（受付だけ）→
+<code>status</code> / <code>wait</code>（進捗・完了待ち）→ <code>result</code>（結果取得）の流れも使える。
+ふだんは <code>run</code> 1 回で足りる。</p>
+
+<div class="oshead os-srv">A30 サーバー — bash</div>
+<div class="term"><span class="c"># 2'. 依頼する（受付だけ。数秒で task_id が返る）</span>
 <span class="p">$</span> $BRIDGE/run-local-ai-task submit \
     --workspace selftest \
     --request-id fix-total-length-001 \
@@ -349,26 +384,41 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 <h3>3-4. 新しい作業場所を登録する</h3>
 
 <p><b>登録していないディレクトリでは作業しない。</b>全ディレクトリを自動では許可しない。
-<code>~/.config/local-ai-bridge/bridge.toml</code> に足す。</p>
+<code>local-ai-task workspace add</code> で登録する。手で <code>bridge.toml</code> の
+<code>[workspace.*]</code> を書く必要はない。</p>
 
-<div class="oshead os-srv">~/.config/local-ai-bridge/bridge.toml</div>
-<div class="term"><span class="c"># workspace_id は submit の --workspace で指定する名前</span>
-[workspace.myproject]
-path = "/home/mt/Proj/myproject"
-default_verify = "pytest"
+<div class="oshead os-srv">A30 サーバー — bash</div>
+<div class="term"><span class="p">$</span> $BRIDGE/run-local-ai-task workspace add /home/mt/Proj/myproject \
+    --id myproject \
+    --verify pytest --cmd "python3 -m pytest -q" \
+    --default-verify pytest
 
-<span class="c"># 検証コマンドは argv の配列。シェル文字列は受け付けない（shell=False で実行するため）</span>
-[workspace.myproject.verify.pytest]
-description = "単体テスト"
-command = ["/home/mt/Proj/myproject/.venv/bin/python", "-m", "pytest", "-q"]
-timeout_sec = 600</div>
+<span class="c"># 登録済み一覧</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task workspace list
+
+<span class="c"># パスがどの workspace 配下か調べる（無ければ終了コード 1）</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task workspace which /home/mt/Proj/myproject/src
+
+<span class="c"># 登録の削除</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task workspace remove myproject</div>
+
+<p><code>--cmd</code> はシェル風の 1 文字列で渡す（<code>"python3 -m pytest -q"</code> のように）。
+<code>shlex.split</code> で argv 配列に分解して登録するだけで、<b>実行時にシェルは介さない</b>
+（<code>shell=False</code>）。<code>--verify</code> と <code>--cmd</code> は同じ順番・同じ回数だけ指定し、
+複数の検証プロファイルを一度に登録できる。</p>
 
 <div class="note">
-  <b>なぜ配列なのか</b>
-  シェルを介さないので <code>&amp;&amp;</code> や <code>|</code> や変数展開が効かない。
-  モデルが任意のコマンドを実行先にできないようにするための制約。
-  複数コマンドを走らせたいときは、それをまとめた<b>スクリプトを 1 本書いて</b>その argv を登録する。
+  <b>なぜ許可ルートが要るのか</b>
+  登録できるのは <code>~/.config/local-ai-bridge/bridge.toml</code> の
+  <code>[registration] allowed_roots = ["/home/mt/Proj"]</code>（<b>人が書く</b>）配下の
+  <b>Git リポジトリだけ</b>。モデルや依頼者が任意のパスを登録先にできないようにするための制約。
+  <code>--cmd</code> をシェル文字列でなく argv へ分解するのも同じ理由（<code>&amp;&amp;</code> や
+  <code>|</code> や変数展開を効かせない）で、複数コマンドを走らせたいときは、それをまとめた
+  <b>スクリプトを 1 本書いて</b>その argv を登録する。
 </div>
+
+<p>登録・削除のたびに <code>bridge.toml</code> の <code>.bak</code>（タイムスタンプ付き）が自動で
+取られる。</p>
 
 
 <h2 id="s4"><span class="num">04</span>道具 A：qwen-worker を他の PC から</h2>
@@ -446,14 +496,15 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 <li>
 <h4>疎通を確かめる</h4>
 <div class="oshead os-win">Windows — PowerShell</div>
-<div class="term"><span class="p">PS&gt;</span> ssh -T qwen-worker &lt; nul
+<div class="term"><span class="p">PS&gt;</span> ssh -n -T qwen-worker
 <span class="c"># エラーが出ずに即終了すれば接続は通っている（JSON は返らない）</span>
 
 <span class="p">PS&gt;</span> claude mcp get qwen-worker
 <span class="o">  Status: ✔ Connected</span></div>
+<div class="note"><b>Enter passphrase for key … と聞かれたら</b>: 鍵にパスフレーズが付いています。サーバーのログインパスワードではないので通りません。<code>ssh-keygen -p -f $HOME\.ssh\qwen-worker</code> で旧パスフレーズを入れ、新は Enter を 2 回（空）にして外します。分からなければ鍵 2 ファイルを削除して setup-remote.ps1 を再実行し、サーバー側で <code>remove-remote-key.sh &lt;PC名&gt;</code> で古い鍵を消してから受け入れ直します。</div>
 
 <div class="oshead os-lin">macOS / Linux</div>
-<div class="term"><span class="p">$</span> ssh -T qwen-worker &lt;/dev/null
+<div class="term"><span class="p">$</span> ssh -n -T qwen-worker
 <span class="p">$</span> claude mcp get qwen-worker
 <span class="o">  Status: ✔ Connected</span></div>
 
@@ -605,8 +656,10 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <tr><td><code>[opencode] binary</code></td><td>その PC の <code>~/.opencode/bin/opencode</code></td></tr>
 <tr><td><code>[opencode] config_source</code></td><td>clone 先の <code>opencode-profile/opencode.json</code></td></tr>
 <tr><td><code>[state] root</code></td><td><b>ローカルディスク上</b>。ネットワークドライブ不可（SQLite のロックが壊れる）</td></tr>
-<tr><td><code>[workspace.*]</code></td><td>その PC 上のリポジトリと検証コマンド</td></tr>
+<tr><td><code>[registration] allowed_roots</code></td><td>作業場所として登録してよいディレクトリの親（<b>人が書く</b>）</td></tr>
 </table>
+
+<p>作業場所（<code>[workspace.*]</code>）は手で書かず、<code>workspace add</code> で登録できる（§3-4）。</p>
 
 <div class="bad">
   <b>Windows ネイティブでは動かない</b>
@@ -637,8 +690,9 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 </table>
 
 <div class="note">
-  <b>今の会話にはすぐ反映されない</b>
-  MCP の登録は<b>新しい会話を開いてから</b>有効になる。
+  <b>即時反映されるもの・されないもの</b>
+  <b>スキル（<code>/qwen</code>）と Agent 定義は即時反映される。</b>
+  一方で<b>MCP サーバーの新しいツール（<code>run_task</code> など）は再接続後に見える。</b>
   登録できたかは <code>claude mcp get local-ai-bridge</code> で <code>✔ Connected</code> を確認する。
 </div>
 </li>
@@ -756,6 +810,42 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 </div>
 
 
+<h2 id="s7b"><span class="num">07b</span>費用について（実測）</h2>
+
+<p>費用 ≒ <b>親のターン数 × 文脈長</b>にほぼ比例する。1 ターンの費用は文脈が大きいほど高い
+（この会話での実測: 文脈 約 92 万トークンで Fable 5.1 1 ターン 約 $0.30〜0.35）。</p>
+
+<table>
+<tr><th>ラウンド</th><th>条件</th><th>結果（B/A）</th></tr>
+<tr><td>round 3</td><td>新規の小さい文脈。Opus 5 サブエージェント同士で比較</td>
+  <td>F1 0.81 / F2 0.96 / F3 0.82 / F5 1.15、合計 <b>0.96</b></td></tr>
+<tr><td>round 4</td><td>長い会話（この会話そのもの）。親が直接、自力（A）と <code>run</code> 1 回（B）で解く</td>
+  <td>A 自力 2 ターン $0.7076 / B 2 ターン $0.6200 → <b>0.88</b></td></tr>
+</table>
+
+<div class="bad">
+  <b>結論: 50% 以下は 4 ラウンドで一度も観測されていない</b>
+  トークン削減を目的に委譲するメリットは実測上ほぼ無い。理由: Claude は読み書きを 1 つの
+  Bash にまとめて 2 ターンで終えられるため、委譲（依頼・受領で最低 2 ターン）と差がつかない。
+</div>
+
+<p>費用以外の用途としては残る: <b>ソース全文をクラウドへ送らない</b>／
+<b>同じ課題の別実装で照合する</b>／<b>A30 が空いていれば並行させる</b>。
+ただし速度は遅い（Qwen 側 6 分前後 vs Claude サブエージェント数十秒）。</p>
+
+<table>
+<tr><th>誰が</th><th>何をしたか（round 4・F6）</th></tr>
+<tr><td>A（自力）</td><td>Claude が 1 ターン目で全ファイルを読み、2 ターン目で 3 ファイルを書いてテストを実行した。</td></tr>
+<tr><td>B（<code>run</code> 1 回）</td><td>Claude が <code>run</code> を 1 回叩いて 6 分半待った。その間に連携層が基準テスト →
+  <b>Qwen</b>（OpenCode 経由）が read×6・edit×3・write×1 → 連携層が検証 →
+  Qwen の別セッションがレビュー → 連携層が 6 フラグ判定・<code>git apply</code>・再検証、
+  という流れが裏で進んだ。<b>Claude はコードを 1 行も読んでいない。</b></td></tr>
+</table>
+
+<p>測り方: <code>bench/measure_cloud_tokens.py sum --last-minutes 30</code>
+（セッション ID は環境変数から自動判定。<code>--session</code> は省略可）。</p>
+
+
 <h2 id="s8"><span class="num">08</span>委譲ルールの貼り付け</h2>
 
 <p>他の PC の <code>CLAUDE.md</code> / <code>AGENTS.md</code> に貼る。
@@ -844,7 +934,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <tr><td>何も返らないまま数分待つ</td><td>A30 が別の生成で塞がっている。<b>混雑中はイベントが 1 行も出ない</b></td><td><code>ollama ps</code> と <code>list --state running</code> を見る。無応答と混雑を取り違えない</td></tr>
 <tr><td><code>doctor</code> の「実効設定」が NG</td><td><code>$HOME/.opencode/opencode.json</code> が出来ていて設定が混ざっている</td><td>そのファイルを消す。<code>doctor</code> が警告として場所を出す</td></tr>
 <tr><td><code>doctor</code> の「ollama 接続」が NG</td><td>他の PC ならトンネルが切れている</td><td><code>ssh -N -L ...</code> を張り直す。同一ホストなら <code>systemctl status ollama</code></td></tr>
-<tr><td>MCP が会話に出てこない</td><td>登録は新しい会話からしか効かない</td><td><code>claude mcp get &lt;名前&gt;</code> で <code>✔ Connected</code> を確認し、会話を開き直す</td></tr>
+<tr><td>MCP の新しいツールが会話に出てこない</td><td>MCP サーバーの新ツール（<code>run_task</code> など）は再接続後にしか見えない。スキル（<code>/qwen</code>）と Agent 定義は即時反映される</td><td><code>claude mcp get &lt;名前&gt;</code> で <code>✔ Connected</code> を確認し、会話を開き直すか <code>/mcp</code> で再接続する</td></tr>
 <tr><td><code>ssh qwen-worker</code> でシェルが取れる</td><td>強制コマンドが効いていない<b>（設定ミス）</b></td><td><code>remove-remote-key.sh &lt;PC名&gt;</code> で鍵を消し、<code>add-remote-key.sh</code> でやり直す</td></tr>
 </table>
 
@@ -900,8 +990,13 @@ A30 側にワークスペース全体を複製する必要はない。</p>
   <li><b>他の作業 PC からの実接続。</b>Windows 11 / WSL2 の実機が無い。§4 も §5 も<b>実機 2 台では検証していない</b>。受け入れ済みの qwen-worker 鍵は現在 <b>0 件</b></li>
   <li><b>Codex の対話セッションからのツール呼び出し。</b>登録は <code>codex mcp get</code> で確認したが、会話から呼ぶところは試していない</li>
   <li><b>Open WebUI の画面上のモデル一覧と実チャット。</b>API がブラウザ由来のセッションを要求するため、コマンドラインからは確かめられなかった</li>
-  <li><b>クラウドのトークン削減量。</b>比較手順は <code>docs/usage-comparison.md</code> にあるが、結果は測っていない。<b>削減率は保証しない</b></li>
 </ul>
+
+<div class="ok">
+  <b>クラウドのトークン削減量は測定済み</b>
+  §07b「費用について（実測）」を参照。round 3・round 4 で B/A = 0.81〜1.15、
+  50% 以下は一度も観測されていない。
+</div>
 
 <h3>承認待ち（sudo が要る。実行していない）</h3>
 
