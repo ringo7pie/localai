@@ -428,6 +428,63 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <ol class="steps">
 
 <li>
+<h4>導入スクリプトを 1 回走らせる（最初の 1 回だけ）</h4>
+
+<div class="oshead os-lin">他の PC（macOS / Linux / WSL2）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
+<div class="term"><span class="p">$</span> scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+<span class="p">$</span> bash setup-workpc.sh --server-ip <server-ip></div>
+
+<div class="oshead os-win">他の PC（Windows PowerShell）で打つ <span class="when">｜ いつ: 最初の 1 回だけ。WSL2 が要る</span></div>
+<div class="term"><span class="p">PS&gt;</span> scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+<span class="p">PS&gt;</span> scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.ps1 .
+<span class="p">PS&gt;</span> powershell -ExecutionPolicy Bypass -File .\setup-workpc.ps1 -ServerIp <server-ip></div>
+
+<p>スクリプトがやること:
+[1/7] トンネル専用鍵 <code>~/.ssh/a30-tunnel</code> を作る。
+[2/7] サーバーの <code>authorized_keys</code> に制限付きの 1 行を追記（ssh がサーバーのログインパスワードを 1 回聞く。スクリプトはパスワードを受け取らない）。
+[3/7] <code>~/.ssh/config</code> に <code>Host a30-ollama</code>。
+[4/7] トンネル起動ヘルパ <code>~/.local/bin/a30-tunnel</code> を置いて start。
+[5/7] uv と OpenCode 1.18.31。
+[6/7] 本体を rsync で複製し <code>.venv</code> と <code>bridge.toml</code> を作る（ここでもパスワード 1 回）。
+[7/7] Claude Code / Codex への MCP 登録・スキル・委譲ルール・doctor。</p>
+
+<p>手で進めたいときは <code>--skip-server</code>（サーバーへの鍵登録を表示だけにする）、<code>--no-rules</code>（CLAUDE.md への追記をしない）。再実行しても既にあるものは触らない。</p>
+
+<div class="warn">
+  Windows 版は bridge 本体を WSL2 の中に置き、Windows 側の Claude Code から <code>wsl</code> 経由で呼ぶ。
+  bridge は <code>fcntl</code> を使うため Windows ネイティブでは動かない。
+  この Windows→WSL2 の経路は未検証。動かなければ WSL2 内の Claude Code から使う。
+</div>
+</li>
+
+<li>
+<h4>使うたび：トンネルを張る</h4>
+
+<div class="oshead os-lin">他の PC で打つ <span class="when">｜ いつ: 使うたび（Claude Code / Codex を使う前）</span></div>
+<div class="term"><span class="p">$</span> a30-tunnel start     <span class="c"># ssh -N -f a30-ollama。既に生きていれば何もしない</span>
+<span class="p">$</span> a30-tunnel status    <span class="c"># pid と curl http://127.0.0.1:11434/api/version の結果</span>
+<span class="p">$</span> a30-tunnel stop</div>
+
+<p>WSL2 ではトンネルも bridge も WSL2 の中で動く。Windows 側からは <code>127.0.0.1:11434</code> は見えない。</p>
+</li>
+
+<li>
+<h4>点検して 1 件流す</h4>
+<div class="oshead os-lin">他の PC（bash）で打つ <span class="when">｜ いつ: 点検したいとき／委譲を 1 件流すたび</span></div>
+<div class="term"><span class="p">$</span> ./run-local-ai-task doctor
+<span class="c"># 「ollama 接続」が OK ならトンネル越しに A30 へ届いている</span>
+<span class="c"># 「見えるモデル」が ollama/qwen3.8:27b だけであること</span>
+
+<span class="p">$</span> ./run-local-ai-task submit --workspace myproject --request-id smoke-001 \
+    --goal "README.md の末尾に空行を 1 つ足す" --scope README.md --mode standard</div>
+</li>
+</ol>
+
+<details>
+<summary>手で進める場合（スクリプトがやっていることの中身）</summary>
+
+<ol class="steps">
+<li>
 <h4>他の PC から：トンネル専用の鍵をサーバーへ登録する（パスワード 1 回）</h4>
 <p>道具 A の鍵とは<b>別の鍵</b>を使う。A の鍵は強制コマンド付きでポート転送できないため。</p>
 
@@ -538,18 +595,9 @@ A30 側にワークスペース全体を複製する必要はない。</p>
   登録できたかは <code>claude mcp get local-ai-bridge</code> で <code>✔ Connected</code> を確認する。
 </div>
 </li>
-
-<li>
-<h4>点検して 1 件流す</h4>
-<div class="oshead os-lin">他の PC（bash）で打つ <span class="when">｜ いつ: 点検したいとき／委譲を 1 件流すたび</span></div>
-<div class="term"><span class="p">$</span> ./run-local-ai-task doctor
-<span class="c"># 「ollama 接続」が OK ならトンネル越しに A30 へ届いている</span>
-<span class="c"># 「見えるモデル」が ollama/qwen3.8:27b だけであること</span>
-
-<span class="p">$</span> ./run-local-ai-task submit --workspace myproject --request-id smoke-001 \
-    --goal "README.md の末尾に空行を 1 つ足す" --scope README.md --mode standard</div>
-</li>
 </ol>
+
+</details>
 
 <div class="warn">
   <b>同時実行について</b>
@@ -557,8 +605,6 @@ A30 側にワークスペース全体を複製する必要はない。</p>
   <code>max_concurrent_jobs</code> は<b>その PC の中だけ</b>の制限で、A30 全体の並列制御ではない。
   A30 全体は Ollama 側の <code>OLLAMA_NUM_PARALLEL</code> と <code>OLLAMA_MAX_QUEUE</code> が担う。
 </div>
-
-
 <h2 id="s6"><span class="num">05</span>道具 C：ブラウザチャット</h2>
 
 <p>Open WebUI が <code>systemd --user</code> で常駐している。ChatGPT のような画面で Qwen と対話できる。

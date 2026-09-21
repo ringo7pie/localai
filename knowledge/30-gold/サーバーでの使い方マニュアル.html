@@ -275,6 +275,23 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 
 <p>まず手元（A30 サーバー）で動かして、挙動を掴んでから他の PC へ広げるのが早い。</p>
 
+<h3>3-0. 導入（最初の 1 回だけ）</h3>
+
+<p>導入はスクリプト 1 本ずつ。再実行しても既にあるものは触らない。</p>
+
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 最初の 1 回だけ（再実行しても安全）</span></div>
+<div class="term"><span class="c"># local-ai-bridge（OpenCode 経由で Qwen に実装を委譲し、テストまで回す）</span>
+<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/setup-server.sh --workspace /home/mt/Proj/localai
+
+<span class="c"># qwen-worker（他の PC から SSH 越しに使わせる本体。Claude Code / Codex から直接呼ぶ MCP）</span>
+<span class="p">$</span> /home/mt/Proj/localai/tools/qwen-worker/setup-server.sh</div>
+
+<p>setup-server.sh（local-ai-bridge）がやること: [1/7] uv と python3 の確認 → [2/7] OpenCode 1.18.31 → [3/7] .venv → [4/7] ~/.config/local-ai-bridge/bridge.toml（allowed_roots を書く）→ [5/7] Claude Code / Codex への MCP 登録 → [6/7] スキル /qwen /qwen-read と委譲ルール → [7/7] --workspace のリポジトリを登録して doctor。引数: --allowed-root DIR、--workspace PATH、--mcp-scope local|user、--no-rules、--no-skills。検証プロファイル（テストコマンド）は付けないので、あとで 3-4 の workspace add --verify で足す。</p>
+
+<p>setup-server.sh（qwen-worker）がやること: [1/5] .venv → [2/5] ~/.local/share/qwen-worker → tools/qwen-worker のシンボリックリンク → [3/5] ~/.config/qwen-worker/config.toml を config.toml.example から → [4/5] MCP 登録（--no-mcp で省略）→ [5/5] tests/test_sandbox.py。</p>
+
+<p>終わったら新しい会話を開く。MCP のツールは再接続後にしか見えない。</p>
+
 <h3>3-1. Claude Code / Codex から（MCP）</h3>
 
 <p>登録済みのツールをそのまま呼ぶ。会話の中で「このバグを local-ai-bridge に投げて」のように頼む。</p>
@@ -389,13 +406,12 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 </div>
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（submit 経路で差分を当てる）</span></div>
-<div class="term">TASK=task_9f4cc12619c14957
-DIFF=~/.local/state/local-ai-bridge/tasks/$TASK/changes.diff
-REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
+<div class="term"><span class="c"># 6 フラグ判定 → git apply --check → 適用 → 登録済みコマンドで再検証（落ちたら git apply -R で戻す）</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task apply <b>task_id</b>
+<span class="c"># 再検証を省くとき（勧めない）</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task apply <b>task_id</b> --no-verify</div>
 
-<span class="p">$</span> git -C "$REPO" apply --check -p1 "$DIFF"   <span class="c"># 先に当たるか確かめる</span>
-<span class="p">$</span> git -C "$REPO" apply -p1 "$DIFF"           <span class="c"># 当てる</span>
-<span class="p">$</span> git -C "$REPO" diff                         <span class="c"># 自分の目で見る</span></div>
+<p>終了コード: 0 = 適用して再検証も合格 / 1 = 不合格または適用せず（reasons に理由。既に当たっていれば already_applied）/ 2 = 設定エラー。MCP には載せていない。適用は人が起動する。</p>
 
 <h3>3-4. 新しい作業場所を登録する</h3>
 
@@ -435,8 +451,6 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 
 <p>登録・削除のたびに <code>bridge.toml</code> の <code>.bak</code>（タイムスタンプ付き）が自動で
 取られる。</p>
-
-
 <h2 id="s4"><span class="num">04</span>他の PC の鍵を受け入れる・取り消す（qwen-worker）</h2>
 
 <p>A30 サーバー上のコードを、他の PC の Claude Code / Codex から調査・実装させる。
@@ -508,15 +522,12 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 </div>
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 承認を得てから 1 回だけ（sudo が要る。未実行）</span></div>
-<div class="term"><span class="c"># 1. LAN の <lan-cidr> にだけ 8080 を開ける（全開放はしない）</span>
-<span class="p">$</span> sudo ufw allow from <lan-cidr> to any port 8080 proto tcp comment 'Open WebUI'
+<div class="term"><span class="c"># まず表示だけ（何も変えない）。差分・影響・戻し方・今の状態が出る</span>
+<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh
 
-<span class="c"># 2. ログアウトしても動き続けるようにする</span>
-<span class="p">$</span> sudo loginctl enable-linger mt
-
-<span class="c"># 確認</span>
-<span class="p">$</span> sudo ufw status | grep 8080
-<span class="p">$</span> systemctl --user is-active open-webui</div>
+<span class="c"># 承認したら 1 項目ずつ。yes と答えたときだけ実行する。sudo のパスワードは sudo が聞く</span>
+<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply ufw-8080
+<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply linger</div>
 
 <h3>使い方</h3>
 
@@ -526,9 +537,9 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 <li><h4>最初のアカウントを作る</h4>
 <p><b>最初に登録した人が管理者になる。</b>そのため、こちらでは作っていない。</p></li>
 <li><h4>登録を閉じる</h4>
-<div class="oshead os-srv">A30 サーバーで ~/.config/open-webui/open-webui.env を編集 <span class="when">｜ いつ: 必要になったとき（登録を閉じる）</span></div>
-<div class="term">ENABLE_SIGNUP=false</div>
-<div class="term"><span class="p">$</span> systemctl --user restart open-webui</div></li>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（登録を閉じる）</span></div>
+<div class="term"><span class="c"># sudo 不要。ENABLE_SIGNUP=true があれば false に置き換え、open-webui を再始動する</span>
+<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply close-signup</div></li>
 </ol>
 
 <div class="note">
@@ -538,8 +549,6 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
   ブラウザ相当のリクエストが 2 秒で返っている（ワーカーが生成とファイル操作を交互にやるため）。
   ただし生成が重なれば当然待つ（実測: 同時 2 本で 18.5 秒と 36.9 秒）。
 </div>
-
-
 <h2 id="s7"><span class="num">06</span>実行モードと予算</h2>
 
 <h3>モード（local-ai-bridge）</h3>
@@ -620,6 +629,25 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
   Qwen の別セッションがレビュー → 連携層が 6 フラグ判定・<code>git apply</code>・再検証、
   という流れが裏で進んだ。<b>Claude はコードを 1 行も読んでいない。</b></td></tr>
 </table>
+
+<h3>round 5（2026-09-21・実運用の導入スクリプト 2 本）</h3>
+<p>Qwen 委譲（B）と Sonnet 5 xHigh サブエージェント（A）に、同規模の導入スクリプトを 1 本ずつ作らせて比べた。課題は同一ではない。</p>
+<table>
+<tr><th></th><th>A. Sonnet 5 xHigh サブ</th><th>B. Qwen 委譲（local-ai-bridge run）</th></tr>
+<tr><td>課題</td><td><code>setup-workpc.sh</code>（517 行）</td><td><code>setup-server.sh</code>（241 行）</td></tr>
+<tr><td>親（Fable）のターン</td><td>2</td><td>17</td></tr>
+<tr><td>クラウド費用</td><td>$0.73（親 $0.32 + サブ $0.41）</td><td>$2.07（親のみ。Qwen は $0）</td></tr>
+<tr><td>所要</td><td>8.5 分</td><td>36 分</td></tr>
+<tr><td>B/A</td><td colspan="2"><b>2.85</b>（Qwen 委譲のほうが高い）</td></tr>
+</table>
+<div class="warn">
+  <b>費用の本体は「待ちの往復」</b>
+  Qwen の推論は無料でも、親が <code>run</code> の時間切れ → <code>wait</code> → 監視 → 結果読み → 適用と刻むターンが積み上がる。
+  委譲→待ち→結果を常駐ループ 1 本にまとめると親は 3 ターン程度に減る（同日の後半 3 件で確認。費用は再計測していない）。
+  Qwen の出力には親の補修が各 1 か所要った（実行ビット無し、<code>wsl</code> 抜け、既存行の置換漏れ）。
+  費用で Sonnet サブに勝つ見込みは薄く、Qwen を使う理由は費用以外（ソースをローカルに留める、A30 を遊ばせない）に置く。
+</div>
+
 
 <p>測り方: <code>bench/measure_cloud_tokens.py sum --last-minutes 30</code>
 （セッション ID は環境変数から自動判定。<code>--session</code> は省略可）。</p>
@@ -746,25 +774,14 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 <h3>承認待ち（sudo が要る。実行していない）</h3>
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 承認を得てから 1 回だけ（sudo が要る。未実行。先に実行中タスクを確認）</span></div>
-<div class="term"><span class="c"># 0. 実行中の推論が無いことを確認する（再起動は推論を中断する）</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/run-local-ai-task list --state running
-<span class="p">$</span> ollama ps
+<div class="term"><span class="c"># 表示だけ。3 項目（ufw-8080 / linger / ollama-dropin）の差分・影響・戻し方・今の状態を出す。何も変えない</span>
+<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh
 
-<span class="c"># 1. ブラウザチャットを LAN へ開ける</span>
-<span class="p">$</span> sudo ufw allow from <lan-cidr> to any port 8080 proto tcp comment 'Open WebUI'
-<span class="p">$</span> sudo loginctl enable-linger mt
+<span class="c"># 承認したら 1 項目ずつ。ollama-dropin は実行中の委譲・読み込み中のモデルがあれば中止する（終了コード 3）</span>
+<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply ollama-dropin
+<span class="c"># 適用後の確認はスクリプトが journalctl -u ollama の 'server config' 行を表示する。指定しただけで効いたと判断しない</span></div>
 
-<span class="c"># 2. A30 の資源制御（/etc/systemd/system/ollama.service.d/override.conf。既存行は消さない）</span>
-<span class="c">#    [Service]</span>
-<span class="c">#    Environment="OLLAMA_CONTEXT_LENGTH=65536"   ← 既に適用済み</span>
-<span class="c">#    Environment="OLLAMA_NUM_PARALLEL=1"         ← 解決結果に頼らず固定する</span>
-<span class="c">#    Environment="OLLAMA_MAX_LOADED_MODELS=1"    ← 今は 0（自動）</span>
-<span class="c">#    Environment="OLLAMA_MAX_QUEUE=64"           ← 今は 512</span>
-<span class="c">#    Environment="OLLAMA_NO_CLOUD=1"             ← 今は false</span>
-<span class="p">$</span> sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart ollama
-
-<span class="c"># 3. 指定しただけで効いたと判断しない。必ずログで確認する</span>
-<span class="p">$</span> journalctl -u ollama --no-pager -n 50 | grep 'server config'</div>
+<p>override.conf に足す行: OLLAMA_NUM_PARALLEL=1 / OLLAMA_MAX_LOADED_MODELS=1 / OLLAMA_MAX_QUEUE=64 / OLLAMA_NO_CLOUD=1（既存行は消さない）</p>
 
 <div class="warn">
   <b>現在の実効値（起動ログ <code>routes.go:1940</code> より）</b>
@@ -773,7 +790,6 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
   <code>OLLAMA_MAX_QUEUE:512</code> /
   <code>OLLAMA_NO_CLOUD:false</code>
 </div>
-
 <footer>
   関連文書 —
   <code>knowledge/30-gold/リモートで使い方マニュアル.html</code>（他の PC 側の設定と使い方。設定スクリプト 1 回で完了）/
