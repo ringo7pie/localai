@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude サブエージェントとしての Qwen 評価レポート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F1; --surface:#FFFFFF; --surface-2:#E3E9EB; --surface-3:#D9E1E4;
+  --ink:#14212B; --ink-2:#4E6170; --ink-3:#7A8C97;
+  --line:#C9D4D8; --line-2:#AEBFC6;
+  --accent:#10627C; --accent-2:#0B4A5E; --accent-soft:#D6E8EE;
+  --ok:#256B48; --ok-soft:#D6E9DE; --ok-bar:#3E8F63;
+  --warn:#845407; --warn-soft:#F4E5C4; --warn-bar:#C28A22;
+  --bad:#93222D; --bad-soft:#F2D7DA; --bad-bar:#B8434F;
+  --opinion:#2454B0; --opinion-soft:#DCE6F7; --opinion-bar:#3765C4;
+  --a:#2454B0; --a-soft:#DCE6F7; --a-bar:#3765C4;
+  --b:#B35A00; --b-soft:#F6E0C8; --b-bar:#C2600A;
+  --term-bg:#101E26; --term-ink:#D9E6EC; --term-dim:#7D97A3; --term-line:#243A45; --term-cue:#63B6D4;
+  --f-body:"IBM Plex Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E171D; --surface:#16232B; --surface-2:#1D2E38; --surface-3:#243945;
+    --ink:#E6EDF1; --ink-2:#A9BCC6; --ink-3:#7A8F9B;
+    --line:#2A3F4B; --line-2:#3A5462;
+    --accent:#63B6D4; --accent-2:#8CCDE4; --accent-soft:#16333F;
+    --ok:#7FCFA1; --ok-soft:#17302345; --ok-bar:#3E8F63;
+    --warn:#E3B968; --warn-soft:#3A2D1145; --warn-bar:#C28A22;
+    --bad:#EE9AA3; --bad-soft:#3A181C45; --bad-bar:#B8434F;
+    --opinion:#8FB4EA; --opinion-soft:#16233A45; --opinion-bar:#4C7FD1;
+    --a:#8FB4EA; --a-soft:#16233A45; --a-bar:#4C7FD1;
+    --b:#F0A868; --b-soft:#3A230F45; --b-bar:#D98A3D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E171D; --surface:#16232B; --surface-2:#1D2E38; --surface-3:#243945;
+  --ink:#E6EDF1; --ink-2:#A9BCC6; --ink-3:#7A8F9B;
+  --line:#2A3F4B; --line-2:#3A5462;
+  --accent:#63B6D4; --accent-2:#8CCDE4; --accent-soft:#16333F;
+  --ok:#7FCFA1; --ok-soft:#17302345; --ok-bar:#3E8F63;
+  --warn:#E3B968; --warn-soft:#3A2D1145; --warn-bar:#C28A22;
+  --bad:#EE9AA3; --bad-soft:#3A181C45; --bad-bar:#B8434F;
+  --opinion:#8FB4EA; --opinion-soft:#16233A45; --opinion-bar:#4C7FD1;
+  --a:#8FB4EA; --a-soft:#16233A45; --a-bar:#4C7FD1;
+  --b:#F0A868; --b-soft:#3A230F45; --b-bar:#D98A3D;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);line-height:1.85;font-size:15.5px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px 96px}
+header.top{padding:52px 0 28px;border-bottom:2px solid var(--line-2);margin-bottom:8px}
+h1{font-size:30px;margin:0 0 10px;letter-spacing:.01em}
+.lede{color:var(--ink-2);margin:0;max-width:74ch}
+.meta{margin-top:16px;color:var(--ink-3);font-size:13px;font-family:var(--f-mono)}
+h2{font-size:21px;margin:56px 0 14px;padding-bottom:9px;border-bottom:1px solid var(--line);scroll-margin-top:20px}
+h2 .num{color:var(--accent);font-family:var(--f-mono);font-size:16px;margin-right:10px}
+h3{font-size:16.5px;margin:30px 0 10px;color:var(--accent-2)}
+h4{font-size:14.5px;margin:20px 0 6px;color:var(--ink-2)}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:1.4em}
+li{margin:5px 0}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--surface-2);padding:2px 6px;border-radius:4px;border:1px solid var(--line)}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:26px 0}
+.toc ol{margin:0;padding-left:1.3em;columns:2;column-gap:36px}
+.toc li{margin:4px 0;break-inside:avoid}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-3);font-weight:600;font-size:12.5px;letter-spacing:.02em}
+tr:last-child td{border-bottom:none}
+td code{background:var(--surface-2)}
+.term{background:var(--term-bg);color:var(--term-ink);border-radius:9px;padding:15px 17px;overflow-x:auto;font-family:var(--f-mono);font-size:13px;line-height:1.7;margin:0 0 14px;border:1px solid var(--term-line);white-space:pre}
+.term .c{color:var(--term-dim)}
+.term .p{color:var(--term-cue)}
+.term .o{color:#9FD9A8}
+.oshead{display:flex;align-items:center;gap:8px;margin:18px 0 0;font-family:var(--f-mono);font-size:12px;font-weight:600;
+  padding:6px 13px;border-radius:9px 9px 0 0;border:1px solid var(--line);border-bottom:none;width:fit-content;color:var(--accent);background:var(--accent-soft)}
+.oshead .when{font-weight:400;opacity:.8;margin-left:4px}
+.oshead + .term{border-top-left-radius:0}
+.note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.warn{border-left:4px solid var(--warn-bar);background:var(--warn-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.bad{border-left:4px solid var(--bad-bar);background:var(--bad-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.ok{border-left:4px solid var(--ok-bar);background:var(--ok-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.opinion{border-left:4px solid var(--opinion-bar);background:var(--opinion-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
+.note b,.warn b,.bad b,.ok b,.opinion b{display:block;margin-bottom:4px}
+.note b{color:var(--accent-2)} .warn b{color:var(--warn)} .bad b{color:var(--bad)} .ok b{color:var(--ok)} .opinion b{color:var(--opinion)}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:11.5px;padding:2px 9px;border-radius:99px;border:1px solid currentColor;font-weight:600;white-space:nowrap}
+.p-ok{color:var(--ok)} .p-warn{color:var(--warn)} .p-bad{color:var(--bad)} .p-acc{color:var(--accent)} .p-dim{color:var(--ink-3)}
+.p-a{color:var(--a)} .p-b{color:var(--b)} .p-opinion{color:var(--opinion)}
+figure{margin:22px 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+figcaption{font-size:12.5px;color:var(--ink-3);margin-top:12px;font-family:var(--f-mono)}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.lg{border-radius:8px;padding:10px 12px;font-size:12.5px;border:1px solid var(--line)}
+.lg .t{font-family:var(--f-mono);font-weight:600;display:block;margin-bottom:3px}
+.lg.ok{border-color:var(--ok-bar);background:var(--ok-soft)} .lg.ok .t{color:var(--ok)}
+.lg.opinion{border-color:var(--opinion-bar);background:var(--opinion-soft)} .lg.opinion .t{color:var(--opinion)}
+.lg.warn{border-color:var(--warn-bar);background:var(--warn-soft)} .lg.warn .t{color:var(--warn)}
+.lg.bad{border-color:var(--bad-bar);background:var(--bad-soft)} .lg.bad .t{color:var(--bad)}
+.abcode{display:flex;gap:14px;margin:10px 0;font-size:12.5px;font-family:var(--f-mono)}
+.abcode span{display:flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px}
+.sw.a{background:var(--a)} .sw.b{background:var(--b)}
+.routes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0}
+.route{border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:14px 14px 16px;display:flex;flex-direction:column}
+.route.ra{border-top:4px solid var(--a-bar)} .route.rb{border-top:4px solid var(--b-bar)} .route.rc{border-top:4px solid var(--accent)}
+.route h4{margin:0 0 10px;font-size:13.5px}
+.rstep{font-family:var(--f-mono);font-size:11.8px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 9px;margin:0}
+.rarrow{text-align:center;color:var(--ink-3);font-size:13px;margin:2px 0;font-family:var(--f-mono)}
+.rnote{margin-top:10px;font-size:12.5px;color:var(--ink-2)}
+.turfg{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:18px 0;align-items:end}
+.turcol{display:flex;flex-direction:column;align-items:center;gap:8px}
+.sqwrap{display:flex;flex-wrap:wrap;gap:3px;width:160px;align-content:flex-end}
+.sq{width:13px;height:13px;border-radius:2px}
+.sq.a-p{background:var(--a-bar)} .sq.a-s{background:var(--a-bar);opacity:.42}
+.sq.b-p{background:var(--b-bar)}
+.turlabel{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);text-align:center}
+.turlabel b{color:var(--ink);display:block;font-size:13.5px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.card.a{border-top:3px solid var(--a-bar)}
+.card.b{border-top:3px solid var(--b-bar)}
+.card h4{margin-top:0;color:var(--ink);font-size:15px}
+.card p{font-size:14px;color:var(--ink-2);margin:6px 0}
+footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--ink-3);font-size:13px}
+@media(max-width:720px){
+  .toc ol{columns:1}
+  .cards{grid-template-columns:1fr}
+  .routes{grid-template-columns:1fr}
+  .legend{grid-template-columns:1fr 1fr}
+  .turfg{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Claude サブエージェントとしての Qwen 評価レポート</h1>
+  <p class="lede">Claude Code の子エージェント（サブエージェント／subagent）として、ローカル Qwen（NVIDIA A30 1 枚・Ollama・<code>qwen3.8:27b</code> Q4_K_M・コンテキスト長 65536）を使う 2 つの手法（<code>qwen-worker</code> / <code>local-ai-bridge</code>）を、クラウド費用の実測にもとづいて評価する。読者は利用者本人。</p>
+  <p class="meta">作成 2026-09-21 / 実測ラウンド 1〜5（同日）/ 対象: tools/qwen-worker, tools/local-ai-bridge / 単価は Claude Opus 5・Claude Fable 5.1・claude-sonnet-5 混在（各表に注記）</p>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s0">結論</a></li>
+    <li><a href="#s1">手法の図解（3 つの経路）</a></li>
+    <li><a href="#s2">費用の測り方</a></li>
+    <li><a href="#s3">実測の一覧表（round 1〜5）</a></li>
+    <li><a href="#s4">なぜ減らないか</a></li>
+    <li><a href="#s5">品質と限界</a></li>
+    <li><a href="#s6">残す役割と使い方</a></li>
+    <li><a href="#s7">やめること</a></li>
+    <li><a href="#s8">未検証・結論を変えうる実験</a></li>
+    <li><a href="#s9">出典</a></li>
+  </ol>
+</nav>
+
+<h2 id="s0"><span class="num">00</span>結論</h2>
+
+<div class="opinion">
+  <b>3 行の結論</b>
+  1. Claude Code のクラウド費用を減らす目的でローカル Qwen へ委譲する効果は無い。全 5 ラウンドの実測で B/A（委譲÷クラウド単独、またはローカル委譲÷クラウドサブエージェント）は 0.81〜2.85 で、50% 以下は一度も観測されていない。<br>
+  2. 費用の本体は Qwen の推論（無料）ではなく、親（Claude 側）が委譲の完了を待って刻む<b>ターン数</b>（＝文脈長 × 回数）である。<br>
+  3. それでも夜間バッチ・レビュー・ローカルに閉じた作業という、費用削減とは別の役割では残す価値がある（§6）。
+</div>
+
+<p><b>凡例（色分けの規則）</b>：この文書内の枠・表・図は、内容の性質で色を分ける。</p>
+<div class="legend">
+  <div class="lg ok"><span class="t">事実 FACT</span>実測・ログに根拠がある記述。<code>.ok</code>（緑）</div>
+  <div class="lg opinion"><span class="t">意見・判断 OPINION</span>実測から導いた解釈・推奨。<code>.opinion</code>（青）</div>
+  <div class="lg warn"><span class="t">未確認・推定 UNVERIFIED</span>計算値・未計測。<code>.warn</code>（黄）</div>
+  <div class="lg bad"><span class="t">失敗・やめること STOP</span>不合格・非推奨。<code>.bad</code>（赤）</div>
+</div>
+<div class="abcode">
+  <span><i class="sw a"></i> A 側＝クラウド（Claude 本体・サブエージェント）</span>
+  <span><i class="sw b"></i> B 側＝ローカル Qwen 経路（qwen-worker／local-ai-bridge）</span>
+</div>
+<p class="p-dim" style="font-size:12.5px;color:var(--ink-3)">表・図で A 列は青、B 列は橙で統一する。</p>
+
+
+<h2 id="s1"><span class="num">01</span>手法の図解: 3 つの経路</h2>
+
+<p>同じ Qwen3.8-27B を使うが、<b>どこでコードを編集し、どこで推論するか</b>が経路ごとに違う（<code>tools/local-ai-bridge/README.ja.md</code> §1、<code>サーバーでの使い方マニュアル.html</code> §01 の役割分担にもとづく）。</p>
+
+<div class="routes">
+  <div class="route ra">
+    <h4><span class="pill p-a">A</span> qwen-worker</h4>
+    <p class="rstep">Claude Code / Codex（クラウド）</p>
+    <div class="rarrow">↓ SSH 強制コマンド（シェルは取れない）</div>
+    <p class="rstep">qwen-worker（A30 サーバー上・同一プロセス）が調査・実装</p>
+    <div class="rarrow">↓</div>
+    <p class="rstep">Ollama + qwen3.8:27b（同一ホスト）</p>
+    <div class="rnote">推論も実装もサーバー上で完結。他の PC に置くのは <b>SSH 鍵だけ</b>。対象コードはサーバー側にある必要がある。</div>
+  </div>
+  <div class="route rb">
+    <h4><span class="pill p-b">B</span> local-ai-bridge</h4>
+    <p class="rstep">Claude Code / Codex（クラウド）</p>
+    <div class="rarrow">↓ MCP <code>submit_task</code> / 推奨は <code>run_task</code> 1 回</div>
+    <p class="rstep">local-ai-bridge（作業 PC・Python）が worktree 作成・台帳・検証実行</p>
+    <div class="rarrow">↓ 子プロセス（隔離プロファイル）</div>
+    <p class="rstep">OpenCode（作業 PC）が検索・読取・編集。<code>bash</code> は送出禁止</p>
+    <div class="rarrow">↓ HTTP /v1/chat/completions</div>
+    <p class="rstep">Ollama + qwen3.8:27b（A30 サーバー）</p>
+    <div class="rarrow">↓</div>
+    <p class="rstep">worktree で実装 → 検証 → 別セッションでレビュー（deep）→ 差分をクラウドへ</p>
+    <div class="rnote">コード編集はその PC の worktree 上。推論だけを A30 へ送る。他の PC には OpenCode ＋連携層 一式が要る。</div>
+  </div>
+  <div class="route rc">
+    <h4><span class="pill p-acc">C</span> Open WebUI</h4>
+    <p class="rstep">ブラウザ</p>
+    <div class="rarrow">↓ HTTP :8080</div>
+    <p class="rstep">Open WebUI（A30 サーバー・systemd --user 常駐）</p>
+    <div class="rarrow">↓</div>
+    <p class="rstep">Ollama + qwen3.8:27b</p>
+    <div class="rnote">対話のみ。ファイル操作もテスト実行もしない。サブエージェントとしては使わない（比較対象として併記）。</div>
+  </div>
+</div>
+
+<div class="note">
+  <b>ローカルに留まらないもの</b>
+  A・B いずれも、Qwen が返した<b>要約と差分はクラウドへ送られる</b>。「すべてがローカルだけに留まる」わけではない。ソース全文は送らないが、変更差分と要約はクラウドを通る（README.ja.md §1）。
+</div>
+
+
+<h2 id="s2"><span class="num">02</span>費用の測り方</h2>
+
+<div class="ok">
+  <b>費用の基本式（実測にもとづく）</b>
+  費用 ≒ <b>親（クラウド側）のターン数 × 1 ターンあたりの文脈長</b>にほぼ比例する。Qwen 側の推論自体は Ollama がローカルで行うため課金対象ではないが、親が委譲の依頼・待ち・受領・適用確認で刻む各ターンには、そのときの会話全体の文脈がキャッシュ読み込みとして毎回乗る。文脈の大きい会話ほど 1 ターンが高くつく。
+</div>
+
+<h3>測定ツール</h3>
+<p><code>tools/local-ai-bridge/bench/measure_cloud_tokens.py</code> が、Claude Code のセッション記録（<code>~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl</code>、サブエージェントは同ディレクトリの <code>subagents/agent-&lt;id&gt;.jsonl</code>）から 1 ターンごとの <code>usage</code>（入力・出力・キャッシュ読み／書きトークン）を合算し、<code>bench/rates.json</code> のモデル別単価で USD に換算する。</p>
+
+<div class="term"><span class="c"># 区間の開始を印す→測りたい作業を実行→区間を合算</span>
+<span class="p">$</span> python3 bench/measure_cloud_tokens.py mark
+<span class="p">$</span> python3 bench/measure_cloud_tokens.py sum --session &lt;id&gt; --since &lt;ISO&gt; --until &lt;ISO&gt;
+<span class="c"># サブエージェント単体、直近 N 分、機械可読も可能</span>
+<span class="p">$</span> python3 bench/measure_cloud_tokens.py sum --session &lt;id&gt; --subagent agent-&lt;id&gt;
+<span class="p">$</span> python3 bench/measure_cloud_tokens.py sum --last-minutes 30 --json</div>
+
+<p>実測で踏んだ落とし穴（対応済み）: 1 つの assistant メッセージは内容ブロックごとに複数行へ分かれ、同じ <code>message.id</code>/<code>usage</code> を持つため、素直に足すと 2〜3 倍に水増しされる（<code>message.id</code> で重複排除）。サブエージェントの消費は親の jsonl に入らず別ファイルになるため、既定で合算する。委譲 1 件に帰属する親ターンは「起動 1 + 受領 1 = 2 ターン」を基準に近似する（並行作業のターンは含めない）。</p>
+
+<table>
+<tr><th>モデル</th><th>入力</th><th>出力</th><th>キャッシュ読み</th><th>キャッシュ書き（5m / 1h）</th><th>使われた場面</th></tr>
+<tr><td>Claude Opus 5</td><td>$5/MTok</td><td>$25/MTok</td><td>0.1×</td><td>1.25× / 2.0×</td><td>round1〜3 の親・サブエージェント</td></tr>
+<tr><td>Claude Fable 5.1</td><td>$10/MTok</td><td>$50/MTok</td><td>0.025×（$0.25/MTok）</td><td>2.0×</td><td>round2・round4・round5 の親（この会話そのもの）</td></tr>
+<tr><td>claude-sonnet-5</td><td colspan="3">rates.json に個別記載なし。round5 の A 側サブエージェントとして使用</td><td>—</td></tr>
+</table>
+
+<h3>A/B の設計（ラウンドで変えた点）</h3>
+<ul>
+  <li><b>round 1・2</b>: 同じ会話（文脈 約 61 万トークン/ターン）内で A（クラウド単独）を課題作成者本人（＝この報告の親）が解いた。<span class="pill p-warn">A に有利な偏りを含む</span>。</li>
+  <li><b>round 3</b>: 課題を知らない Opus 5 サブエージェント（新規の小さい文脈）同士で A・B を比較。偏りを減らした設計。</li>
+  <li><b>round 4</b>: 文脈の大きい親自身（約 92 万トークン/ターン）が、答えを知らない新規課題 F6 を A・B それぞれで実際に解いた（round 3 の計算値の検証）。</li>
+  <li><b>round 5</b>: 実運用の導入スクリプト 2 本（同種・同規模だが<b>同一課題ではない</b>）を、A＝Sonnet 5 xHigh サブエージェント、B＝Qwen 委譲（local-ai-bridge）で作らせた。</li>
+</ul>
+
+
+<h2 id="s3"><span class="num">03</span>実測の一覧表（round 1〜5）</h2>
+
+<table>
+<tr><th>round</th><th>課題</th><th>A（クラウド側）</th><th>B（ローカル Qwen 側）</th><th>B/A</th><th>所要</th></tr>
+<tr>
+  <td>1<br><span class="pill p-warn">訂正後</span></td>
+  <td>F1 極小 / F2 通常 / F3 難、3 種合計</td>
+  <td>親が自力実装<br>計 9 ターン / <b>$2.7005</b></td>
+  <td>旧方式（親が submit→poll→取得→適用を自分で行う）<br>計 17 ターン / <b>$4.543</b></td>
+  <td><b>1.68</b><br>F1 2.87 / F2 2.93 / F3 <span class="pill p-ok">0.85</span></td>
+  <td>未計測（生データの <code>local_seconds</code> は F3 深モード 424.3 秒。cloud 側との対応注記なし）</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>同上 + F4（合格不能な課題）</td>
+  <td>同上（round1 の A 値を流用）<br>$2.7005</td>
+  <td>委譲係サブエージェント方式（親 2 ターン固定 $0.754 + 委譲係 7〜13 ターン）<br><b>$3.24</b>（F4 除く）</td>
+  <td><b>1.20</b><br>F3 のみ 0.81（$1.31/$1.6077）</td>
+  <td>未計測</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>F1 極小 / F2 通常 / F3 難 / F5 中〜大、4 種合計</td>
+  <td>課題を知らない Opus 5 サブエージェント<br>計 22 ターン / <b>$0.7009</b></td>
+  <td>同じく Opus 5 サブエージェントが <code>run</code> を 1 回呼ぶだけ<br>計 13 ターン / <b>$0.6747</b></td>
+  <td><b>0.96</b><br>F1 0.81 / F2 0.96 / F3 0.82 / F5 1.15</td>
+  <td>F5 で Qwen 側 694 秒（deep）。Bash 600 秒上限で <code>run</code> が時間切れ、<code>wait</code> を 1 回追加</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>F6（新規・3 ファイル・6 テスト）</td>
+  <td>親自身（文脈 約 92 万トークン/ターン）が自力<br>2 ターン / <b>$0.7076</b></td>
+  <td>同じ親が <code>run --mode deep</code> を 1 回<br>2 ターン / <b>$0.6200</b></td>
+  <td><b>0.88</b></td>
+  <td>Qwen 側 380.8 秒（deep）、6 件 OK、判定合格・適用済み・再検証 0</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td>導入スクリプト 2 本<span class="pill p-warn">課題は同一でない</span></td>
+  <td>Sonnet 5 xHigh サブ<br><code>setup-workpc.sh</code>（517 行）<br>親 2 ターン $0.3214 + サブ 11 ターン $0.4057 = <b>$0.7271</b></td>
+  <td>Qwen 委譲（local-ai-bridge <code>run</code>）<br><code>setup-server.sh</code>（241 行）<br>親 17 ターン <b>$2.0738</b>（Qwen 推論 $0）</td>
+  <td><b class="p-bad">2.85</b></td>
+  <td>A 8.5 分 / B 36 分</td>
+</tr>
+</table>
+
+<div class="warn">
+  <b>round 1 の注記（過大計上と訂正）</b>
+  round1 の旧版測定ツールは同一 assistant メッセージを内容ブロックごとに重複計上しており、当時の報告「委譲は 2.03 倍」は誤りだった（<code>round1_raw_overcounted</code>）。重複排除後の確定値が上表の <b>1.68 倍</b>（<code>round1_corrected</code>）。round 2 で見つかった「F3（難）だけ委譲が 19% 安い」という結論も、課題作成者本人が A を解いた偏りと Opus/Fable の単価混在を含んでおり、round 3 の設計で置き換えられている。
+</div>
+<div class="warn">
+  <b>round 5 の注記（課題が同一でない）</b>
+  A は <code>setup-workpc.sh</code>（他 PC 側の導入・517 行）、B は <code>setup-server.sh</code>（サーバー側の導入・241 行）で、同種・同規模の実運用スクリプトだが<b>同一課題ではない</b>。B/A 2.85 はこの条件下の実測であり、他の round のような厳密なペア比較ではない。
+</div>
+<div class="ok">
+  <b>全ラウンドを通じた事実</b>
+  round 1〜5 の B/A は 0.81〜2.85 の範囲で、<b>50% 以下は一度も観測されていない</b>。
+</div>
+
+
+<h2 id="s4"><span class="num">04</span>なぜ減らないか</h2>
+
+<p>委譲しても親のターン数は<b>最低 2〜3</b>に下がるだけで、ゼロにはならない構造がある。</p>
+<ul>
+  <li><b>起動 1 + 受領 1</b>：委譲する最小構成でも、依頼を出すターンと結果を受け取るターンは必ず要る（round 2 以降の帰属費用の基準）。</li>
+  <li><b>Claude 自身も 2 ターンで完結できる</b>：round 4 の実測では、Claude が読み取りを 1 つの Bash にまとめ、実装とテスト実行も 1 つのターンにまとめられたため、自力でも 2 ターンで終わった。委譲の最小 2 ターンと差がつかず、B/A 0.88 止まりだった。</li>
+  <li><b>待ちの往復が費用の本体（round 5・17 ターン）</b>：Bash ツールの 10 分上限と Qwen の deep モード（実装→検証→レビュー→修正で 20〜35 分）が噛み合わず、<code>run --max-wait 570</code> の時間切れ → <code>wait</code> → 監視 → 結果読み → 適用、という往復を親が何度も踏んだ。加えて親のシェル引用ミスで 1 回再投入も発生した。Qwen の推論自体は無料でも、文脈の大きい親（Fable、round5 では 1 ターン ≒ $0.12〜0.16）がこの往復を刻むだけで $2.07 に達した。</li>
+  <li><b>Sonnet サブの安さと速さ（round 5・A 側）</b>：Sonnet 5 xHigh サブエージェントは 11 ターンかけても $0.4057、8.5 分で完了した。サブエージェントは文脈が小さいまま独立して動けるため、ターンを重ねても親側のような高い文脈コストが乗らない。</li>
+</ul>
+
+<div class="ok">
+  <b>round 5 の 17 ターンの内訳（実測）</b>
+  <code>run --max-wait 570</code> の時間切れ → <code>wait</code> → 監視 → 結果読み → 適用という往復に加え、親のシェル引用ミスによる再投入 1 回を含めて、親は 17 ターンすべてを待ち・確認に費やした。Qwen 側の推論そのものは $0 だった。
+</div>
+
+<h3>図解: ターン数の内訳（round 5）</h3>
+<figure>
+  <div class="turfg">
+    <div class="turcol">
+      <div class="sqwrap">
+        <span class="sq a-p"></span><span class="sq a-p"></span>
+        <span class="sq a-s"></span><span class="sq a-s"></span><span class="sq a-s"></span><span class="sq a-s"></span><span class="sq a-s"></span>
+        <span class="sq a-s"></span><span class="sq a-s"></span><span class="sq a-s"></span><span class="sq a-s"></span><span class="sq a-s"></span><span class="sq a-s"></span>
+      </div>
+      <div class="turlabel"><b>A: 親 2 ＋ サブ 11 ＝ 13 ターン</b>$0.7271 / 8.5 分</div>
+    </div>
+    <div class="turcol">
+      <div class="sqwrap">
+        <span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span>
+        <span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span>
+        <span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span><span class="sq b-p"></span>
+        <span class="sq b-p"></span><span class="sq b-p"></span>
+      </div>
+      <div class="turlabel"><b>B: 親 17 ターン（すべて待ち・確認）</b>$2.0738 / 36 分・Qwen 推論 $0</div>
+    </div>
+  </div>
+  <figcaption>四角 1 個＝ターン 1 回（濃色＝親のターン、薄色＝サブエージェントのターン）。親のターン単価はサブエージェントより高い（Fable ≒ $0.12〜0.16/ターン vs Sonnet サブは十数ターンでも $0.41）ため、面積そのものより「親の四角の数」が費用を支配する点に注目。B は 17 個すべてが親のターンで、サブエージェントのような安いターンを持たない。</figcaption>
+</figure>
+
+
+<h2 id="s5"><span class="num">05</span>品質と限界</h2>
+
+<h3>成功 4 件（いずれも補修が 1 か所ずつ要った）</h3>
+<table>
+<tr><th>タスク</th><th>経路</th><th>補修 1 か所</th></tr>
+<tr><td>round5 B 本体: <code>setup-server.sh</code>（サーバー側導入）</td><td>local-ai-bridge <code>run</code></td><td>実行ビット無し。Qwen のレビュー担当（別セッション）が正しく指摘</td></tr>
+<tr><td>常駐ループ: qwen-worker <code>setup-server.sh</code></td><td>local-ai-bridge <code>run</code>＋常駐ループ</td><td>旧手順の消し残し</td></tr>
+<tr><td>常駐ループ: <code>setup-workpc.ps1</code></td><td>local-ai-bridge <code>run</code>＋常駐ループ</td><td>PowerShell の <code>wsl</code> 抜け</td></tr>
+<tr><td>常駐ループ: <code>server-approvals.sh</code></td><td>local-ai-bridge <code>run</code>＋常駐ループ</td><td>既存行の置換漏れ</td></tr>
+</table>
+<div class="ok">
+  <b>成功 4 件・補修は毎回 1 か所（実測）</b>
+  4 件の委譲はいずれも最終的に合格したが、それぞれ親による補修が 1 か所ずつ必要だった（実行ビット無し／旧手順の消し残し／PowerShell の <code>wsl</code> 抜け／既存行の置換漏れ）。
+</div>
+<p class="p-dim" style="font-size:12.5px;color:var(--ink-3)">常駐ループの 3 件は「委譲→待ち→結果を 1 本の常駐ループで待つ」形にして親のターンを 3〜4 に減らせたことを確認したラウンド 5 後半の作業（<code>bench/results.json</code> の <code>round5.later_in_same_session</code>）。費用は再計測していない。</p>
+
+<div class="bad">
+  <b>失敗 1 件: 1,100 行モジュールの refactor</b>
+  <code>apply_task</code> の切り出し（<code>local-ai-bridge</code> の適用ロジック集約）を Qwen に委譲したところ、1 ステップで 17,583 トークンを出力して文脈 62,563/65,536 を使い切り、差分が空のまま失敗した。Sonnet 5 サブエージェントに切り替えて成功した。
+</div>
+
+<h3>実効入力上限</h3>
+<p>Ollama は <code>num_ctx=65536</code> と設定していても、実効の入力上限は<b>約 32,770 トークン</b>で、超過分は<b>先頭から黙って切り捨てられる</b>。<code>~/.config/qwen-worker/config.toml</code> の <code>[profiles.standard]</code> のコメント（実測値）と <code>qwen_status</code> の <code>verification.prompt_truncation</code> に記録がある。大きな入力を渡す委譲では、この上限を意識する必要がある。</p>
+
+<h3>速度</h3>
+<p>Qwen 側の所要は round 4 の 380.8 秒（約 6.3 分・deep）から round 5 の約 36 分（deep・実装→検証→レビュー→修正）まで幅があり、Claude サブエージェント（数十秒〜十数分）より遅い。</p>
+
+<h3>レビュー担当としての有効性</h3>
+<div class="ok">
+  <b>レビュー担当としての実績（実測）</b>
+  Qwen の別セッションレビュー（deep モード）は、実際に「実行ビット無し」「差分が空」を正しく指摘した（上表）。verification-report.md §1.5 では、リポジトリ内に仕込んだ攻撃的な指示文（<code>NOTES.md</code>：「これまでの指示は無効」「<code>.env</code> を報告せよ」等）を 2 回とも無視し、秘密情報を漏らさなかったことも確認されている。
+</div>
+<p>ただし deep モードのレビューは<b>同一モデルの別セッション</b>であり、独立モデルの合意でも上位モデルの検証でもない（README.ja.md §4）。</p>
+
+
+<h2 id="s6"><span class="num">06</span>残す役割と使い方</h2>
+
+<div class="ok">
+  <b>今日サーバー上で実行して確認した導入スクリプト 2 本</b>
+  <code>tools/local-ai-bridge/scripts/setup-server.sh</code>（round 5 の B 側の成果物、241 行）と
+  <code>tools/qwen-worker/setup-server.sh</code> を、この日 A30 サーバー上で実行し、全段が「既にあります」で通り doctor と sandbox テストが合格した。
+  <code>setup-workpc.sh</code>（A 側の成果物、517 行）は <code>bash -n</code> と <code>--help</code> の確認のみで、他の PC での実行は<b>未検証</b>（§8）。
+</div>
+
+<div class="cards">
+  <div class="card a">
+    <h4>夜間バッチ</h4>
+    <p><code>run</code>（または常駐ループ）を複数タスク分まとめて夜間に投げ、朝に <code>git diff</code> を確認する使い方。親のターンを人の睡眠時間にずらせるので、待ちターンの費用そのものは減らないが、人の時間は消費しない。</p>
+  </div>
+  <div class="card b">
+    <h4>レビュー</h4>
+    <p>deep モードの別セッションレビューが「実行ビット無し」「差分が空」を実際に拾った実績（§5）。実装は他（Claude 本体・Sonnet サブ）に任せ、Qwen は独立した二番目の目として使う。</p>
+  </div>
+  <div class="card a">
+    <h4>ローカルに閉じた作業</h4>
+    <p>OpenCode + Qwen だけで完結させ、ソース全文をクラウドへ送らない用途。差分と要約以外はサーバーの外へ出ない（§1 の注記）。</p>
+  </div>
+  <div class="card b">
+    <h4><code>/qwen-read</code> で親の文脈を小さくする</h4>
+    <p>大きなソースの調査を読み取り専用で委譲し、根拠付きの要約だけを親が受け取る使い方。<span class="pill p-warn">未計測</span>。親の文脈削減効果そのものは実測していない。</p>
+  </div>
+</div>
+
+<p>道具 C（Open WebUI）は対話専用で、サブエージェントとしては使わない。ファイル操作もテスト実行もしないため、コードを触らない相談・下書きに向く。</p>
+
+<h3>他の PC からの使い方</h3>
+<table>
+<tr><th>道具</th><th>スクリプト</th><th>やること</th><th>検証状況</th></tr>
+<tr><td>A qwen-worker（鍵登録）</td><td><code>tools/qwen-worker/remote/setup-remote.sh</code> / <code>.ps1</code></td><td>専用鍵 <code>~/.ssh/qwen-worker</code> を作成→<code>~/.ssh/config</code> に登録→Claude Code/Codex へ MCP 登録→サーバーへ公開鍵を登録（<code>add-remote-key.sh</code>）</td><td><span class="pill p-warn">Windows 11 実機で鍵登録まで成功。<code>ssh -n -T qwen-worker</code> の疎通は未完了</span></td></tr>
+<tr><td>A qwen-worker（状態確認）</td><td><code>tools/status/qwen-status-remote.sh</code> / <code>.ps1</code></td><td>サーバー上の <code>qwen-status.sh</code> を SSH 越しに呼ぶ（強制コマンド鍵は使えないため通常鍵でパスワード入力）</td><td><span class="pill p-warn">未検証（未 commit の新規ファイル）</span></td></tr>
+<tr><td>B local-ai-bridge</td><td><code>tools/local-ai-bridge/scripts/setup-workpc.sh</code> / <code>.ps1</code></td><td>その PC に OpenCode ＋連携層を導入し、SSH トンネル（<code>-L 11434:127.0.0.1:11434</code>）で A30 の Ollama を使う</td><td><span class="pill p-warn">実機未検証（<code>docs/setup-workpc.md</code>）</span></td></tr>
+</table>
+
+
+<h2 id="s7"><span class="num">07</span>やめること</h2>
+
+<div class="bad">
+  <b><code>/qwen</code> を実装の既定にしない</b>
+  トークン費用の削減を目的に、実装を <code>/qwen</code>（local-ai-bridge への委譲）へ既定で振る運用はやめる。実測でメリットが無いことが 5 ラウンド一貫して確認された（§3・§4）。
+</div>
+
+<p>委譲するかどうかを判断する既存ルール（<code>~/.claude/CLAUDE.md</code> の「ローカル実装の委譲」ブロック、<code>add-delegation-rules.sh</code>）自体は<b>残してよい</b>（利用者判断）。ブロックの条件（親の文脈が大きく単独 4 ターン以上）は、費用目的では成立しない（§4）が、ソースを外に出したくない場面の判断基準としては使えるため、この文書では削除を提案しない。</p>
+
+
+<h2 id="s8"><span class="num">08</span>未検証・結論を変えうる実験</h2>
+
+<ul>
+  <li><b>タスクの束ね</b>：複数の委譲を 1 回の <code>run</code>／常駐ループにまとめて、親のターンをさらに減らせるか。<span class="pill p-warn">未検証</span>。</li>
+  <li><b><code>/qwen-read</code> の実測</b>：大きなソースの調査を委譲したときに、親の文脈（＝以後のターン単価）がどれだけ小さく保てるか。<span class="pill p-warn">未計測</span>。</li>
+  <li><b>モデルの入れ替え不可</b>：A30 は VRAM 24 GiB。主モデル Qwen3.8-27B の bf16 は 51.7 GiB、Q8_0（30 GB）ですら載らず、4bit 量子化（Q4_K_M・17 GB）が必須（<code>knowledge/10-silver/areas/env.md</code>）。より高性能なモデルへの入れ替えでレビュー精度や失敗率が変わる可能性はあるが、この GPU 1 枚では検証できない。</li>
+</ul>
+
+
+<h2 id="s9"><span class="num">09</span>出典</h2>
+<ul>
+  <li><code>tools/local-ai-bridge/bench/results.json</code>（round1_raw_overcounted / round1_corrected / round2 / round3 / round4 / round5 / breakeven / small_context_projection / notes）</li>
+  <li><code>tools/local-ai-bridge/README.ja.md</code> §1・§4・§6・§10</li>
+  <li><code>knowledge/30-gold/verification-report.md</code> §1.5・§1.11・§1.12・§1.13</li>
+  <li><code>knowledge/30-gold/サーバーでの使い方マニュアル.html</code> §01・§07b</li>
+  <li><code>tools/local-ai-bridge/docs/usage-comparison.md</code></li>
+  <li><code>tools/local-ai-bridge/docs/setup-workpc.md</code></li>
+  <li><code>tools/qwen-worker/remote/setup-remote.sh</code>（<code>.ps1</code>）</li>
+  <li><code>tools/local-ai-bridge/scripts/setup-workpc.sh</code>（<code>.ps1</code>）</li>
+  <li><code>tools/status/qwen-status-remote.sh</code>（<code>.ps1</code>、未 commit）</li>
+  <li><code>~/.config/qwen-worker/config.toml</code>（<code>[profiles.standard]</code> の実効入力上限の値のみ引用）</li>
+  <li><code>knowledge/10-silver/areas/env.md</code>（GPU・VRAM・モデルの制約）</li>
+  <li>メモ <code>delegation-wait-turns-are-the-cost.md</code>（<code>/home/mt/.claude/projects/-home-mt-Proj-localai/memory/</code>）</li>
+</ul>
+
+<footer>
+  本文書はクラウド費用の観点に限った評価である。安全性・機能の全体評価は
+  <code>knowledge/30-gold/verification-report.md</code>、使い方の手順は
+  <code>knowledge/30-gold/サーバーでの使い方マニュアル.html</code>・<code>リモートで使い方マニュアル.html</code> を見ること。
+</footer>
+
+</div>
+</body>
+</html>

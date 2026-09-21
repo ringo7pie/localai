@@ -10,6 +10,7 @@ knowledge/30-gold/*
 !knowledge/30-gold/qwen-ワーカーマニュアル.html
 !knowledge/30-gold/リモートで使い方マニュアル.html
 !knowledge/30-gold/サーバーでの使い方マニュアル.html
+!knowledge/30-gold/Claude サブエージェントとしての Qwen 評価レポート.html
 
 # 秘密値。Open WebUI はカレントディレクトリに鍵を書くことがあるため、
 # このリポジトリで作業中に生成されても追跡しない。
