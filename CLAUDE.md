@@ -9,7 +9,7 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 |---|---|
 | `knowledge/` | ナレッジベース本体 |
 | `tools/qwen-worker/` | ローカル Qwen を Claude Code / Codex から直接使う MCP ワーカー |
-| `tools/local-ai-bridge/` | OpenCode 経由でローカル Qwen へ実装を委譲する連携層（README.ja.md） |
+| `tools/local-ai-bridge/` | OpenCode 経由でローカル Qwen へ実装を委譲する連携層。スキル `/qwen` `/qwen-read` の実体も（README.ja.md） |
 
 新しく作るリポジトリ・試験データは必ずこの中（例 `tools/*/fixtures/`）に置く。`~/Proj` 直下には作らない。
 `~/.local/share/qwen-worker` は `tools/qwen-worker` へのシンボリックリンク。MCP 登録と authorized_keys の強制コマンドがそのパスを指す。

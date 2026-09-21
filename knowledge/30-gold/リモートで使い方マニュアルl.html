@@ -269,14 +269,19 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <tr><td rowspan="3"><code>qwen-worker</code></td><td><code>qwen_research</code></td><td>コード調査。<span class="pill p-ok">読み取り専用</span></td></tr>
 <tr><td><code>qwen_implement</code></td><td>実装。隔離した作業コピーで編集し差分を返す</td></tr>
 <tr><td><code>qwen_status</code></td><td>接続先・モデル・検証状況。<span class="pill p-acc">推論しない</span></td></tr>
-<tr><td rowspan="7"><code>local-ai-bridge</code></td><td><code>submit_task</code></td><td>受付だけ。<code>task_id</code> を即返す</td></tr>
+<tr><td rowspan="9"><code>local-ai-bridge</code></td><td><code>run_task</code></td><td><b>推奨</b>。1 回で 委譲→完了待ち→判定→適用→再検証→要約。<code>commit</code> はしない。上限秒を過ぎたら <code>timed_out=true</code></td></tr>
+<tr><td><code>submit_task</code></td><td>受付だけ。<code>task_id</code> を即返す</td></tr>
 <tr><td><code>get_task_status</code></td><td>状態・段階・経過。結果本文は含まない</td></tr>
+<tr><td><code>wait_for_task</code></td><td>完了まで待って <code>get_task_result</code> と同じ形で返す。上限秒を過ぎたら <code>timed_out=true</code> で状態だけ返す</td></tr>
 <tr><td><code>get_task_result</code></td><td>短い結果。変更概要・検証成否・未解決点</td></tr>
 <tr><td><code>get_artifact</code></td><td>差分やログを<b>行範囲指定</b>で取る</td></tr>
 <tr><td><code>cancel_task</code></td><td>そのタスクだけ止める</td></tr>
 <tr><td><code>resume_task</code></td><td><code>task_id</code> 指定で再開</td></tr>
 <tr><td><code>bridge_doctor</code></td><td>接続と実効設定の点検。<span class="pill p-acc">推論しない</span></td></tr>
 </table>
+
+<p><code>/qwen &lt;依頼文&gt;</code>（実装の委譲）・<code>/qwen-read &lt;調べること&gt;</code>（読み取り専用の調査）は、
+上の MCP ツールを 1 回だけ呼ぶ Claude Code スキル。実体は <code>tools/local-ai-bridge/skills/</code>。</p>
 
 <h3>3-2. コマンドから（local-ai-task CLI）</h3>
 
@@ -309,6 +314,8 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 <span class="c"># 3. 進捗（30 秒以上あけて見る。細かく叩かない）</span>
 <span class="p">$</span> $BRIDGE/run-local-ai-task status task_9f4cc12619c14957
 <span class="o">  { "state": "running", "stage": "review", "elapsed_sec": 78.8 }</span>
+<span class="c"># 3b. 何度も叩く代わりに、完了まで待って結果を受け取る</span>
+<span class="p">$</span> $BRIDGE/run-local-ai-task wait task_9f4cc12619c14957
 
 <span class="c"># 4. 結果（短い。差分本文は --diff で付く）</span>
 <span class="p">$</span> $BRIDGE/run-local-ai-task result task_9f4cc12619c14957
