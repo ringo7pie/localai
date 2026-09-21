@@ -6,8 +6,9 @@ knowledge/20-bronze/
 # 「!」による個別の再包含が効かないため、中身を除外する書き方にする。
 knowledge/30-gold/*
 # 人が読むマニュアルだけは版管理する。
-!knowledge/30-gold/ollama-manual.html
-!knowledge/30-gold/qwen-worker-manual.html
+!knowledge/30-gold/ollama-マニュアル.html
+!knowledge/30-gold/qwen-ワーカーマニュアル.html
+!knowledge/30-gold/リモートで使い方マニュアルl.html
 
 # 秘密値。Open WebUI はカレントディレクトリに鍵を書くことがあるため、
 # このリポジトリで作業中に生成されても追跡しない。
@@ -20,3 +21,16 @@ knowledge/30-gold/*
 tools/qwen-worker/.venv/
 __pycache__/
 *.egg-info/
+
+# local-ai-bridge の仮想環境と生成物。絶対パスを埋め込むため持ち運べない。
+# 再作成: cd tools/local-ai-bridge && uv venv --python 3.12 .venv
+#         && uv pip install --python .venv/bin/python -r requirements.lock.txt
+#         && uv pip install --python .venv/bin/python -e .
+tools/local-ai-bridge/.venv/
+.pytest_cache/
+
+# 試験用の入れ子リポジトリ。独自の .git を持つ（local-ai-bridge の worktree 分離に必要）。
+# localai からは追跡しない。
+tools/qwen-worker/fixtures/
+tools/local-ai-bridge/fixtures/
+tools/local-ai-bridge/bench/ab-benchmark/

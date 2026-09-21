@@ -1,0 +1,61 @@
+# local-ai-bridge の設定。
+# 置き場: ~/.config/local-ai-bridge/bridge.toml
+#   （環境変数 LOCAL_AI_BRIDGE_CONFIG で変更できる）
+#
+# ここに書いた値だけが信頼される。依頼者やモデルが渡した文字列を
+# パスや実行コマンドとして使うことはない。
+
+[ollama]
+# A30 サーバーの Ollama。同一ホストなら 127.0.0.1 のままにする。
+# 別の作業 PC から使う場合も、LAN へ直接公開せず SSH トンネル越しに 127.0.0.1 を指す。
+base_url = "http://127.0.0.1:11434"
+model = "qwen3.8:27b"
+
+[opencode]
+binary = "/home/mt/.opencode/bin/opencode"
+# 隔離プロファイルの置き場。ユーザーの通常設定 (~/.config/opencode) は触らない。
+profile_dir = "/home/mt/.local/state/local-ai-bridge/opencode-profile"
+# プロファイルへ流し込む設定の元ファイル（リポジトリ内で版管理する）。
+config_source = "/home/mt/Proj/localai/tools/local-ai-bridge/opencode-profile/opencode.json"
+
+[state]
+# 台帳・作業ツリー・ログの置き場。共有 NAS 上に置かないこと（SQLite のロックが壊れる）。
+root = "/home/mt/.local/state/local-ai-bridge"
+
+[limits]
+# 選定理由は README.ja.md の「予算の決め方」を見ること。
+max_job_seconds          = 1800   # タスク全体。A30 で 23〜26 tok/s なので深い検証でも収まる長さ
+max_model_calls          = 40     # 1 タスクあたりのモデル呼出（step）の合計
+max_tool_calls           = 120    # ツール呼出の合計
+max_output_tokens_total  = 60000  # 生成トークンの合計。無制限にしない
+max_repair_rounds_standard   = 1
+max_repair_rounds_deep       = 2
+max_repair_rounds_exhaustive = 3
+max_concurrent_jobs      = 1      # この作業 PC で同時に走らせるタスク数
+queue_wait_seconds       = 900    # ジョブ枠が空くのを待つ上限。超えたら受付を取り消す
+opencode_stall_seconds   = 600    # イベントが来ない時間の上限。接続待ち・無応答の検出用
+connect_timeout_sec      = 15     # Ollama への接続確認
+verify_timeout_sec       = 600    # 検証コマンドの上限（プロファイル側の値と小さい方を使う）
+result_summary_max_chars = 600
+result_max_bytes         = 8192
+
+# ---- 作業場所の登録 -------------------------------------------------
+# ここに書いた workspace_id でしか作業しない。全ディレクトリを自動では許可しない。
+
+[workspace.selftest]
+path = "/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest"
+default_verify = "unittest"
+
+[workspace.selftest.verify.unittest]
+description = "標準ライブラリの unittest。外部依存なし"
+command = ["python3", "-m", "unittest", "discover", "-s", "tests", "-t", "."]
+timeout_sec = 300
+
+# 例: 別のプロジェクトを足すとき
+# [workspace.localai]
+# path = "/home/mt/Proj/localai"
+# default_verify = "sandbox"
+#
+# [workspace.localai.verify.sandbox]
+# command = ["tools/qwen-worker/.venv/bin/python", "tools/qwen-worker/tests/test_sandbox.py"]
+# timeout_sec = 300

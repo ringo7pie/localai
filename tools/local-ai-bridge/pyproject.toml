@@ -1,0 +1,16 @@
+[project]
+name = "local-ai-bridge"
+version = "0.1.0"
+description = "クラウド（Claude Code / Codex）から作業 PC の OpenCode 経由でローカル Qwen へ実装を委譲する連携層"
+requires-python = ">=3.12"
+dependencies = ["mcp==2.2.0"]
+
+[project.scripts]
+local-ai-task = "bridge.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["bridge"]

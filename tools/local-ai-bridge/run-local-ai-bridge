@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# stdio MCP サーバーの起動。標準出力はプロトコル専用なので何も出さない。
+set -euo pipefail
+HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+exec "$HERE/.venv/bin/python" -m bridge.mcp_server "$@"

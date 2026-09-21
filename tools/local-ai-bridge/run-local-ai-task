@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# local-ai-task CLI の起動。仮想環境の python を絶対パスで呼ぶ。
+set -euo pipefail
+HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+exec "$HERE/.venv/bin/python" -m bridge.cli "$@"

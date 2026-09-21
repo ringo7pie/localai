@@ -1,0 +1,169 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "enabled_providers": [
+    "ollama"
+  ],
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (A30 local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      },
+      "models": {
+        "qwen3.8:27b": {
+          "name": "Qwen3.8 27B (local A30)"
+        }
+      }
+    }
+  },
+  "model": "ollama/qwen3.8:27b",
+  "small_model": "ollama/qwen3.8:27b",
+  "default_agent": "build",
+  "share": "disabled",
+  "autoupdate": false,
+  "snapshot": false,
+  "subagent_depth": 0,
+  "logLevel": "INFO",
+  "lsp": false,
+  "formatter": false,
+  "compaction": {
+    "auto": true,
+    "prune": true
+  },
+  "tools": {
+    "bash": false,
+    "task": false,
+    "webfetch": false,
+    "websearch": false
+  },
+  "permission": {
+    "read": {
+      "*": "allow",
+      ".env": "deny",
+      "**/.env": "deny",
+      ".env.*": "deny",
+      "**/.env.*": "deny",
+      "*.pem": "deny",
+      "**/*.pem": "deny",
+      "*.key": "deny",
+      "**/*.key": "deny",
+      "*.p12": "deny",
+      "**/*.p12": "deny",
+      "*.pfx": "deny",
+      "**/*.pfx": "deny",
+      "id_rsa*": "deny",
+      "**/id_rsa*": "deny",
+      "id_ecdsa*": "deny",
+      "**/id_ecdsa*": "deny",
+      "id_ed25519*": "deny",
+      "**/id_ed25519*": "deny",
+      ".netrc": "deny",
+      "**/.netrc": "deny",
+      ".npmrc": "deny",
+      "**/.npmrc": "deny",
+      ".pypirc": "deny",
+      "**/.pypirc": "deny",
+      "credentials.json": "deny",
+      "**/credentials.json": "deny",
+      "service-account*.json": "deny",
+      "**/service-account*.json": "deny",
+      "*secret*": "deny",
+      "**/*secret*": "deny",
+      "*.kdbx": "deny",
+      "**/*.kdbx": "deny",
+      ".ssh/**": "deny",
+      "**/.ssh/**": "deny",
+      ".aws/**": "deny",
+      "**/.aws/**": "deny",
+      ".gnupg/**": "deny",
+      "**/.gnupg/**": "deny",
+      "*.env": "deny",
+      "**/*.env": "deny",
+      ".env.example": "allow",
+      "**/.env.example": "allow"
+    },
+    "edit": {
+      "*": "allow",
+      ".env": "deny",
+      "**/.env": "deny",
+      ".env.*": "deny",
+      "**/.env.*": "deny",
+      "*.pem": "deny",
+      "**/*.pem": "deny",
+      "*.key": "deny",
+      "**/*.key": "deny",
+      "*.p12": "deny",
+      "**/*.p12": "deny",
+      "*.pfx": "deny",
+      "**/*.pfx": "deny",
+      "id_rsa*": "deny",
+      "**/id_rsa*": "deny",
+      "id_ecdsa*": "deny",
+      "**/id_ecdsa*": "deny",
+      "id_ed25519*": "deny",
+      "**/id_ed25519*": "deny",
+      ".netrc": "deny",
+      "**/.netrc": "deny",
+      ".npmrc": "deny",
+      "**/.npmrc": "deny",
+      ".pypirc": "deny",
+      "**/.pypirc": "deny",
+      "credentials.json": "deny",
+      "**/credentials.json": "deny",
+      "service-account*.json": "deny",
+      "**/service-account*.json": "deny",
+      "*secret*": "deny",
+      "**/*secret*": "deny",
+      "*.kdbx": "deny",
+      "**/*.kdbx": "deny",
+      ".ssh/**": "deny",
+      "**/.ssh/**": "deny",
+      ".aws/**": "deny",
+      "**/.aws/**": "deny",
+      ".gnupg/**": "deny",
+      "**/.gnupg/**": "deny",
+      ".git/**": "deny",
+      "**/.git/**": "deny",
+      "*.env": "deny",
+      "**/*.env": "deny",
+      ".env.example": "allow",
+      "**/.env.example": "allow"
+    },
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "lsp": "allow",
+    "todowrite": "allow",
+    "bash": "deny",
+    "task": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "external_directory": "deny",
+    "question": "deny",
+    "doom_loop": "deny",
+    "skill": "deny"
+  },
+  "agent": {
+    "build": {
+      "description": "実装担当。作業ツリー内だけを編集する",
+      "model": "ollama/qwen3.8:27b",
+      "steps": 40
+    },
+    "plan": {
+      "description": "レビュー・方針比較担当。読み取り専用",
+      "model": "ollama/qwen3.8:27b",
+      "steps": 24,
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "patch": "deny",
+        "bash": "deny"
+      }
+    }
+  },
+  "mcp": {},
+  "experimental": {
+    "mcp_timeout": 30000
+  }
+}

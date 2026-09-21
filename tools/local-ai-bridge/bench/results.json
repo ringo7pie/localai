@@ -1,0 +1,14 @@
+{
+  "measured_at": "2026-09-21",
+  "session_context_tokens_per_turn": 500000,
+  "rates": {"input_per_mtok": 5.0, "output_per_mtok": 25.0,
+            "cache_read_multiplier": 0.1, "cache_write_1h_multiplier": 2.0},
+  "arms": [
+    {"family": "F1", "size": "極小",   "arm": "B", "variant": "f1b", "turns": 8, "cache_read": 3910140, "cache_write_1h": 7491, "output": 3210, "input": 16, "usd": 2.1103, "local_seconds": 52.6,  "mode": "standard"},
+    {"family": "F1", "size": "極小",   "arm": "A", "variant": "f1a", "turns": 4, "cache_read": 1968272, "cache_write_1h": 4897, "output": 2752, "input": 8,  "usd": 1.1019, "local_seconds": 0, "mode": "-"},
+    {"family": "F2", "size": "通常",   "arm": "B", "variant": "f2b", "turns": 9, "cache_read": 4460450, "cache_write_1h": 6869, "output": 5049, "input": 18, "usd": 2.4252, "local_seconds": 44.0,  "mode": "standard"},
+    {"family": "F2", "size": "通常",   "arm": "A", "variant": "f2a", "turns": 4, "cache_read": 1995116, "cache_write_1h": 5024, "output": 1847, "input": 8,  "usd": 1.0940, "local_seconds": 0, "mode": "-"},
+    {"family": "F3", "size": "難しい", "arm": "B", "variant": "f3b", "turns": 8, "cache_read": 4020170, "cache_write_1h": 6349, "output": 6596, "input": 16, "usd": 2.2386, "local_seconds": 424.3, "mode": "deep"},
+    {"family": "F3", "size": "難しい", "arm": "A", "variant": "f3a", "turns": 4, "cache_read": 2021071, "cache_write_1h": 6650, "output": 2394, "input": 8,  "usd": 1.1369, "local_seconds": 0, "mode": "-"}
+  ]
+}
