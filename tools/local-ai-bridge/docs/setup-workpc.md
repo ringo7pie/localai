@@ -23,7 +23,32 @@ A30 側のワークスペース全体を複製する必要はない。
 **Ollama を LAN へ公開しない。** `OLLAMA_HOST=0.0.0.0` にはしない。
 SSH トンネルなら、ファイアウォールの変更も新しい待受ポートも要らない。
 
-## 1. A30 サーバー側（承認が必要な作業はしない）
+## 1. 1 スクリプトで導入する（推奨）
+
+作業 PC で導入スクリプトを **1 回**走らせる。途中で A30 サーバーのログインパスワードを ssh が 1〜2 回聞く（鍵の登録と本体の複製）。サーバー側で何かする必要はない。
+
+```bash
+# macOS / Linux / WSL2。いつ: 最初の 1 回だけ（再実行しても安全）
+scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+bash setup-workpc.sh --server-ip <server-ip>
+```
+
+```powershell
+# Windows 11。WSL2 が要る（bridge 本体は fcntl を使うため Windows ネイティブでは動かない）
+# いつ: 最初の 1 回だけ。この Windows→WSL2 の経路は未検証
+scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.ps1 .
+powershell -ExecutionPolicy Bypass -File .\setup-workpc.ps1 -ServerIp <server-ip>
+```
+
+`setup-workpc.sh` がやること（`[1/7]`〜`[7/7]`）: トンネル専用鍵 `~/.ssh/a30-tunnel` → サーバーの `authorized_keys` に制限付きの 1 行を追記（§2 の行と同じ）→ `~/.ssh/config` に `Host a30-ollama` → トンネル起動ヘルパ `~/.local/bin/a30-tunnel`（`start|stop|status`）→ uv と OpenCode → 本体を `rsync` で複製し `.venv` と `bridge.toml` を作る → MCP 登録・スキル・委譲ルール → `doctor`。
+主な引数: `--server-ip`、`--server-user`、`--install-dir`（既定 `~/local-ai-bridge`）、`--allowed-root`（複数可）、`--skip-server`（サーバーへの鍵登録を表示だけにする）、`--no-rules`。
+
+**使うたび**にやることは 1 つだけ: `a30-tunnel start`（トンネルを張る）。切るのは `a30-tunnel stop`、確認は `a30-tunnel status`。
+
+以下 §2〜§5 は、スクリプトがやっていることの説明と、手で進めたい人向けの手順。
+
+## 2. A30 サーバー側（承認が必要な作業はしない）
 
 作業 PC の公開鍵を A30 側の `~/.ssh/authorized_keys` へ追加する。
 トンネル専用にするなら、転送先を 1 つに限定した行にする。
@@ -39,7 +64,7 @@ restrict,port-forwarding,permitopen="127.0.0.1:11434",command="echo tunnel-only"
 
 この編集は鍵の受け渡しを伴うため、**利用者本人が行う**。連携層は代行しない。
 
-## 2. 作業 PC 側: トンネルを張る
+## 3. 作業 PC 側: トンネルを張る
 
 ### Linux / macOS / WSL2
 
@@ -68,7 +93,7 @@ curl.exe http://127.0.0.1:11434/api/version
 WSL2 から Windows 側のポートは `127.0.0.1` では見えないことがある。
 **トンネルは WSL2 の中で張る**のが確実。WSL2 内で上の `ssh -N -L` を実行する。
 
-## 3. 作業 PC 側: OpenCode と連携層
+## 4. 作業 PC 側: OpenCode と連携層
 
 ```bash
 # OpenCode（版を固定する）
@@ -103,7 +128,15 @@ cp config/bridge.toml.example ~/.config/local-ai-bridge/bridge.toml
   そのための argv を登録すること。Linux のテストだけで Windows のビルドや GUI を
   成功扱いにしないこと。
 
-## 4. 点検
+### MCP 登録（手で進める場合）
+
+```bash
+<install-dir>/scripts/register-claude.sh user
+<install-dir>/scripts/register-codex.sh   # codex があれば
+<install-dir>/scripts/install-skills.sh
+```
+
+## 5. 点検
 
 ```bash
 ./run-local-ai-task doctor
@@ -111,7 +144,7 @@ cp config/bridge.toml.example ~/.config/local-ai-bridge/bridge.toml
 
 `ollama 接続` が OK になれば、トンネル越しに A30 へ届いている。
 
-## 5. 同時実行について
+## 6. 同時実行について
 
 A30 は 1 枚。作業 PC が増えても推論は直列化される。
 **作業 PC 側の `max_concurrent_jobs` は、その PC の中だけの制限。**

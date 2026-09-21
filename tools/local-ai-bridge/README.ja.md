@@ -33,35 +33,56 @@ Ollama + qwen3.8:27b（A30 サーバー）
 
 ## 2. 導入
 
+A30 サーバー上では、導入スクリプトを **1 回**走らせるだけでよい。再実行しても既にあるものは触らない（冪等）。
+
 ```bash
-# 1. OpenCode（公式単体バイナリ。シェル設定は書き換えない）
-curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.31 --no-modify-path
-
-# 2. 連携層の仮想環境
-cd /home/mt/Proj/localai/tools/local-ai-bridge
-/home/mt/.local/bin/uv venv --python 3.12 .venv
-/home/mt/.local/bin/uv pip install --python .venv/bin/python -r requirements.lock.txt
-/home/mt/.local/bin/uv pip install --python .venv/bin/python -e .
-
-# 3. 設定
-mkdir -p ~/.config/local-ai-bridge
-cp config/bridge.toml.example ~/.config/local-ai-bridge/bridge.toml
-chmod 600 ~/.config/local-ai-bridge/bridge.toml
-$EDITOR ~/.config/local-ai-bridge/bridge.toml   # 作業場所と検証プロファイルを登録する
-
-# 4. 点検
-./run-local-ai-task doctor
-
-# 5. MCP 登録（このプロジェクトだけに限定するスコープ）
-./scripts/register-claude.sh local
-./scripts/register-codex.sh
+# いつ: 最初の 1 回だけ（再実行しても安全）
+/home/mt/Proj/localai/tools/local-ai-bridge/scripts/setup-server.sh --workspace /home/mt/Proj/localai
 ```
+
+`setup-server.sh` がやること（`[1/7]`〜`[7/7]`）:
+
+1. uv と python3 の確認（uv が無ければ導入方法を表示して終了）
+2. OpenCode 1.18.31 を `~/.opencode/bin` へ（公式単体バイナリ。シェル設定は書き換えない）
+3. 連携層の仮想環境 `.venv`（`requirements.lock.txt` と `-e .`）
+4. `~/.config/local-ai-bridge/bridge.toml` を `config/bridge.toml.example` から作り、`[registration] allowed_roots` を書く（既にあれば触らない）
+5. Claude Code / Codex への MCP 登録（`register-claude.sh` / `register-codex.sh`）
+6. スキル `/qwen` `/qwen-read`（`install-skills.sh`）と委譲ルールの短い版（`add-delegation-rules.sh --short`）
+7. `--workspace` で渡したリポジトリの登録と `doctor`
+
+主な引数: `--allowed-root DIR`（複数可、既定 `$HOME/Proj`）、`--workspace PATH`（複数可）、`--mcp-scope local|user`（既定 `local`）、`--no-rules`、`--no-skills`。
+検証プロファイルはスクリプトでは付けない。`doctor` が通ったあとで `local-ai-task workspace add ... --verify NAME --cmd "..."`（§3）で足す。
 
 `doctor` がすべて OK になってから使うこと。とくに次の 2 行を確認する。
 
 - `見えるモデル: ollama/qwen3.8:27b` — ローカル以外のモデルが見えていないこと
 - `実効設定: enabled_providers=['ollama'] …` — 設定ファイルを置いただけでなく、
   OpenCode が実際にその値で解決していること
+
+他の PC に置くときは `docs/setup-workpc.md`（`scripts/setup-workpc.sh` / `setup-workpc.ps1`）。
+sudo が要る作業（ufw、linger、Ollama の drop-in）は `scripts/server-approvals.sh` が差分・影響・戻し方を表示し、人が項目ごとに承認して実行する。
+
+<details>
+<summary>手で行う場合（スクリプトと同じ手順）</summary>
+
+```bash
+curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.31 --no-modify-path
+cd /home/mt/Proj/localai/tools/local-ai-bridge
+/home/mt/.local/bin/uv venv --python 3.12 .venv
+/home/mt/.local/bin/uv pip install --python .venv/bin/python -r requirements.lock.txt
+/home/mt/.local/bin/uv pip install --python .venv/bin/python -e .
+mkdir -p ~/.config/local-ai-bridge
+cp config/bridge.toml.example ~/.config/local-ai-bridge/bridge.toml
+chmod 600 ~/.config/local-ai-bridge/bridge.toml
+$EDITOR ~/.config/local-ai-bridge/bridge.toml   # [registration] allowed_roots と作業場所
+./run-local-ai-task doctor
+./scripts/register-claude.sh local
+./scripts/register-codex.sh
+./scripts/install-skills.sh
+./scripts/add-delegation-rules.sh --short ~/.claude/CLAUDE.md
+```
+
+</details>
 
 ## 3. 使い方
 
