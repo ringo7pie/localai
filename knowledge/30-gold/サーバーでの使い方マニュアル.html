@@ -79,6 +79,7 @@ td code{background:var(--surface-2)}
 .os-mac{color:var(--mac);background:var(--mac-soft)}
 .os-lin{color:var(--lin);background:var(--lin-soft)}
 .os-srv{color:var(--accent);background:var(--accent-soft)}
+.oshead .when{font-weight:400;opacity:.8;margin-left:4px}
 .oshead + .term{border-top-left-radius:0}
 .note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
 .warn{border-left:4px solid var(--warn-bar);background:var(--warn-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
@@ -164,6 +165,24 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
     <li><a href="#s12">未確認・承認待ち</a></li>
   </ol>
 </nav>
+
+<div class="ok">
+  <b>はじめての人はこれだけ</b>
+  A30 サーバーで導入スクリプトを 1 回ずつ走らせる。再実行しても既にあるものは触らない。
+  <ul>
+    <li>local-ai-bridge（実装を Qwen に委譲し、テストまで回す）→ <code>tools/local-ai-bridge/scripts/setup-server.sh --workspace &lt;リポジトリ&gt;</code></li>
+    <li>qwen-worker（他の PC から SSH 越しに使わせる本体）→ <code>tools/qwen-worker/setup-server.sh</code></li>
+  </ul>
+  他の PC の鍵の受け入れは、他の PC 側のスクリプトが自動で行う。サーバーで打つのは取り消したいときだけ（§04）。
+</div>
+
+<div class="note">
+  <b>コマンド枠のラベルの読み方</b>
+  各枠の上のラベルは「<b>どこで打つ ｜ いつ: いつ打つ</b>」。<code>.bashrc</code> などの設定ファイルに書くものではなく、
+  そのときにターミナルを開いて <code>$</code> や <code>PS&gt;</code> の後ろを 1 行ずつ打つ。
+  「いつ」は 4 種類だけ: <b>最初の 1 回だけ</b>（導入）／<b>使うたび</b>／<b>必要になったとき</b>（何のときかを併記）／<b>点検したいとき</b>。
+</div>
+
 
 <h2 id="s1"><span class="num">01</span>3 つの道具と使い分け</h2>
 
@@ -290,7 +309,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <p><b>推奨は <code>run</code> を 1 回呼ぶこと。</b>委譲→完了待ち→6 フラグ判定→作業ツリーへ適用→
 登録済みコマンドで再検証→600 字要約、をこの 1 回で行う。</p>
 
-<div class="oshead os-srv">A30 サーバー — bash</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 委譲を 1 件流すたび</span></div>
 <div class="term"><span class="c"># 毎回打つのが面倒なら変数に入れる</span>
 BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 
@@ -329,7 +348,7 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 <code>status</code> / <code>wait</code>（進捗・完了待ち）→ <code>result</code>（結果取得）の流れも使える。
 ふだんは <code>run</code> 1 回で足りる。</p>
 
-<div class="oshead os-srv">A30 サーバー — bash</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（段階ごとに追いたい・測りたい）</span></div>
 <div class="term"><span class="c"># 2'. 依頼する（受付だけ。数秒で task_id が返る）</span>
 <span class="p">$</span> $BRIDGE/run-local-ai-task submit \
     --workspace selftest \
@@ -369,7 +388,7 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
   手で当てるのは submit 経路のときだけ。どちらの経路でも最後は人が <code>git diff</code> を見る。
 </div>
 
-<div class="oshead os-srv">A30 サーバー — bash</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（submit 経路で差分を当てる）</span></div>
 <div class="term">TASK=task_9f4cc12619c14957
 DIFF=~/.local/state/local-ai-bridge/tasks/$TASK/changes.diff
 REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
@@ -384,7 +403,7 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 <code>local-ai-task workspace add</code> で登録する。手で <code>bridge.toml</code> の
 <code>[workspace.*]</code> を書く必要はない。</p>
 
-<div class="oshead os-srv">A30 サーバー — bash</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（新しいリポジトリを登録する）</span></div>
 <div class="term"><span class="p">$</span> $BRIDGE/run-local-ai-task workspace add /home/mt/Proj/myproject \
     --id myproject \
     --verify pytest --cmd "python3 -m pytest -q" \
@@ -449,7 +468,7 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 
 <li>
 <h4>受け入れ済みの鍵を見る・取り消す</h4>
-<div class="oshead os-srv">A30 サーバー — bash</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（PC を手放した・鍵が漏れた・作り直す）。--list は点検したいとき</span></div>
 <div class="term"><span class="c"># 一覧（鍵本体は伏せて表示される）</span>
 <span class="p">$</span> bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh --list
 
@@ -488,7 +507,7 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
   下の sudo コマンドを実行するまで使えない。
 </div>
 
-<div class="oshead os-srv">A30 サーバー — 承認が要る作業</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 承認を得てから 1 回だけ（sudo が要る。未実行）</span></div>
 <div class="term"><span class="c"># 1. LAN の <lan-cidr> にだけ 8080 を開ける（全開放はしない）</span>
 <span class="p">$</span> sudo ufw allow from <lan-cidr> to any port 8080 proto tcp comment 'Open WebUI'
 
@@ -507,7 +526,7 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 <li><h4>最初のアカウントを作る</h4>
 <p><b>最初に登録した人が管理者になる。</b>そのため、こちらでは作っていない。</p></li>
 <li><h4>登録を閉じる</h4>
-<div class="oshead os-srv">~/.config/open-webui/open-webui.env</div>
+<div class="oshead os-srv">A30 サーバーで ~/.config/open-webui/open-webui.env を編集 <span class="when">｜ いつ: 必要になったとき（登録を閉じる）</span></div>
 <div class="term">ENABLE_SIGNUP=false</div>
 <div class="term"><span class="p">$</span> systemctl --user restart open-webui</div></li>
 </ol>
@@ -683,18 +702,18 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 
 <h2 id="s11"><span class="num">10</span>元に戻す</h2>
 
-<div class="oshead os-lin">local-ai-bridge</div>
+<div class="oshead os-lin">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（連携層をやめる）</span></div>
 <div class="term"><span class="p">$</span> ./scripts/restore.sh          <span class="c"># 何を追加したかを表示するだけ</span>
 <span class="p">$</span> ./scripts/restore.sh --apply  <span class="c"># MCP 登録の解除と隔離プロファイルの削除</span>
 
 <span class="c"># 台帳（ledger.db）とタスクログは証拠なので残る。不要なら手で消す</span></div>
 
-<div class="oshead os-srv">qwen-worker（A30 サーバー側で鍵を取り消す）</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（他の PC の鍵を取り消す）</span></div>
 <div class="term"><span class="p">$</span> bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh --list
 <span class="p">$</span> bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh work-pc-01
 <span class="c"># 編集前に authorized_keys のバックアップを取る。出力では鍵本体を伏せる</span></div>
 
-<div class="oshead os-lin">委譲ルールを外す</div>
+<div class="oshead os-lin">A30 サーバーで対象ファイルを編集 <span class="when">｜ いつ: 必要になったとき（ルールを外す）</span></div>
 <div class="term"><span class="c"># 対象ファイルの次の範囲を削る。.bak も残っている</span>
 &lt;!-- local-ai-bridge:begin 管理対象: このブロックのみ --&gt;
   ...
@@ -726,7 +745,7 @@ REPO=/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest
 
 <h3>承認待ち（sudo が要る。実行していない）</h3>
 
-<div class="oshead os-srv">A30 サーバー — 実行前に必ず実行中タスクの確認を</div>
+<div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 承認を得てから 1 回だけ（sudo が要る。未実行。先に実行中タスクを確認）</span></div>
 <div class="term"><span class="c"># 0. 実行中の推論が無いことを確認する（再起動は推論を中断する）</span>
 <span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/run-local-ai-task list --state running
 <span class="p">$</span> ollama ps

@@ -79,6 +79,7 @@ td code{background:var(--surface-2)}
 .os-mac{color:var(--mac);background:var(--mac-soft)}
 .os-lin{color:var(--lin);background:var(--lin-soft)}
 .os-srv{color:var(--accent);background:var(--accent-soft)}
+.oshead .when{font-weight:400;opacity:.8;margin-left:4px}
 .oshead + .term{border-top-left-radius:0}
 .note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
 .warn{border-left:4px solid var(--warn-bar);background:var(--warn-soft);padding:13px 17px;border-radius:0 8px 8px 0;margin:16px 0}
@@ -162,6 +163,24 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
     <li><a href="#s11">元に戻す</a></li>
   </ol>
 </nav>
+
+<div class="ok">
+  <b>はじめての人はこれだけ</b>
+  他の PC で設定スクリプトを 1 回走らせる。途中で A30 サーバーのログインパスワードを 1 回聞かれる。サーバー側で何かする必要はない。
+  <ul>
+    <li>Claude Code / Codex からサーバー上のコードを Qwen に調べさせ・書かせたい（道具 A）→ <code>setup-remote.ps1</code>（Windows）/ <code>setup-remote.sh</code>（macOS・Linux）。§03</li>
+    <li>自分の PC 上のリポジトリを Qwen に実装させ、テストまで回したい（道具 B）→ <code>setup-workpc.sh</code>（macOS・Linux・WSL2）/ <code>setup-workpc.ps1</code>（Windows。WSL2 が要る）。§04</li>
+  </ul>
+  終わったら新しい会話を開く。MCP のツールは再接続後にしか見えない。
+</div>
+
+<div class="note">
+  <b>コマンド枠のラベルの読み方</b>
+  各枠の上のラベルは「<b>どこで打つ ｜ いつ: いつ打つ</b>」。<code>.bashrc</code> などの設定ファイルに書くものではなく、
+  そのときにターミナルを開いて <code>$</code> や <code>PS&gt;</code> の後ろを 1 行ずつ打つ。
+  「いつ」は 4 種類だけ: <b>最初の 1 回だけ</b>（導入）／<b>使うたび</b>／<b>必要になったとき</b>（何のときかを併記）／<b>点検したいとき</b>。
+</div>
+
 
 <h2 id="s1"><span class="num">01</span>3 つの道具と使い分け</h2>
 
@@ -274,7 +293,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <p>スクリプトは <b>A30 サーバーの</b> <code>~/.local/share/qwen-worker/remote/</code> にある。
 Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってくる。</p>
 
-<div class="oshead os-win">Windows — PowerShell</div>
+<div class="oshead os-win">他の PC（Windows PowerShell）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
 <div class="term"><span class="c"># 前提: Windows 標準の OpenSSH クライアント</span>
 <span class="c"># 「設定 &gt; アプリ &gt; オプション機能 &gt; OpenSSH クライアント」で入る</span>
 
@@ -285,8 +304,8 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 <span class="c"># 実行</span>
 <span class="p">PS&gt;</span> powershell -ExecutionPolicy Bypass -File .\setup-remote.ps1 -ServerIp <server-ip></div>
 
-<div class="oshead os-mac">macOS</div>
-<div class="oshead os-lin">Linux / WSL2</div>
+<div class="oshead os-mac">他の PC（macOS）</div>
+<div class="oshead os-lin">他の PC（Linux / WSL2）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
 <div class="term"><span class="p">$</span> scp mt@<server-ip>:.local/share/qwen-worker/remote/setup-remote.sh .
 <span class="p">$</span> bash setup-remote.sh <server-ip></div>
 
@@ -316,7 +335,7 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 <li>
 <h4>疎通を確かめる</h4>
 <p>スクリプトの [5/5] が同じ確認を済ませている。後日もう一度確かめるときに使う。</p>
-<div class="oshead os-win">Windows — PowerShell</div>
+<div class="oshead os-win">他の PC（Windows PowerShell）で打つ <span class="when">｜ いつ: 点検したいとき（設定後・つながらないとき）</span></div>
 <div class="term"><span class="p">PS&gt;</span> ssh -n -T qwen-worker
 <span class="c"># エラーが出ずに即終了すれば接続は通っている（JSON は返らない）</span>
 
@@ -324,7 +343,7 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 <span class="o">  Status: ✔ Connected</span></div>
 <div class="note"><b>Enter passphrase for key … と聞かれたら</b>: 鍵にパスフレーズが付いています。サーバーのログインパスワードではないので通りません。<code>ssh-keygen -p -f $HOME\.ssh\qwen-worker</code> で旧パスフレーズを入れ、新は Enter を 2 回（空）にして外します。分からなければ鍵 2 ファイルを削除し、サーバー管理者に古い鍵の取り消しを頼んだうえで（サーバーでの使い方マニュアル.html）、setup-remote.ps1 を再実行して受け入れ直します。</div>
 
-<div class="oshead os-lin">macOS / Linux</div>
+<div class="oshead os-lin">他の PC（macOS / Linux）で打つ <span class="when">｜ いつ: 点検したいとき（設定後・つながらないとき）</span></div>
 <div class="term"><span class="p">$</span> ssh -n -T qwen-worker
 <span class="p">$</span> claude mcp get qwen-worker
 <span class="o">  Status: ✔ Connected</span></div>
@@ -339,7 +358,7 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 <li>
 <h4>手で登録する場合（スクリプトを使わないとき）</h4>
 
-<div class="oshead os-lin">~/.ssh/config に追記</div>
+<div class="oshead os-lin">他の PC の ~/.ssh/config に書く <span class="when">｜ いつ: スクリプトを使わず手で設定するときだけ</span></div>
 <div class="term">Host qwen-worker
     HostName <server-ip>
     User mt
@@ -347,7 +366,7 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
     IdentitiesOnly yes
     RequestTTY no</div>
 
-<div class="oshead os-lin">Claude Code へ登録</div>
+<div class="oshead os-lin">他の PC で打つ（Claude Code へ登録） <span class="when">｜ いつ: 手で設定するときだけ</span></div>
 <div class="term"><span class="c"># user スコープ = どのプロジェクトからでも使える</span>
 <span class="p">$</span> claude mcp add -s user qwen-worker -- ssh -T qwen-worker
 
@@ -355,7 +374,7 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 <span class="c">#   "MCP_TOOL_TIMEOUT": "2100000"   ← 35 分</span>
 <span class="c">#   "MCP_TIMEOUT":      "30000"     ← 起動 30 秒</span></div>
 
-<div class="oshead os-lin">Codex へ登録</div>
+<div class="oshead os-lin">他の PC で打つ（Codex へ登録） <span class="when">｜ いつ: 手で設定するときだけ</span></div>
 <div class="term"><span class="p">$</span> codex mcp add qwen-worker -- ssh -T qwen-worker
 
 <span class="c"># codex が PATH に無い環境では実体をフルパスで呼ぶ</span>
@@ -412,7 +431,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <h4>他の PC から：トンネル専用の鍵をサーバーへ登録する（パスワード 1 回）</h4>
 <p>道具 A の鍵とは<b>別の鍵</b>を使う。A の鍵は強制コマンド付きでポート転送できないため。</p>
 
-<div class="oshead os-lin">他の PC — bash / PowerShell 共通</div>
+<div class="oshead os-lin">他の PC（bash / PowerShell）で打つ <span class="when">｜ いつ: 最初の 1 回だけ（パスワード 1 回）</span></div>
 <div class="term"><span class="c"># ssh がサーバーのログインパスワードを 1 回聞く。AAAA... は自分のトンネル用公開鍵に置き換える</span>
 <span class="c"># bash（macOS / Linux / WSL2）</span>
 <span class="p">$</span> echo 'restrict,port-forwarding,permitopen="127.0.0.1:11434",command="echo tunnel-only" ssh-ed25519 AAAA... work-pc-01-tunnel' | ssh mt@<server-ip> 'cat &gt;&gt; ~/.ssh/authorized_keys'
@@ -433,15 +452,15 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <li>
 <h4>他の PC：トンネルを張る</h4>
 
-<div class="oshead os-win">Windows 11 — PowerShell</div>
+<div class="oshead os-win">他の PC（Windows PowerShell）で打つ <span class="when">｜ いつ: 使うたび（トンネルが要る間）</span></div>
 <div class="term"><span class="p">PS&gt;</span> ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 mt@<server-ip>
 
 <span class="c"># 別の窓で確認</span>
 <span class="p">PS&gt;</span> curl.exe http://127.0.0.1:11434/api/version
 <span class="o">  {"version":"0.34.2"}</span></div>
 
-<div class="oshead os-mac">macOS</div>
-<div class="oshead os-lin">Linux / WSL2</div>
+<div class="oshead os-mac">他の PC（macOS）</div>
+<div class="oshead os-lin">他の PC（Linux / WSL2）で打つ <span class="when">｜ いつ: 使うたび（トンネルが要る間）</span></div>
 <div class="term"><span class="p">$</span> ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 mt@<server-ip>
 
 <span class="p">$</span> curl -s http://127.0.0.1:11434/api/version
@@ -457,7 +476,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <li>
 <h4>他の PC：OpenCode と連携層を入れる</h4>
 
-<div class="oshead os-lin">Linux / macOS / WSL2 — bash</div>
+<div class="oshead os-lin">他の PC（bash）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
 <div class="term"><span class="c"># OpenCode（版を固定する。シェル設定は書き換えない）</span>
 <span class="p">$</span> curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.31 --no-modify-path
 
@@ -496,7 +515,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <li>
 <h4>他の PC：MCP に登録する</h4>
 
-<div class="oshead os-lin">bash</div>
+<div class="oshead os-lin">他の PC（bash）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
 <div class="term"><span class="c"># 同梱スクリプト（再実行しても重複しない）</span>
 <span class="p">$</span> ./scripts/register-claude.sh local   <span class="c"># local / user / project から選ぶ</span>
 <span class="p">$</span> ./scripts/register-codex.sh
@@ -522,7 +541,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 
 <li>
 <h4>点検して 1 件流す</h4>
-<div class="oshead os-lin">bash</div>
+<div class="oshead os-lin">他の PC（bash）で打つ <span class="when">｜ いつ: 点検したいとき／委譲を 1 件流すたび</span></div>
 <div class="term"><span class="p">$</span> ./run-local-ai-task doctor
 <span class="c"># 「ollama 接続」が OK ならトンネル越しに A30 へ届いている</span>
 <span class="c"># 「見えるモデル」が ollama/qwen3.8:27b だけであること</span>
@@ -623,7 +642,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <p>他の PC の <code>CLAUDE.md</code> / <code>AGENTS.md</code> に貼る。
 <b>既存の内容は消さないこと。</b>同梱スクリプトは管理ブロックを挟んで追記し、再実行しても重複しない。</p>
 
-<div class="oshead os-lin">bash</div>
+<div class="oshead os-lin">他の PC（bash）で打つ <span class="when">｜ いつ: 最初の 1 回だけ（ルールを CLAUDE.md に入れるとき）</span></div>
 <div class="term"><span class="c"># 短い版（行数に予算があるファイル向け）</span>
 <span class="p">$</span> ./scripts/add-delegation-rules.sh --short ~/.claude/CLAUDE.md
 
@@ -690,7 +709,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 
 <h2 id="s11"><span class="num">09</span>元に戻す</h2>
 
-<div class="oshead os-lin">local-ai-bridge</div>
+<div class="oshead os-lin">他の PC（bash）で打つ <span class="when">｜ いつ: 必要になったとき（連携層をやめる）</span></div>
 <div class="term"><span class="p">$</span> ./scripts/restore.sh          <span class="c"># 何を追加したかを表示するだけ</span>
 <span class="p">$</span> ./scripts/restore.sh --apply  <span class="c"># MCP 登録の解除と隔離プロファイルの削除</span>
 
@@ -698,7 +717,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 
 <p>qwen-worker の鍵の取り消しはサーバー側の作業（サーバーでの使い方マニュアル.html）。</p>
 
-<div class="oshead os-lin">委譲ルールを外す</div>
+<div class="oshead os-lin">他の PC で対象ファイルを編集 <span class="when">｜ いつ: 必要になったとき（ルールを外す）</span></div>
 <div class="term"><span class="c"># 対象ファイルの次の範囲を削る。.bak も残っている</span>
 &lt;!-- local-ai-bridge:begin 管理対象: このブロックのみ --&gt;
   ...
