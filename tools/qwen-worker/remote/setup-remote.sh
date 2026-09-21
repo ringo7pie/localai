@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
 # 他の PC（macOS / Linux）で実行する。qwen-worker を SSH 越しに Claude Code / Codex へ登録する。
 #
-# 使い方:  bash setup-remote.sh [ホストIP]   （省略時 <server-ip>）
+# 使い方:  bash setup-remote.sh [ホストIP] [--skip-server]   （ホストIP 省略時 <server-ip>）
 #
 # やること:
 #   1. 専用鍵 ~/.ssh/qwen-worker を作る（既にあれば再利用）
 #   2. ~/.ssh/config に Host qwen-worker 節を足す（既にあれば触らない）
 #   3. claude / codex があれば MCP 登録し、タイムアウトを合わせる
-#   4. 公開鍵を表示する → これをサーバ側の add-remote-key.sh に渡す
+#   4. サーバーへ登録: 公開鍵を標準入力で add-remote-key.sh に渡す（ssh がパスワードを 1 回聞く）
+#   5. 疎通確認: ssh -n -T qwen-worker と（あれば）claude mcp get qwen-worker
+#
+#   --skip-server を指定すると 4 と 5 を行わず、公開鍵と手で打つコマンドの表示だけで終わる。
+#   パスワード・パスフレーズはこのスクリプトが受け取ったり保存したりしない。
 set -euo pipefail
 
-server_ip="${1:-<server-ip>}"
+server_ip="<server-ip>"
+skip_server=0
+for arg in "$@"; do
+  case "$arg" in
+    --skip-server) skip_server=1 ;;
+    *) server_ip="$arg" ;;
+  esac
+done
 server_user="mt"
 key_file="$HOME/.ssh/qwen-worker"
 pc_name="$(hostname -s 2>/dev/null || hostname)"
@@ -19,17 +30,17 @@ mkdir -p "$HOME/.ssh"; chmod 700 "$HOME/.ssh"
 
 # 1. 鍵
 if [ -f "$key_file" ]; then
-  echo "[1/4] 鍵は既にあります: $key_file"
+  echo "[1/5] 鍵は既にあります: $key_file"
 else
   ssh-keygen -t ed25519 -N "" -f "$key_file" -C "qwen-worker@$pc_name" >/dev/null
-  echo "[1/4] 鍵を作りました: $key_file"
+  echo "[1/5] 鍵を作りました: $key_file"
 fi
 
 # 2. ssh config
 config_file="$HOME/.ssh/config"
 touch "$config_file"; chmod 600 "$config_file"
 if grep -qE '^Host qwen-worker$' "$config_file"; then
-  echo "[2/4] ~/.ssh/config に Host qwen-worker は既にあります。触りません。"
+  echo "[2/5] ~/.ssh/config に Host qwen-worker は既にあります。触りません。"
 else
   cat >> "$config_file" <<CFG
 
@@ -41,16 +52,16 @@ Host qwen-worker
   ServerAliveInterval 30
   RequestTTY no
 CFG
-  echo "[2/4] ~/.ssh/config に Host qwen-worker を追記しました。"
+  echo "[2/5] ~/.ssh/config に Host qwen-worker を追記しました。"
 fi
 
 # 3. MCP 登録
 if command -v claude >/dev/null 2>&1; then
   if claude mcp get qwen-worker >/dev/null 2>&1; then
-    echo "[3/4] Claude Code: qwen-worker は既に登録済み。"
+    echo "[3/5] Claude Code: qwen-worker は既に登録済み。"
   else
     claude mcp add -s user qwen-worker -- ssh -T qwen-worker
-    echo "[3/4] Claude Code: 登録しました。"
+    echo "[3/5] Claude Code: 登録しました。"
   fi
   settings="$HOME/.claude/settings.json"
   if command -v python3 >/dev/null 2>&1; then
@@ -73,7 +84,7 @@ PY
     echo "      python3 が無いため settings.json は手で編集: env に MCP_TOOL_TIMEOUT=2100000, MCP_TIMEOUT=30000"
   fi
 else
-  echo "[3/4] claude コマンドが無いので Claude Code の登録は省略。"
+  echo "[3/5] claude コマンドが無いので Claude Code の登録は省略。"
 fi
 
 if command -v codex >/dev/null 2>&1; then
@@ -100,13 +111,66 @@ else
   echo "      codex コマンドが無いので Codex の登録は省略。"
 fi
 
-# 4. 公開鍵を表示
+# 4. サーバーへ登録（公開鍵を stdin で渡す。ssh がパスワードを対話で 1 回聞く）
+if [ "$skip_server" -eq 1 ]; then
+  echo
+  echo "[4/5] --skip-server 指定のためサーバへの登録と疎通確認をスキップします。"
+  echo "      手動登録: ssh $server_user@$server_ip 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh $pc_name -' < $key_file.pub"
+  echo "      または Samba 共有 \\\\$server_ip\\mt からファイルを渡して add-remote-key.sh に食わせる。"
+  echo
+  cat "$key_file.pub"
+  echo
+  echo "受け入れ後の疎通確認:  ssh -n -T qwen-worker   （JSON が返らず即終了すれば OK。エラーが出なければ接続は通っている）"
+  echo "MCP の確認:            claude mcp get qwen-worker      （Connected になること）"
+  exit 0
+fi
+
 echo
-echo "[4/4] この公開鍵をサーバ（$server_ip）側で受け入れてください:"
-echo "      ssh $server_user@$server_ip 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh $pc_name -' < $key_file.pub"
-echo "      または Samba 共有 \\\\$server_ip\\mt からファイルを渡して add-remote-key.sh に食わせる。"
+echo "[4/5] サーバー（$server_ip）へ公開鍵を登録します: add-remote-key.sh $pc_name"
+echo "      ssh がパスワードを対話で 1 回聞きます。パスワードはこのスクリプトに渡しません・保存しません。"
+ssh_exit=0
+# set -e の下で ssh の失敗で即終了しないように if で受ける
+if ssh "$server_user@$server_ip" "bash ~/.local/share/qwen-worker/remote/add-remote-key.sh ${pc_name} -" < "$key_file.pub"; then
+  echo "      登録コマンドを実行しました。"
+else
+  ssh_exit=$?
+  echo
+  echo "      !! サーバーへの登録に失敗しました（ssh 終了コード $ssh_exit）。"
+  echo "      手動で打ってください:"
+  echo "         ssh $server_user@$server_ip 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh $pc_name -' < $key_file.pub"
+  echo "      公開鍵の内容は次の通りです:"
+  echo
+  cat "$key_file.pub"
+  echo
+  exit 1
+fi
+
+# 5. 疎通確認
 echo
-cat "$key_file.pub"
+echo "[5/5] 疎通確認: ssh -n -T qwen-worker"
+probe_ok=0
+if ssh -n -T qwen-worker >/dev/null 2>&1; then
+  probe_ok=1
+fi
+if [ "$probe_ok" -eq 1 ]; then
+  echo "      接続 OK"
+else
+  echo "      接続 NG"
+  echo "      原因の見方:"
+  echo "        - Enter passphrase for key と聞かれる / 鍵を拒否される: 鍵にパスフレーズが付いているか、authorized_keys に未登録。"
+  echo "          パスフレーズは ssh-keygen -p -f $key_file （旧を入力、新は Enter 2 回）で外す。"
+  echo "        - Permission denied (publickey): authorized_keys にこの PC の鍵が無い。手順 4 を成功させる。"
+  echo "        - hostname 解決できない: ~/.ssh/config の HostName が $server_ip か確認。"
+fi
+if command -v claude >/dev/null 2>&1; then
+  echo
+  echo "      MCP の確認: claude mcp get qwen-worker"
+  claude mcp get qwen-worker
+fi
 echo
-echo "受け入れ後の疎通確認:  ssh -n -T qwen-worker   （JSON が返らず即終了すれば OK。エラーが出なければ接続は通っている）"
-echo "MCP の確認:            claude mcp get qwen-worker      （Connected になること）"
+if [ "$probe_ok" -eq 1 ]; then
+  echo "設定完了。Claude Code / Codex から qwen-worker を呼べるはずです。"
+else
+  echo "設定は進んでいますが接続 NG でした。上の原因の見方を確認してください。"
+  exit 1
+fi

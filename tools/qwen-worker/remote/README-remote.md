@@ -28,22 +28,40 @@ powershell -ExecutionPolicy Bypass -File setup-remote.ps1
 ### macOS / Linux
 
 ```bash
-bash setup-remote.sh
+bash setup-remote.sh [ホストIP] [--skip-server]
 ```
 
-どちらも次をやる。
+ホストIP は省略時 `<server-ip>`。
 
-1. 専用鍵 `~/.ssh/qwen-worker` を作る
-2. `~/.ssh/config` に `Host qwen-worker` を足す
+どちらも **1 回実行で、鍵・ssh config・MCP 登録・サーバー側の鍵受け入れ・疎通確認まで終わる**。
+順にやること:
+
+1. 専用鍵 `~/.ssh/qwen-worker` を作る（既にあれば再利用）
+2. `~/.ssh/config` に `Host qwen-worker` を足す（既にあれば触らない）
 3. `claude` / `codex` があれば MCP 登録し、タイムアウトを合わせる
-4. **公開鍵を表示する**
+4. **サーバーへ登録** — 公開鍵を標準入力でサーバーの `add-remote-key.sh` に渡す（ssh がパスワードを対話で 1 回聞く）
+5. **疎通確認** — `ssh -n -T qwen-worker` を実行し、通れば「接続 OK」、通らなければ「接続 NG」と原因の見方（パスフレーズ / authorized_keys）を表示する。`claude` があれば `claude mcp get qwen-worker` も表示する
 
-## 2. サーバ側で鍵を受け入れてもらう
+## 2. サーバ側で鍵を受け入れる（スクリプトが自動で行う）
 
-表示された公開鍵をサーバの管理者（mt）に渡す。サーバ側で 1 コマンド。
+スクリプトが自動で行う。ssh 経由で公開鍵を標準入力で
+`add-remote-key.sh <PC名> -` に渡すだけなので、サーバーに手動で何かを打つ必要はない。
+その際、**サーバーのログインパスワードを 1 回聞かれる**（ssh が対話で聞く。
+スクリプトはパスワードを受け取らない・保存しない・引数にもしない）。
+
+再実行しても鍵が重複しない（`add-remote-key.sh` が重複を弾き、その出力をそのまま見せる）。
+
+手で行うときは `-SkipServer`（Windows）/ `--skip-server`（macOS・Linux）で
+手順 4・5 をスキップし、公開鍵と手で打つコマンドの表示だけで終わる:
+
+```powershell
+# Windows
+Get-Content $HOME\.ssh\qwen-worker.pub | ssh mt@<server-ip> 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <あなたのPC名> -'
+```
 
 ```bash
-bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <あなたのPC名> <公開鍵ファイル>
+# macOS / Linux
+ssh mt@<server-ip> 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <あなたのPC名> -' < ~/.ssh/qwen-worker.pub
 ```
 
 この鍵は **`run-qwen-worker` を起動することしかできない**。
