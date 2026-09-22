@@ -28,6 +28,8 @@
 - 初回リクエストは 17 GB のロードに約 60 秒かかる。この間の生成速度は当てにならない。
 - `OLLAMA_KEEP_ALIVE` は既定の 5 分。無操作が続くと VRAM から降り、次回また 60 秒かかる。
   延長するかは未決。延長すると VRAM 22 GB を占有し続ける。
+- `/api/ps` の `expires_at` はリクエスト開始時に「今 + 5 分」で書かれ、生成中は更新されない。5 分を超える生成中は
+  過去の時刻が表示されるが、生成が終わるまでモデルは降りない。異常ではない。
 
 ## 制約
 
@@ -39,3 +41,5 @@
 - sudo が要る操作（systemctl、/etc 配下の編集）は、root で起動した Claude か、ユーザーが手で行う。
 - リモート origin は /mnt/nas 配下の bare リポジトリ。/mnt/nas は //<nas>/<share> の
   CIFS マウントで、マウントされていないと push / fetch が失敗する。
+- /mnt/nas は fstab の `x-systemd.automount` だが、`mnt-nas.automount` が `mount-start-limit-hit` で止まることがある。
+  復旧は sudo が要る（`systemctl reset-failed mnt-nas.automount` か `mount /mnt/nas`）。利用者が行う。
