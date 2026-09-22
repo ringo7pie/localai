@@ -5,13 +5,18 @@
 - GPU は NVIDIA A30 1 枚。VRAM 24 GiB。compute capability 8.0（Ampere）。
 - A30 に FP8 の演算器は無い。量子化は INT4 / INT8 系（GGUF の Q4_K_M・Q8_0、AWQ、GPTQ）を使う。
 - RAM は 32 GB（実測 31 GiB）。CPU オフロードに使える余地は小さい。
-- CPU は i7-12700、20 スレッド。ディスクは / に 1.5 TB 空き。
+- swap は 24 GiB。3D 生成の低 VRAM モードが重みを CPU 側に置き 8 GiB では足りず、2026-09-22 に
+  `/swapfile-pixal3d` 16 GiB を足した。`/etc/fstab` に登録済み（変更前は `/etc/fstab.bak-pixal3d`）。
+- CPU は i7-12700、20 スレッド。ディスクは / に 1.3 TB 空き（モデルの重み 46GB を置いたあと）。
 
 ## ソフトウェア
 
 - Ubuntu 24.04.5 LTS、kernel 7.0.0-31-generic。
-- NVIDIA ドライバ 595.91.07、CUDA 13.2。Ollama は同梱の cuda_v13 を使い、A30 を compute 8.0 と
-  して認識する。CUDA を自前リンクしないため、PyTorch 系の対応状況に影響されない。
+- NVIDIA ドライバ 595.91.07。CUDA Toolkit は **13.2 と 12.6 が並行して入っている**。
+  `/usr/local/cuda` は update-alternatives の優先度（13.2=132 > 12.6=126）で 13.2 を指す。
+  12.6 は Pixal3D 用に 2026-09-22 に追加した（Ubuntu 24.04 のリポジトリに 12.4 が無いため）。
+- Ollama は同梱の cuda_v13 を使い、A30 を compute 8.0 として認識する。CUDA を自前リンクしないため、
+  PyTorch 系の対応状況に影響されない。
 - Python 3.12.3。pip は入っていない。パッケージ管理は uv を使う。docker は無い。
 - オンライン。モデルのダウンロードは可能。
 

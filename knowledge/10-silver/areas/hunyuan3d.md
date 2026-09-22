@@ -33,6 +33,11 @@
 - **`--low_vram_mode` は VRAM を RAM と引き換えにする。** 2026-09-22 に RAM 20.2 GiB まで伸びて
   カーネルの OOM killer に殺され、その 16 分後に systemd-oomd が GNOME Shell を落として
   デスクトップがハングした。RAM 31 GiB の機体で Hunyuan3D と Qwen とデスクトップは同時に置けない。
+- この事故を受けて、低 VRAM モードは On/Off を選べるようにした。既定は On。切り替え方は
+  `web-services.md` を Read する。ユニットに `MemoryHigh=20G` / `MemoryMax=22G` も入れてあり、
+  超えたときに落ちるのはサービスだけでデスクトップは巻き込まない。
+- `serve` は `os.execve` でサーバに置き換わる。print は flush しないとバッファごと捨てられ、
+  journalctl に起動条件（低 VRAM の有無）が残らない。
 - **Qwen を VRAM に載せたままでは 3D 生成ができない。** 空き 2,051 MiB の状態で生成すると 23.7 秒で
   CUDA out of memory になる。そのため `patches/0001-free-vram-before-generation.patch` で、生成の直前に
   Ollama のモデルを `keep_alive=0` で降ろす処理を上流の `_gen_shape` に入れてある。Qwen は次のチャットで戻る。
