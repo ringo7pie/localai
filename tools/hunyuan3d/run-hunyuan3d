@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# hy3d CLI の起動スクリプト。venv の python を経由して hy3d.cli を呼ぶ。
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON="$HERE/.venv/bin/python"
+if [ ! -x "$PYTHON" ]; then
+  echo "venv が見つかりません: $PYTHON" >&2
+  echo "先に setup-server.sh を実行してください（$HERE/setup-server.sh）。" >&2
+  exit 1
+fi
+exec "$PYTHON" -m hy3d.cli "$@"

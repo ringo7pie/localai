@@ -10,6 +10,8 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 | `tools/qwen-worker/` | ローカル Qwen を Claude Code / Codex から直接使う MCP ワーカー |
 | `tools/local-ai-bridge/` | OpenCode 経由でローカル Qwen へ実装を委譲する連携層。スキル `/qwen` `/qwen-read` の実体も（README.ja.md） |
 | `tools/status/` | いま Qwen が何を処理しているかを見る（サーバー用 sh と、他の PC 用 sh / ps1） |
+| `tools/hunyuan3d/` | 正面・背面・左・右の 4 枚の画像から 3D メッシュを作る Hunyuan3D-2mv（ポート 7860） |
+| `tools/portal/` | ポート 8080 のサービス入口ページ。Open WebUI / Hunyuan3D / ComfyUI を選ぶ |
 
 新しく作るリポジトリ・試験データは必ずこの中（例 `tools/*/fixtures/`）に置く。`~/Proj` 直下には作らない。
 `~/.local/share/qwen-worker` は `tools/qwen-worker` へのシンボリックリンク。MCP 登録と authorized_keys の強制コマンドがそのパスを指す。
@@ -22,6 +24,16 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 tools/qwen-worker/.venv/bin/python tools/qwen-worker/tests/test_sandbox.py
 tools/local-ai-bridge/.venv/bin/python -m pytest tools/local-ai-bridge/tests/test_units.py -q
 tools/local-ai-bridge/run-local-ai-task doctor
+
+# hunyuan3d は uv 管理の Python 3.11 を使う（上流の実績ある依存に cp312 wheel が無いため）。
+#   tools/hunyuan3d/setup-server.sh
+tools/hunyuan3d/.venv/bin/python -m pytest tools/hunyuan3d/tests/test_units.py -q
+tools/hunyuan3d/run-hunyuan3d doctor
+# 実機試験（GPU と重みを実際に使う。数分かかる。先に systemctl --user stop hunyuan3d）
+tools/hunyuan3d/.venv/bin/python tools/hunyuan3d/tests/test_generate_real.py
+
+# portal は依存ゼロ。venv を作らない。試験だけ uv の一時環境で走らせる。
+uvx --with pytest pytest tools/portal/tests/test_units.py -q
 ```
 
 ## 常時ロードされる知識

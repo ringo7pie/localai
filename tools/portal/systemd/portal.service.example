@@ -1,0 +1,11 @@
+[Unit]
+Description=ローカル AI サーバーの入口ページ
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/Proj/localai/tools/portal/portal.py --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

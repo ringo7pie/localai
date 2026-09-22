@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ローカル AI サーバー</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --text: #1c1f24;
+    --muted: #5a6270;
+    --border: #d8dce2;
+    --accent: #2f6f4f;
+    --accent-fg: #ffffff;
+    --up: #2f8f5b;
+    --down: #8a8f98;
+    --missing: #b3b8c0;
+    --warn-bg: #fdf1d6;
+    --warn-text: #7a5b00;
+    --error-bg: #fbe4e4;
+    --error-text: #8a2c2c;
+    --bar-track: #e3e6ea;
+    --bar-fill: #2f6f4f;
+    --bar-fill-hot: #b3641f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --panel: #1d2025;
+      --text: #e7e9ec;
+      --muted: #9aa1ac;
+      --border: #33373f;
+      --accent: #4fae7c;
+      --accent-fg: #0d140f;
+      --up: #4fae7c;
+      --down: #6b7078;
+      --missing: #545a63;
+      --warn-bg: #3a2f10;
+      --warn-text: #e7c477;
+      --error-bg: #3a1f1f;
+      --error-text: #e79a9a;
+      --bar-track: #2a2d33;
+      --bar-fill: #4fae7c;
+      --bar-fill-hot: #d08540;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Noto Sans JP",
+      "Meiryo", "Segoe UI", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  header { margin-bottom: 20px; }
+  h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  .subtitle { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+  }
+
+  #error-banner {
+    background: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid var(--error-text);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    font-weight: 600;
+  }
+  #error-banner[hidden] { display: none; }
+
+  .gpu-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .gpu-title { font-weight: 600; }
+  .gpu-numbers { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar-track {
+    width: 100%;
+    height: 14px;
+    background: var(--bar-track);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--bar-fill);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+  .bar-fill.hot { background: var(--bar-fill-hot); }
+  .gpu-models { margin: 10px 0 0; color: var(--muted); font-size: 0.92rem; }
+  .gpu-warning {
+    margin: 10px 0 0;
+    padding: 8px 12px;
+    background: var(--warn-bg);
+    color: var(--warn-text);
+    border-radius: 8px;
+    font-size: 0.92rem;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-name { font-weight: 700; font-size: 1.05rem; }
+  .card-desc { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  .card-port { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-fg);
+    white-space: nowrap;
+  }
+  .badge-up { background: var(--up); }
+  .badge-down { background: var(--down); }
+  .badge-missing { background: var(--missing); }
+  .badge-starting { background: var(--bar-fill-hot); }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .card-button {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .card-button:hover:not(:disabled) { filter: brightness(1.08); }
+  .card-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .card-button.primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+  }
+  .card-button.danger {
+    border-color: var(--error-text);
+    color: var(--error-text);
+  }
+  .card-message {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+  .card-message.info { color: var(--muted); }
+  .card-message.error { color: var(--error-text); font-weight: 600; }
+  .card-note {
+    margin: 0;
+    padding: 6px 10px;
+    background: var(--warn-bg);
+    color: var(--warn-text);
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+
+  .card-link {
+    margin-top: auto;
+    display: inline-block;
+    text-align: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  a.card-link {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  a.card-link:hover { filter: brightness(1.08); }
+  .card-link.disabled {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+    font-weight: 400;
+    font-size: 0.85rem;
+  }
+
+  footer {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ローカル AI サーバー</h1>
+    <p class="subtitle" id="subtitle">A30 / 読み込み中…</p>
+  </header>
+
+  <div id="error-banner" hidden>状態を取得できません</div>
+
+  <section class="panel" id="gpu-panel">
+    <div class="gpu-head">
+      <span class="gpu-title">GPU（VRAM）</span>
+      <span class="gpu-numbers" id="gpu-numbers">取得中…</span>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="gpu-bar-fill" style="width:0%"></div></div>
+    <p class="gpu-models" id="gpu-models">Ollama のモデルを確認中…</p>
+    <p class="gpu-warning" id="gpu-warning" hidden></p>
+  </section>
+
+  <section class="cards" id="cards"></section>
+
+  <footer>5 秒ごとに自動更新します。各サービスへのリンクはこのページを開いたホスト名を使って組み立てます。</footer>
+</div>
+
+<script>
+  const SERVICE_META = {
+    "open-webui": {
+      description: "Ollama を使ったブラウザチャット",
+      stoppedReason: "起動していません。下のボタンから起動できます。",
+      startingReason: "起動処理中です。まもなく利用できるようになります。"
+    },
+    "hunyuan3d": {
+      description: "画像 4 枚から 3D メッシュを生成",
+      stoppedReason: "起動していません。下のボタンから起動できます。",
+      startingReason: "モデルを読み込んでいます（1〜2 分かかります）。",
+      note: "起動すると VRAM を約 5.4GB 使用します。Qwen（Open WebUI のチャット）と同時に使うと応答が遅くなります。"
+    },
+    "comfyui": {
+      description: "画像・ワークフロー生成 UI",
+      stoppedReason: "まだ導入されていません（後日追加予定）"
+    }
+  };
+
+  const STATE_BADGE = {
+    running: { className: "badge-up", label: "稼働中" },
+    starting: { className: "badge-starting", label: "起動中…" },
+    stopped: { className: "badge-down", label: "停止中" },
+    not_installed: { className: "badge-missing", label: "未導入" }
+  };
+
+  // ボタン操作の結果（成功・失敗メッセージ）と、操作中かどうか。
+  // 5 秒ごとの自動更新でカードを作り直しても消えないよう、DOM の外に持つ。
+  const actionMessages = {};
+  const pendingActions = {};
+  let latestServices = [];
+
+  const subtitleElement = document.getElementById("subtitle");
+  const errorBanner = document.getElementById("error-banner");
+  const gpuNumbers = document.getElementById("gpu-numbers");
+  const gpuBarFill = document.getElementById("gpu-bar-fill");
+  const gpuModels = document.getElementById("gpu-models");
+  const gpuWarning = document.getElementById("gpu-warning");
+  const cardsContainer = document.getElementById("cards");
+
+  subtitleElement.textContent = "A30 / " + location.hostname;
+
+  function buildServiceUrl(port) {
+    return "http://" + location.hostname + ":" + port + "/";
+  }
+
+  function renderGpu(gpu, ollama) {
+    if (gpu && gpu.available) {
+      const usedMib = gpu.used_mib;
+      const totalMib = gpu.total_mib;
+      const percent = totalMib > 0 ? Math.min(100, Math.round((usedMib / totalMib) * 100)) : 0;
+      gpuNumbers.textContent = usedMib + " MiB / " + totalMib + " MiB（" + percent + "%）";
+      gpuBarFill.style.width = percent + "%";
+      gpuBarFill.classList.toggle("hot", percent >= 50);
+    } else {
+      gpuNumbers.textContent = "取得できません";
+      gpuBarFill.style.width = "0%";
+      gpuBarFill.classList.remove("hot");
+    }
+
+    if (ollama && ollama.reachable) {
+      if (ollama.models && ollama.models.length > 0) {
+        const names = ollama.models.map(function (model) { return model.name; }).join("、");
+        gpuModels.textContent = "Ollama に読み込み中: " + names;
+        gpuWarning.hidden = false;
+        gpuWarning.textContent =
+          "Qwen（" + names + "）が VRAM を使っています。Hunyuan3D や ComfyUI を起動する前に Qwen を降ろす必要があります。";
+      } else {
+        gpuModels.textContent = "Ollama にモデルは読み込まれていません";
+        gpuWarning.hidden = true;
+      }
+    } else {
+      gpuModels.textContent = "Ollama に接続できません（127.0.0.1:11434）";
+      gpuWarning.hidden = true;
+    }
+  }
+
+  function performAction(key, action) {
+    pendingActions[key] = true;
+    actionMessages[key] = {
+      text: action === "start" ? "起動を要求しました…" : "停止を要求しました…",
+      isError: false
+    };
+    renderCards(latestServices);
+
+    fetch("/api/service/" + key + "/" + action, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "X-Portal-Request": "1" }
+    })
+      .then(function (response) {
+        return response.json().then(function (data) { return data; });
+      })
+      .then(function (data) {
+        actionMessages[key] = {
+          text: data.message || (data.ok ? "完了しました。" : "失敗しました。"),
+          isError: !data.ok
+        };
+      })
+      .catch(function () {
+        actionMessages[key] = { text: "通信に失敗しました。", isError: true };
+      })
+      .finally(function () {
+        pendingActions[key] = false;
+        fetchStatus();
+      });
+
+    // POST の応答を待たずに、1 秒後にもう一度状態を取りに行く。
+    // Type=simple の起動はすぐ返るため、ボタンを押した直後に画面が変わって見えるようにするため。
+    setTimeout(fetchStatus, 1000);
+  }
+
+  function renderActionButtons(card, service) {
+    // 起動処理中はボタンを出さない（どちらも押せない）。案内文は下のリンク欄に出す。
+    if (service.state === "starting") {
+      return;
+    }
+
+    const container = document.createElement("div");
+    container.className = "card-actions";
+    const pending = pendingActions[service.key] === true;
+
+    const startButton = document.createElement("button");
+    startButton.type = "button";
+    startButton.className = "card-button primary";
+    startButton.textContent = "起動";
+    startButton.disabled = pending || service.state !== "stopped";
+    startButton.addEventListener("click", function () { performAction(service.key, "start"); });
+
+    const stopButton = document.createElement("button");
+    stopButton.type = "button";
+    stopButton.className = "card-button danger";
+    stopButton.textContent = "停止";
+    stopButton.disabled = pending || service.state !== "running";
+    stopButton.addEventListener("click", function () { performAction(service.key, "stop"); });
+
+    container.appendChild(startButton);
+    container.appendChild(stopButton);
+    card.appendChild(container);
+  }
+
+  function renderActionMessage(card, service) {
+    const stored = actionMessages[service.key];
+    if (!stored) { return; }
+    const message = document.createElement("p");
+    message.className = "card-message " + (stored.isError ? "error" : "info");
+    message.textContent = stored.text;
+    card.appendChild(message);
+  }
+
+  function renderCards(services) {
+    cardsContainer.innerHTML = "";
+    services.forEach(function (service) {
+      const meta = SERVICE_META[service.key] || {
+        description: "",
+        stoppedReason: "停止しています"
+      };
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const head = document.createElement("div");
+      head.className = "card-head";
+      const name = document.createElement("span");
+      name.className = "card-name";
+      name.textContent = service.name;
+      const badge = document.createElement("span");
+      const badgeMeta = STATE_BADGE[service.state] || STATE_BADGE.stopped;
+      badge.className = "badge " + badgeMeta.className;
+      badge.textContent = badgeMeta.label;
+      head.appendChild(name);
+      head.appendChild(badge);
+
+      const desc = document.createElement("p");
+      desc.className = "card-desc";
+      desc.textContent = meta.description;
+
+      const port = document.createElement("p");
+      port.className = "card-port";
+      port.textContent = "ポート " + service.port;
+
+      card.appendChild(head);
+      card.appendChild(desc);
+      card.appendChild(port);
+
+      if (meta.note) {
+        const note = document.createElement("p");
+        note.className = "card-note";
+        note.textContent = meta.note;
+        card.appendChild(note);
+      }
+
+      if (service.controllable) {
+        renderActionButtons(card, service);
+      }
+
+      renderActionMessage(card, service);
+
+      if (service.state === "running") {
+        const link = document.createElement("a");
+        link.className = "card-link";
+        link.href = buildServiceUrl(service.port);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "開く →";
+        card.appendChild(link);
+      } else {
+        const disabled = document.createElement("div");
+        disabled.className = "card-link disabled";
+        if (service.state === "starting") {
+          disabled.textContent = meta.startingReason || "起動処理中です。";
+        } else {
+          disabled.textContent = meta.stoppedReason || "停止しています";
+        }
+        card.appendChild(disabled);
+      }
+
+      cardsContainer.appendChild(card);
+    });
+  }
+
+  function renderStatus(data) {
+    errorBanner.hidden = true;
+    renderGpu(data.gpu, data.ollama);
+    latestServices = data.services || [];
+    renderCards(latestServices);
+  }
+
+  function renderError() {
+    // 前の値を残さない。古い状態が正しいと誤解されないよう、いったんクリアしてからエラーを出す。
+    errorBanner.hidden = false;
+    gpuNumbers.textContent = "取得できません";
+    gpuBarFill.style.width = "0%";
+    gpuBarFill.classList.remove("hot");
+    gpuModels.textContent = "取得できません";
+    gpuWarning.hidden = true;
+    latestServices = [];
+    cardsContainer.innerHTML = "";
+  }
+
+  function fetchStatus() {
+    fetch("/api/status", { cache: "no-store" })
+      .then(function (response) {
+        if (!response.ok) { throw new Error("HTTP " + response.status); }
+        return response.json();
+      })
+      .then(renderStatus)
+      .catch(renderError);
+  }
+
+  fetchStatus();
+  setInterval(fetchStatus, 5000);
+</script>
+</body>
+</html>

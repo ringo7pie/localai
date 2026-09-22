@@ -36,3 +36,18 @@ tools/local-ai-bridge/.venv/
 tools/qwen-worker/fixtures/
 tools/local-ai-bridge/fixtures/
 tools/local-ai-bridge/bench/ab-benchmark/
+
+# hunyuan3d の仮想環境・上流ソース・モデルの重み・生成物。
+# いずれも大きいか絶対パスを埋め込むため持ち運べない。
+# 再作成: tools/hunyuan3d/setup-server.sh
+tools/hunyuan3d/.venv/
+tools/hunyuan3d/vendor/
+tools/hunyuan3d/models/
+tools/hunyuan3d/outputs/
+tools/hunyuan3d/fixtures/
+
+# Claude Code が作る一時 worktree。リポジトリの複製なので追跡しない。
+.claude/worktrees/
+
+# 貼り付けた画像などの一時置き場。
+zzz-Temp/

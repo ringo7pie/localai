@@ -1,0 +1,35 @@
+# Hunyuan3D-2（固定コミット f8db63096c8282cb27354314d896feba5ba6ff8a）の実行に要る依存。
+# torch / torchvision は index が別（cu132）なので、ここには書かない。setup-server.sh の [3/9] で入れる。
+#
+# 各行は PyPI の JSON API（https://pypi.org/pypi/<name>/<version>/json）で
+# cp311（または abi3 / pure python）の Linux 向け wheel が実在することを確認済み。
+# pygltflib だけは指定元の 1.16.3 に wheel が無かったため、直近で wheel が復活した 1.16.4 に変更した。
+numpy==1.24.4
+scipy==1.14.1
+einops==0.8.0
+transformers==4.46.0
+diffusers==0.30.0
+accelerate==1.1.1
+huggingface-hub==0.30.2
+safetensors==0.4.4
+opencv-python==4.10.0.84
+imageio==2.36.0
+rembg==2.0.65
+onnxruntime==1.16.3
+trimesh==4.4.7
+pymeshlab==2022.2.post3
+pygltflib==1.16.4
+xatlas==0.0.9
+omegaconf==2.3.0
+pyyaml==6.0.2
+tqdm==4.66.5
+gradio==5.33.0
+fastapi==0.115.12
+uvicorn==0.34.3
+# ネイティブ拡張を --no-build-isolation でビルドするので、ビルドバックエンドを venv 内に置く。
+# uv venv は既定で setuptools を入れないため、これが無いと [6/9] の拡張ビルドが失敗する。
+setuptools==75.6.0
+wheel==0.45.1
+ninja==1.11.1.1
+pybind11==2.13.4
+pytest==8.3.4

@@ -128,15 +128,38 @@ show_worker() {
   fi
 }
 
+show_hunyuan3d() {
+  section "Hunyuan3D（4 枚の画像 → 3D メッシュ）"
+  local hunyuan_dir="$repo_root/tools/hunyuan3d"
+  if [ ! -x "$hunyuan_dir/run-hunyuan3d" ]; then
+    echo "未導入（$hunyuan_dir/setup-server.sh で入れる）"; return
+  fi
+  if ss -ltn 2>/dev/null | grep -q ':7860 '; then
+    echo "動作中（http://<server-ip>:7860）。この間 Qwen は VRAM に載せられない"
+  else
+    echo "停止中（使うときだけ $hunyuan_dir/run-hunyuan3d serve で起動する。起動時に Qwen を VRAM から降ろす）"
+  fi
+}
+
 show_webui() {
-  section "Open WebUI（ブラウザチャット）"
-  if systemctl --user is-active open-webui >/dev/null 2>&1; then echo "動作中（http://<server-ip>:8080。LAN からの到達はサーバー側の許可次第）"
-  else echo "停止中か、この端末からは確認できない（systemctl --user が使えない ssh セッションなど）"; fi
+  section "ブラウザから使うもの"
+  local webui_port="8080"
+  if grep -q -- "--port 8081" "$HOME/.config/systemd/user/open-webui.service" 2>/dev/null; then webui_port="8081"; fi
+  if systemctl --user is-active open-webui >/dev/null 2>&1; then
+    echo "Open WebUI: 動作中（http://<server-ip>:$webui_port。LAN からの到達はサーバー側の許可次第）"
+  else
+    echo "Open WebUI: 停止中か、この端末からは確認できない（systemctl --user が使えない ssh セッションなど）"
+  fi
+  if systemctl --user is-active portal >/dev/null 2>&1; then
+    echo "入口ページ: 動作中（http://<server-ip>:8080）"
+  else
+    echo "入口ページ: 未導入か停止中（$repo_root/tools/portal/setup-server.sh で入れる）"
+  fi
 }
 
 show_all() {
   echo "Qwen の状態  $(date '+%Y-%m-%d %H:%M:%S')  $(hostname)"
-  show_gpu; show_ollama; show_bridge; show_worker; show_webui
+  show_gpu; show_ollama; show_bridge; show_worker; show_hunyuan3d; show_webui
 }
 
 if [ "$watch_sec" -gt 0 ]; then

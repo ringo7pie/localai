@@ -1,0 +1,18 @@
+[Unit]
+Description=Hunyuan3D-2 (gradio, port 7860)
+# Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。
+# 起動前後の切り替えは人が run-hunyuan3d / systemctl --user で行う。
+After=network.target
+
+[Service]
+Type=simple
+# インストール先に合わせて書き換える。既定は tools/hunyuan3d をこのパスに置いた場合。
+WorkingDirectory=%h/Proj/localai/tools/hunyuan3d
+ExecStart=%h/Proj/localai/tools/hunyuan3d/run-hunyuan3d serve
+Restart=on-failure
+RestartSec=5
+# gradio_app.py の起動に数十秒〜数分（モデルロード）かかることがある。
+TimeoutStartSec=600
+
+[Install]
+WantedBy=default.target

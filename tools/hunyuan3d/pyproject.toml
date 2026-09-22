@@ -1,0 +1,13 @@
+[project]
+name = "hy3d"
+version = "0.1.0"
+description = "Hunyuan3D-2 をこの A30 サーバーで動かすための CLI（標準ライブラリのみに依存）"
+requires-python = ">=3.11,<3.12"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["hy3d"]
