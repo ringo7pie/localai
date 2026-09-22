@@ -1,0 +1,54 @@
+# Pixal3D（固定コミット f7cf38429b0bd264f1995f0f8743a88b1c728b94）と TRELLIS.2
+# （75fbf0183001ed9876c8dbb35de6b68552ee08bd）の実行に要る依存。
+# torch / torchvision は index が別（cu126）なので、ここには書かない。setup-server.sh の
+# [4/10] で --index-url https://download.pytorch.org/whl/cu126 を付けて入れる。
+#
+# ここに挙げたのは、いま venv に実際に入っているものの中から、
+#   1) vendor/Pixal3D/requirements.txt・requirements-hfdemo.txt に直接載っている、または
+#   2) px3d/ui.py・px3d/cli.py が直接使う（huggingface_hub, gradio, fastapi, uvicorn）
+# もの。fastapi / uvicorn は gradio の依存でもあるが、hy3d の requirements.lock.txt に倣って
+# 明示的に固定する。
+#
+# 次は意図的に外した（いま venv にはあるが、推論経路では使わないか、他パッケージの依存として
+# 自動的に入るため）:
+#   - numpy / scipy / kornia-rs / gradio-client / pandas / psutil ……
+#     torch・transformers・kornia・gradio 等の依存として自動解決される
+#   - lpips / moderngl / glcontext / absl-py / grpcio / markdown / protobuf /
+#     tensorboard / tensorboard-data-server / werkzeug ……
+#     pixal3d.trainers（学習用コード。訓練 VAE の知覚損失など）のためのもので、
+#     推論（inference_mv 経由）では import されない
+#   - flex-gemm / o-voxel（vendor/extensions 配下の editable install）……
+#     ネイティブ拡張なので setup-server.sh の [6/10] で個別にビルドする（このファイルには含めない）
+#
+# 各バージョンは 2026-09-22 に venv で実際に動いていたもの
+# （runuser -u mt -- env HOME=/home/mt PATH=/home/mt/.local/bin:/usr/bin:/bin
+#   uv pip freeze --python .venv/bin/python で確認。インストールは一切していない）。
+pillow==12.0.0
+imageio==2.37.2
+imageio-ffmpeg==0.6.0
+tqdm==4.67.1
+easydict==1.13
+opencv-python-headless==4.12.0.88
+trimesh==4.10.1
+transformers==4.57.3
+zstandard==0.25.0
+kornia==0.8.2
+timm==1.0.22
+diffusers==0.37.1
+accelerate==1.13.0
+plyfile==1.1.3
+huggingface-hub==0.36.2
+gradio==6.17.3
+fastapi==0.141.1
+uvicorn==0.53.0
+# utils3d は PyPI に無く、上流 README（Step 4）が指すこの wheel から入れる。pure python（py3-none-any）。
+utils3d @ https://github.com/LDYang694/Storages/releases/download/20260430/utils3d-0.0.2-py3-none-any.whl
+# ネイティブ拡張を --no-build-isolation でビルドするので、ビルドバックエンドを venv 内に置く。
+# uv venv は既定で setuptools を入れないため、これが無いと [6/10] の拡張ビルドが失敗する。
+setuptools==84.0.0
+wheel==0.48.0
+ninja==1.13.2
+
+# 背景除去の BiRefNet は trust_remote_code=True で HF 上のモデリングコードを読み込む。
+# そのコードが einops を要求するため、ここで固定する（上流の requirements.txt には無い）。
+einops==0.8.2

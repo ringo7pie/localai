@@ -51,3 +51,12 @@ tools/hunyuan3d/fixtures/
 
 # 貼り付けた画像などの一時置き場。
 zzz-Temp/
+
+# pixal3d の仮想環境・上流ソース・ビルド用の一時 clone・モデルの重み・生成物。
+# いずれも大きいか絶対パスを埋め込むため持ち運べない。
+# 再作成: tools/pixal3d/setup-server.sh
+tools/pixal3d/.venv/
+tools/pixal3d/vendor/
+tools/pixal3d/models/
+tools/pixal3d/outputs/
+tools/pixal3d/fixtures/

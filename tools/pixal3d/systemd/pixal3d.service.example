@@ -1,0 +1,32 @@
+[Unit]
+Description=Pixal3D (gradio, port 7861)
+# Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。
+# Hunyuan3D とも VRAM を排他的に使う（入口ページ tools/portal が起動前に片方を止める）。
+After=network.target
+
+[Service]
+Type=simple
+# インストール先に合わせて書き換える。既定は tools/pixal3d をこのパスに置いた場合。
+WorkingDirectory=%h/Proj/localai/tools/pixal3d
+# PIXAL3D_LOW_VRAM（低 VRAM モードの On/Off）などを読む。先頭の "-" はファイルが無くてもエラーに
+# しない意味（hunyuan3d.service / open-webui.service の EnvironmentFile と同じ型）。
+EnvironmentFile=-%h/.config/pixal3d/pixal3d.env
+ExecStart=%h/Proj/localai/tools/pixal3d/run-pixal3d serve
+Restart=on-failure
+RestartSec=5
+# パイプラインの読み込み（重み約 30GB）に数分かかることがある。
+TimeoutStartSec=600
+# RAM の安全弁。RAM 31 GiB の機体で、生成中に RAM を食い潰して
+# デスクトップごとハングした前例があるため入れている。
+# 上限に当たったサービスだけがカーネルに落とされ、デスクトップは巻き込まれない。
+#
+# 2026-09-22 の実測（4 枚 → GLB、低 VRAM モード、解像度 1024）:
+#   VRAM ピーク 17.3 GiB / RAM ピーク 28.1 GiB / swap 8.2 GiB（swap は使い切った）
+# 低 VRAM モードは重みを CPU に置くため RAM を強く使う。MemoryHigh を超えると
+# カーネルが回収と swap を優先するので、まず MemoryHigh で swap へ逃がし、
+# MemoryMax で最後の歯止めをかける。
+MemoryHigh=24G
+MemoryMax=28G
+
+[Install]
+WantedBy=default.target
