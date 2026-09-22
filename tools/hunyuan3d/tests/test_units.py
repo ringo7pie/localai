@@ -20,6 +20,7 @@ from hy3d.cli import (  # noqa: E402
     build_gradio_command,
     classify_port_status,
     classify_vram_status,
+    low_vram_from_env,
 )
 
 
@@ -49,6 +50,7 @@ def test_build_gradio_command_with_texture() -> None:
         host="0.0.0.0",
         port=7860,
         texture=True,
+        low_vram=True,
         cache_path="/tools/hunyuan3d/outputs",
     )
 
@@ -71,6 +73,7 @@ def test_build_gradio_command_without_texture() -> None:
         host="127.0.0.1",
         port=9999,
         texture=False,
+        low_vram=True,
         cache_path="/tmp/cache",
     )
 
@@ -79,6 +82,55 @@ def test_build_gradio_command_without_texture() -> None:
     assert command[command.index("--port") + 1] == "9999"
     assert command[command.index("--cache-path") + 1] == "/tmp/cache"
     assert command[command.index("--host") + 1] == "127.0.0.1"
+
+
+def test_build_gradio_command_low_vram_enabled() -> None:
+    """低 VRAM モード On では --low_vram_mode が入る（既定の挙動）。"""
+    command = build_gradio_command(
+        python_bin="/tools/hunyuan3d/.venv/bin/python",
+        script_path="gradio_app.py",
+        host="0.0.0.0",
+        port=7860,
+        texture=True,
+        low_vram=True,
+        cache_path="/tools/hunyuan3d/outputs",
+    )
+    assert "--low_vram_mode" in command
+
+
+def test_build_gradio_command_low_vram_disabled() -> None:
+    """低 VRAM モード Off では --low_vram_mode を渡さない（RAM を食い潰さないための切替）。"""
+    command = build_gradio_command(
+        python_bin="/tools/hunyuan3d/.venv/bin/python",
+        script_path="gradio_app.py",
+        host="0.0.0.0",
+        port=7860,
+        texture=True,
+        low_vram=False,
+        cache_path="/tools/hunyuan3d/outputs",
+    )
+    assert "--low_vram_mode" not in command
+
+
+# ---------------------------------------------------------------- low_vram_from_env
+
+
+def test_low_vram_from_env_defaults_true_when_unset() -> None:
+    assert low_vram_from_env({}) is True
+
+
+def test_low_vram_from_env_true_values() -> None:
+    for value in ("1", "true", "on", "yes", "TRUE", "On", "YES"):
+        assert low_vram_from_env({"HY3D_LOW_VRAM": value}) is True
+
+
+def test_low_vram_from_env_false_values() -> None:
+    for value in ("0", "false", "off", "no", "FALSE", "Off", "NO"):
+        assert low_vram_from_env({"HY3D_LOW_VRAM": value}) is False
+
+
+def test_low_vram_from_env_garbage_defaults_true() -> None:
+    assert low_vram_from_env({"HY3D_LOW_VRAM": "たぶん有効"}) is True
 
 
 # ---------------------------------------------------------------- ollama.loaded_models

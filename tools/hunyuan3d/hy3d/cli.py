@@ -14,7 +14,7 @@ import socket
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from . import config, ollama
 
@@ -77,6 +77,7 @@ def build_gradio_command(
     host: str,
     port: int,
     texture: bool,
+    low_vram: bool,
     cache_path: str,
 ) -> list[str]:
     """gradio_app.py を起動するコマンド列を組み立てる純粋関数。
@@ -96,8 +97,9 @@ def build_gradio_command(
         command += ["--texgen_model_path", config.TEXGEN_REPO]
     else:
         command += ["--disable_tex"]
+    if low_vram:
+        command += ["--low_vram_mode"]
     command += [
-        "--low_vram_mode",
         "--enable_flashvdm",
         "--host",
         host,
@@ -107,6 +109,24 @@ def build_gradio_command(
         cache_path,
     ]
     return command
+
+
+def low_vram_from_env(environ: Mapping[str, str]) -> bool:
+    """環境変数 HY3D_LOW_VRAM から低 VRAM モードの有効/無効を読む純粋関数。
+
+    ファイルシステムにもネットワークにも触れない。"1"/"true"/"on"/"yes"（大小文字を無視）を
+    True、"0"/"false"/"off"/"no" を False とする。未設定や解釈できない値は既定（有効）にする。
+    """
+
+    raw = environ.get(config.LOW_VRAM_ENV_VAR)
+    if raw is None:
+        return config.LOW_VRAM_DEFAULT
+    normalized = raw.strip().lower()
+    if normalized in ("1", "true", "on", "yes"):
+        return True
+    if normalized in ("0", "false", "off", "no"):
+        return False
+    return config.LOW_VRAM_DEFAULT
 
 
 def _run_venv_python(script: str, timeout: float) -> dict[str, Any]:
@@ -228,6 +248,25 @@ def classify_vram_status(
     )
 
 
+def _read_low_vram_env_file() -> str | None:
+    """低 VRAM モードの env ファイルから HY3D_LOW_VRAM の生の値を読む。
+
+    ファイルが無い、または変数が書かれていなければ None。doctor 表示専用で、
+    systemd の EnvironmentFile と同じ場所（config.LOW_VRAM_ENV_FILE）を素朴にパースするだけ。
+    """
+
+    if not config.LOW_VRAM_ENV_FILE.is_file():
+        return None
+    for line in config.LOW_VRAM_ENV_FILE.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        if key.strip() == config.LOW_VRAM_ENV_VAR:
+            return value.strip()
+    return None
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     print("Ollama の常駐モデル:")
     before = ollama.loaded_models()
@@ -286,12 +325,27 @@ def cmd_serve(args: argparse.Namespace) -> int:
         )
         return 1
 
+    env_raw = os.environ.get(config.LOW_VRAM_ENV_VAR)
+    if args.low_vram is None:
+        low_vram = low_vram_from_env(os.environ)
+        low_vram_source = (
+            f"HY3D_LOW_VRAM={env_raw!r} に従う"
+            if env_raw is not None
+            else "HY3D_LOW_VRAM 未設定のため既定値"
+        )
+    else:
+        low_vram = args.low_vram
+        flag = "--low-vram" if low_vram else "--no-low-vram"
+        low_vram_source = f"{flag} 指定（HY3D_LOW_VRAM={env_raw!r} より優先）"
+    print(f"低 VRAM モード: {'有効' if low_vram else '無効'}（{low_vram_source}）")
+
     command = build_gradio_command(
         python_bin=str(config.VENV_PYTHON),
         script_path="gradio_app.py",
         host=args.host,
         port=args.port,
         texture=not args.no_texture,
+        low_vram=low_vram,
         cache_path=str(config.OUTPUTS_DIR),
     )
 
@@ -308,6 +362,11 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
     print(f"起動します（cwd={config.VENDOR_DIR}）: {' '.join(command)}")
     os.chdir(config.VENDOR_DIR)
+    # execve はプロセスを置き換えるので、ここまでの print がバッファに残っていると
+    # そのまま捨てられる（systemd 配下では stdout が端末でないためバッファされる）。
+    # journalctl に起動条件が残らず、あとから追えなくなるので必ず流しておく。
+    sys.stdout.flush()
+    sys.stderr.flush()
     os.execve(command[0], command, env)
     # execve が成功すればここには戻らない。
     return 1
@@ -381,6 +440,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         config.PORT, _port_in_use(config.PORT), service_active
     )
     results.append(("ポート", port_ok, port_detail))
+
+    env_value = _read_low_vram_env_file()
+    low_vram_effective = low_vram_from_env(
+        {config.LOW_VRAM_ENV_VAR: env_value} if env_value is not None else {}
+    )
+    low_vram_state = "有効" if low_vram_effective else "無効"
+    if env_value is None:
+        low_vram_detail = f"{config.LOW_VRAM_ENV_FILE} が無い（既定値 {low_vram_state}）"
+    else:
+        low_vram_detail = f"{config.LOW_VRAM_ENV_FILE} の HY3D_LOW_VRAM={env_value!r} → {low_vram_state}"
+    # OK/NG の判定ではなく情報表示。On/Off どちらも正常な設定なので常に OK にする。
+    results.append(("低 VRAM モード設定", True, low_vram_detail))
 
     overall_ok = True
     for label, ok, detail in results:
@@ -487,6 +558,24 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--host", default=config.HOST)
     serve_parser.add_argument(
         "--skip-vram-check", action="store_true", help="VRAM の空き確認を省略して続行する"
+    )
+    low_vram_group = serve_parser.add_mutually_exclusive_group()
+    low_vram_group.add_argument(
+        "--low-vram",
+        dest="low_vram",
+        action="store_true",
+        default=None,
+        help=(
+            "低 VRAM モード（--low_vram_mode）を強制的に有効にする。"
+            "未指定なら HY3D_LOW_VRAM 環境変数に従う（既定は有効）"
+        ),
+    )
+    low_vram_group.add_argument(
+        "--no-low-vram",
+        dest="low_vram",
+        action="store_false",
+        default=None,
+        help="低 VRAM モードを強制的に無効にする。未指定なら HY3D_LOW_VRAM 環境変数に従う",
     )
     serve_parser.set_defaults(func=cmd_serve)
 

@@ -8,11 +8,21 @@ After=network.target
 Type=simple
 # インストール先に合わせて書き換える。既定は tools/hunyuan3d をこのパスに置いた場合。
 WorkingDirectory=%h/Proj/localai/tools/hunyuan3d
+# HY3D_LOW_VRAM（低 VRAM モードの On/Off）などを読む。先頭の "-" はファイルが無くてもエラーに
+# しない意味（open-webui.service の EnvironmentFile と同じ型）。
+EnvironmentFile=-%h/.config/hunyuan3d/hunyuan3d.env
 ExecStart=%h/Proj/localai/tools/hunyuan3d/run-hunyuan3d serve
 Restart=on-failure
 RestartSec=5
 # gradio_app.py の起動に数十秒〜数分（モデルロード）かかることがある。
 TimeoutStartSec=600
+# RAM の安全弁。低 VRAM モード（既定 On）は VRAM を RAM と引き換える設定で、この機体
+# （RAM 31GiB）では過去に RAM を食い潰してデスクトップがハングしたことがある。
+# 31GiB のうち約 9GiB をデスクトップと入口ページ（tools/portal）に残す意図で、
+# Hunyuan3D プロセスだけを上限で止める。超えると本プロセスが kill されるだけで、
+# デスクトップやほかのサービスは巻き込まない。
+MemoryHigh=20G
+MemoryMax=22G
 
 [Install]
 WantedBy=default.target

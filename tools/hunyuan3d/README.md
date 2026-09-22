@@ -114,6 +114,37 @@ systemctl --user stop hunyuan3d
 **TENCENT HUNYUAN 3D 2.0 COMMUNITY LICENSE** に従う。EU・UK・韓国は使用許諾の対象外（日本は対象内）。
 月間アクティブユーザーが 100 万人を超える場合は Tencent へ別途ライセンス申請が必要。
 
+## 低 VRAM モード（HY3D_LOW_VRAM）
+
+上流の `--low_vram_mode` は VRAM を RAM と引き換える設定（推論に使わないパイプラインを
+都度 CPU 側へ退避する）。VRAM は節約できるが、この機体（RAM 31GiB）では過去に RAM を
+食い潰してデスクトップごとハングしたことがある。**既定は On**（VRAM 優先の安全側）。
+
+切り替え方は 3 通りあり、優先順位は `serve` の CLI フラグ → 環境変数 → 既定値（On）。
+
+1. **入口ページのスイッチ**（`tools/portal`、8080 番）— `~/.config/hunyuan3d/hunyuan3d.env` の
+   `HY3D_LOW_VRAM` を書き換える想定（このファイルの所有者は入口ページと同じ `mt`）
+2. **env ファイルを直接編集**: `~/.config/hunyuan3d/hunyuan3d.env` の `HY3D_LOW_VRAM` を
+   `1`（On）/ `0`（Off）にして `systemctl --user restart hunyuan3d`
+3. **手動起動時のフラグ**: `run-hunyuan3d serve --low-vram` / `run-hunyuan3d serve --no-low-vram`
+   （env ファイルより優先する）
+
+`run-hunyuan3d doctor` は現在の設定（env ファイルの値と、そこから決まる有効/無効）を表示する
+（OK/NG の判定ではなく情報表示）。
+
+### RAM の安全弁（MemoryMax）
+
+`systemd/hunyuan3d.service.example` と実機のユニットに `MemoryHigh=20G` / `MemoryMax=22G` を
+入れてある。RAM 31GiB のうち約 9GiB をデスクトップと入口ページに残す意図。**超えたときに
+起きるのは Hunyuan3D サービスだけが OOM kill されることで、デスクトップやほかのサービスを
+巻き込まない**（ユニット単位のメモリ上限なので、cgroup の外は影響を受けない）。
+
+対処:
+
+- 低 VRAM モードを Off にする（VRAM に余裕を戻す代わりに、そもそも RAM を消費しないようにする）
+- `run-hunyuan3d serve --no-texture` でテクスチャ生成を切る（下記）
+- それでも越えるなら `MemoryMax` 自体を見直す
+
 ## テクスチャ生成が OOM したときの逃げ道
 
 `run-hunyuan3d serve --no-texture` で形状生成のみに切り替える（`--disable_tex` を渡し、
