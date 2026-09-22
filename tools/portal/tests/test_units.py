@@ -231,6 +231,7 @@ def test_build_service_status_includes_state_and_controllable():
         "up": False,
         "state": "starting",
         "controllable": True,
+        "options": {},
     }
 
 
@@ -496,3 +497,292 @@ def test_index_html_sends_required_header() -> None:
     """画面側の fetch が必須ヘッダを付けていること（付け忘れるとボタンが全部 403 になる）。"""
     html = INDEX_HTML.read_text(encoding="utf-8")
     assert "X-Portal-Request" in html
+
+
+# ---------------------------------------------------------------------------
+# parse_option_path
+# ---------------------------------------------------------------------------
+
+def test_parse_option_path_valid():
+    assert portal.parse_option_path("/api/option/hunyuan3d/low-vram/on") == (
+        "hunyuan3d",
+        "low-vram",
+        "on",
+    )
+    assert portal.parse_option_path("/api/option/pixal3d/low-vram/off") == (
+        "pixal3d",
+        "low-vram",
+        "off",
+    )
+
+
+def test_parse_option_path_invalid_shapes_return_none():
+    assert portal.parse_option_path("/api/option/hunyuan3d/low-vram") is None
+    assert portal.parse_option_path("/api/option/hunyuan3d/low-vram/on/extra") is None
+    assert portal.parse_option_path("/api/option//low-vram/on") is None
+    assert portal.parse_option_path("/api/option/hunyuan3d//on") is None
+    assert portal.parse_option_path("/api/status") is None
+    assert portal.parse_option_path("") is None
+
+
+# ---------------------------------------------------------------------------
+# parse_env_file
+# ---------------------------------------------------------------------------
+
+def test_parse_env_file_reads_key_value_lines():
+    text = "FOO=1\nBAR=baz\n"
+    assert portal.parse_env_file(text) == {"FOO": "1", "BAR": "baz"}
+
+
+def test_parse_env_file_ignores_comments_and_blank_lines():
+    text = "# コメント\n\nFOO=1\n   \n# 別のコメント\nBAR=2\n"
+    assert portal.parse_env_file(text) == {"FOO": "1", "BAR": "2"}
+
+
+def test_parse_env_file_empty_text_returns_empty_dict():
+    assert portal.parse_env_file("") == {}
+
+
+# ---------------------------------------------------------------------------
+# render_env_file
+# ---------------------------------------------------------------------------
+
+def test_render_env_file_replaces_existing_value_and_keeps_comments():
+    text = "# 見出しコメント\nHY3D_LOW_VRAM=1\n# 末尾のコメント\n"
+    rendered = portal.render_env_file(text, "HY3D_LOW_VRAM", "0")
+    assert "HY3D_LOW_VRAM=0" in rendered
+    assert "HY3D_LOW_VRAM=1" not in rendered
+    assert "# 見出しコメント" in rendered
+    assert "# 末尾のコメント" in rendered
+
+
+def test_render_env_file_appends_when_variable_missing():
+    text = "# 既存の設定\nOTHER=1\n"
+    rendered = portal.render_env_file(text, "HY3D_LOW_VRAM", "1")
+    assert "OTHER=1" in rendered
+    assert "HY3D_LOW_VRAM=1" in rendered
+    # 既存の行を壊さず、末尾に足されていること
+    assert rendered.index("OTHER=1") < rendered.index("HY3D_LOW_VRAM=1")
+
+
+def test_render_env_file_builds_new_content_when_empty():
+    rendered = portal.render_env_file("", "HY3D_LOW_VRAM", "1")
+    assert "HY3D_LOW_VRAM=1" in rendered
+    assert rendered.strip().startswith("#")
+
+
+# ---------------------------------------------------------------------------
+# services_to_stop_before_start
+# ---------------------------------------------------------------------------
+
+def test_services_to_stop_before_start_returns_running_conflict():
+    states = {"hunyuan3d": "running", "pixal3d": "stopped"}
+    assert portal.services_to_stop_before_start("pixal3d", states) == ["hunyuan3d"]
+
+
+def test_services_to_stop_before_start_returns_starting_conflict():
+    states = {"hunyuan3d": "starting", "pixal3d": "stopped"}
+    assert portal.services_to_stop_before_start("pixal3d", states) == ["hunyuan3d"]
+
+
+def test_services_to_stop_before_start_empty_when_conflict_stopped():
+    states = {"hunyuan3d": "stopped", "pixal3d": "stopped"}
+    assert portal.services_to_stop_before_start("pixal3d", states) == []
+
+
+def test_services_to_stop_before_start_excludes_self():
+    # 自分自身が running であっても、返り値には自分の key を含めない。
+    states = {"hunyuan3d": "running", "pixal3d": "running"}
+    assert portal.services_to_stop_before_start("pixal3d", states) == ["hunyuan3d"]
+
+
+def test_services_to_stop_before_start_empty_for_non_exclusive_key():
+    states = {"hunyuan3d": "running", "pixal3d": "running"}
+    assert portal.services_to_stop_before_start("open-webui", states) == []
+
+
+# ---------------------------------------------------------------------------
+# build_service_status の options
+# ---------------------------------------------------------------------------
+
+def test_build_service_status_includes_options_when_given():
+    service = {
+        "key": "hunyuan3d",
+        "name": "Hunyuan3D",
+        "port": 7860,
+        "unit": "hunyuan3d",
+        "options": {"low_vram": {"env_file": "~/x", "var": "HY3D_LOW_VRAM", "default": True}},
+    }
+    entry = portal.build_service_status(
+        service,
+        port_open=True,
+        active_state="active",
+        load_state="loaded",
+        option_values={"low_vram": True},
+    )
+    assert entry["options"] == {"low_vram": True}
+
+
+def test_build_service_status_options_defaults_to_empty_dict():
+    entry = portal.build_service_status(
+        {"key": "open-webui", "name": "Open WebUI", "port": 8081, "unit": "open-webui"},
+        port_open=True,
+        active_state="active",
+        load_state="loaded",
+    )
+    assert entry["options"] == {}
+
+
+# ---------------------------------------------------------------------------
+# POST /api/option/<key>/<option>/<value>（systemctl・ファイル I/O は monkeypatch）
+# ---------------------------------------------------------------------------
+
+def test_post_option_without_header_returns_403(running_server):
+    response, body = _request(
+        running_server, "POST", "/api/option/hunyuan3d/low-vram/on", headers={}
+    )
+    assert response.status == 403
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_option_unknown_key_returns_404(running_server):
+    response, body = _request(running_server, "POST", "/api/option/nosuch/low-vram/on")
+    assert response.status == 404
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_option_unknown_option_name_returns_400(running_server):
+    response, body = _request(running_server, "POST", "/api/option/hunyuan3d/foo/on")
+    assert response.status == 400
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_option_invalid_value_returns_400(running_server):
+    response, body = _request(running_server, "POST", "/api/option/hunyuan3d/low-vram/maybe")
+    assert response.status == 400
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_option_unsupported_service_returns_400(running_server):
+    # Open WebUI には低 VRAM モードの設定が無い。
+    response, body = _request(running_server, "POST", "/api/option/open-webui/low-vram/on")
+    assert response.status == 400
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_option_running_service_returns_409(running_server, monkeypatch):
+    # hunyuan3d のポート（7860）が開いているとみなし、running にする。
+    monkeypatch.setattr(
+        portal, "port_is_open", lambda port, host="127.0.0.1", timeout=0.3: port == 7860
+    )
+    response, body = _request(running_server, "POST", "/api/option/hunyuan3d/low-vram/on")
+    assert response.status == 409
+    payload = json.loads(body)
+    assert payload["ok"] is False
+    assert "停止" in payload["message"]
+
+
+def test_get_option_path_returns_405(running_server):
+    response, body = _request(running_server, "GET", "/api/option/hunyuan3d/low-vram/on")
+    assert response.status == 405
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_option_success_writes_value_and_does_not_touch_real_file(running_server, monkeypatch):
+    # ポートを閉じ・非アクティブにして「停止中」にする（変更が許される状態）。
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("inactive", "loaded"))
+    monkeypatch.setattr(portal, "port_is_open", lambda port, host="127.0.0.1", timeout=0.3: False)
+    written = []
+    monkeypatch.setattr(
+        portal,
+        "write_option_value",
+        lambda option_config, enabled: written.append((option_config["var"], enabled)),
+    )
+    response, body = _request(running_server, "POST", "/api/option/hunyuan3d/low-vram/off")
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["value"] is False
+    assert written == [("HY3D_LOW_VRAM", False)]
+
+
+# ---------------------------------------------------------------------------
+# POST /api/service/<key>/start の GPU 排他（Hunyuan3D ⇔ Pixal3D）
+# ---------------------------------------------------------------------------
+
+def test_post_pixal3d_start_stops_hunyuan3d_first(running_server, monkeypatch):
+    calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        calls.append(list(args))
+        return FakeCompletedProcess()
+
+    def fake_read_unit_state(unit):
+        # hunyuan3d は稼働中、pixal3d は停止中（start できる状態）にする。
+        if unit == "hunyuan3d":
+            return ("active", "loaded")
+        return ("inactive", "loaded")
+
+    def fake_port_is_open(port, host="127.0.0.1", timeout=0.3):
+        return port == 7860  # hunyuan3d のポートだけ開いている
+
+    monkeypatch.setattr(portal, "read_unit_state", fake_read_unit_state)
+    monkeypatch.setattr(portal, "port_is_open", fake_port_is_open)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/service/pixal3d/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["hunyuan3d"]
+
+    stop_call_index = next(
+        index for index, call in enumerate(calls) if call == ["systemctl", "--user", "stop", "hunyuan3d"]
+    )
+    start_call_index = next(
+        index for index, call in enumerate(calls) if call == ["systemctl", "--user", "start", "pixal3d"]
+    )
+    assert stop_call_index < start_call_index
+
+
+def test_post_start_does_not_start_when_conflicting_stop_fails(running_server, monkeypatch):
+    calls = []
+
+    def fake_run(args, capture_output, text, timeout):
+        calls.append(list(args))
+        if args[2] == "stop":
+            return type("FakeCompletedProcess", (), {"returncode": 1, "stdout": "", "stderr": "失敗"})()
+        return type("FakeCompletedProcess", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    def fake_read_unit_state(unit):
+        if unit == "hunyuan3d":
+            return ("active", "loaded")
+        return ("inactive", "loaded")
+
+    def fake_port_is_open(port, host="127.0.0.1", timeout=0.3):
+        return port == 7860
+
+    monkeypatch.setattr(portal, "read_unit_state", fake_read_unit_state)
+    monkeypatch.setattr(portal, "port_is_open", fake_port_is_open)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/service/pixal3d/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is False
+    # start は一度も呼ばれていないこと（両方立ち上がって RAM が枯れるのを防ぐため）。
+    start_calls = [call for call in calls if call[2] == "start"]
+    assert start_calls == []

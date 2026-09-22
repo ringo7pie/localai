@@ -197,6 +197,29 @@
     font-size: 0.8rem;
   }
 
+  .card-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+  }
+  .card-option-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .card-option-label input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+  }
+  .card-option-hint {
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
   .card-link {
     margin-top: auto;
     display: inline-block;
@@ -264,6 +287,14 @@
       startingReason: "モデルを読み込んでいます（1〜2 分かかります）。",
       note: "起動すると VRAM を約 5.4GB 使用します。Qwen（Open WebUI のチャット）と同時に使うと応答が遅くなります。"
     },
+    "pixal3d": {
+      description: "画像 1〜4 枚から 3D メッシュを生成（別方式）",
+      stoppedReason: "起動していません。下のボタンから起動できます。",
+      startingReason: "モデルを読み込んでいます（数分かかります）。",
+      note: "Hunyuan3D とは同時に使えません。起動すると Hunyuan3D は自動で停止します。"
+        + " 生成中は RAM を 28GB 前後まで使い swap へあふれます（実測）。"
+        + " ほかの重いアプリを閉じてから使ってください。生成は 4 分ほどかかります。"
+    },
     "comfyui": {
       description: "画像・ワークフロー生成 UI",
       stoppedReason: "まだ導入されていません（後日追加予定）"
@@ -281,7 +312,31 @@
   // 5 秒ごとの自動更新でカードを作り直しても消えないよう、DOM の外に持つ。
   const actionMessages = {};
   const pendingActions = {};
+  // 低 VRAM モードなど、設定変更の結果・操作中フラグ。キーは "サービスの key:設定名"。
+  const optionMessages = {};
+  const pendingOptions = {};
   let latestServices = [];
+
+  // GPU を排他的に使うサービス。portal.py の GPU_EXCLUSIVE_KEYS と同じ組み合わせ。
+  // 起動ボタンを押したときに「もう片方を止めてよいか」を確認するために使う
+  // （実際に止めるかどうかの最終判断はサーバー側が行う。ここは確認ダイアログの文言のためだけ）。
+  const GPU_EXCLUSIVE_KEYS = ["hunyuan3d", "pixal3d"];
+
+  function servicesToStopBeforeStart(key, servicesList) {
+    if (GPU_EXCLUSIVE_KEYS.indexOf(key) === -1) { return []; }
+    const stateByKey = {};
+    servicesList.forEach(function (service) { stateByKey[service.key] = service.state; });
+    return GPU_EXCLUSIVE_KEYS.filter(function (otherKey) {
+      if (otherKey === key) { return false; }
+      const state = stateByKey[otherKey];
+      return state === "running" || state === "starting";
+    });
+  }
+
+  function findServiceByKey(key, servicesList) {
+    const matches = servicesList.filter(function (service) { return service.key === key; });
+    return matches.length > 0 ? matches[0] : null;
+  }
 
   const subtitleElement = document.getElementById("subtitle");
   const errorBanner = document.getElementById("error-banner");
@@ -329,6 +384,26 @@
   }
 
   function performAction(key, action) {
+    if (action === "start") {
+      // GPU を排他的に使うサービスは、起動前に確認する。実際に止めるかどうかの判断・実行は
+      // サーバー側（portal.py の services_to_stop_before_start）が行う。ここは文言のためだけ。
+      const keysToStop = servicesToStopBeforeStart(key, latestServices);
+      if (keysToStop.length > 0) {
+        const namesToStop = keysToStop
+          .map(function (stopKey) {
+            const service = findServiceByKey(stopKey, latestServices);
+            return service ? service.name : stopKey;
+          })
+          .join("、");
+        const targetService = findServiceByKey(key, latestServices);
+        const targetName = targetService ? targetService.name : key;
+        const confirmed = window.confirm(
+          namesToStop + " を停止して " + targetName + " を起動します。よろしいですか？"
+        );
+        if (!confirmed) { return; }
+      }
+    }
+
     pendingActions[key] = true;
     actionMessages[key] = {
       text: action === "start" ? "起動を要求しました…" : "停止を要求しました…",
@@ -401,6 +476,88 @@
     card.appendChild(message);
   }
 
+  function performOptionChange(key, optionKey, nextEnabled) {
+    const pendingKey = key + ":" + optionKey;
+    pendingOptions[pendingKey] = true;
+    optionMessages[pendingKey] = { text: "設定を変更しています…", isError: false };
+    renderCards(latestServices);
+
+    // SERVICES の options 辞書は "low_vram"（アンダースコア）だが、URL は
+    // "low-vram"（ハイフン）。portal.py の OPTION_URL_TO_KEY と対になる変換。
+    const urlOptionName = optionKey.replace(/_/g, "-");
+    const valueSegment = nextEnabled ? "on" : "off";
+
+    fetch("/api/option/" + key + "/" + urlOptionName + "/" + valueSegment, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "X-Portal-Request": "1" }
+    })
+      .then(function (response) {
+        return response.json().then(function (data) { return data; });
+      })
+      .then(function (data) {
+        optionMessages[pendingKey] = {
+          text: data.message || (data.ok ? "変更しました。" : "変更できませんでした。"),
+          isError: !data.ok
+        };
+      })
+      .catch(function () {
+        optionMessages[pendingKey] = { text: "通信に失敗しました。", isError: true };
+      })
+      .finally(function () {
+        pendingOptions[pendingKey] = false;
+        fetchStatus();
+      });
+  }
+
+  function renderLowVramSwitch(card, service) {
+    // options.low_vram を持たないサービス（Open WebUI・ComfyUI）には何も出さない。
+    if (!service.options || service.options.low_vram === undefined) {
+      return;
+    }
+
+    const pendingKey = service.key + ":low_vram";
+    const running = service.state === "running" || service.state === "starting";
+    const pending = pendingOptions[pendingKey] === true;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "card-option";
+
+    const label = document.createElement("label");
+    label.className = "card-option-label";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = service.options.low_vram === true;
+    // 稼働中・起動中は無効化する（systemd の EnvironmentFile は起動時にしか読まれないため、
+    // 動いている間に変えても反映されない）。操作の応答待ち中も二重送信を避けるため無効化する。
+    checkbox.disabled = running || pending;
+    checkbox.addEventListener("change", function () {
+      performOptionChange(service.key, "low_vram", checkbox.checked);
+    });
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(" 低 VRAM モード"));
+    wrapper.appendChild(label);
+
+    if (running) {
+      const hint = document.createElement("span");
+      hint.className = "card-option-hint";
+      hint.textContent = "変更するには停止してください";
+      wrapper.appendChild(hint);
+    }
+
+    const stored = optionMessages[pendingKey];
+    if (stored) {
+      const message = document.createElement("p");
+      message.className = "card-message " + (stored.isError ? "error" : "info");
+      message.textContent = stored.text;
+      wrapper.appendChild(message);
+    }
+
+    card.appendChild(wrapper);
+  }
+
   function renderCards(services) {
     cardsContainer.innerHTML = "";
     services.forEach(function (service) {
@@ -441,6 +598,8 @@
         note.textContent = meta.note;
         card.appendChild(note);
       }
+
+      renderLowVramSwitch(card, service);
 
       if (service.controllable) {
         renderActionButtons(card, service);
