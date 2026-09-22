@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hunyuan3D-2mv 使い方レポート — 4画像入力・ローカル実行・設定・注意点</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#121a2f; --panel2:#0f172a; --text:#e8edf7;
+  --muted:#aab6cc; --line:#2a3756; --accent:#61dafb; --accent2:#9b8cff;
+  --ok:#78e08f; --warn:#ffd166; --bad:#ff7b7b; --code:#070b14;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:linear-gradient(180deg,#09101f,#0b1020 35%,#0b1020);
+  color:var(--text); font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;
+  line-height:1.72;
+}
+main{max-width:1180px;margin:auto;padding:32px 22px 80px}
+.hero{
+  border:1px solid var(--line); background:linear-gradient(135deg,#14203b,#10172a 55%,#161f38);
+  border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,.28);
+}
+h1{font-size:clamp(28px,4vw,46px);line-height:1.15;margin:.1em 0 .35em}
+h2{margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px;font-size:27px}
+h3{margin-top:28px;font-size:20px}
+p{margin:.65em 0}
+a{color:var(--accent)}
+.small,.muted{color:var(--muted);font-size:.94em}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;margin:3px 4px 3px 0;font-size:13px;font-weight:700;border:1px solid var(--line)}
+.b-ok{color:#caffd4;background:#113522}
+.b-warn{color:#ffe9a9;background:#453716}
+.b-info{color:#c9eaff;background:#13354d}
+.callout{
+  border-left:4px solid var(--accent); background:var(--panel); padding:14px 17px;
+  border-radius:10px; margin:16px 0;
+}
+.callout.warn{border-left-color:var(--warn)}
+.callout.bad{border-left-color:var(--bad)}
+.callout.ok{border-left-color:var(--ok)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:16px}
+.card h3{margin-top:0}
+table{width:100%;border-collapse:collapse;margin:16px 0;background:var(--panel2);font-size:14.5px}
+th,td{border:1px solid var(--line);padding:10px 11px;vertical-align:top}
+th{background:#18233f;text-align:left}
+pre{
+  background:var(--code); border:1px solid var(--line); padding:15px; border-radius:11px;
+  overflow:auto; line-height:1.5; tab-size:4;
+}
+code{font-family:"Cascadia Code","Consolas",monospace;color:#e9f2ff}
+kbd{background:#202c48;border:1px solid #3a496c;border-bottom-width:2px;border-radius:5px;padding:1px 6px}
+.toc{columns:2;column-gap:28px}
+.toc a{text-decoration:none}
+.views{
+ display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:700px;margin:20px auto
+}
+.view{
+ min-height:145px;border:2px dashed #456087;border-radius:14px;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;background:#111a30;text-align:center;padding:14px
+}
+.view strong{font-size:20px}
+.view span{color:var(--muted)}
+.flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:20px 0}
+.step{border:1px solid var(--line);background:#131d34;padding:10px 13px;border-radius:10px}
+.arrow{color:var(--accent);font-weight:900;font-size:20px}
+.verdict{font-size:18px;font-weight:700}
+hr{border:none;border-top:1px solid var(--line);margin:34px 0}
+.source-list li{margin:.55em 0;word-break:break-all}
+mark{background:#4b3d16;color:#fff0b6;padding:0 4px;border-radius:4px}
+@media (max-width:700px){.toc{columns:1}.views{grid-template-columns:1fr}main{padding:18px 12px 50px}.hero{padding:20px}}
+@media print{body{background:white;color:#111}.hero,.card,.callout,table{background:white;color:#111}pre{background:#f5f5f5;color:#111}a{color:#0645ad}}
+</style>
+</head>
+<body>
+<main>
+<section class="hero">
+  <div>
+    <span class="badge b-info">Hunyuan3D-2mv</span>
+    <span class="badge b-ok">1〜4 View</span>
+    <span class="badge b-info">Image → 3D</span>
+    <span class="badge b-warn">2026-09-22 確認</span>
+  </div>
+  <h1>Hunyuan3D-2mv の使い方</h1>
+  <p style="font-size:1.15em">4方向画像の添付方法、ローカル実行、Python利用、生成設定、テクスチャ、出力形式、VRAM、現行実装上の注意点をまとめたレポートです。</p>
+  <p class="muted">一次情報を優先し、公式 README / Hugging Face Model Card / 公式 Gradio 実装 / 公式 examples を照合しています。公式資料同士で数値が食い違う箇所は、そのまま明記しています。</p>
+</section>
+
+<h2>結論</h2>
+<div class="callout ok">
+  <div class="verdict">4枚は「1枚に結合」せず、Front / Back / Left / Right の4枠へ個別に入れます。</div>
+  <p>公式 Gradio UI は <strong>1〜4ビュー</strong>対応です。内部では4枚を
+  <code>front</code> / <code>back</code> / <code>left</code> / <code>right</code>
+  のキーで別々にパイプラインへ渡します。</p>
+</div>
+<div class="callout warn">
+  <strong>Front（正面）は実質必須として扱うのが安全です。</strong>
+  <p>現行 Gradio コードは「4枠のうち最低1枚」と判定する一方、生成後に <code>image['front']</code> を参照する箇所があります。
+  そのため、背面だけ・側面だけで実行するより、常に正面画像を入れる運用を推奨します。</p>
+</div>
+
+<h2>目次</h2>
+<ol class="toc">
+<li><a href="#what">Hunyuan3D-2mvとは</a></li>
+<li><a href="#four">4枚画像の添付方法</a></li>
+<li><a href="#imageprep">入力画像の作り方</a></li>
+<li><a href="#install">ローカル導入</a></li>
+<li><a href="#gradio">Gradio GUIでの使い方</a></li>
+<li><a href="#params">設定項目</a></li>
+<li><a href="#python">Pythonから4枚入力</a></li>
+<li><a href="#texture">テクスチャ生成</a></li>
+<li><a href="#export">出力形式</a></li>
+<li><a href="#vram">VRAM / GPU</a></li>
+<li><a href="#api">API・Blender・ComfyUI</a></li>
+<li><a href="#issues">注意点・未確認事項</a></li>
+<li><a href="#recipe">実用的な推奨手順</a></li>
+<li><a href="#sources">参照元</a></li>
+</ol>
+
+<h2 id="what">1. Hunyuan3D-2mv とは</h2>
+<p><strong>Hunyuan3D-2mv</strong> は Tencent の Hunyuan3D-2 をマルチビュー制御（multi-view controlled shape generation）向けに調整したモデルです。</p>
+<div class="flow">
+  <div class="step">複数方向画像</div><div class="arrow">→</div>
+  <div class="step">Hunyuan3D-2mv</div><div class="arrow">→</div>
+  <div class="step">形状（Mesh）</div><div class="arrow">→</div>
+  <div class="step">Hunyuan3D-Paint</div><div class="arrow">→</div>
+  <div class="step">Texture付き3D</div>
+</div>
+<p>形状生成（Shape Generation）とテクスチャ生成（Texture Synthesis）は別段階です。Hunyuan3D-2mv は主に<strong>複数画像から形状を作る部分</strong>を担当します。</p>
+
+<h2 id="four">2. 4つの画像の添付方法</h2>
+<h3>Gradio GUI</h3>
+<p>Hunyuan3D-2mv で起動すると <strong>MultiView Prompt</strong> に以下の4枠が表示されます。</p>
+
+<div class="views">
+  <div class="view"><strong>Front</strong><span>正面画像</span></div>
+  <div class="view"><strong>Back</strong><span>背面画像</span></div>
+  <div class="view"><strong>Left</strong><span>左側面画像</span></div>
+  <div class="view"><strong>Right</strong><span>右側面画像</span></div>
+</div>
+
+<ol>
+<li><strong>Front</strong> に正面をドラッグ＆ドロップ、またはクリックして選択。</li>
+<li><strong>Back</strong> に背面。</li>
+<li><strong>Left</strong> に左側面。</li>
+<li><strong>Right</strong> に右側面。</li>
+<li>形だけなら <strong>Gen Shape</strong>。</li>
+<li>テクスチャ環境まで導入済みなら <strong>Gen Textured Shape</strong>。</li>
+</ol>
+
+<div class="callout">
+<strong>4枚をコラージュ画像にして1枠へ入れる方式ではありません。</strong>
+<p>公式実装では4枚を別オブジェクトとして受け取り、辞書
+<code>{"front": ..., "back": ..., "left": ..., "right": ...}</code>
+へ格納します。</p>
+</div>
+
+<h3>1〜3枚でも動くか</h3>
+<p>現行 Gradio のタイトルは「Image to 3D Generation with 1-4 Views」で、コード上も4枠すべてが空の場合だけエラーになります。ただし前述の <code>image['front']</code> 参照があるため、<strong>Frontなし運用は避ける</strong>のが安全です。</p>
+
+<h2 id="imageprep">3. 入力画像の作り方</h2>
+<table>
+<thead><tr><th>項目</th><th>推奨</th><th>根拠の区分</th></tr></thead>
+<tbody>
+<tr><td>対象</td><td>4枚すべて同一オブジェクト・同一デザイン</td><td>マルチビュー整合性の実務上の推奨</td></tr>
+<tr><td>画角</td><td>カメラ高さ・距離・焦点距離を可能な限り統一</td><td>実務上の推奨</td></tr>
+<tr><td>大きさ</td><td>画像内で対象の占有率を揃える</td><td>実務上の推奨</td></tr>
+<tr><td>背景</td><td>透明背景、または単純な背景</td><td>Gradioに Remove Background 機能あり</td></tr>
+<tr><td>影</td><td>強い落ち影、床反射、背景物を避ける</td><td>実務上の推奨</td></tr>
+<tr><td>左右</td><td>Left / Right を取り違えない。左右非対称の目印があると検証しやすい</td><td>公式はラベルを定義するが「被写体基準/観察者基準」の文章定義は未確認</td></tr>
+<tr><td>解像度</td><td>4枚とも同程度の解像度・アスペクト比にする</td><td>実務上の推奨</td></tr>
+</tbody>
+</table>
+
+<div class="callout warn">
+<strong>「必ず 512×512」などの固定入力解像度は、今回確認した公式 README / Model Card では要件として明記されていません。</strong>
+<p>したがって固定値を仕様として断定しません。大きすぎる画像を入れても内部処理で前処理されるため、まず4枚の整合性を優先してください。</p>
+</div>
+
+<h2 id="install">4. ローカル導入</h2>
+<p>公式 README は macOS / Windows / Linux 対応を掲げています。実際の CUDA GPU 利用では PyTorch、NVIDIA ドライバ、コンパイル環境の組み合わせが重要です。</p>
+
+<h3>基本導入</h3>
+<pre><code># 1) 公式リポジトリを取得
+git clone https://github.com/Tencent-Hunyuan/Hunyuan3D-2.git
+cd Hunyuan3D-2
+
+# 2) 仮想環境（Linux例）
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Windows PowerShellなら例:
+# py -m venv .venv
+# .\.venv\Scripts\Activate.ps1
+
+# 3) PyTorch は公式 PyTorch の案内に従って、
+#    自分のOS / CUDA環境に適合するものを先にインストール
+
+# 4) Hunyuan3D側
+pip install -r requirements.txt
+pip install -e .
+</code></pre>
+
+<h3>テクスチャ生成も使う場合</h3>
+<pre><code>cd hy3dgen/texgen/custom_rasterizer
+python setup.py install
+cd ../../..
+
+cd hy3dgen/texgen/differentiable_renderer
+python setup.py install
+cd ../../..
+</code></pre>
+
+<div class="callout warn">
+<strong>Windowsでは上記カスタム拡張のビルドでコンパイラ環境が必要になる場合があります。</strong>
+<p>公式 README は Windows 対応を明記していますが、今回確認した本文では特定の Visual Studio Build Tools / CUDA Toolkit バージョンの組み合わせまでは固定していません。エラー時は実際のログを基準に切り分けるべきです。</p>
+</div>
+
+<h2 id="gradio">5. Gradio GUI で使う</h2>
+<h3>標準 Hunyuan3D-2mv</h3>
+<pre><code>python3 gradio_app.py \
+  --model_path tencent/Hunyuan3D-2mv \
+  --subfolder hunyuan3d-dit-v2-mv \
+  --texgen_model_path tencent/Hunyuan3D-2 \
+  --low_vram_mode
+</code></pre>
+
+<h3>Turbo版</h3>
+<pre><code>python3 gradio_app.py \
+  --model_path tencent/Hunyuan3D-2mv \
+  --subfolder hunyuan3d-dit-v2-mv-turbo \
+  --texgen_model_path tencent/Hunyuan3D-2 \
+  --low_vram_mode \
+  --enable_flashvdm
+</code></pre>
+
+<p>Windows では環境によって <code>python3</code> ではなく <code>python</code> または <code>py</code> を使います。</p>
+
+<div class="callout">
+<strong>遠隔GPUマシンで動かす場合</strong>
+<p>Gradio 実装の既定ホストは <code>0.0.0.0</code>、ポートは <code>8080</code> です。LANへ公開されるので、必要なら <code>--host 127.0.0.1</code> に限定するか、ファイアウォールで接続元を制限してください。</p>
+</div>
+
+<h2 id="params">6. 主要設定</h2>
+<table>
+<thead><tr><th>項目</th><th>現行 Gradio の値</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td>Generation Mode</td><td>Turbo / Fast / Standard</td><td>Turbo用UI。変更時の Steps は 5 / 10 / 30。</td></tr>
+<tr><td>Inference Steps</td><td>Turboモデル: 初期5、通常: 初期30</td><td>拡散推論ステップ数。一般に増やすほど時間が増える。</td></tr>
+<tr><td>Decoding Mode</td><td>Low / Standard / High</td><td>Octree Resolution を 196 / 256 / 384 に切替。</td></tr>
+<tr><td>Octree Resolution</td><td>16〜512、初期256</td><td>メッシュ復号の空間解像度。</td></tr>
+<tr><td>Guidance Scale</td><td>初期 5.0</td><td>条件画像への追従強度に関係。</td></tr>
+<tr><td>Number of Chunks</td><td>初期 8000</td><td>復号処理の分割関連パラメータ。</td></tr>
+<tr><td>Remove Background</td><td>初期 ON</td><td>背景除去。</td></tr>
+<tr><td>Randomize seed</td><td>初期 ON</td><td>毎回Seedを変える。</td></tr>
+<tr><td>Seed</td><td>初期 1234</td><td>同条件の再現性を取りたい時はRandomizeをOFF。</td></tr>
+</tbody>
+</table>
+
+<div class="callout warn">
+<strong>Model Card のサンプル値と、現行 Gradio UI の初期値は一致していません。</strong>
+<p>Hugging Face の Hunyuan3D-2mv 例では <code>num_inference_steps=30</code>、
+<code>octree_resolution=380</code>、<code>num_chunks=20000</code>。
+一方、現行 Gradio は標準初期値として Octree 256、Chunks 8000 等を持っています。
+「380 / 20000 が必須仕様」という意味ではありません。</p>
+</div>
+
+<h2 id="python">7. Python から4枚を渡す</h2>
+<p>4枚を辞書として渡します。右側面も <code>"right"</code> キーで指定できます。</p>
+<pre><code>import torch
+from PIL import Image
+from hy3dgen.rembg import BackgroundRemover
+from hy3dgen.shapegen import Hunyuan3DDiTFlowMatchingPipeline
+
+paths = {
+    "front": "front.png",
+    "back":  "back.png",
+    "left":  "left.png",
+    "right": "right.png",
+}
+
+background_remover = BackgroundRemover()
+images = {}
+
+for view_name, image_path in paths.items():
+    image = Image.open(image_path)
+
+    # 背景が通常のRGB画像なら背景除去
+    if image.mode == "RGB":
+        image = background_remover(image)
+    else:
+        image = image.convert("RGBA")
+
+    images[view_name] = image
+
+pipeline = Hunyuan3DDiTFlowMatchingPipeline.from_pretrained(
+    "tencent/Hunyuan3D-2mv",
+    subfolder="hunyuan3d-dit-v2-mv",
+    use_safetensors=True,
+    device="cuda",
+)
+
+mesh = pipeline(
+    image=images,
+    num_inference_steps=30,
+    octree_resolution=380,
+    num_chunks=20000,
+    generator=torch.manual_seed(12345),
+    output_type="trimesh",
+)[0]
+
+mesh.export("hunyuan3d_4view.glb")
+</code></pre>
+
+<div class="callout">
+<strong>公式サンプルは front / left / back の3枚例です。</strong>
+<p>一方、公式 Gradio は right を正式な入力枠として持ち、内部辞書にも <code>right</code> を追加します。したがって4枚入力は現行UI実装で明確にサポートされています。</p>
+</div>
+
+<h2 id="texture">8. テクスチャ生成</h2>
+<p>Hunyuan3D-2mv の形状生成後、Hunyuan3D-Paint を使ってテクスチャを作れます。</p>
+<p>公式の <code>textured_shape_gen_multiview.py</code> 例では、形状は複数ビューから生成し、テクスチャは <strong>front画像</strong> を渡す例になっています。</p>
+
+<pre><code>from hy3dgen.texgen import Hunyuan3DPaintPipeline
+
+paint_pipeline = Hunyuan3DPaintPipeline.from_pretrained("tencent/Hunyuan3D-2")
+textured_mesh = paint_pipeline(mesh, image=images["front"])
+textured_mesh.export("hunyuan3d_4view_textured.glb")
+</code></pre>
+
+<p>別の公式例 <code>fast_texture_gen_multiview.py</code> では、複数画像のリストを Paint Pipeline に渡す例もあります。つまり「形状のマルチビュー」と「テクスチャのマルチビュー」は分けて考えた方がよいです。</p>
+
+<h2 id="export">9. 出力形式</h2>
+<p>現行 Gradio の Export UI が列挙している形式:</p>
+<div class="grid">
+<div class="card"><h3>GLB</h3><p>既定値。メッシュとマテリアルをまとめやすく、Blender / ゲームエンジンへの受け渡しに使いやすい。</p></div>
+<div class="card"><h3>OBJ</h3><p>広く対応。テクスチャは別ファイル構成になる場合がある。</p></div>
+<div class="card"><h3>PLY</h3><p>メッシュ・頂点属性用途。</p></div>
+<div class="card"><h3>STL</h3><p>主に形状中心。テクスチャ用途には向かない。</p></div>
+</div>
+<p>GUIには <strong>Simplify Mesh</strong>、<strong>Target Face Number</strong> もあり、ポリゴン削減後にエクスポートできます。</p>
+
+<h2 id="vram">10. VRAM / GPU</h2>
+<div class="callout bad">
+<strong>公式資料内で VRAM 数値が食い違っています。</strong>
+<ul>
+<li>メイン README: Shape 6 GB、Shape + Texture 合計 16 GB。</li>
+<li><code>docs/source/modelzoo.md</code>: Shape 6 GB、Shape + Texture 合計 24.5 GB。</li>
+</ul>
+<p>したがって「Textureまで16GBあれば必ず足りる」とは断定できません。モデル、解像度、オフロード、ライブラリ版、実行経路によってピークが変わると考えるべきです。</p>
+</div>
+
+<table>
+<thead><tr><th>GPU例</th><th>Shape</th><th>Shape + Texture</th><th>判断</th></tr></thead>
+<tbody>
+<tr><td>NVIDIA A30 24GB</td><td>公式6GB条件を大きく上回る</td><td>16GB記載なら範囲内。24.5GB記載とは境界付近/下回る可能性</td><td><code>--low_vram_mode</code> 併用が安全。公式数値の不一致があるので「確実」とは言わない。</td></tr>
+<tr><td>RTX 3070 8GB</td><td>公式6GB条件上は可能</td><td>公式16GB / 24.5GBのどちらにも不足</td><td>まず Shape専用。Textureは強いオフロード等なしには前提外。</td></tr>
+</tbody>
+</table>
+
+<p><code>--low_vram_mode</code> 時、現行コードでは Texture Pipeline に <strong>model CPU offload</strong> を有効化します。</p>
+
+<h2 id="api">11. API / Blender / ComfyUI</h2>
+
+<h3>公式 API Server</h3>
+<p>公式リポジトリには <code>api_server.py</code> がありますが、確認できた現行コードは基本的に単一 <code>image</code> を処理する構造です。GitHub Issueにも「APIモードでmulti-viewをどう使うか」という未解決質問があります。</p>
+<div class="callout warn">
+<strong>4ビューを確実に使うなら、現時点では Gradio または Python Pipeline を優先。</strong>
+<p>APIサーバへ4画像を送れると断定できる公式仕様は今回確認できませんでした。</p>
+</div>
+
+<h3>Blender Add-on</h3>
+<p>公式 README は、API Server を起動した上で Blender Add-on を使えるとしています。ただし、上記の理由から <strong>公式Add-onで4ビューを直接送れるか</strong> は別問題であり、今回確認した情報だけでは保証できません。</p>
+
+<h3>ComfyUI</h3>
+<p>公式 README はコミュニティ実装として <code>ComfyUI-Hunyuan3DWrapper</code>、<code>ComfyUI-3D-Pack</code> を紹介しています。これらは Tencent 本体の Gradio と同一実装ではないため、4ビュー入力ノードの仕様や必要VRAMは各拡張側の版を個別確認する必要があります。</p>
+
+<h2 id="issues">12. 現行実装で注意すべき点</h2>
+<table>
+<thead><tr><th>項目</th><th>確認できた事実</th><th>実用上の対応</th></tr></thead>
+<tbody>
+<tr><td>Frontなし</td><td>入力判定は「最低1ビュー」だが後段で <code>image['front']</code> 参照あり</td><td>Frontは必ず入れる</td></tr>
+<tr><td>4枚必須?</td><td>いいえ。UIは1〜4 View</td><td>ただし4枚揃うなら4枚を使う</td></tr>
+<tr><td>Right対応</td><td>GradioにRight枠・辞書キーあり</td><td>4方向なら使用する</td></tr>
+<tr><td>入力固定解像度</td><td>README / Model Cardに必須値の明記なし</td><td>4枚の整合性を優先</td></tr>
+<tr><td>Left/Rightの視点基準</td><td>文章での厳密定義を今回確認できず</td><td>左右非対称の印を付け、結果で検証</td></tr>
+<tr><td>APIのmulti-view</td><td>汎用APIコードは単一image中心。Issueも未解決</td><td>Gradio / Pythonを使う</td></tr>
+<tr><td>VRAM</td><td>公式資料で16GBと24.5GBが併存</td><td>16GBを保証値として扱わない</td></tr>
+</tbody>
+</table>
+
+<h2 id="recipe">13. 実用的な推奨手順</h2>
+<div class="grid">
+<div class="card"><h3>STEP 1 — 画像準備</h3><p>Front / Back / Left / Right を同じ高さ・同じスケールで用意。背景は単純化。</p></div>
+<div class="card"><h3>STEP 2 — Turboで試す</h3><p>まず Hunyuan3D-2mv Turbo + 5 Steps + Standard Decodeで形状の方向整合性を見る。</p></div>
+<div class="card"><h3>STEP 3 — Seed固定</h3><p>良い方向性が出たら Randomize Seed をOFFにし、同じSeedで設定だけ比較。</p></div>
+<div class="card"><h3>STEP 4 — 解像度を上げる</h3><p>必要なら Decode High / Octreeを上げる。VRAMと時間を監視。</p></div>
+<div class="card"><h3>STEP 5 — Mesh確認</h3><p>裏面、左右、薄い部品、手足、穴、非対称部分を3Dビューで確認。</p></div>
+<div class="card"><h3>STEP 6 — Texture</h3><p>形が確定してからPaint。形状生成とテクスチャ生成を同時に調整しない。</p></div>
+<div class="card"><h3>STEP 7 — Simplify</h3><p>ゲーム用途なら Target Face Number を調整し、見た目と負荷のバランスを確認。</p></div>
+<div class="card"><h3>STEP 8 — GLB出力</h3><p>Blenderに読み込み、法線・UV・マテリアル・スケール・原点を最終調整。</p></div>
+</div>
+
+<h3>最初に試す設定</h3>
+<pre><code>モデル: Hunyuan3D-2mv Turbo
+画像: Front + Back + Left + Right
+Remove Background: ON
+Randomize Seed: ON（探索中）
+Generation Mode: Turbo
+Inference Steps: 5
+Decoding Mode: Standard
+Octree Resolution: 256
+Guidance Scale: 5.0
+Number of Chunks: 8000
+出力: GLB
+</code></pre>
+<p>形状が複雑で崩れる場合に Fast / Standard、Steps増加、Decode High を比較します。一度に複数パラメータを変えると原因が分からなくなるため、1項目ずつ変えるのが安全です。</p>
+
+<h2>14. 「公式説明」と「実態としての注意」</h2>
+<table>
+<thead><tr><th>公式側の説明</th><th>コードを見た実態</th></tr></thead>
+<tbody>
+<tr><td>1〜4 View対応</td><td>4入力欄と4辞書キーは実装済み。ただしFrontなしは後段参照の問題がある。</td></tr>
+<tr><td>Windows / Linux / macOS対応</td><td>プラットフォーム対応の記載はあるが、CUDA・拡張ビルドの詳細な組合せは環境依存。</td></tr>
+<tr><td>Shape 6GB / Shape+Texture 16GB</td><td>別の公式docsは24.5GBと記載。数値は一本化されていない。</td></tr>
+<tr><td>API Serverあり</td><td>4ビューAPIとしての完成仕様は確認できず、multi-view API質問Issueも残っている。</td></tr>
+</tbody>
+</table>
+
+<h2 id="sources">15. 参照元（Primary / Official中心）</h2>
+<ul class="source-list">
+<li><a href="https://huggingface.co/tencent/Hunyuan3D-2mv">Tencent Hunyuan3D-2mv — Hugging Face Model Card</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2">Tencent-Hunyuan/Hunyuan3D-2 — GitHub</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/gradio_app.py">公式 gradio_app.py</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/examples/shape_gen_multiview.py">公式 shape_gen_multiview.py</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/examples/fast_shape_gen_multiview.py">公式 fast_shape_gen_multiview.py</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/examples/textured_shape_gen_multiview.py">公式 textured_shape_gen_multiview.py</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/examples/fast_texture_gen_multiview.py">公式 fast_texture_gen_multiview.py</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/api_server.py">公式 api_server.py</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/docs/source/modelzoo.md">公式 docs/source/modelzoo.md</a></li>
+<li><a href="https://github.com/Tencent-Hunyuan/Hunyuan3D-2/issues/269">GitHub Issue #269 — multi-view APIに関する質問</a></li>
+</ul>
+
+<hr>
+<p class="small">作成日: 2026-09-22。Hunyuan3D は更新されるため、実行時のコミット・モデル版・PyTorch/CUDA構成によって挙動が変わる可能性があります。本レポートでは未確認事項を仕様として断定していません。</p>
+</main>
+</body>
+</html>
