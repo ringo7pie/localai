@@ -141,6 +141,27 @@ show_hunyuan3d() {
   fi
 }
 
+show_pixal3d() {
+  section "Pixal3D（1〜4 枚の画像 → 3D メッシュ、別方式）"
+  local pixal_dir="$repo_root/tools/pixal3d"
+  if [ ! -x "$pixal_dir/run-pixal3d" ]; then
+    echo "未導入（$pixal_dir/setup-server.sh で入れる）"; return
+  fi
+  local low_vram_env="$HOME/.config/pixal3d/pixal3d.env"
+  local low_vram="有効（既定）"
+  if [ -f "$low_vram_env" ]; then
+    case "$(sed -n 's/^PIXAL3D_LOW_VRAM=//p' "$low_vram_env" | tail -1)" in
+      0|false|off|no|FALSE|OFF|NO) low_vram="無効" ;;
+    esac
+  fi
+  if ss -ltn 2>/dev/null | grep -q ':7861 '; then
+    echo "動作中（http://<server-ip>:7861）。低 VRAM モード: $low_vram"
+    echo "この間 Qwen と Hunyuan3D は使えない（VRAM と RAM を占有する）"
+  else
+    echo "停止中（入口ページ http://<server-ip>:8080 から起動する）。低 VRAM モード: $low_vram"
+  fi
+}
+
 show_webui() {
   section "ブラウザから使うもの"
   local webui_port="8080"
@@ -159,7 +180,7 @@ show_webui() {
 
 show_all() {
   echo "Qwen の状態  $(date '+%Y-%m-%d %H:%M:%S')  $(hostname)"
-  show_gpu; show_ollama; show_bridge; show_worker; show_hunyuan3d; show_webui
+  show_gpu; show_ollama; show_bridge; show_worker; show_hunyuan3d; show_pixal3d; show_webui
 }
 
 if [ "$watch_sec" -gt 0 ]; then

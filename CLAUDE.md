@@ -11,6 +11,7 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 | `tools/local-ai-bridge/` | OpenCode 経由でローカル Qwen へ実装を委譲する連携層。スキル `/qwen` `/qwen-read` の実体も（README.ja.md） |
 | `tools/status/` | いま Qwen が何を処理しているかを見る（サーバー用 sh と、他の PC 用 sh / ps1） |
 | `tools/hunyuan3d/` | 正面・背面・左・右の 4 枚の画像から 3D メッシュを作る Hunyuan3D-2mv（ポート 7860） |
+| `tools/pixal3d/` | 同じく複数画像から 3D メッシュを作る Pixal3D（TencentARC、ポート 7861）。Hunyuan3D とは排他 |
 | `tools/portal/` | ポート 8080 のサービス入口ページ。Open WebUI / Hunyuan3D / ComfyUI を選ぶ |
 
 新しく作るリポジトリ・試験データは必ずこの中（例 `tools/*/fixtures/`）に置く。`~/Proj` 直下には作らない。
@@ -31,6 +32,12 @@ tools/hunyuan3d/.venv/bin/python -m pytest tools/hunyuan3d/tests/test_units.py -
 tools/hunyuan3d/run-hunyuan3d doctor
 # 実機試験（GPU と重みを実際に使う。数分かかる。先に systemctl --user stop hunyuan3d）
 tools/hunyuan3d/.venv/bin/python tools/hunyuan3d/tests/test_generate_real.py
+
+# pixal3d は uv 管理の Python 3.10 と CUDA 12.6 を使う（Hunyuan3D の 3.11 / CUDA 13.2 とは別系統）。
+#   tools/pixal3d/setup-server.sh
+# 試験は torch を import しないので uv の一時環境で走る。
+uvx --with pytest pytest tools/pixal3d/tests/test_units.py -q
+tools/pixal3d/run-pixal3d doctor
 
 # portal は依存ゼロ。venv を作らない。試験だけ uv の一時環境で走らせる。
 uvx --with pytest pytest tools/portal/tests/test_units.py -q
