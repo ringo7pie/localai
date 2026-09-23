@@ -118,19 +118,25 @@ fi
 
 # 上流への当て物。固定コミットに対して当てるので、順番も結果も決まる。
 # 既に当たっていれば触らない（--reverse --check が通る＝適用済み）。
+# 当て物は「固定コミットまで戻してから番号順に当て直す」。1 枚ずつ apply --reverse --check で
+# 「既に当たっているか」を見る方式は使えない。後の当て物が前の当て物の文脈行に重なると、
+# 前の当て物が前向きにも後ろ向きにも当たらなくなり、再実行が失敗するため（0003 と 0004 で実際に起きた）。
+# 戻してから当て直せば、何度実行しても結果が同じになる。
 PATCH_DIR="$TOOL_DIR/patches"
-if [ -d "$PATCH_DIR" ]; then
+if [ -d "$PATCH_DIR" ] && [ -n "$(ls -A "$PATCH_DIR"/*.patch 2>/dev/null)" ]; then
+  # 当て物に取り込んでいない手作業の変更があれば、戻す前に知らせる（消えてしまうため）。
+  if ! git -C "$VENDOR_DIR" diff --quiet; then
+    echo "上流に変更があります。固定コミットへ戻してから当て物を当て直します:"
+    git -C "$VENDOR_DIR" diff --stat | sed 's/^/  /'
+  fi
+  git -C "$VENDOR_DIR" checkout -- .
   for patch_file in "$PATCH_DIR"/*.patch
   do
-    [ -e "$patch_file" ] || continue
     patch_name="$(basename -- "$patch_file")"
-    if git -C "$VENDOR_DIR" apply --reverse --check "$patch_file" >/dev/null 2>&1; then
-      echo "パッチ $patch_name: 既に当たっています"
-    elif git -C "$VENDOR_DIR" apply --check "$patch_file" >/dev/null 2>&1; then
-      git -C "$VENDOR_DIR" apply "$patch_file"
+    if git -C "$VENDOR_DIR" apply "$patch_file"; then
       echo "パッチ $patch_name: 当てました"
     else
-      echo "パッチ $patch_name を当てられません。上流の内容を確認してください。" >&2
+      echo "パッチ $patch_name を当てられません。上流の内容と当て物の順序を確認してください。" >&2
       exit 1
     fi
   done

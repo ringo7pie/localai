@@ -51,6 +51,11 @@ A30 の VRAM は 24576 MiB しかなく、Hunyuan3D と Qwen は**生成中は�
   上流は `gr.Tabs(selected='tab_img_prompt')` と `gr.Tabs(selected='tab_img_gallery')` を固定で指定しているが、
   MV モードではその 2 つが `visible=False` になるため、非表示のタブが選択されたままになり中身が描画されない。
   `MultiView Prompt` タブに `id='tab_mv_prompt'` を付け、選択先を MV モードで切り替える
+- `0003-help-tooltips-and-glossary.patch` — 画面の説明表示（下記）を注入する
+- `0004-show-failing-parameters.patch` — 生成・書き出しが失敗したときに、どのパラメータが疑わしいか
+  を表示する（下記「生成に失敗したときの読み方」）
+- `0005-save-load-presets.patch` — 画面の設定（パラメータ）に名前を付けて保存し、あとから読み込む
+  （下記「設定の保存・読み込み」）
 
 ## 導入
 
@@ -134,8 +139,11 @@ systemctl --user stop hunyuan3d
 
 ### RAM の安全弁（MemoryMax）
 
-`systemd/hunyuan3d.service.example` と実機のユニットに `MemoryHigh=20G` / `MemoryMax=22G` を
-入れてある。RAM 31GiB のうち約 9GiB をデスクトップと入口ページに残す意図。**超えたときに
+`systemd/hunyuan3d.service.example` と実機のユニットに `MemoryHigh=44G` / `MemoryMax=48G` を
+入れてある（2026-09-24 に RAM が 62.5 GiB になったのに合わせて 20G/22G から引き上げた）。
+デスクトップと入口ページ、および Qwen が GPU から溢れる分に約 14 GiB を残す意図。
+**運用中の値は入口ページ（`tools/portal`）の「メモリ上限」欄から変えられる。** そこで変えた値は
+`systemctl set-property` の drop-in に入り、このユニットファイルの値より優先される。**超えたときに
 起きるのは Hunyuan3D サービスだけが OOM kill されることで、デスクトップやほかのサービスを
 巻き込まない**（ユニット単位のメモリ上限なので、cgroup の外は影響を受けない）。
 
@@ -150,6 +158,77 @@ systemctl --user stop hunyuan3d
 `run-hunyuan3d serve --no-texture` で形状生成のみに切り替える（`--disable_tex` を渡し、
 `--texgen_model_path` を渡さない）。ネイティブ拡張（`custom_rasterizer` / `differentiable_renderer`）は
 テクスチャ生成にのみ使うので、形状生成だけなら未ビルドでも動く。
+
+## 画面の説明表示
+
+`patches/0003-help-tooltips-and-glossary.patch` が、上流の `gradio_app.py` の並び・動作・英語ラベルは
+変えずに、次の 2 つを後付けで注入する。
+
+- **マウスオーバー**: すべての入力・ボタン・スライダー・チェックボックス・ラジオ・ドロップダウン・
+  画像枠・タブ・ダウンロードボタンに、日本語の詳細説明を `title` 属性として付ける。Gradio が後から
+  描画・再描画するため `MutationObserver` で付け直す。
+- **専門用語のクリック**: 画面下部に「専門用語の説明」という用語ボタンの行を足し、クリックすると
+  `<dialog>` で見出しと本文を表示する（閉じるボタン・Esc・背景クリックで閉じる）。
+
+説明文と用語集のデータは `hy3d/help_texts.py`（torch も gradio も import しない純粋なデータ）に
+持ち、`gradio_app.py` からは `gr.Blocks(head=...)` 経由で JSON として画面へ埋め込む。外部 CDN は
+使わない。データの追加・訂正は `hy3d/help_texts.py` の `TOOLTIPS` / `GLOSSARY` を編集し、
+`tests/test_units.py` の `test_all_widget_labels_have_tooltips` で説明の付け忘れを検出する。
+
+## 生成に失敗したときの読み方
+
+`patches/0004-show-failing-parameters.patch` が、`Gen Shape` / `Gen Textured Shape` / `Transform`
+（書き出し）のいずれかが失敗したとき、`stats`（Mesh Statistic タブ）ではなく **Generated Mesh /
+Exporting Mesh タブの出力欄**に、どのパラメータが疑わしいかを表示する。`gr.Error` の短い赤帯は
+使わない（長い説明が読みにくいため）。判定は `hy3d/errors.py`（torch も gradio も import しない）が行う。
+
+- 例外の文面から `cuda_oom`（CUDA out of memory）/ `host_oom`（システムメモリ不足）/ `unknown`
+  （どちらとも判定できない）に分類する。`unknown` のときはパラメータのせいにせず、元の例外をそのまま見せる。
+- `cuda_oom` の疑わしい順（実測。2026-09-22 の計測に基づく）:
+  1. **テクスチャ生成そのもの** — `Gen Textured Shape` を使っていた場合。実測で形状のみ 21.7 秒・
+     待機時 VRAM 5,365 MiB に対し、テクスチャ込みは 136.2 秒・生成ピーク VRAM 11,487 MiB。
+     `Gen Shape`（形状のみ）に切り替えるとピークが大きく下がる。
+  2. **Octree Resolution** — 上げるほど VRAM と時間が増える。既定の 256 より大きければ 256 へ。
+  3. **Number of Chunks** — 大きいほど一度に処理する量が増えて VRAM を使う（実測。上げるのではなく
+     下げる。8000 → 4000）。
+  4. **Inference Steps** — VRAM への効きは小さいが、下げれば時間が減り再試行しやすい。
+  - あわせて「Qwen（Ollama）が VRAM に載っていないか」「入口ページで Pixal3D が動いていないか
+    （Hunyuan3D と Pixal3D は排他）」も案内する（Qwen は当て物 0001 で生成の直前に自動で降ろす）。
+- `host_oom` の疑わしい順: ① Target Face Number（書き出し時の面数） ② Octree Resolution
+  ③ テクスチャ生成の有無。入口ページでこのサービスの `MemoryHigh` / `MemoryMax`
+  （既定 44G/48G、`systemd/hunyuan3d.service.example` 参照）を上げる手も案内する。
+- 表示には、その生成で使った設定一覧（あとから何の値で失敗したか分かるように）と、元の例外の全文を
+  `<details>` で折りたたんで含める。例外の文字列は `html.escape` している。
+
+## 設定の保存・読み込み
+
+`patches/0005-save-load-presets.patch` が、画面の左列（Advanced Options / Export タブの下）に
+**「設定の保存・読み込み」**という `gr.Accordion`（既定は閉じる）を足す。上流の既存の並び・動作・
+英語ラベルは変えず、後付けで足すだけ。
+
+- 保存対象は 11 項目: Inference Steps・Guidance Scale・Seed・Randomize seed・Octree Resolution・
+  Remove Background・Number of Chunks・File Type・Simplify Mesh・Include Texture・
+  Target Face Number
+- **保存**: 「設定名」に入力した名前で、そのときの 11 項目の値を JSON として
+  `tools/hunyuan3d/presets/<設定名>.json` に書く（同名があれば上書き）
+- **保存済みの設定**（`gr.Dropdown`）: 保存済みの名前の一覧。保存・削除のたびに選択肢を更新する
+- **読み込み**: ドロップダウンで選んだ設定を 11 項目すべてに反映する。保存後に項目が増減していても、
+  無いキーは無視し、足りないキーは既定値のまま埋める。型・範囲が外れた値（例:
+  `octree_resolution=9999`）は既定値に戻し、戻した項目名を結果表示に出す
+- **削除**: ドロップダウンで選んだ設定ファイルを削除する（元に戻せない）
+- 失敗（設定名が不正・ファイルが無い・JSON が壊れている等）は `gr.Error` ではなく結果表示の
+  `gr.Markdown` に理由を出す（当て物 0004 と同じ方針）。例外は握りつぶさず
+  `traceback.print_exc()` も出す
+- ロジックは `hy3d/presets.py`（torch も gradio も import しない）が持つ。
+  設定名に使えない文字は `/ \ : * ? " < > |` の 9 つと制御文字だけで、それ以外（全角の括弧や
+  かぎ括弧、全角空白など）は自由に使える。「高精細（試し）」のような自然な日本語の名前を
+  そのまま付けられるようにするため、許可制ではなく禁止制にしてある。禁止する文字は
+  Windows / SMB がファイル名に使えないものに合わせた（この `presets/` は git で追跡し、
+  リモートが CIFS マウント（`/mnt/nas`）にあるため、Windows で無効な名前だと push で困る）。
+  あわせて、64 文字以内、`..` と先頭の `.`、末尾の半角空白と `.` も弾く。
+- 保存先は `tools/hunyuan3d/presets/<名前>.json`。**`.gitignore` には入れていないので git で
+  追跡される**（重みや出力と違って小さく、あなたが作る資産なので、消えては困る・他の PC へ
+  持って行きたいため）
 
 ## 試験
 

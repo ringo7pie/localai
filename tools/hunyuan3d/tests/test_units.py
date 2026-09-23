@@ -7,14 +7,21 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from hy3d import config  # noqa: E402
+from hy3d import errors  # noqa: E402
+from hy3d import help_texts  # noqa: E402
 from hy3d import ollama  # noqa: E402
+from hy3d import presets  # noqa: E402
 from hy3d.cli import (  # noqa: E402
     build_allow_patterns,
     build_gradio_command,
@@ -278,3 +285,445 @@ def test_classify_vram_status() -> None:
     assert ok is False
     assert "free-vram" in detail
     assert classify_vram_status(None, 1024, service_active=False)[0] is False
+
+
+# ---------------------------------------------------------------- help_texts / 画面の説明表示
+
+
+def _gradio_app_source() -> str:
+    path = config.VENDOR_DIR / "gradio_app.py"
+    return path.read_text(encoding="utf-8")
+
+
+def _widget_labels(source: str) -> list[str]:
+    """gradio_app.py の label='...' とボタンの value='...' を抜き出す（重複は除く）。"""
+
+    labels = re.findall(r"label=(['\"])(.*?)\1", source)
+    button_values = re.findall(r"gr\.Button\(\s*value=(['\"])(.*?)\1", source)
+    seen: dict[str, None] = {}
+    for _, text in labels + button_values:
+        seen.setdefault(text, None)
+    return list(seen.keys())
+
+
+def test_all_widget_labels_have_tooltips() -> None:
+    """画面のすべての入力・ボタン・スライダーに説明の付け忘れが無いこと。"""
+
+    source = _gradio_app_source()
+    labels = _widget_labels(source)
+    assert labels, "gradio_app.py からラベルが 1 件も抽出できていない（正規表現を見直す）"
+    assert help_texts.missing_tooltips(labels) == []
+
+
+def _render_glossary_html() -> str:
+    """gradio_app.py 中の _localai_build_glossary_html だけを取り出して実行する。
+
+    torch を import する残りのコードは実行しない（この試験は GPU もネットワークも使わない）。
+    """
+
+    source = _gradio_app_source()
+    match = re.search(
+        r"(def _localai_build_glossary_html.*?)\n\ndef get_example_img_list",
+        source,
+        re.S,
+    )
+    assert match, "_localai_build_glossary_html が見つからない"
+    namespace: dict[str, object] = {"_localai_help_texts": help_texts, "html": __import__("html")}
+    exec(match.group(1), namespace)  # noqa: S102 - 自前のソースを試験のためだけに実行する
+    return namespace["_localai_build_glossary_html"]()
+
+
+def test_glossary_terms_used_in_ui_are_all_defined() -> None:
+    """画面の用語ボタン（data-term）はすべて GLOSSARY にあること。"""
+
+    rendered = _render_glossary_html()
+    terms_in_ui = re.findall(r'data-term="([^"]+)"', rendered)
+    assert terms_in_ui, "gradio_app.py に data-term を持つ用語ボタンが見つからない"
+    for term in terms_in_ui:
+        # html.escape で埋め込まれるため、比較のため元に戻す。
+        unescaped = (
+            term.replace("&quot;", '"')
+            .replace("&#x27;", "'")
+            .replace("&gt;", ">")
+            .replace("&lt;", "<")
+            .replace("&amp;", "&")
+        )
+        assert unescaped in help_texts.GLOSSARY
+
+
+def test_tooltips_and_glossary_are_not_empty() -> None:
+    assert len(help_texts.TOOLTIPS) > 0
+    assert len(help_texts.GLOSSARY) > 0
+    for label, body in help_texts.TOOLTIPS.items():
+        assert isinstance(label, str) and label
+        assert isinstance(body, str) and len(body) > 0
+    for term, entry in help_texts.GLOSSARY.items():
+        assert isinstance(term, str) and term
+        assert entry.get("title")
+        assert entry.get("body")
+
+
+def test_glossary_json_and_tooltips_json_round_trip() -> None:
+    parsed_glossary = json.loads(help_texts.glossary_json())
+    assert parsed_glossary == help_texts.GLOSSARY
+
+    parsed_tooltips = json.loads(help_texts.tooltips_json())
+    assert parsed_tooltips == help_texts.TOOLTIPS
+
+
+def test_missing_tooltips_detects_gaps() -> None:
+    assert help_texts.missing_tooltips(["未定義のラベル"]) == ["未定義のラベル"]
+    assert help_texts.missing_tooltips(list(help_texts.TOOLTIPS.keys())) == []
+
+
+# ---------------------------------------------------------------- hy3d.errors（失敗の診断）
+
+
+def test_classify_failure_detects_cuda_oom() -> None:
+    text = (
+        "RuntimeError: CUDA out of memory. Tried to allocate 2.00 GiB "
+        "(GPU 0; 23.69 GiB total capacity)"
+    )
+    assert errors.classify_failure(text) == "cuda_oom"
+    assert errors.classify_failure("torch.OutOfMemoryError: ...") == "cuda_oom"
+    assert errors.classify_failure("CUDA error: out of memory") == "cuda_oom"
+
+
+def test_classify_failure_detects_host_oom() -> None:
+    assert errors.classify_failure("MemoryError") == "host_oom"
+    assert errors.classify_failure("OSError: [Errno 12] Cannot allocate memory") == "host_oom"
+    assert (
+        errors.classify_failure("RuntimeError: DefaultCPUAllocator: not enough memory: you tried to allocate")
+        == "host_oom"
+    )
+    assert errors.classify_failure("std::bad_alloc") == "host_oom"
+
+
+def test_classify_failure_unknown_when_no_marker_matches() -> None:
+    assert errors.classify_failure("ValueError: invalid literal for int() with base 10") == "unknown"
+
+
+def test_diagnose_cuda_oom_textured_leads_with_texture_generation() -> None:
+    settings = {
+        "Octree Resolution": 384,
+        "Number of Chunks": 8000,
+        "Inference Steps": 30,
+    }
+    diagnosis = errors.diagnose("cuda_oom", settings, textured=True)
+    assert diagnosis["suspects"], "suspects が空になっている"
+    assert "Textured" in diagnosis["suspects"][0]["label"] or "テクスチャ" in diagnosis["suspects"][0]["label"]
+
+
+def test_diagnose_cuda_oom_shape_only_leads_with_octree_resolution() -> None:
+    settings = {
+        "Octree Resolution": 384,
+        "Number of Chunks": 8000,
+        "Inference Steps": 30,
+    }
+    diagnosis = errors.diagnose("cuda_oom", settings, textured=False)
+    assert diagnosis["suspects"], "suspects が空になっている"
+    assert "Octree Resolution" in diagnosis["suspects"][0]["label"]
+
+
+def test_diagnose_cuda_oom_num_chunks_suggests_lowering_not_raising() -> None:
+    """実測: Number of Chunks は大きいほど VRAM を使う。上げる提案は誤り。"""
+
+    settings = {"Number of Chunks": 8000}
+    diagnosis = errors.diagnose("cuda_oom", settings, textured=False)
+    chunk_suspects = [s for s in diagnosis["suspects"] if "Number of Chunks" in s["label"]]
+    assert len(chunk_suspects) == 1
+    suspect = chunk_suspects[0]
+    assert suspect["current"] == 8000
+    assert suspect["suggested"] < suspect["current"], "Number of Chunks を上げる提案になっている"
+
+
+def test_diagnose_cuda_oom_all_minimal_has_no_suspects_but_notes_guidance() -> None:
+    settings = {
+        "Octree Resolution": 256,
+        "Number of Chunks": 4000,
+        "Inference Steps": 10,
+    }
+    diagnosis = errors.diagnose("cuda_oom", settings, textured=False)
+    assert diagnosis["suspects"] == []
+    assert diagnosis["note"], "全部最小のときに案内が無い"
+
+
+def test_diagnose_host_oom_all_minimal_has_no_suspects_but_notes_guidance() -> None:
+    settings = {
+        "Target Face Number": 10000,
+        "Octree Resolution": 256,
+    }
+    diagnosis = errors.diagnose("host_oom", settings, textured=False)
+    assert diagnosis["suspects"] == []
+    assert diagnosis["note"], "全部最小のときに案内が無い"
+
+
+def test_diagnose_unknown_has_no_suspects_and_does_not_blame_settings() -> None:
+    diagnosis = errors.diagnose("unknown", {"Octree Resolution": 512, "Number of Chunks": 200000}, textured=True)
+    assert diagnosis["suspects"] == []
+    blamed_terms = ("Octree Resolution", "Number of Chunks", "Inference Steps", "Target Face Number")
+    for term in blamed_terms:
+        assert term not in diagnosis["headline"]
+        assert term not in diagnosis["note"]
+
+
+def test_format_failure_markdown_includes_label_current_suggested_and_original_exception() -> None:
+    settings = {"Octree Resolution": 384, "Number of Chunks": 8000}
+    diagnosis = errors.diagnose("cuda_oom", settings, textured=False)
+    error_text = "Traceback (most recent call last):\nRuntimeError: CUDA out of memory. Tried to allocate 512.00 MiB"
+    markdown = errors.format_failure_markdown(diagnosis, settings, error_text)
+
+    assert "Octree Resolution" in markdown
+    assert "384" in markdown
+    assert "256" in markdown
+    assert "CUDA out of memory" in markdown
+    assert "Tried to allocate 512.00 MiB" in markdown
+
+
+# ---------------------------------------------------------------- gradio_app.py が失敗を診断すること
+
+
+def _slice_between(source: str, start_marker: str, end_marker: str) -> str:
+    start = source.index(start_marker)
+    end = source.index(end_marker, start)
+    return source[start:end]
+
+
+def test_generation_entry_points_diagnose_failures_on_exception() -> None:
+    source = _gradio_app_source()
+
+    generation_all_src = _slice_between(source, "def generation_all(", "def shape_generation(")
+    shape_generation_src = _slice_between(source, "def shape_generation(", "def build_app():")
+    on_export_click_src = _slice_between(source, "def on_export_click(", "confirm_export.click(")
+
+    for name, snippet in (
+        ("generation_all", generation_all_src),
+        ("shape_generation", shape_generation_src),
+        ("on_export_click", on_export_click_src),
+    ):
+        assert "try:" in snippet, f"{name} に try が無い"
+        assert "except" in snippet, f"{name} に except が無い"
+        assert (
+            "_localai_errors" in snippet
+            or "errors.diagnose" in snippet
+            or "_localai_build_error_html" in snippet
+        ), f"{name} が hy3d.errors による診断を呼んでいない"
+
+    assert "html.escape" in source, "gradio_app.py に html.escape の使用が見つからない"
+
+
+# ---------------------------------------------------------------- hy3d.presets（設定の保存・読み込み）
+
+
+@pytest.fixture()
+def _isolated_presets_dir(monkeypatch):
+    """presets.PRESETS_DIR を一時ディレクトリへ差し替え、本物の presets/ を汚さない。
+
+    pytest 標準の tmp_path ではなく tempfile を直接使う（このサンドボックスでは
+    USER=mt / 実プロセス uid=root がずれており、tmp_path 内部の所有者チェックが
+    誤検知で失敗するため）。
+    """
+
+    with tempfile.TemporaryDirectory() as raw_dir:
+        tmp_dir = Path(raw_dir)
+        monkeypatch.setattr(presets, "PRESETS_DIR", tmp_dir)
+        yield tmp_dir
+
+
+def test_validate_preset_name_accepts_japanese_and_alnum_names() -> None:
+    assert presets.validate_preset_name("標準設定") is None
+    assert presets.validate_preset_name("preset_01 (v2)") is None
+    assert presets.validate_preset_name("a" * 64) is None
+
+
+def test_validate_preset_name_rejects_empty_or_whitespace_only() -> None:
+    assert presets.validate_preset_name("") is not None
+    assert presets.validate_preset_name("   ") is not None
+
+
+def test_validate_preset_name_rejects_too_long() -> None:
+    reason = presets.validate_preset_name("a" * 65)
+    assert reason is not None
+    assert "64" in reason
+
+
+def test_validate_preset_name_rejects_path_escape_attempts() -> None:
+    for bad_name in ("a/b", "..", ".hidden", "a\\b"):
+        reason = presets.validate_preset_name(bad_name)
+        assert reason is not None, f"{bad_name!r} が弾かれていない"
+
+
+def test_preset_path_stays_inside_presets_dir(_isolated_presets_dir) -> None:
+    path = presets.preset_path("テスト設定")
+    assert path.parent == _isolated_presets_dir.resolve()
+    assert path.name == "テスト設定.json"
+
+
+def test_save_and_load_preset_round_trip(_isolated_presets_dir) -> None:
+    path = presets.save_preset("マイ設定", presets.DEFAULT_SETTINGS)
+    assert path.exists()
+
+    result = presets.load_preset("マイ設定")
+    assert result["settings"] == presets.DEFAULT_SETTINGS
+    assert result["ignored"] == []
+
+
+def test_load_preset_ignores_unknown_keys_and_fills_missing_with_defaults(_isolated_presets_dir) -> None:
+    path = presets.preset_path("部分設定")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "format": 1,
+        "tool": "hunyuan3d",
+        "saved_at": "2026-01-01T00:00:00+00:00",
+        "settings": {"num_steps": 12, "not_a_real_key": "x"},
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    result = presets.load_preset("部分設定")
+    assert "not_a_real_key" not in result["settings"]
+    assert result["settings"]["num_steps"] == 12
+    assert result["settings"]["seed"] == presets.DEFAULT_SETTINGS["seed"]
+    assert result["ignored"] == []
+
+
+def test_load_preset_falls_back_to_default_for_out_of_range_values(_isolated_presets_dir) -> None:
+    path = presets.preset_path("範囲外設定")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "format": 1,
+        "tool": "hunyuan3d",
+        "saved_at": "2026-01-01T00:00:00+00:00",
+        "settings": {
+            "octree_resolution": 9999,
+            "num_steps": -1,
+            "file_type": "exe",
+        },
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    result = presets.load_preset("範囲外設定")
+    assert result["settings"]["octree_resolution"] == presets.DEFAULT_SETTINGS["octree_resolution"]
+    assert result["settings"]["num_steps"] == presets.DEFAULT_SETTINGS["num_steps"]
+    assert result["settings"]["file_type"] == presets.DEFAULT_SETTINGS["file_type"]
+    assert set(result["ignored"]) == {"octree_resolution", "num_steps", "file_type"}
+
+
+def test_list_presets_returns_sorted_names(_isolated_presets_dir) -> None:
+    presets.save_preset("banana", presets.DEFAULT_SETTINGS)
+    presets.save_preset("apple", presets.DEFAULT_SETTINGS)
+    assert presets.list_presets() == ["apple", "banana"]
+
+
+def test_list_presets_empty_when_dir_absent(_isolated_presets_dir) -> None:
+    assert presets.list_presets() == []
+
+
+def test_delete_preset_returns_true_then_false(_isolated_presets_dir) -> None:
+    presets.save_preset("消す設定", presets.DEFAULT_SETTINGS)
+    assert presets.delete_preset("消す設定") is True
+    assert presets.delete_preset("消す設定") is False
+
+
+def test_load_preset_raises_value_error_on_broken_json(_isolated_presets_dir) -> None:
+    path = presets.preset_path("壊れた設定")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{not valid json", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        presets.load_preset("壊れた設定")
+
+
+def test_load_preset_raises_file_not_found_when_missing(_isolated_presets_dir) -> None:
+    with pytest.raises(FileNotFoundError):
+        presets.load_preset("存在しない設定")
+
+
+def test_default_settings_match_gradio_app_source() -> None:
+    """DEFAULT_SETTINGS が gradio_app.py の実際の既定値からズレていないこと。"""
+
+    source = _gradio_app_source()
+
+    # num_steps: 'turbo' in args.subfolder で 5/30 に分岐するが、このサーバーの
+    # config.SHAPE_SUBFOLDER は 'turbo' を含まないため実際の既定値は 30。
+    assert "value=5 if 'turbo' in args.subfolder else 30" in source
+    assert "turbo" not in config.SHAPE_SUBFOLDER
+    assert presets.DEFAULT_SETTINGS["num_steps"] == 30
+
+    assert "cfg_scale = gr.Number(value=5.0, label='Guidance Scale', min_width=100)" in source
+    assert presets.DEFAULT_SETTINGS["cfg_scale"] == 5.0
+
+    assert "value=1234," in source
+    assert presets.DEFAULT_SETTINGS["seed"] == 1234
+
+    assert 'randomize_seed = gr.Checkbox(label="Randomize seed", value=True, min_width=100)' in source
+    assert presets.DEFAULT_SETTINGS["randomize_seed"] is True
+
+    assert "octree_resolution = gr.Slider(maximum=512, minimum=16, value=256, label='Octree Resolution')" in source
+    assert presets.DEFAULT_SETTINGS["octree_resolution"] == 256
+
+    assert "check_box_rembg = gr.Checkbox(value=True, label='Remove Background', min_width=100)" in source
+    assert presets.DEFAULT_SETTINGS["check_box_rembg"] is True
+
+    assert "num_chunks = gr.Slider(maximum=5000000, minimum=1000, value=8000," in source
+    assert presets.DEFAULT_SETTINGS["num_chunks"] == 8000
+
+    assert "file_type = gr.Dropdown(label='File Type', choices=SUPPORTED_FORMATS," in source
+    assert "SUPPORTED_FORMATS = ['glb', 'obj', 'ply', 'stl']" in source
+    assert presets.DEFAULT_SETTINGS["file_type"] == "glb"
+    assert set(presets.SETTING_RANGES["file_type"]["choices"]) == {"glb", "obj", "ply", "stl"}
+
+    assert "reduce_face = gr.Checkbox(label='Simplify Mesh', value=False, min_width=100)" in source
+    assert presets.DEFAULT_SETTINGS["reduce_face"] is False
+
+    assert "export_texture = gr.Checkbox(label='Include Texture', value=False," in source
+    assert presets.DEFAULT_SETTINGS["export_texture"] is False
+
+    assert "target_face_num = gr.Slider(maximum=1000000, minimum=100, value=10000," in source
+    assert presets.DEFAULT_SETTINGS["target_face_num"] == 10000
+
+    assert "MAX_SEED = int(1e7)" in source
+    assert presets.SETTING_RANGES["seed"]["max"] == int(1e7)
+
+
+def test_gradio_app_calls_hy3d_presets_for_save_load_delete() -> None:
+    """gradio_app.py が hy3d.presets の保存・読み込み・削除を実際に呼んでいること。"""
+
+    source = _gradio_app_source()
+    assert "from hy3d import presets as _localai_presets" in source
+    assert "_localai_presets.save_preset(" in source
+    assert "_localai_presets.load_preset(" in source
+    assert "_localai_presets.delete_preset(" in source
+    assert "_localai_presets.list_presets(" in source
+
+
+def test_preset_ui_widgets_have_tooltips() -> None:
+    """新しく足した「設定の保存・読み込み」欄の部品にも説明の付け忘れが無いこと。"""
+
+    source = _gradio_app_source()
+    labels = _widget_labels(source)
+    for label in ("設定の保存・読み込み", "設定名", "保存済みの設定", "保存", "読み込み", "削除"):
+        assert label in labels, f"{label} が gradio_app.py から抽出できていない"
+    assert help_texts.missing_tooltips(labels) == []
+
+
+def test_validate_preset_name_allows_natural_japanese_names() -> None:
+    """日本語で自然に打つ名前が通ること。
+
+    許可文字を絞り込む方式にすると「高精細（試し）」のような全角括弧・全角空白・かぎ括弧が
+    弾かれて使いものにならない。危ない文字だけを弾く方式にしてある。
+    """
+    for name in ("高精細（試し）", "ドレス用　高品質", "夜間バッチ「標準」", "fast-draft", "試作 v2"):
+        assert presets.validate_preset_name(name) is None, name
+
+
+def test_validate_preset_name_rejects_windows_invalid_characters() -> None:
+    """Windows / SMB で使えない文字を弾くこと。
+
+    presets/ は git で追跡し、リモートは CIFS マウント（/mnt/nas）にある。Windows で無効な
+    ファイル名だと push できなくなるため、この場で弾く。
+    """
+    for name in ("a/b", "a\\b", "a:b", "a*b", "a?b", 'a"b', "a<b", "a>b", "a|b"):
+        reason = presets.validate_preset_name(name)
+        assert reason is not None, name
+    assert presets.validate_preset_name("末尾に空白 ") is not None
+    assert presets.validate_preset_name("末尾にドット.") is not None
