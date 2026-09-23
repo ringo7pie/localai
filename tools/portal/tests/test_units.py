@@ -8,6 +8,7 @@ from __future__ import annotations
 import http.client
 import importlib.util
 import json
+import re
 import socket
 import sys
 import threading
@@ -232,6 +233,7 @@ def test_build_service_status_includes_state_and_controllable():
         "state": "starting",
         "controllable": True,
         "options": {},
+        "memory": None,
     }
 
 
@@ -261,6 +263,15 @@ def test_build_status_shape_all_available():
         "gpu": {"used_mib": 4, "total_mib": 24576, "available": True},
         "ollama": {"reachable": True, "models": [{"name": "qwen3.8:27b", "size_vram_mib": 22201}]},
         "services": services,
+        "ram": {
+            "total_gib": None,
+            "allowed_max_gib": None,
+            "recommended_max_gib": None,
+            "min_gib": portal.MEMORY_MIN_GIB,
+            "default_high_gib": portal.MEMORY_DEFAULT_HIGH_GIB,
+            "default_max_gib": portal.MEMORY_DEFAULT_MAX_GIB,
+            "available": False,
+        },
     }
 
 
@@ -455,6 +466,93 @@ def test_index_html_has_no_hardcoded_server_ip():
 def test_index_html_references_service_action_endpoint():
     html_text = INDEX_HTML.read_text(encoding="utf-8")
     assert "/api/service/" in html_text
+
+
+# ---------------------------------------------------------------------------
+# マウスオーバー説明（TOOLTIPS）・専門用語ダイアログ（GLOSSARY）
+# ---------------------------------------------------------------------------
+
+def _extract_js_object_block(html_text: str, const_name: str) -> str:
+    """`const <const_name> = { ... };` の中身（波括弧の対応を数えて）を切り出す。"""
+    marker = f"const {const_name} = {{"
+    start = html_text.index(marker)
+    brace_start = html_text.index("{", start)
+    depth = 0
+    for index in range(brace_start, len(html_text)):
+        character = html_text[index]
+        if character == "{":
+            depth += 1
+        elif character == "}":
+            depth -= 1
+            if depth == 0:
+                return html_text[brace_start:index + 1]
+    raise AssertionError(f"{const_name} の閉じ括弧が見つかりません")
+
+
+def _html_text() -> str:
+    return INDEX_HTML.read_text(encoding="utf-8")
+
+
+def test_index_html_defines_tooltips_and_glossary():
+    html_text = _html_text()
+    assert "const TOOLTIPS = {" in html_text
+    assert "const GLOSSARY = {" in html_text
+
+
+def test_all_data_term_attributes_exist_in_glossary():
+    html_text = _html_text()
+    glossary_block = _extract_js_object_block(html_text, "GLOSSARY")
+    glossary_keys = set(re.findall(r'"([^"]+)":\s*\n?\s*"', glossary_block))
+    assert len(glossary_keys) >= 17, "用語集は依頼の最低限（17 項目程度）を満たすこと"
+
+    data_terms = set(re.findall(r'data-term="([^"]+)"', html_text))
+    # index.html 内のコメント文にある説明用の "..." は実際のキーではないため除く。
+    data_terms.discard("...")
+    assert data_terms, "data-term を使った要素が 1 つも見つからない"
+    missing = data_terms - glossary_keys
+    assert not missing, f"GLOSSARY に無い data-term がある: {missing}"
+
+    # buildTermSpan("...") で動的に付ける data-term も同様にチェックする。
+    build_term_calls = set(re.findall(r'buildTermSpan\("([^"]+)"\)', html_text))
+    missing_dynamic = build_term_calls - glossary_keys
+    assert not missing_dynamic, f"GLOSSARY に無い buildTermSpan の用語がある: {missing_dynamic}"
+
+
+def test_all_tooltips_references_are_defined():
+    html_text = _html_text()
+    tooltips_block = _extract_js_object_block(html_text, "TOOLTIPS")
+    tooltip_keys = set(re.findall(r'(\w+):\s*\n?\s*"', tooltips_block))
+    assert len(tooltip_keys) >= 10, "TOOLTIPS はボタン・入力・スイッチ・バッジ・GPU 帯を広くカバーすること"
+
+    dot_refs = set(re.findall(r'TOOLTIPS\.(\w+)', html_text))
+    bracket_refs = set(re.findall(r'TOOLTIPS\["([^"]+)"\]', html_text))
+    # STATE_BADGE の tooltipKey は文字列で TOOLTIPS[badgeMeta.tooltipKey] のように間接参照されるため、
+    # 定義側の文字列リテラルも対象に含めて確認する。
+    indirect_refs = set(re.findall(r'tooltipKey:\s*"([^"]+)"', html_text))
+
+    used_keys = dot_refs | bracket_refs | indirect_refs
+    assert used_keys, "TOOLTIPS を参照している箇所が見つからない"
+    missing = used_keys - tooltip_keys
+    assert not missing, f"TOOLTIPS に定義が無いキーが参照されている: {missing}"
+
+
+def test_term_dialog_body_uses_textcontent_not_innerhtml():
+    html_text = _html_text()
+    assert "termDialogBody.textContent" in html_text
+    assert "termDialogBody.innerHTML" not in html_text
+
+
+def test_index_html_has_term_dialog_element():
+    html_text = _html_text()
+    assert '<dialog id="term-dialog">' in html_text
+    assert 'id="term-dialog-title"' in html_text
+    assert 'id="term-dialog-body"' in html_text
+
+
+def test_index_html_term_click_uses_event_delegation_on_document():
+    # カードは 5 秒ごとに作り直されるため、個々の要素ではなく document に委譲すること。
+    html_text = _html_text()
+    assert 'document.addEventListener("click"' in html_text
 
 
 if __name__ == "__main__":
@@ -757,6 +855,337 @@ def test_post_pixal3d_start_stops_hunyuan3d_first(running_server, monkeypatch):
     assert stop_call_index < start_call_index
 
 
+# ---------------------------------------------------------------------------
+# parse_meminfo_total_gib
+# ---------------------------------------------------------------------------
+
+def test_parse_meminfo_total_gib_normal_output():
+    text = "MemTotal:       65504276 kB\nMemFree:         1234 kB\n"
+    result = portal.parse_meminfo_total_gib(text)
+    assert result is not None
+    assert abs(result - 62.47) < 0.01
+
+
+def test_parse_meminfo_total_gib_broken_input_returns_none():
+    assert portal.parse_meminfo_total_gib("") is None
+    assert portal.parse_meminfo_total_gib("これは壊れた出力です") is None
+    assert portal.parse_meminfo_total_gib("MemTotal:\n") is None
+    assert portal.parse_meminfo_total_gib("MemTotal: abc kB\n") is None
+
+
+# ---------------------------------------------------------------------------
+# memory_bounds
+# ---------------------------------------------------------------------------
+
+def test_memory_bounds_matches_real_machine():
+    bounds = portal.memory_bounds(62.47)
+    assert bounds["total_gib"] == 62.47
+    assert bounds["allowed_max_gib"] == 58
+    assert bounds["recommended_max_gib"] == 48
+    assert bounds["min_gib"] == portal.MEMORY_MIN_GIB
+
+
+# ---------------------------------------------------------------------------
+# validate_memory_limits
+# ---------------------------------------------------------------------------
+
+def test_validate_memory_limits_ok_for_default_values():
+    bounds = portal.memory_bounds(62.47)
+    assert portal.validate_memory_limits(44, 48, bounds) is None
+
+
+def test_validate_memory_limits_rejects_high_greater_than_max():
+    bounds = portal.memory_bounds(62.47)
+    reason = portal.validate_memory_limits(50, 48, bounds)
+    assert reason is not None
+    assert "MemoryMax" in reason or "MemoryHigh" in reason
+
+
+def test_validate_memory_limits_rejects_below_min():
+    bounds = portal.memory_bounds(62.47)
+    reason = portal.validate_memory_limits(1, 48, bounds)
+    assert reason is not None
+    assert "MemoryHigh" in reason
+
+
+def test_validate_memory_limits_rejects_above_allowed_max():
+    bounds = portal.memory_bounds(62.47)
+    reason = portal.validate_memory_limits(44, 100, bounds)
+    assert reason is not None
+    assert "MemoryMax" in reason
+
+
+def test_validate_memory_limits_rejects_non_integer():
+    bounds = portal.memory_bounds(62.47)
+    reason = portal.validate_memory_limits(44.5, 48, bounds)
+    assert reason is not None
+    assert "整数" in reason
+
+
+# ---------------------------------------------------------------------------
+# memory_warning
+# ---------------------------------------------------------------------------
+
+def test_memory_warning_none_when_within_recommendation():
+    bounds = portal.memory_bounds(62.47)
+    assert portal.memory_warning(48, bounds) is None
+
+
+def test_memory_warning_present_when_above_recommendation():
+    bounds = portal.memory_bounds(62.47)
+    warning = portal.memory_warning(56, bounds)
+    assert warning is not None
+    assert "48" in warning
+
+
+# ---------------------------------------------------------------------------
+# parse_memory_properties
+# ---------------------------------------------------------------------------
+
+def test_parse_memory_properties_parses_byte_counts():
+    stdout = (
+        f"MemoryHigh={44 * portal.GIB_BYTES}\n"
+        f"MemoryMax={48 * portal.GIB_BYTES}\n"
+        f"MemoryCurrent={10 * portal.GIB_BYTES}\n"
+    )
+    result = portal.parse_memory_properties(stdout)
+    assert result["high_gib"] == 44.0
+    assert result["max_gib"] == 48.0
+    assert result["current_gib"] == 10.0
+
+
+def test_parse_memory_properties_treats_infinity_and_not_set_as_none():
+    stdout = "MemoryHigh=infinity\nMemoryMax=infinity\nMemoryCurrent=[not set]\n"
+    result = portal.parse_memory_properties(stdout)
+    assert result == {"high_gib": None, "max_gib": None, "current_gib": None}
+
+
+def test_parse_memory_properties_is_order_independent():
+    stdout = (
+        f"MemoryCurrent={5 * portal.GIB_BYTES}\n"
+        f"MemoryMax={48 * portal.GIB_BYTES}\n"
+        f"MemoryHigh={44 * portal.GIB_BYTES}\n"
+    )
+    result = portal.parse_memory_properties(stdout)
+    assert result["high_gib"] == 44.0
+    assert result["max_gib"] == 48.0
+    assert result["current_gib"] == 5.0
+
+
+# ---------------------------------------------------------------------------
+# build_set_property_commands
+# ---------------------------------------------------------------------------
+
+def test_build_set_property_commands_builds_persistent_and_runtime():
+    commands = portal.build_set_property_commands("pixal3d", 44, 48)
+    assert len(commands) == 2
+    persistent_command, runtime_command = commands
+    assert "--runtime" not in persistent_command
+    assert "--runtime" in runtime_command
+    for command in (persistent_command, runtime_command):
+        assert "MemoryHigh=44G" in command
+        assert "MemoryMax=48G" in command
+        assert "pixal3d" in command
+
+
+# ---------------------------------------------------------------------------
+# parse_memory_path
+# ---------------------------------------------------------------------------
+
+def test_parse_memory_path_valid():
+    assert portal.parse_memory_path("/api/memory/pixal3d/44/48") == ("pixal3d", "44", "48")
+
+
+def test_parse_memory_path_invalid_shapes_return_none():
+    assert portal.parse_memory_path("/api/memory/pixal3d/44") is None
+    assert portal.parse_memory_path("/api/memory/pixal3d/44/48/extra") is None
+    assert portal.parse_memory_path("/api/memory//44/48") is None
+    assert portal.parse_memory_path("/api/status") is None
+
+
+# ---------------------------------------------------------------------------
+# POST /api/memory/<key>/<high>/<max>（systemctl は monkeypatch。実際には呼ばない）
+# ---------------------------------------------------------------------------
+
+def test_post_memory_calls_subprocess_twice_with_expected_args(running_server, monkeypatch):
+    captured_calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        captured_calls.append(list(args))
+        return FakeCompletedProcess()
+
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/memory/pixal3d/44/48")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+
+    set_property_calls = [call for call in captured_calls if "set-property" in call]
+    assert len(set_property_calls) == 2
+    persistent_call, runtime_call = set_property_calls
+    assert "--runtime" not in persistent_call
+    assert "--runtime" in runtime_call
+    for call in (persistent_call, runtime_call):
+        assert "MemoryHigh=44G" in call
+        assert "MemoryMax=48G" in call
+        assert "pixal3d" in call
+
+
+def test_post_memory_without_header_returns_403(running_server, monkeypatch):
+    called = []
+    monkeypatch.setattr(
+        portal, "set_unit_memory_limits", lambda *args, **kwargs: called.append(args) or []
+    )
+    response, body = _request(running_server, "POST", "/api/memory/pixal3d/44/48", headers={})
+    assert response.status == 403
+    payload = json.loads(body)
+    assert payload["ok"] is False
+    assert called == []
+
+
+def test_get_memory_path_returns_405(running_server):
+    response, body = _request(running_server, "GET", "/api/memory/pixal3d/44/48")
+    assert response.status == 405
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_memory_unknown_key_returns_404(running_server):
+    response, body = _request(running_server, "POST", "/api/memory/nosuch/44/48")
+    assert response.status == 404
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_memory_comfyui_returns_404(running_server):
+    # ComfyUI は unit を持たないため対象外。
+    response, body = _request(running_server, "POST", "/api/memory/comfyui/44/48")
+    assert response.status == 404
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_memory_portal_itself_returns_404(running_server):
+    # portal は SERVICES に無いため 404（自分自身のメモリ上限は操作できない）。
+    response, body = _request(running_server, "POST", "/api/memory/portal/44/48")
+    assert response.status == 404
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_memory_non_integer_returns_400(running_server):
+    response, body = _request(running_server, "POST", "/api/memory/pixal3d/abc/48")
+    assert response.status == 400
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_memory_high_greater_than_max_returns_400(running_server, monkeypatch):
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    response, body = _request(running_server, "POST", "/api/memory/pixal3d/50/48")
+    assert response.status == 400
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_memory_above_allowed_max_returns_400(running_server, monkeypatch):
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    response, body = _request(running_server, "POST", "/api/memory/pixal3d/44/100")
+    assert response.status == 400
+    payload = json.loads(body)
+    assert payload["ok"] is False
+
+
+def test_post_memory_success_returns_warning_and_memory(running_server, monkeypatch):
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    monkeypatch.setattr(portal.subprocess, "run", lambda *args, **kwargs: FakeCompletedProcess())
+    monkeypatch.setattr(
+        portal,
+        "read_memory_properties",
+        lambda unit: {"high_gib": 56.0, "max_gib": 56.0, "current_gib": 10.0},
+    )
+
+    response, body = _request(running_server, "POST", "/api/memory/pixal3d/56/56")
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["warning"] is not None
+    assert payload["memory"] == {"high_gib": 56.0, "max_gib": 56.0, "current_gib": 10.0}
+
+
+def test_post_memory_failure_reports_ok_false_not_500(running_server, monkeypatch):
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+
+    class FakeFailedProcess:
+        returncode = 1
+        stdout = ""
+        stderr = "権限がありません"
+
+    monkeypatch.setattr(portal.subprocess, "run", lambda *args, **kwargs: FakeFailedProcess())
+
+    response, body = _request(running_server, "POST", "/api/memory/pixal3d/44/48")
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is False
+    assert "権限がありません" in payload["message"]
+
+
+# ---------------------------------------------------------------------------
+# GET /api/status に ram / memory が入ること
+# ---------------------------------------------------------------------------
+
+def test_get_api_status_includes_ram_and_service_memory(running_server, monkeypatch):
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    monkeypatch.setattr(
+        portal,
+        "read_memory_properties",
+        lambda unit: {"high_gib": 44.0, "max_gib": 48.0, "current_gib": 12.0},
+    )
+
+    host, port = running_server.server_address
+    connection = http.client.HTTPConnection(host, port, timeout=5)
+    try:
+        connection.request("GET", "/api/status")
+        response = connection.getresponse()
+        body = response.read()
+    finally:
+        connection.close()
+
+    payload = json.loads(body)
+    assert payload["ram"]["available"] is True
+    assert payload["ram"]["allowed_max_gib"] == 58
+    assert payload["ram"]["recommended_max_gib"] == 48
+    assert payload["ram"]["default_high_gib"] == portal.MEMORY_DEFAULT_HIGH_GIB
+    assert payload["ram"]["default_max_gib"] == portal.MEMORY_DEFAULT_MAX_GIB
+
+    service_by_key = {service["key"]: service for service in payload["services"]}
+    assert service_by_key["hunyuan3d"]["memory"] == {
+        "high_gib": 44.0,
+        "max_gib": 48.0,
+        "current_gib": 12.0,
+    }
+    assert service_by_key["comfyui"]["memory"] is None
+
+
+def test_index_html_calls_memory_endpoint():
+    html_text = INDEX_HTML.read_text(encoding="utf-8")
+    assert "/api/memory/" in html_text
+
+
 def test_post_start_does_not_start_when_conflicting_stop_fails(running_server, monkeypatch):
     calls = []
 
@@ -786,3 +1215,28 @@ def test_post_start_does_not_start_when_conflicting_stop_fails(running_server, m
     # start は一度も呼ばれていないこと（両方立ち上がって RAM が枯れるのを防ぐため）。
     start_calls = [call for call in calls if call[2] == "start"]
     assert start_calls == []
+
+def test_validate_memory_limits_names_the_offending_value() -> None:
+    """どの値が大きすぎる / 小さすぎるのかと、いまの値・直し先が文面に入ること。
+
+    「MemoryHigh は MemoryMax 以下にしてください」のような数値の無い文だけだと、
+    利用者がどちらをいくつに直せばよいか分からないため。
+    """
+    bounds = portal.memory_bounds(62.47)
+
+    too_small = portal.validate_memory_limits(2, 48, bounds)
+    assert "MemoryHigh" in too_small and "小さすぎ" in too_small
+    assert "2 GiB" in too_small and "4 GiB" in too_small
+
+    high_over_max = portal.validate_memory_limits(52, 48, bounds)
+    assert "大きすぎ" in high_over_max
+    assert "52 GiB" in high_over_max and "48 GiB" in high_over_max
+
+    max_over_allowed = portal.validate_memory_limits(44, 60, bounds)
+    assert "MemoryMax" in max_over_allowed and "大きすぎ" in max_over_allowed
+    assert "60 GiB" in max_over_allowed and "58 GiB" in max_over_allowed
+
+    not_integer = portal.validate_memory_limits("abc", 48, bounds)
+    assert "整数" in not_integer and "abc" in not_integer
+
+    assert portal.validate_memory_limits(44, 48, bounds) is None

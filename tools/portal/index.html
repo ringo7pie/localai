@@ -220,6 +220,61 @@
     font-size: 0.78rem;
   }
 
+  .memory-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 0 2px;
+    border-top: 1px solid var(--border);
+  }
+  .memory-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .memory-current {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  .memory-fields {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .memory-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .memory-field input[type="number"] {
+    width: 64px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .memory-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .memory-actions .card-button {
+    flex: none;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  .memory-warning {
+    margin: 0;
+    padding: 6px 10px;
+    background: var(--warn-bg);
+    color: var(--warn-text);
+    border-radius: 6px;
+    font-size: 0.78rem;
+  }
+
   .card-link {
     margin-top: auto;
     display: inline-block;
@@ -248,6 +303,40 @@
     color: var(--muted);
     font-size: 0.8rem;
   }
+
+  .term {
+    cursor: help;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--muted);
+  }
+
+  dialog#term-dialog {
+    max-width: 440px;
+    width: calc(100% - 32px);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  dialog#term-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.45);
+  }
+  dialog#term-dialog h2 {
+    margin: 0 0 10px;
+    font-size: 1.05rem;
+  }
+  dialog#term-dialog p {
+    margin: 0 0 16px;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+  #term-dialog-close {
+    display: block;
+    margin-left: auto;
+  }
 </style>
 </head>
 <body>
@@ -261,7 +350,7 @@
 
   <section class="panel" id="gpu-panel">
     <div class="gpu-head">
-      <span class="gpu-title">GPU（VRAM）</span>
+      <span class="gpu-title">GPU（<span class="term" data-term="VRAM">VRAM</span>）</span>
       <span class="gpu-numbers" id="gpu-numbers">取得中…</span>
     </div>
     <div class="bar-track"><div class="bar-fill" id="gpu-bar-fill" style="width:0%"></div></div>
@@ -269,12 +358,195 @@
     <p class="gpu-warning" id="gpu-warning" hidden></p>
   </section>
 
+  <section class="panel" id="memory-info-panel">
+    <p class="card-desc" id="memory-info-text" style="margin:0;">RAM の情報を取得中…</p>
+  </section>
+
   <section class="cards" id="cards"></section>
 
-  <footer>5 秒ごとに自動更新します。各サービスへのリンクはこのページを開いたホスト名を使って組み立てます。</footer>
+  <footer>
+    5 秒ごとに自動更新します。各サービスへのリンクはこのページを開いたホスト名を使って組み立てます。
+    Open WebUI・Hunyuan3D・Pixal3D は<span class="term" data-term="自動起動">自動起動</span>しません。使うときだけ「起動」ボタンで立ち上げてください
+    （各サービスは<span class="term" data-term="systemd user ユニット">systemd user ユニット</span>として動きます）。
+    起動・停止・設定変更の通信には内部ヘッダ（<span class="term" data-term="X-Portal-Request">X-Portal-Request</span>）を必須にし、
+    他サイトからの誤操作を防いでいます。各カードの「<span class="term" data-term="ポート">ポート</span> nnnn」はそのサービスの待受番号です。
+  </footer>
 </div>
 
+<dialog id="term-dialog">
+  <h2 id="term-dialog-title"></h2>
+  <p id="term-dialog-body"></p>
+  <button type="button" id="term-dialog-close" class="card-button">閉じる</button>
+</dialog>
+
 <script>
+  // ボタン・入力欄・スイッチ・状態バッジ・GPU 帯にマウスオーバーしたときの詳細説明（title 属性）。
+  // 事実の根拠: knowledge/10-silver/areas/env.md, web-services.md, hunyuan3d.md, pixal3d.md, portal.py。
+  const TOOLTIPS = {
+    startButton:
+      "このサービスを起動します（systemctl --user start）。起動には数秒〜数分かかることがあり、" +
+      "その間は「起動中…」と表示されます。Hunyuan3D と Pixal3D は GPU（VRAM）を同時に使えないため、" +
+      "一方を起動すると動いているもう一方は自動で停止します。",
+    stopButton:
+      "このサービスを停止します（systemctl --user stop）。停止すると VRAM・RAM を解放します。" +
+      "Hunyuan3D・Pixal3D の停止は終了処理に時間がかかることがあり、最大 90 秒待ちます。",
+    lowVramCheckbox:
+      "低 VRAM モードの切り替えです。稼働中・起動中は変更できません（systemd の EnvironmentFile は" +
+      "起動時にしか読まれないため、先に停止してください）。Pixal3D はこれを Off にすると VRAM が" +
+      "23GiB を超えて CUDA out of memory になり生成に失敗します（実測）。",
+    memoryHighInput:
+      "MemoryHigh（GiB）の入力欄です。ここを超えるとこのサービスは cgroup に絞られて遅くなります" +
+      "（実測: Pixal3D で上限が小さすぎたとき生成が 43 秒 → 18 分 42 秒に悪化した例があります）。" +
+      "MemoryMax 以下の値にしてください。",
+    memoryMaxInput:
+      "MemoryMax（GiB）の入力欄です。ここを超えるとこのサービスだけが強制終了されます" +
+      "（デスクトップは巻き込まれません）。この画面から設定できるのは許容上限までです。",
+    memoryApplyButton:
+      "入力した MemoryHigh / MemoryMax を systemd --user のユニットへ反映します。再起動は不要で、" +
+      "稼働中でもすぐに効きます。恒久設定として書き込むため、PC を再起動しても値は残ります。",
+    memoryResetButton:
+      "MemoryHigh / MemoryMax をこの画面の既定値に戻し、そのまま反映します。反映後に元の値へ" +
+      "自動で戻すことはできないため、必要なら押す前に控えておいてください。",
+    badgeRunning: "ポートが実際に開いていて、すぐ使える状態です。",
+    badgeStarting:
+      "systemd 上は動作中ですが、ポートはまだ開いていません。Hunyuan3D・Pixal3D はモデルの読み込みに" +
+      "数十秒〜数分かかるため、この表示がしばらく続くことがあります。",
+    badgeStopped: "ユニットは動いていません。「起動」ボタンで起動できます。",
+    badgeNotInstalled:
+      "systemd のユニットが存在せず、導入されていません。起動・停止の操作はできません（例: ComfyUI）。",
+    gpuBar:
+      "nvidia-smi で取得した VRAM の使用量です。A30 1 枚の VRAM は 24576 MiB（24 GiB）で、" +
+      "Qwen（qwen3.8:27b）を単独で載せると実測 22201 MiB を使います。50% を超えると赤系の表示に変わります。",
+    openLink:
+      "稼働中のサービスを新しいタブで開きます。リンクはこのページを開いたホスト名" +
+      "（location.hostname）を使って組み立てます。"
+  };
+
+  // 専門用語クリックで開くダイアログの見出し・本文。キーは画面の data-term と一致させる。
+  // 事実の根拠は TOOLTIPS と同じ（env.md / web-services.md / hunyuan3d.md / pixal3d.md / portal.py）。
+  const GLOSSARY = {
+    "VRAM":
+      "GPU（グラフィックボード）に載っている専用メモリ。A30 1 枚の VRAM は 24576 MiB（24 GiB）です。" +
+      "Qwen（qwen3.8:27b）を単独で載せると実測 22201 MiB を使い、Hunyuan3D は待機時だけで約 5,365 MiB、" +
+      "Pixal3D は生成のピークで約 17,337 MiB を使います。A30 は 1 枚しか無いため、使う量の合計が" +
+      "24 GiB を超えると動きません。",
+    "RAM":
+      "主記憶（メインメモリ）。この機体は実測 62.5 GiB（/proc/meminfo の MemTotal 65504276 kB）です。" +
+      "VRAM に入りきらない分（低 VRAM モードなど）はここに置かれ、使いすぎると systemd-oomd が" +
+      "デスクトップごと止めるおそれがあります。",
+    "swap":
+      "RAM が足りなくなったときにディスクへ逃がす予備領域。Pixal3D の低 VRAM モードは RAM を" +
+      "28GB 前後まで使い swap へあふれることがあります。以前は swap 8 GiB のままで RAM 残り 200MiB まで" +
+      "落ち、生成が停滞したため、16 GiB の swapfile（/swapfile-pixal3d）を追加しました。",
+    "Qwen":
+      "このサーバーで動かしているローカル LLM（qwen3.8:27b、Q4_K_M 量子化、17 GB）。Ollama 経由で" +
+      "動き、Open WebUI のチャットや MCP 経由の作業委譲に使います。VRAM に入りきらないと一部が" +
+      "RAM・CPU に溢れ、生成速度が落ちます。",
+    "Ollama":
+      "Qwen を動かしている推論サーバー。127.0.0.1:11434 で待ち受け、LAN には公開していません。" +
+      "無操作が続くと既定 5 分でモデルを VRAM から降ろし、次のリクエストで再度読み込む" +
+      "（約 60 秒かかる）ため、直後の応答速度は当てになりません。",
+    "Open WebUI":
+      "Ollama（Qwen）を使うブラウザチャット画面。ポート 8081 で動きます。起動・停止・メモリ上限の" +
+      "変更をこの入口ページから行えます。",
+    "Hunyuan3D":
+      "正面・背面・左・右の画像 4 枚から 3D メッシュを作るツール（ポート 7860）。起動すると VRAM を" +
+      "約 5,365 MiB（待機時）使います。Pixal3D とは GPU を同時に使えず、片方の起動時にもう片方は" +
+      "自動で停止します。",
+    "Pixal3D":
+      "画像 1〜4 枚から 3D メッシュを作る、Hunyuan3D とは別方式のツール（ポート 7861）。VRAM ピークは" +
+      "実測約 17,337 MiB。低 VRAM モードを Off にすると VRAM 不足で生成に失敗するため常時 On が必須です。" +
+      "Hunyuan3D とは GPU を同時に使えません。",
+    "ComfyUI":
+      "画像・ワークフロー生成 UI（ポート 8188 を予定）。まだ導入されていないため、この画面では" +
+      "常に「未導入」と表示され、起動・停止はできません。",
+    "低 VRAM モード":
+      "Hunyuan3D・Pixal3D が VRAM の使用量を RAM と引き換えに減らす設定。既定は On です。稼働中・" +
+      "起動中は変更できません（systemd の EnvironmentFile は起動時にしか読まれないため）。Pixal3D は" +
+      "Off にすると VRAM 不足（CUDA out of memory）で生成に失敗します。Hunyuan3D は過去に On の状態で" +
+      "RAM が 20 GiB 近くまで伸び、OOM killer に殺されてデスクトップごとハングした事故があったため、" +
+      "ユニット側の MemoryHigh/MemoryMax でも保護しています。",
+    "GPU の排他":
+      "Hunyuan3D と Pixal3D は A30 1 枚の VRAM を同時に使えません。そのため、どちらかを起動すると、" +
+      "もう片方が動いていれば（稼働中・起動中）自動的に先に停止してから起動します。停止に失敗した" +
+      "場合は、両方が立ち上がって RAM が枯れるのを防ぐため起動を中止します。",
+    "MemoryHigh":
+      "systemd --user ユニットの cgroup メモリ制御の 1 つ。これを超えると、そのサービスは cgroup に" +
+      "絞られて遅くなります。既定は 44 GiB。この画面から即座に（再起動なしで）変更できます。",
+    "MemoryMax":
+      "systemd --user ユニットの cgroup メモリ制御の 1 つ。これを超えると、そのサービスだけが" +
+      "強制終了されます（デスクトップは巻き込まれません）。既定は 48 GiB。",
+    "推奨上限":
+      "MemoryMax の目安。RAM 総量からデスクトップ等の常駐分（14 GiB）を引いた値で、この機体では" +
+      "48 GiB です。超えても画面は拒否しませんが、警告を表示します。",
+    "許容上限":
+      "MemoryMax としてこの画面から設定できる最大値。RAM 総量から 4 GiB を残した値で、この機体では" +
+      "58 GiB です。これを超える値は画面からもエラーで拒否します。超えると、上限に届く前に RAM が" +
+      "尽き、systemd-oomd がデスクトップ（GNOME Shell）ごと止めるおそれがあるためです（実際に発生した" +
+      "事故を受けての制限です）。",
+    "systemd user ユニット":
+      "各サービスの実体。ユーザー権限（root ではない）で動く systemd のサービス単位です。ユニットが" +
+      "無いサービス（ComfyUI）は、この画面から起動・停止・メモリ上限の操作ができません。",
+    "自動起動":
+      "PC 起動時に自動で立ち上がるかどうか。この構成では入口ページ（portal）だけが自動起動します。" +
+      "Open WebUI・Hunyuan3D・Pixal3D は常時起動しておくと待機中でも VRAM・RAM を占有し、実際に PC が" +
+      "ハングした経緯があるため、使うときだけこの画面から手動で起動する運用にしています。",
+    "ポート":
+      "サービスが待ち受ける TCP の番号。入口ページは 8080、Open WebUI は 8081、Hunyuan3D は 7860、" +
+      "Pixal3D は 7861、ComfyUI は 8188（導入時）を使う想定です。各サービスへのリンクはこの番号と" +
+      "ページを開いたホスト名から組み立てます。",
+    "X-Portal-Request":
+      "起動・停止・設定変更の POST に必須の独自ヘッダです。ヘッダの無い単純な POST は他サイトの" +
+      "JavaScript からでも送れてしまうため、このヘッダを必須にしてブラウザに事前確認（preflight）を" +
+      "強制しています。この入口ページはその preflight に応答しないので、他サイトを見ている間に勝手に" +
+      "操作されることはありません。"
+  };
+
+  const GLOSSARY_TERMS_BY_LENGTH_DESC = Object.keys(GLOSSARY).sort(function (a, b) {
+    return b.length - a.length;
+  });
+
+  // 文中に含まれる用語集の語を <span class="term" data-term="..."> へ差し替えながら要素へ流し込む。
+  // 用語は重ならない前提（同じ文字が複数の用語にまたがる場合は、開始位置がより早いものを優先する）。
+  function appendTextWithGlossaryTerms(element, text) {
+    let remaining = text;
+    while (remaining.length > 0) {
+      let earliestIndex = -1;
+      let matchedTerm = null;
+      GLOSSARY_TERMS_BY_LENGTH_DESC.forEach(function (term) {
+        const index = remaining.indexOf(term);
+        if (index !== -1 && (earliestIndex === -1 || index < earliestIndex)) {
+          earliestIndex = index;
+          matchedTerm = term;
+        }
+      });
+      if (earliestIndex === -1) {
+        element.appendChild(document.createTextNode(remaining));
+        remaining = "";
+      } else {
+        if (earliestIndex > 0) {
+          element.appendChild(document.createTextNode(remaining.slice(0, earliestIndex)));
+        }
+        element.appendChild(buildTermSpan(matchedTerm));
+        remaining = remaining.slice(earliestIndex + matchedTerm.length);
+      }
+    }
+  }
+
+  function buildTermSpan(term) {
+    const span = document.createElement("span");
+    span.className = "term";
+    span.dataset.term = term;
+    span.textContent = term;
+    return span;
+  }
+
+  // element の中身を text に置き換える。text の中に用語集の語があればクリックできる用語にする。
+  function setTextWithGlossaryTerms(element, text) {
+    element.innerHTML = "";
+    appendTextWithGlossaryTerms(element, text);
+  }
+
   const SERVICE_META = {
     "open-webui": {
       description: "Ollama を使ったブラウザチャット",
@@ -291,7 +563,7 @@
       description: "画像 1〜4 枚から 3D メッシュを生成（別方式）",
       stoppedReason: "起動していません。下のボタンから起動できます。",
       startingReason: "モデルを読み込んでいます（数分かかります）。",
-      note: "Hunyuan3D とは同時に使えません。起動すると Hunyuan3D は自動で停止します。"
+      note: "GPU の排他: Hunyuan3D とは同時に使えません。起動すると Hunyuan3D は自動で停止します。"
         + " 生成中は RAM を 28GB 前後まで使い swap へあふれます（実測）。"
         + " ほかの重いアプリを閉じてから使ってください。生成は 4 分ほどかかります。"
     },
@@ -302,10 +574,10 @@
   };
 
   const STATE_BADGE = {
-    running: { className: "badge-up", label: "稼働中" },
-    starting: { className: "badge-starting", label: "起動中…" },
-    stopped: { className: "badge-down", label: "停止中" },
-    not_installed: { className: "badge-missing", label: "未導入" }
+    running: { className: "badge-up", label: "稼働中", tooltipKey: "badgeRunning" },
+    starting: { className: "badge-starting", label: "起動中…", tooltipKey: "badgeStarting" },
+    stopped: { className: "badge-down", label: "停止中", tooltipKey: "badgeStopped" },
+    not_installed: { className: "badge-missing", label: "未導入", tooltipKey: "badgeNotInstalled" }
   };
 
   // ボタン操作の結果（成功・失敗メッセージ）と、操作中かどうか。
@@ -316,6 +588,23 @@
   const optionMessages = {};
   const pendingOptions = {};
   let latestServices = [];
+
+  // メモリ上限（MemoryHigh / MemoryMax）関連の状態。キーはサービスの key。
+  // cardsContainer は 5 秒ごとに丸ごと作り直す（renderCards）が、入力欄が編集中のときに
+  // それをやると入力中の値やフォーカスが消えてしまう。そのため、編集中（フォーカス中・
+  // 未適用の変更がある）は renderCards 自体を呼ばず、メッセージ・警告の更新だけを
+  // 直接 DOM 操作（updateMemoryUiState）で行う。
+  let latestRam = null;
+  const memoryFieldValues = {}; // key -> {high: "44", max: "48"}（入力欄の現在値、文字列）
+  const memoryDirtyKeys = {}; // key -> bool（サーバーの現在値と入力欄の値が違う＝未適用）
+  let memoryFocusedField = null; // "key:high" | "key:max" | null
+  const pendingMemoryActions = {};
+  const memoryMessages = {};
+
+  function isEditingAnyMemoryField() {
+    if (memoryFocusedField !== null) { return true; }
+    return Object.keys(memoryDirtyKeys).some(function (key) { return memoryDirtyKeys[key] === true; });
+  }
 
   // GPU を排他的に使うサービス。portal.py の GPU_EXCLUSIVE_KEYS と同じ組み合わせ。
   // 起動ボタンを押したときに「もう片方を止めてよいか」を確認するために使う
@@ -345,12 +634,54 @@
   const gpuModels = document.getElementById("gpu-models");
   const gpuWarning = document.getElementById("gpu-warning");
   const cardsContainer = document.getElementById("cards");
+  const memoryInfoText = document.getElementById("memory-info-text");
+  const termDialog = document.getElementById("term-dialog");
+  const termDialogTitle = document.getElementById("term-dialog-title");
+  const termDialogBody = document.getElementById("term-dialog-body");
+  const termDialogClose = document.getElementById("term-dialog-close");
 
   subtitleElement.textContent = "A30 / " + location.hostname;
+
+  // 専門用語（.term）クリックでダイアログを開く。カードは 5 秒ごとに作り直されるため、
+  // 個々の要素に直接ハンドラを付けず document への委譲にする。
+  function openTermDialog(term) {
+    const description = GLOSSARY[term];
+    if (!description) { return; }
+    termDialogTitle.textContent = term;
+    // 本文は必ず textContent で入れる（GLOSSARY の値に HTML タグを混ぜても解釈させないため）。
+    termDialogBody.textContent = description;
+    if (typeof termDialog.showModal === "function") {
+      termDialog.showModal();
+    } else {
+      termDialog.setAttribute("open", "open");
+    }
+  }
+
+  document.addEventListener("click", function (event) {
+    const termElement = event.target.closest ? event.target.closest(".term") : null;
+    if (termElement && termElement.dataset.term) {
+      openTermDialog(termElement.dataset.term);
+    }
+  });
+
+  termDialogClose.addEventListener("click", function () {
+    termDialog.close();
+  });
+
+  // 背景（::backdrop）クリックで閉じる。showModal 中に dialog 要素自身がクリックされるのは
+  // 中の要素以外＝背景をクリックしたとき。Esc は <dialog> がネイティブに閉じる。
+  termDialog.addEventListener("click", function (event) {
+    if (event.target === termDialog) {
+      termDialog.close();
+    }
+  });
 
   function buildServiceUrl(port) {
     return "http://" + location.hostname + ":" + port + "/";
   }
+
+  gpuBarFill.title = TOOLTIPS.gpuBar;
+  document.getElementById("gpu-panel").querySelector(".bar-track").title = TOOLTIPS.gpuBar;
 
   function renderGpu(gpu, ollama) {
     if (gpu && gpu.available) {
@@ -369,18 +700,245 @@
     if (ollama && ollama.reachable) {
       if (ollama.models && ollama.models.length > 0) {
         const names = ollama.models.map(function (model) { return model.name; }).join("、");
-        gpuModels.textContent = "Ollama に読み込み中: " + names;
+        setTextWithGlossaryTerms(gpuModels, "Ollama に読み込み中: " + names);
         gpuWarning.hidden = false;
-        gpuWarning.textContent =
-          "Qwen（" + names + "）が VRAM を使っています。Hunyuan3D や ComfyUI を起動する前に Qwen を降ろす必要があります。";
+        setTextWithGlossaryTerms(
+          gpuWarning,
+          "Qwen（" + names + "）が VRAM を使っています。Hunyuan3D や ComfyUI を起動する前に Qwen を降ろす必要があります。"
+        );
       } else {
-        gpuModels.textContent = "Ollama にモデルは読み込まれていません";
+        setTextWithGlossaryTerms(gpuModels, "Ollama にモデルは読み込まれていません");
         gpuWarning.hidden = true;
       }
     } else {
-      gpuModels.textContent = "Ollama に接続できません（127.0.0.1:11434）";
+      setTextWithGlossaryTerms(gpuModels, "Ollama に接続できません（127.0.0.1:11434）");
       gpuWarning.hidden = true;
     }
+  }
+
+  function renderMemoryInfo(ram) {
+    if (!ram || !ram.available) {
+      setTextWithGlossaryTerms(memoryInfoText, "RAM の情報（/proc/meminfo）を取得できません。");
+      return;
+    }
+    setTextWithGlossaryTerms(
+      memoryInfoText,
+      "MemoryHigh を超えると絞られて遅くなり、MemoryMax を超えるとそのサービスだけが止まります。" +
+        " RAM " + ram.total_gib.toFixed(1) + " GiB のうち推奨上限は " + ram.recommended_max_gib +
+        " GiB、許容上限（画面から設定できる上限）は " + ram.allowed_max_gib + " GiB までです。"
+    );
+  }
+
+  function formatGibValue(value) {
+    if (value === null || value === undefined) { return "無制限"; }
+    return String(Math.round(value * 10) / 10);
+  }
+
+  function formatCurrentGib(value, running) {
+    if (!running || value === null || value === undefined) { return "—"; }
+    return String(Math.round(value * 10) / 10) + " GiB";
+  }
+
+  function syncedFieldValues(memory) {
+    return {
+      high: memory && memory.high_gib !== null && memory.high_gib !== undefined
+        ? String(Math.round(memory.high_gib))
+        : "",
+      max: memory && memory.max_gib !== null && memory.max_gib !== undefined
+        ? String(Math.round(memory.max_gib))
+        : ""
+    };
+  }
+
+  function updateMemoryUiState(key) {
+    const messageElement = document.getElementById("memory-message-" + key);
+    if (messageElement) {
+      const stored = memoryMessages[key];
+      if (stored) {
+        messageElement.hidden = false;
+        messageElement.textContent = stored.text;
+        messageElement.className = "card-message " + (stored.isError ? "error" : "info");
+      } else {
+        messageElement.hidden = true;
+      }
+    }
+    const pending = pendingMemoryActions[key] === true;
+    const applyButton = document.getElementById("memory-apply-" + key);
+    const resetButton = document.getElementById("memory-reset-" + key);
+    if (applyButton) { applyButton.disabled = pending; }
+    if (resetButton) { resetButton.disabled = pending; }
+  }
+
+  function updateMemoryWarning(key, ram) {
+    const warningElement = document.getElementById("memory-clientwarn-" + key);
+    if (!warningElement) { return; }
+    const values = memoryFieldValues[key];
+    const maxValue = values ? parseInt(values.max, 10) : NaN;
+    if (!ram || !ram.available || isNaN(maxValue) || maxValue <= ram.recommended_max_gib) {
+      warningElement.hidden = true;
+      return;
+    }
+    warningElement.hidden = false;
+    warningElement.textContent =
+      "推奨上限（" + ram.recommended_max_gib + " GiB）を超えています。" +
+      "使いすぎたときにデスクトップごと止まるおそれがあります（送信は止めません）。";
+  }
+
+  function performMemoryChange(key, highValue, maxValue) {
+    pendingMemoryActions[key] = true;
+    memoryMessages[key] = { text: "適用しています…", isError: false };
+    updateMemoryUiState(key);
+
+    fetch("/api/memory/" + key + "/" + highValue + "/" + maxValue, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "X-Portal-Request": "1" }
+    })
+      .then(function (response) {
+        return response.json().then(function (data) { return data; });
+      })
+      .then(function (data) {
+        let text = data.message || (data.ok ? "変更しました。" : "変更できませんでした。");
+        if (data.warning) { text += "　" + data.warning; }
+        memoryMessages[key] = { text: text, isError: !data.ok };
+        if (data.ok) { memoryDirtyKeys[key] = false; }
+      })
+      .catch(function () {
+        memoryMessages[key] = { text: "通信に失敗しました。", isError: true };
+      })
+      .finally(function () {
+        pendingMemoryActions[key] = false;
+        updateMemoryUiState(key);
+        fetchStatus();
+      });
+  }
+
+  function renderMemoryPanel(card, service, ram) {
+    // unit を持たないサービス（ComfyUI）には出さない。
+    if (!service.memory) { return; }
+
+    const key = service.key;
+    const memory = service.memory;
+    const running = service.state === "running" || service.state === "starting";
+
+    // 編集中（未適用の変更がある）でなければ、サーバーの現在値で入力欄を初期化する。
+    if (!memoryDirtyKeys[key]) {
+      const synced = syncedFieldValues(memory);
+      memoryFieldValues[key] = {
+        high: synced.high || (ram && ram.available ? String(ram.default_high_gib) : ""),
+        max: synced.max || (ram && ram.available ? String(ram.default_max_gib) : "")
+      };
+    }
+    const fieldValues = memoryFieldValues[key] || { high: "", max: "" };
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "memory-panel";
+
+    const title = document.createElement("div");
+    title.className = "memory-title";
+    title.appendChild(document.createTextNode("メモリ上限（"));
+    title.appendChild(buildTermSpan("MemoryHigh"));
+    title.appendChild(document.createTextNode(" / "));
+    title.appendChild(buildTermSpan("MemoryMax"));
+    title.appendChild(document.createTextNode("）"));
+    wrapper.appendChild(title);
+
+    const current = document.createElement("p");
+    current.className = "memory-current";
+    current.textContent =
+      "現在 " + formatGibValue(memory.high_gib) + " / " + formatGibValue(memory.max_gib) +
+      " GiB、使用 " + formatCurrentGib(memory.current_gib, running);
+    wrapper.appendChild(current);
+
+    const fields = document.createElement("div");
+    fields.className = "memory-fields";
+
+    function buildNumberField(labelText, fieldKind, value) {
+      const field = document.createElement("label");
+      field.className = "memory-field";
+      const input = document.createElement("input");
+      input.type = "number";
+      input.id = "memory-" + fieldKind + "-" + key;
+      input.value = value;
+      input.step = "1";
+      input.title = fieldKind === "high" ? TOOLTIPS.memoryHighInput : TOOLTIPS.memoryMaxInput;
+      if (ram && ram.available) {
+        input.min = String(ram.min_gib);
+        input.max = String(ram.allowed_max_gib);
+      }
+      input.addEventListener("focus", function () {
+        memoryFocusedField = key + ":" + fieldKind;
+      });
+      input.addEventListener("blur", function () {
+        if (memoryFocusedField === key + ":" + fieldKind) { memoryFocusedField = null; }
+      });
+      input.addEventListener("input", function () {
+        const stored = memoryFieldValues[key] || { high: "", max: "" };
+        stored[fieldKind] = input.value;
+        memoryFieldValues[key] = stored;
+        const synced = syncedFieldValues(memory);
+        memoryDirtyKeys[key] = (stored.high !== synced.high) || (stored.max !== synced.max);
+        updateMemoryWarning(key, ram);
+      });
+      field.appendChild(document.createTextNode(labelText));
+      field.appendChild(input);
+      return field;
+    }
+
+    fields.appendChild(buildNumberField("High", "high", fieldValues.high));
+    fields.appendChild(buildNumberField("Max", "max", fieldValues.max));
+    wrapper.appendChild(fields);
+
+    const actions = document.createElement("div");
+    actions.className = "memory-actions";
+
+    const defaultHigh = ram && ram.available ? ram.default_high_gib : 44;
+    const defaultMax = ram && ram.available ? ram.default_max_gib : 48;
+
+    const applyButton = document.createElement("button");
+    applyButton.type = "button";
+    applyButton.id = "memory-apply-" + key;
+    applyButton.className = "card-button";
+    applyButton.textContent = "適用";
+    applyButton.title = TOOLTIPS.memoryApplyButton;
+    applyButton.disabled = pendingMemoryActions[key] === true;
+    applyButton.addEventListener("click", function () {
+      const values = memoryFieldValues[key] || { high: "", max: "" };
+      performMemoryChange(key, values.high, values.max);
+    });
+
+    const resetButton = document.createElement("button");
+    resetButton.type = "button";
+    resetButton.id = "memory-reset-" + key;
+    resetButton.className = "card-button";
+    resetButton.textContent = "既定（" + defaultHigh + " / " + defaultMax + "）に戻す";
+    resetButton.title = TOOLTIPS.memoryResetButton;
+    resetButton.disabled = pendingMemoryActions[key] === true;
+    resetButton.addEventListener("click", function () {
+      memoryFieldValues[key] = { high: String(defaultHigh), max: String(defaultMax) };
+      performMemoryChange(key, defaultHigh, defaultMax);
+    });
+
+    actions.appendChild(applyButton);
+    actions.appendChild(resetButton);
+    wrapper.appendChild(actions);
+
+    const warning = document.createElement("p");
+    warning.className = "memory-warning";
+    warning.id = "memory-clientwarn-" + key;
+    warning.hidden = true;
+    wrapper.appendChild(warning);
+
+    const message = document.createElement("p");
+    message.className = "card-message info";
+    message.id = "memory-message-" + key;
+    message.hidden = true;
+    wrapper.appendChild(message);
+
+    card.appendChild(wrapper);
+
+    updateMemoryWarning(key, ram);
+    updateMemoryUiState(key);
   }
 
   function performAction(key, action) {
@@ -452,6 +1010,7 @@
     startButton.type = "button";
     startButton.className = "card-button primary";
     startButton.textContent = "起動";
+    startButton.title = TOOLTIPS.startButton;
     startButton.disabled = pending || service.state !== "stopped";
     startButton.addEventListener("click", function () { performAction(service.key, "start"); });
 
@@ -459,6 +1018,7 @@
     stopButton.type = "button";
     stopButton.className = "card-button danger";
     stopButton.textContent = "停止";
+    stopButton.title = TOOLTIPS.stopButton;
     stopButton.disabled = pending || service.state !== "running";
     stopButton.addEventListener("click", function () { performAction(service.key, "stop"); });
 
@@ -529,6 +1089,7 @@
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = service.options.low_vram === true;
+    checkbox.title = TOOLTIPS.lowVramCheckbox;
     // 稼働中・起動中は無効化する（systemd の EnvironmentFile は起動時にしか読まれないため、
     // 動いている間に変えても反映されない）。操作の応答待ち中も二重送信を避けるため無効化する。
     checkbox.disabled = running || pending;
@@ -537,7 +1098,8 @@
     });
 
     label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(" 低 VRAM モード"));
+    label.appendChild(document.createTextNode(" "));
+    label.appendChild(buildTermSpan("低 VRAM モード"));
     wrapper.appendChild(label);
 
     if (running) {
@@ -572,17 +1134,22 @@
       head.className = "card-head";
       const name = document.createElement("span");
       name.className = "card-name";
-      name.textContent = service.name;
+      if (GLOSSARY[service.name]) {
+        name.appendChild(buildTermSpan(service.name));
+      } else {
+        name.textContent = service.name;
+      }
       const badge = document.createElement("span");
       const badgeMeta = STATE_BADGE[service.state] || STATE_BADGE.stopped;
       badge.className = "badge " + badgeMeta.className;
       badge.textContent = badgeMeta.label;
+      badge.title = TOOLTIPS[badgeMeta.tooltipKey] || "";
       head.appendChild(name);
       head.appendChild(badge);
 
       const desc = document.createElement("p");
       desc.className = "card-desc";
-      desc.textContent = meta.description;
+      setTextWithGlossaryTerms(desc, meta.description);
 
       const port = document.createElement("p");
       port.className = "card-port";
@@ -595,11 +1162,12 @@
       if (meta.note) {
         const note = document.createElement("p");
         note.className = "card-note";
-        note.textContent = meta.note;
+        setTextWithGlossaryTerms(note, meta.note);
         card.appendChild(note);
       }
 
       renderLowVramSwitch(card, service);
+      renderMemoryPanel(card, service, latestRam);
 
       if (service.controllable) {
         renderActionButtons(card, service);
@@ -613,6 +1181,7 @@
         link.href = buildServiceUrl(service.port);
         link.target = "_blank";
         link.rel = "noopener noreferrer";
+        link.title = TOOLTIPS.openLink;
         link.textContent = "開く →";
         card.appendChild(link);
       } else {
@@ -633,8 +1202,15 @@
   function renderStatus(data) {
     errorBanner.hidden = true;
     renderGpu(data.gpu, data.ollama);
+    renderMemoryInfo(data.ram);
     latestServices = data.services || [];
-    renderCards(latestServices);
+    latestRam = data.ram || null;
+    // メモリ上限の入力欄が編集中（フォーカス中・未適用の変更がある）のときは、カードを
+    // 丸ごと作り直さない。renderCards は毎回 innerHTML を空にするため、そのまま呼ぶと
+    // 入力中の値やフォーカスが消えてしまうため。
+    if (!isEditingAnyMemoryField()) {
+      renderCards(latestServices);
+    }
   }
 
   function renderError() {
@@ -645,7 +1221,9 @@
     gpuBarFill.classList.remove("hot");
     gpuModels.textContent = "取得できません";
     gpuWarning.hidden = true;
+    memoryInfoText.textContent = "取得できません";
     latestServices = [];
+    latestRam = null;
     cardsContainer.innerHTML = "";
   }
 

@@ -34,8 +34,9 @@ ComfyUI へのリンクと、GPU（VRAM）の使用状況を 1 画面にまと�
 ## 起動・停止（Open WebUI / Hunyuan3D / Pixal3D）
 
 **PC 起動時に自動起動するのは入口ページ（`portal`）だけ。** Open WebUI（`open-webui`）・
-Hunyuan3D（`hunyuan3d`）・Pixal3D（`pixal3d`）は自動起動しない。A30 は VRAM 24576 MiB・
-RAM 31 GiB しかなく、常時起動しておくと待機中でも VRAM・RAM を占有し、PC がハングしたため。
+Hunyuan3D（`hunyuan3d`）・Pixal3D（`pixal3d`）は自動起動しない。A30 の VRAM は 24576 MiB しかなく、
+常時起動しておくと待機中でも VRAM・RAM を占有する。RAM が 31 GiB だった頃に、これで PC が
+ハングしたため自動起動をやめた（RAM はその後 62.5 GiB に増設したが、VRAM の排他は変わらない）。
 使うときだけ入口ページから起動する。
 
 - Hunyuan3D・Pixal3D は起動に数十秒〜数分かかる（モデルの読み込み）。ボタンを押した直後は
@@ -119,6 +120,76 @@ env ファイルの読み書きは `portal.py` の純粋関数 `parse_env_file` 
 書いてから `os.replace` で置き換える（書き込み途中でプロセスが落ちても壊れた状態で残らない
 ようにするため）。
 
+## メモリ上限（MemoryHigh / MemoryMax）の設定
+
+Open WebUI・Hunyuan3D・Pixal3D の各カードには「メモリ上限」欄があり、systemd --user ユニットの
+`MemoryHigh` / `MemoryMax` を画面から GiB 単位で変更できる（ComfyUI は unit が無いため対象外）。
+
+- **MemoryHigh を超えると、そのサービスは絞られて遅くなる**（cgroup が回収を強めるため）。
+- **MemoryMax を超えると、そのサービスだけが強制終了される。**
+- 実測（2026-09-22）: 機体の RAM を 31 GiB だった頃に決めた上限（Pixal3D 24/28G）が小さすぎて、
+  Pixal3D が MemoryHigh を超えたまま swap 満杯で絞られ続け、生成が 43 秒 → 18 分 42 秒に遅くなった。
+  その後 RAM を 62.5 GiB（`/proc/meminfo` の MemTotal 65504276 kB）に増設したため、上限も見直した。
+
+### 既定値・許容範囲・推奨上限の根拠
+
+機体の RAM 62.5 GiB のうち、デスクトップ・Ollama・システムなど各サービス以外で約 10.5 GiB、
+Qwen がチャットで GPU に入りきらないときさらに約 6 GiB を RAM に使う。これを踏まえ:
+
+| 項目 | 値（この機体） | 決め方 |
+|---|---|---|
+| 既定 MemoryHigh | 44 GiB | `MEMORY_DEFAULT_HIGH_GIB` |
+| 既定 MemoryMax | 48 GiB | `MEMORY_DEFAULT_MAX_GIB` |
+| 下限 | 4 GiB | `MEMORY_MIN_GIB` |
+| 許容上限（画面から設定できる上限） | 58 GiB | RAM 総量 − `MEMORY_RESERVE_GIB`（4 GiB）を切り捨て |
+| 推奨上限（超えても拒否はしないが警告する） | 48 GiB | RAM 総量 − `MEMORY_RECOMMENDED_MARGIN_GIB`（14 GiB）を切り捨て |
+
+**許容上限より大きい値は画面からもエラーで拒否する。** これを超えると、上限に届く前に機体全体の
+RAM が尽き、`systemd-oomd` がデスクトップ（GNOME Shell）ごと止めるおそれがある
+（2026-09-22 に実際に発生）。推奨上限は拒否しない代わりに黄色い注意を出す。
+
+### systemctl への反映（恒久設定と `--runtime` の両方に書く理由）
+
+変更は `systemctl --user set-property <unit> MemoryHigh=<N>G MemoryMax=<M>G` を**続けて 2 回**
+実行する（`build_set_property_commands`）。
+
+1. 1 回目（`--runtime` 無し）: `~/.config/systemd/user.control/<unit>.service.d/` に書く。
+   恒久設定で、PC を再起動しても残る。
+2. 2 回目（`--runtime` 付き）: `/run/user/1000/systemd/user.control/` に書く。ランタイム設定で、
+   PC を再起動すると消えるが、**恒久設定より優先度が高い**。以前に誰かが `--runtime` で設定した
+   値が残っていると、恒久設定だけ書き換えても反映されない（実際に Pixal3D で発生していた:
+   恒久設定は 44/48 のままなのに、有効な値は過去に `--runtime` で書かれた 44/52 だった）。
+   両方に同じ値を書くことで、どちらが残っていても画面で決めた値が必ず効く。
+
+どちらも**稼働中のユニットへ再起動なしで即座に効く**。停止中のユニットにも実行できる。
+`systemctl revert` は使わない（ユニットファイル本体が `~/.config/systemd/user/` にあるため、
+消えてしまう危険がある）。
+
+### API
+
+`POST /api/memory/<key>/<high_gib>/<max_gib>` の仕様（`<high_gib>`/`<max_gib>` は GiB の整数）:
+
+| 項目 | 内容 |
+|---|---|
+| 必須ヘッダ | `X-Portal-Request: 1`（起動・停止と同じ。無ければ 403） |
+| 対象 `key` | `open-webui`、`hunyuan3d`、`pixal3d` のみ。unit が無い（`comfyui`）・存在しない key は 404 |
+| `high_gib`/`max_gib` が整数でない | 400 |
+| `min_gib ≤ high ≤ max ≤ allowed_max_gib` を満たさない | 400（理由を `message` に） |
+| GET でこのパスを叩いた場合 | 405 |
+| 成功・失敗にかかわらず | 500 を返さず `{"ok": bool, "message": str, "warning": str \| null, "memory": {...}}` を返す。ただし `/proc/meminfo` が読めない場合のみ 500 |
+| `warning` | `max_gib` が推奨上限を超えるときだけ文字列。それ以外は `null`（拒否はしない） |
+| `memory` | 書き換え後に読み直した `{"high_gib", "max_gib", "current_gib"}`（GiB、float。上限無しは `null`） |
+
+`GET /api/status` にも `ram`（`{"total_gib", "allowed_max_gib", "recommended_max_gib", "min_gib",
+"default_high_gib", "default_max_gib", "available"}`）と、各サービスの `memory`
+（`{"high_gib", "max_gib", "current_gib"}`。ComfyUI は `null`）が入る。
+
+curl から叩くときはヘッダを付ける:
+
+```bash
+curl -X POST -H "X-Portal-Request: 1" http://<server-ip>:8080/api/memory/pixal3d/44/48
+```
+
 ## 導入コマンド
 
 サーバー上で **mt ユーザーとして**実行する（root では動かない。理由は下記）。
@@ -173,6 +244,23 @@ cd ~/Proj/localai/tools/portal
 `http://<server-ip>:8080/` を開けば、サーバー上で開いたときと同じ入口ページが表示される。
 リンクはページの `location.hostname` を使って組み立てているため、IP でアクセスしても
 ホスト名でアクセスしても、各サービスへのリンクは自動的に正しいホストを指す。
+
+## マウスオーバーの説明・専門用語のダイアログ
+
+画面上の入力欄・ボタン・スイッチ・状態バッジ・GPU 帯には `title` 属性で詳細説明が付いている
+（ブラウザ標準のツールチップ）。説明文は `index.html` 内の `TOOLTIPS`（キーで引く 1 つのオブジェクト）
+にまとめている。
+
+VRAM・RAM・swap・Qwen/Ollama・各サービス名・低 VRAM モード・GPU の排他・MemoryHigh/MemoryMax・
+推奨上限/許容上限・systemd user ユニット・自動起動・ポート・`X-Portal-Request` などの専門用語は、
+点線の下線が付いた `<span class="term" data-term="...">` になっており、クリックすると `<dialog>` で
+見出しと説明を表示する（閉じるボタン・Esc・背景クリックで閉じる）。用語集は `index.html` 内の
+`GLOSSARY` にまとめている。本文は `textContent` で入れており、`GLOSSARY` の値に HTML タグを
+混ぜても解釈されない。
+
+いずれの文言も事実に基づく（`knowledge/10-silver/areas/env.md`・`web-services.md`・`hunyuan3d.md`・
+`pixal3d.md` の実測値・決定事項）。カードは 5 秒ごとに作り直されるため、専門用語のクリック処理は
+個々の要素にではなく `document` へのイベント委譲で行っている。
 
 ## ファイル構成
 

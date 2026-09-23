@@ -14,16 +14,22 @@
     POST /api/option/<key>/low-vram/<on|off>  低 VRAM モードの切り替え（Hunyuan3D・Pixal3D のみ）。
                                                稼働中・起動中は 409（systemd の EnvironmentFile は
                                                起動時にしか読まれないため）。GET では 405。
+    POST /api/memory/<key>/<high_gib>/<max_gib>  systemd のメモリ上限（MemoryHigh / MemoryMax）を
+                                               GiB 単位の整数で設定する（Open WebUI・Hunyuan3D・Pixal3D
+                                               のみ。ComfyUI・portal は 404）。稼働中でも再起動なしで
+                                               即座に効く。GET では 405。
 
-方針: nvidia-smi・Ollama・各ポート・各 systemd ユニットへの疎通確認はどれも失敗しうる前提で書く。
-失敗しても /api/status は 500 を返さず、取れなかった項目を
+方針: nvidia-smi・Ollama・各ポート・各 systemd ユニット・/proc/meminfo への疎通確認はどれも
+失敗しうる前提で書く。失敗しても /api/status は 500 を返さず、取れなかった項目を
 available/reachable=false にして返す。/api/service/... や /api/option/... も同様に、systemctl や
-設定ファイルの読み書きが失敗しても 500 ではなく {"ok": false, ...} を返す。
+設定ファイルの読み書きが失敗しても 500 ではなく {"ok": false, ...} を返す
+（/api/memory/... も systemctl の失敗は同様。ただし /proc/meminfo が読めない場合のみ 500 を返す）。
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import subprocess
 import sys
@@ -42,6 +48,21 @@ NVIDIA_SMI_TIMEOUT_SEC = 2.0
 OLLAMA_TIMEOUT_SEC = 2.0
 PORT_CHECK_TIMEOUT_SEC = 0.3
 MIB_BYTES = 1024 * 1024
+GIB_BYTES = 1024 * 1024 * 1024
+MEMINFO_PATH = Path("/proc/meminfo")
+
+# メモリ上限（MemoryHigh / MemoryMax）の既定値・許容範囲。単位はすべて GiB。
+# 根拠は knowledge/10-silver/areas/env.md（実測62.5 GiB の RAM。デスクトップ等で約10.5 GiB、
+# Qwen が GPU に入りきらないときさらに約6 GiB を消費する）。
+MEMORY_DEFAULT_HIGH_GIB = 44
+MEMORY_DEFAULT_MAX_GIB = 48
+MEMORY_MIN_GIB = 4
+# 許容上限 = RAM 総量 - MEMORY_RESERVE_GIB（切り捨て）。これを超えると systemd-oomd が
+# デスクトップごと止めるおそれがあるため、画面からもこれより大きい値は送れない。
+MEMORY_RESERVE_GIB = 4
+# 推奨上限 = RAM 総量 - MEMORY_RECOMMENDED_MARGIN_GIB（切り捨て）。デスクトップ等の常駐分と
+# Qwen が GPU からあふれた分を差し引いた値。超えても拒否はしないが画面で警告する。
+MEMORY_RECOMMENDED_MARGIN_GIB = 14
 
 # 入口ページが表示するサービス一覧（ポート配置は knowledge/10-silver/areas/env.md の決定に従う）
 # unit は systemd --user のユニット名。無い場合（ComfyUI）は None にし、起動・停止の対象から外す。
@@ -103,6 +124,9 @@ SERVICE_ACTION_PATH_PREFIX = "/api/service/"
 OPTION_PATH_PREFIX = "/api/option/"
 OPTION_URL_TO_KEY = {"low-vram": "low_vram"}
 OPTION_VALUES = {"on": True, "off": False}
+
+# POST /api/memory/<key>/<high_gib>/<max_gib> の設定関連。
+MEMORY_ACTION_PATH_PREFIX = "/api/memory/"
 
 # 起動・停止の要求に必須のヘッダ。入口ページ自身の JavaScript だけが付ける。
 # 単純な POST（ヘッダ無し）は他サイトからでもブラウザが送れてしまうため、独自ヘッダを必須にして
@@ -470,18 +494,172 @@ def parse_option_path(path: str) -> tuple[str, str, str] | None:
     return key, option_name, value
 
 
+def parse_meminfo_total_gib(text: str) -> float | None:
+    """`/proc/meminfo` の本文から MemTotal を GiB で返す（純粋関数）。
+
+    MemTotal は kB（1024 バイト単位）で書かれている。行が無い・壊れている場合は None。
+    """
+    for line in text.splitlines():
+        stripped_line = line.strip()
+        if not stripped_line.startswith("MemTotal"):
+            continue
+        fields = stripped_line.split()
+        if len(fields) < 2:
+            return None
+        try:
+            total_kib = int(fields[1])
+        except ValueError:
+            return None
+        return total_kib / (1024 * 1024)
+    return None
+
+
+def memory_bounds(total_gib: float) -> dict[str, Any]:
+    """RAM 総量（GiB）から、メモリ上限の許容範囲・推奨範囲を組み立てる（純粋関数）。
+
+    - allowed_max_gib: これを超える MemoryMax は画面からも設定させない（systemd-oomd が
+      デスクトップごと止めるおそれがあるため）。RAM 総量 - MEMORY_RESERVE_GIB を切り捨てた値。
+    - recommended_max_gib: 超えても拒否はしないが警告を出す目安。RAM 総量 -
+      MEMORY_RECOMMENDED_MARGIN_GIB を切り捨てた値。
+    """
+    return {
+        "total_gib": total_gib,
+        "allowed_max_gib": math.floor(total_gib - MEMORY_RESERVE_GIB),
+        "recommended_max_gib": math.floor(total_gib - MEMORY_RECOMMENDED_MARGIN_GIB),
+        "min_gib": MEMORY_MIN_GIB,
+    }
+
+
+def validate_memory_limits(high_gib: Any, max_gib: Any, bounds: dict[str, Any]) -> str | None:
+    """MemoryHigh / MemoryMax の指定値が妥当かを確かめる（純粋関数）。
+
+    問題が無ければ None、あれば日本語の理由を返す。規則: 整数であること、
+    `min_gib <= high <= max <= allowed_max_gib`。
+
+    理由の文には**どちらの値が大きすぎる（小さすぎる）のか**と、いま入っている値、
+    許される範囲を必ず入れる。「MemoryHigh は MemoryMax 以下にしてください」のように
+    数値の無い文だけを返すと、利用者がどちらをいくつに直せばよいか分からないため。
+    """
+    for label, value in (("MemoryHigh", high_gib), ("MemoryMax", max_gib)):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return f"{label} は整数で指定してください（いまの値: {value!r}）。"
+        if float(value) != int(value):
+            return f"{label} は整数で指定してください（いまの値: {value}）。"
+
+    high_value = int(high_gib)
+    max_value = int(max_gib)
+    min_gib = bounds["min_gib"]
+    allowed_max_gib = bounds["allowed_max_gib"]
+
+    if high_value < min_gib:
+        return (
+            f"MemoryHigh が小さすぎます（いまの値: {high_value} GiB）。"
+            f"{min_gib} GiB 以上にしてください。"
+        )
+    if high_value > max_value:
+        return (
+            f"MemoryHigh が MemoryMax より大きすぎます"
+            f"（MemoryHigh {high_value} GiB > MemoryMax {max_value} GiB）。"
+            f"MemoryHigh を {max_value} GiB 以下に下げるか、MemoryMax を {high_value} GiB 以上に上げてください。"
+        )
+    if max_value > allowed_max_gib:
+        return (
+            f"MemoryMax が大きすぎます（いまの値: {max_value} GiB）。"
+            f"{allowed_max_gib} GiB 以下にしてください"
+            f"（RAM 総量 {bounds['total_gib']:.1f} GiB から {MEMORY_RESERVE_GIB} GiB を残す上限です）。"
+        )
+    return None
+
+
+def memory_warning(max_gib: Any, bounds: dict[str, Any]) -> str | None:
+    """`max_gib` が推奨上限を超えているときに見せる警告文を返す（純粋関数）。拒否はしない。"""
+    recommended_max_gib = bounds.get("recommended_max_gib")
+    if recommended_max_gib is None:
+        return None
+    if max_gib > recommended_max_gib:
+        return (
+            f"MemoryMax（{int(max_gib)} GiB）が推奨上限（{recommended_max_gib} GiB）を超えています。"
+            "使いすぎたときにデスクトップごと止まるおそれがあります。"
+        )
+    return None
+
+
+def parse_memory_properties(stdout: str) -> dict[str, float | None]:
+    """`systemctl show --property=MemoryHigh --property=MemoryMax --property=MemoryCurrent` の
+    出力を `{"high_gib":..., "max_gib":..., "current_gib":...}`（GiB、float）へ変換する（純粋関数）。
+
+    値はバイト数の整数、`infinity`（上限無し）、`[not set]`（停止中の MemoryCurrent）のいずれか。
+    `infinity` と `[not set]` は None にする。行の順序には依存しない（read_unit_state と同じ理由）。
+    """
+    properties: dict[str, str] = {}
+    for line in stdout.splitlines():
+        key, separator, value = line.partition("=")
+        if separator:
+            properties[key.strip()] = value.strip()
+
+    def to_gib(raw_value: str | None) -> float | None:
+        if raw_value is None or raw_value in ("infinity", "[not set]"):
+            return None
+        try:
+            return int(raw_value) / GIB_BYTES
+        except ValueError:
+            return None
+
+    return {
+        "high_gib": to_gib(properties.get("MemoryHigh")),
+        "max_gib": to_gib(properties.get("MemoryMax")),
+        "current_gib": to_gib(properties.get("MemoryCurrent")),
+    }
+
+
+def build_set_property_commands(unit: str, high_gib: Any, max_gib: Any) -> list[list[str]]:
+    """`systemctl --user set-property` のコマンド列を 2 本組み立てる（純粋関数）。
+
+    1 本目（`--runtime` 無し）は恒久設定（PC 再起動後も残る）、2 本目（`--runtime` 付き）は
+    ランタイム設定（再起動で消えるが、恒久設定より優先度が高い）。両方に同じ値を書くことで、
+    以前 `--runtime` で書かれた値が残っていても画面で決めた値が必ず効くようにする。
+    どちらも稼働中のユニットへ再起動なしで即座に効く。
+    """
+    high_value = f"MemoryHigh={int(high_gib)}G"
+    max_value = f"MemoryMax={int(max_gib)}G"
+    return [
+        ["systemctl", "--user", "set-property", unit, high_value, max_value],
+        ["systemctl", "--user", "set-property", "--runtime", unit, high_value, max_value],
+    ]
+
+
+def parse_memory_path(path: str) -> tuple[str, str, str] | None:
+    """`/api/memory/<key>/<high>/<max>` を解釈する（純粋関数）。形だけを見る。
+
+    `key`・`high`・`max` が実在する値か、整数として解釈できるかの判定は呼び出し元（ハンドラ側）の役目。
+    """
+    if not path.startswith(MEMORY_ACTION_PATH_PREFIX):
+        return None
+    remainder = path[len(MEMORY_ACTION_PATH_PREFIX):]
+    segments = remainder.split("/")
+    if len(segments) != 3:
+        return None
+    key, high_raw, max_raw = segments
+    if not key or not high_raw or not max_raw:
+        return None
+    return key, high_raw, max_raw
+
+
 def build_service_status(
     service: dict[str, Any],
     port_open: bool,
     active_state: str,
     load_state: str,
     option_values: dict[str, Any] | None = None,
+    memory_values: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """SERVICES の 1 件と実測値から `/api/status` の services[] に載せる 1 件を組み立てる（純粋関数）。
 
     `option_values` はそのサービスが持つ設定の現在値（例 {"low_vram": True}）。設定ファイルを
     読むのは呼び出し元（collect_status）の役目で、この関数はそれをそのまま "options" として
     素通しするだけ。渡さなければ空の辞書になる（設定を持たないサービス向け）。
+    `memory_values` は unit を持つサービスの現在のメモリ上限（parse_memory_properties の戻り値）。
+    unit を持たないサービス（ComfyUI）では None のまま渡す。
     """
     state = unit_state(active_state, load_state, port_open)
     controllable = is_controllable({"unit": service["unit"], "state": state})
@@ -493,6 +671,36 @@ def build_service_status(
         "state": state,
         "controllable": controllable,
         "options": dict(option_values) if option_values else {},
+        "memory": dict(memory_values) if memory_values is not None else None,
+    }
+
+
+def build_ram_status(total_gib: float | None) -> dict[str, Any]:
+    """`/api/status` の `ram` フィールドを組み立てる（純粋関数）。
+
+    `total_gib` が None（/proc/meminfo を読めなかった）なら available: false で残りは None。
+    `default_high_gib` / `default_max_gib` は RAM 総量に関係なく常に定数を返す
+    （画面の「既定に戻す」ボタンが使うため）。
+    """
+    if total_gib is None:
+        return {
+            "total_gib": None,
+            "allowed_max_gib": None,
+            "recommended_max_gib": None,
+            "min_gib": MEMORY_MIN_GIB,
+            "default_high_gib": MEMORY_DEFAULT_HIGH_GIB,
+            "default_max_gib": MEMORY_DEFAULT_MAX_GIB,
+            "available": False,
+        }
+    bounds = memory_bounds(total_gib)
+    return {
+        "total_gib": bounds["total_gib"],
+        "allowed_max_gib": bounds["allowed_max_gib"],
+        "recommended_max_gib": bounds["recommended_max_gib"],
+        "min_gib": bounds["min_gib"],
+        "default_high_gib": MEMORY_DEFAULT_HIGH_GIB,
+        "default_max_gib": MEMORY_DEFAULT_MAX_GIB,
+        "available": True,
     }
 
 
@@ -500,13 +708,15 @@ def build_status(
     gpu: dict[str, int] | None,
     ollama_models: list[dict[str, Any]] | None,
     services: list[dict[str, Any]],
+    total_ram_gib: float | None = None,
 ) -> dict[str, Any]:
     """`/api/status` が返す JSON 形状を組み立てる（純粋関数。ネットワークにも GPU にも触らない）。
 
     `gpu` は `parse_nvidia_smi` の戻り値（取れなければ None）。
     `ollama_models` は `parse_ollama_ps` の戻り値（到達できなければ None）。
-    `services` は `build_service_status` が返す辞書（"key","name","port","up","state","controllable"）のリスト。
-    この関数はそれをそのまま素通しするだけで、内容の加工はしない。
+    `services` は `build_service_status` が返す辞書（"key","name","port","up","state","controllable",
+    "options","memory"）のリスト。この関数はそれをそのまま素通しするだけで、内容の加工はしない。
+    `total_ram_gib` は `parse_meminfo_total_gib` の戻り値（取れなければ None）。
     """
     if gpu is not None:
         gpu_status = {
@@ -526,31 +736,97 @@ def build_status(
         "gpu": gpu_status,
         "ollama": ollama_status,
         "services": list(services),
+        "ram": build_ram_status(total_ram_gib),
     }
 
 
+def read_meminfo_total_gib() -> float | None:
+    """`/proc/meminfo` を読んで MemTotal を GiB で返す。読めなければ None。"""
+    try:
+        text = MEMINFO_PATH.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    return parse_meminfo_total_gib(text)
+
+
+def read_memory_properties(unit: str, timeout: float = SYSTEMCTL_SHOW_TIMEOUT_SEC) -> dict[str, float | None]:
+    """`systemctl --user show <unit> --property=MemoryHigh --property=MemoryMax
+    --property=MemoryCurrent` を実行し、`parse_memory_properties` で解釈する。
+
+    失敗（コマンドが無い・タイムアウト・異常終了）した場合は例外を投げず、すべて None にする。
+    """
+    try:
+        process = subprocess.run(
+            [
+                "systemctl",
+                "--user",
+                "show",
+                unit,
+                "--property=MemoryHigh",
+                "--property=MemoryMax",
+                "--property=MemoryCurrent",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {"high_gib": None, "max_gib": None, "current_gib": None}
+    if process.returncode != 0:
+        return {"high_gib": None, "max_gib": None, "current_gib": None}
+    return parse_memory_properties(process.stdout)
+
+
+def set_unit_memory_limits(
+    unit: str, high_gib: Any, max_gib: Any, timeout: float = SYSTEMCTL_SHOW_TIMEOUT_SEC
+) -> list[dict[str, Any]]:
+    """`build_set_property_commands` の 2 本を順に実行する。
+
+    ここに渡す unit は必ず SERVICES 由来のもの。利用者が渡した文字列をそのまま渡してはならない。
+    戻り値は 2 件のリスト（恒久設定 → `--runtime`）、各要素は `{"ok": bool, "stderr": str}`。
+    どちらも例外を外に投げない。
+    """
+    results: list[dict[str, Any]] = []
+    for command in build_set_property_commands(unit, high_gib, max_gib):
+        try:
+            process = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+        except (OSError, subprocess.SubprocessError) as error:
+            results.append({"ok": False, "stderr": str(error)})
+            continue
+        if process.returncode == 0:
+            results.append({"ok": True, "stderr": ""})
+        else:
+            results.append({"ok": False, "stderr": (process.stderr or process.stdout or "").strip()})
+    return results
+
+
 def collect_status() -> dict[str, Any]:
-    """実際に nvidia-smi・Ollama・各ポート・各 systemd ユニット・各設定ファイルへ問い合わせて
-    `/api/status` の中身を作る。
+    """実際に nvidia-smi・Ollama・各ポート・各 systemd ユニット・各設定ファイル・/proc/meminfo へ
+    問い合わせて `/api/status` の中身を作る。
     """
     gpu = read_nvidia_smi()
     ollama_models = read_ollama_ps()
+    total_ram_gib = read_meminfo_total_gib()
     services = []
     for service in SERVICES:
         port_open = port_is_open(service["port"])
         unit = service["unit"]
         if unit:
             active_state, load_state = read_unit_state(unit)
+            memory_values = read_memory_properties(unit)
         else:
             active_state, load_state = ("unknown", "not-found")
+            memory_values = None
         option_values = {
             option_key: read_option_value(option_config)
             for option_key, option_config in service.get("options", {}).items()
         }
         services.append(
-            build_service_status(service, port_open, active_state, load_state, option_values)
+            build_service_status(
+                service, port_open, active_state, load_state, option_values, memory_values
+            )
         )
-    return build_status(gpu, ollama_models, services)
+    return build_status(gpu, ollama_models, services, total_ram_gib)
 
 
 class PortalRequestHandler(BaseHTTPRequestHandler):
@@ -568,7 +844,11 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
             self._serve_index()
         elif self.path == "/api/status":
             self._serve_status()
-        elif self.path.startswith(SERVICE_ACTION_PATH_PREFIX) or self.path.startswith(OPTION_PATH_PREFIX):
+        elif (
+            self.path.startswith(SERVICE_ACTION_PATH_PREFIX)
+            or self.path.startswith(OPTION_PATH_PREFIX)
+            or self.path.startswith(MEMORY_ACTION_PATH_PREFIX)
+        ):
             # 起動・停止・設定変更はどれも POST 専用。ブラウザのプリフェッチや履歴で誤って
             # 実行されないように、GET でこれらのパスを叩かれても何もせず 405 を返す。
             self._send_json(405, {"ok": False, "message": "GET では操作できません。POST を使ってください。"})
@@ -591,6 +871,14 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                 return
             key, option_name, value = parsed_option_path
             self._handle_option_action(key, option_name, value)
+            return
+        if self.path.startswith(MEMORY_ACTION_PATH_PREFIX):
+            parsed_memory_path = parse_memory_path(self.path)
+            if parsed_memory_path is None:
+                self._send_json(404, {"ok": False, "message": "パスが不正です。"})
+                return
+            key, high_raw, max_raw = parsed_memory_path
+            self._handle_memory_action(key, high_raw, max_raw)
             return
         self.send_error(404, "Not Found")
 
@@ -759,6 +1047,73 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
         self._send_json(
             200,
             {"ok": True, "message": f"低 VRAM モードを{state_label}にしました。", "value": enabled},
+        )
+
+    def _handle_memory_action(self, key: str, high_raw: str, max_raw: str) -> None:
+        # 起動・停止・設定変更と同じく、メモリ上限の変更も必ずログに残す（誰がいくつにしたか）。
+        sys.stderr.write(
+            f"portal: メモリ設定要求 {self.address_string()} - [{self.log_date_time_string()}] "
+            f"/api/memory/{key}/{high_raw}/{max_raw}\n"
+        )
+
+        if self.headers.get(REQUIRED_ACTION_HEADER) != REQUIRED_ACTION_HEADER_VALUE:
+            self._send_json(
+                403,
+                {
+                    "ok": False,
+                    "message": (
+                        f"{REQUIRED_ACTION_HEADER} ヘッダが要ります"
+                        "（入口ページ以外からの操作を防ぐため）。"
+                    ),
+                },
+            )
+            return
+
+        service = SERVICES_BY_KEY.get(key)
+        if service is None or service["unit"] is None:
+            self._send_json(404, {"ok": False, "message": "そのサービスは存在しません。"})
+            return
+
+        try:
+            high_gib = int(high_raw)
+            max_gib = int(max_raw)
+        except ValueError:
+            self._send_json(400, {"ok": False, "message": "high と max は整数（GiB）で指定してください。"})
+            return
+
+        total_ram_gib = read_meminfo_total_gib()
+        if total_ram_gib is None:
+            self._send_json(500, {"ok": False, "message": "RAM の総量（/proc/meminfo）を取得できませんでした。"})
+            return
+
+        bounds = memory_bounds(total_ram_gib)
+        invalid_reason = validate_memory_limits(high_gib, max_gib, bounds)
+        if invalid_reason is not None:
+            self._send_json(400, {"ok": False, "message": invalid_reason})
+            return
+
+        unit = service["unit"]
+        persistent_result, runtime_result = set_unit_memory_limits(unit, high_gib, max_gib)
+        ok = persistent_result["ok"] and runtime_result["ok"]
+
+        if ok:
+            message = (
+                f"{service['name']} を MemoryHigh={high_gib}G / MemoryMax={max_gib}G にしました"
+                "（再起動不要。PC を再起動しても残ります）"
+            )
+        elif not persistent_result["ok"]:
+            message = f"{service['name']} の設定変更に失敗しました: {persistent_result['stderr']}"
+        else:
+            message = (
+                f"{service['name']} の恒久設定は書き込みましたが、即時反映（--runtime）に失敗しました: "
+                f"{runtime_result['stderr']}"
+            )
+
+        warning = memory_warning(max_gib, bounds)
+        memory_values = read_memory_properties(unit)
+        self._send_json(
+            200,
+            {"ok": ok, "message": message, "warning": warning, "memory": memory_values},
         )
 
     def _send_json(self, status_code: int, payload: dict[str, Any]) -> None:
