@@ -25,8 +25,14 @@ TimeoutStartSec=600
 # 低 VRAM モードは重みを CPU に置くため RAM を強く使う。MemoryHigh を超えると
 # カーネルが回収と swap を優先するので、まず MemoryHigh で swap へ逃がし、
 # MemoryMax で最後の歯止めをかける。
-MemoryHigh=24G
-MemoryMax=28G
+# 既定は MemoryHigh=44G / MemoryMax=48G（RAM 62.5 GiB の機体に合わせた値。2026-09-24 決定）。
+# 31 GiB の頃の 24/28G のままだと、Pixal3D が MemoryHigh を超えたまま swap 満杯で絞られ続け、
+# 生成が 43 秒 → 18 分 42 秒に遅くなった。MemoryMax は物理的な残り（デスクトップ等 約 10.5 GiB と
+# Qwen が溢れる分を除いた量）を超えないようにする。超えるとデスクトップごと止まる。
+# 運用中の値は入口ページ（tools/portal）から変える。変えた値は systemctl set-property の
+# drop-in（~/.config/systemd/user.control/）に入り、このファイルの値より優先される。
+MemoryHigh=44G
+MemoryMax=48G
 
 [Install]
 WantedBy=default.target
