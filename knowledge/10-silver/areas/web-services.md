@@ -16,7 +16,8 @@
 - 8080 は元々 Open WebUI が使っていた。入口ページを置くために 2026-09-22 に Open WebUI を 8081 へ移した。
   元の設定は `~/.config/systemd/user/open-webui.service.bak` にあり、`tools/portal/setup-server.sh --revert` で戻せる。
 - 8188 は ComfyUI 用に空けてあるだけで、ComfyUI は導入していない。入口ページには「未導入」と出る。
-- Ollama だけは 127.0.0.1 で待受し、LAN に公開していない。入口ページ・Open WebUI・Hunyuan3D は 0.0.0.0 で待受する。
+- Ollama だけは 127.0.0.1 で待受し、LAN に公開していない。入口ページ・Open WebUI・Hunyuan3D・Pixal3D は
+  0.0.0.0 で待受する。
 
 ## 自動起動の方針（2026-09-22 決定）
 
@@ -38,13 +39,13 @@
 - 認証は無い。LAN 内からは誰でも操作できる。操作できるのは `open-webui`・`hunyuan3d`・`pixal3d` の
   3 つで、入口ページ自身は対象外なので自分を止められない。
 
-## GPU の排他と低 VRAM の切り替え（2026-09-22 追加）
+## 他の PC から使う
 
-- **Hunyuan3D と Pixal3D は同時に動かせない。** VRAM も RAM も食い合う。入口ページは片方を起動する前に
-  もう片方を止め、応答に停止したサービス名を載せる。停止に失敗したら起動しない。画面は押す前に確認を出す。
-- 低 VRAM モードの On/Off は入口ページのスイッチで切り替える。API は
-  `POST /api/option/<key>/low-vram/<on|off>`。`X-Portal-Request: 1` は起動・停止と同じく必須。
-- 値は各サービスの環境変数ファイルに書く。`~/.config/hunyuan3d/hunyuan3d.env` の `HY3D_LOW_VRAM` と
-  `~/.config/pixal3d/pixal3d.env` の `PIXAL3D_LOW_VRAM`。どちらも既定は `1`（有効）。
-- **稼働中は変更できない**（409 を返す）。systemd の `EnvironmentFile` は起動時にしか読まれないため、
-  稼働中に変えても効かず、画面と実態がずれる。
+- 他の PC のブラウザで `http://<server-ip>:8080/` を開く。入口ページのリンクは開いた PC の
+  アドレスをもとに組み立てるので、どの PC から開いても正しいホストを指す。
+- **サービスを足したら ufw でそのポートを開ける。** 開けないと、サーバー自身からは動くのに
+  他の PC からは見えない。手順と切り分けは
+  `knowledge/10-silver/resources/lan-access.md` を Read する。
+- GPU を使う 2 つ（Hunyuan3D・Pixal3D）は排他で、切り替えに数分かかる。詳細は
+  `knowledge/10-silver/resources/gpu-exclusive-switching.md` を Read する。
+- Open WebUI のモデル一覧や改名の注意は `knowledge/10-silver/resources/open-webui.md` を Read する。

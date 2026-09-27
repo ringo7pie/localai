@@ -32,7 +32,7 @@
   Off にはできるが、生成が失敗する。
 - swap 8 GiB のままでは常駐サービスとして RAM 残り 200MiB まで落ちて生成が停滞した。swap を増やして
   解決した。現在の swap 構成は `env.md` を Read する。
-- ユニットに `MemoryHigh=24G` / `MemoryMax=28G` を入れてある。超えたときに落ちるのはサービスだけで、
+- メモリ上限は既定 44G / 48G。超えたときに落ちるのはサービスだけで、
   デスクトップは巻き込まない。
 - Hunyuan3D とは同時に動かせない。入口ページが片方を自動で止める。詳細は `web-services.md` を Read する。
 - 重み約 24.5GB は `tools/pixal3d/models/` 配下に置く。`HF_HOME` と `TORCH_HOME` もそこへ向ける。

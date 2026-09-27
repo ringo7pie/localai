@@ -32,10 +32,11 @@
 - 生成の所要時間は形状 21.7 秒、テクスチャ 136.2 秒。入力 3 枚（front / left / back）での値。
 - **`--low_vram_mode` は VRAM を RAM と引き換えにする。** 2026-09-22 に RAM 20.2 GiB まで伸びて
   カーネルの OOM killer に殺され、その 16 分後に systemd-oomd が GNOME Shell を落として
-  デスクトップがハングした。RAM 31 GiB の機体で Hunyuan3D と Qwen とデスクトップは同時に置けない。
+  デスクトップがハングした（当時の RAM は 31 GiB）。この事故を受けて RAM を増設し、メモリ上限も
+  見直した。現在の値は `knowledge/10-silver/resources/service-memory-limits.md` を Read する。
 - この事故を受けて、低 VRAM モードは On/Off を選べるようにした。既定は On。切り替え方は
-  `web-services.md` を Read する。ユニットに `MemoryHigh=20G` / `MemoryMax=22G` も入れてあり、
-  超えたときに落ちるのはサービスだけでデスクトップは巻き込まない。
+  `web-services.md` を Read する。メモリ上限は既定 44G / 48G で、超えたときに落ちるのはサービスだけ。
+  決め方と実例は `knowledge/10-silver/resources/service-memory-limits.md` を Read する。
 - `serve` は `os.execve` でサーバに置き換わる。print は flush しないとバッファごと捨てられ、
   journalctl に起動条件（低 VRAM の有無）が残らない。
 - **Qwen を VRAM に載せたままでは 3D 生成ができない。** 空き 2,051 MiB の状態で生成すると 23.7 秒で

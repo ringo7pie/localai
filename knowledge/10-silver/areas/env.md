@@ -4,7 +4,8 @@
 
 - GPU は NVIDIA A30 1 枚。VRAM 24 GiB。compute capability 8.0（Ampere）。
 - A30 に FP8 の演算器は無い。量子化は INT4 / INT8 系（GGUF の Q4_K_M・Q8_0、AWQ、GPTQ）を使う。
-- RAM は 32 GB（実測 31 GiB）。CPU オフロードに使える余地は小さい。
+- RAM は 64 GB（実測 62.5 GiB）。2026-09-24 時点。以前は 32 GB で、3D 生成の低 VRAM モードが
+  重みを CPU 側に置いて RAM を強く使い、足りなくなったため増設した。
 - swap は 24 GiB。3D 生成の低 VRAM モードが重みを CPU 側に置き 8 GiB では足りず、2026-09-22 に
   `/swapfile-pixal3d` 16 GiB を足した。`/etc/fstab` に登録済み（変更前は `/etc/fstab.bak-pixal3d`）。
 - CPU は i7-12700、20 スレッド。ディスクは / に 1.3 TB 空き（モデルの重み 46GB を置いたあと）。
@@ -17,7 +18,9 @@
   12.6 は Pixal3D 用に 2026-09-22 に追加した（Ubuntu 24.04 のリポジトリに 12.4 が無いため）。
 - Ollama は同梱の cuda_v13 を使い、A30 を compute 8.0 として認識する。CUDA を自前リンクしないため、
   PyTorch 系の対応状況に影響されない。
-- Python 3.12.3。pip は入っていない。パッケージ管理は uv を使う。docker は無い。
+- Python 3.12.3。pip は入っていない。パッケージ管理は uv を使う。
+- Docker 29.8.1 が入っており `docker.service` が常時起動する。localai とは別のプロジェクト
+  （ai-finance、compose でコンテナ 5 つ）がこの機体で動いている。localai のツールは Docker を使わない。
 - オンライン。モデルのダウンロードは可能。
 
 ## モデル
