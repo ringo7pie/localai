@@ -60,3 +60,9 @@ tools/pixal3d/vendor/
 tools/pixal3d/models/
 tools/pixal3d/outputs/
 tools/pixal3d/fixtures/
+
+# qwen-model-bench の結合ツール（llama.cpp のビルド済みバイナリ）と、GGUF の取り込み作業ファイル。
+# 作業ファイルは数十〜百 GB になり、取り込みが終われば消える。
+# 結合ツールの入れ方: tools/qwen-model-bench/README.md
+tools/qwen-model-bench/bin/
+tools/qwen-model-bench/work/

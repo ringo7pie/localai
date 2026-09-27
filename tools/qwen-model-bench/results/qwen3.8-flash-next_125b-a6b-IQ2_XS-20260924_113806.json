@@ -1,0 +1,24 @@
+{
+  "model": "qwen3.8-flash-next:125b-a6b-IQ2_XS",
+  "tokens_per_sec": 3.9,
+  "eval_count": 257,
+  "load_duration_sec": 50.7,
+  "total_elapsed_sec": 164,
+  "placement": {
+    "size_bytes": 51176286451,
+    "size_vram_bytes": 22257923521,
+    "gpu_percent": 43
+  },
+  "peaks": {
+    "vram_mib": 23091,
+    "ram_mib": 5970,
+    "swap_mib": 402,
+    "memory_pressure_full_max": 1.64,
+    "memory_pressure_full_mean": 0.16,
+    "samples": 154
+  },
+  "usable": false,
+  "reasons": [
+    "生成が 3.9 tok/s で、目安の 5 tok/s を下回る"
+  ]
+}

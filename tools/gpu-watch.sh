@@ -9,6 +9,13 @@
 #   メモリ      /proc/meminfo（used = MemTotal - MemAvailable）
 #   CPU 電力    Intel RAPL package-0 の energy_uj 差分
 #   PSys 電力   Intel RAPL psys の energy_uj 差分（SoC プラットフォーム。dGPU は含まない）
+#   ファン PWM  a30-fan.service の journal に出る最新の "fan PWM N%" 行
+#
+# ファン PWM は fan_host.py が Pico H に送った指令値で、回転数の実測ではない（TACH 未接続）。
+# fan_host.py はシリアルポートを排他で開くため、Pico に直接は問い合わせない。
+# journal を読むには adm か systemd-journal グループが要る。
+# 最新の PWM 行が 10 秒より古ければ n/a にする。Pico は指令が 10 秒途絶えると
+# 自分で 100% に戻すので、それより古い行は現在値の根拠にならない。
 #
 # RAPL は既定で root しか読めない（PLATYPUS 対策 CVE-2020-8694）。
 # 読めるようにするには root で次を 1 度だけ実行する:
@@ -33,6 +40,8 @@ log_file=""       # アラートの追記先
 bell_mode="edge"  # edge | always | off
 color_mode="auto" # auto | always | never
 baseline_watt=""  # -P。筐体ベースライン（W）。指定時だけ全体推定を出す
+fan_unit="a30-fan.service" # -F。ファン PWM を読む systemd ユニット。off で無効
+fan_stale=10      # この秒数より古い PWM ログは n/a にする（Pico の指令途絶タイムアウト）
 
 usage() {
   cat <<'USAGE_EOF'
@@ -49,11 +58,13 @@ usage() {
   -P WATT   筐体ベースライン（W）。CPU + GPU にこれを足した値を「全体(推定)」として出す。
             省略すると推定は出さない（推測値で埋めないため）。
             値はスマートプラグ等で実測して決めること。
+  -F UNIT   ファン PWM を読む systemd ユニット。既定 a30-fan.service。off で表示しない
   -h        このヘルプ
 
 表示する値
   HOST  CPU 使用率 / CPU 温度 / メモリ使用率 / CPU 電力 / PSys 電力
   GPU   温度 / 使用率 / VRAM / 電力
+  FAN   Pico H への PWM 指令値（%）と制御モード。回転数の実測ではない
   Power CPU + GPU の実測合計。-P 指定時はそれにベースラインを足した推定も出す。
 
 CPU 電力が n/a のとき
@@ -61,11 +72,16 @@ CPU 電力が n/a のとき
   スクリプト冒頭のコメントに、読めるようにする udev ルールを書いてある。
   この緩和を外すかは利用者が判断すること。
 
+ファン PWM が n/a のとき
+  journal に PWM 行が無い: サービス停止中か、journal を読む権限（adm グループ）が無い。
+  最新ログが古い: fan_host.py が USB エラーなどで指令を出せていない。
+    journalctl -u a30-fan.service -n 30 で原因を見る。
+
 Ctrl-C で終了する。終了時に全期間のサマリーを表示する。
 USAGE_EOF
 }
 
-while getopts 'n:w:t:T:i:l:b:c:P:h' opt; do
+while getopts 'n:w:t:T:i:l:b:c:P:F:h' opt; do
   case "$opt" in
     n) interval=$OPTARG ;;
     w) window=$OPTARG ;;
@@ -76,6 +92,7 @@ while getopts 'n:w:t:T:i:l:b:c:P:h' opt; do
     b) bell_mode=$OPTARG ;;
     c) color_mode=$OPTARG ;;
     P) baseline_watt=$OPTARG ;;
+    F) fan_unit=$OPTARG ;;
     h) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
   esac
@@ -95,7 +112,16 @@ if [ -n "$baseline_watt" ]; then
   esac
 fi
 
+case "$fan_unit" in
+  off) fan_unit="" ;;
+  *[!A-Za-z0-9@._:-]*) echo "gpu-watch: -F はユニット名か off で指定する: $fan_unit" >&2; exit 2 ;;
+esac
+
 command -v nvidia-smi >/dev/null 2>&1 || { echo "gpu-watch: nvidia-smi が見つからない" >&2; exit 1; }
+if [ -n "$fan_unit" ] && ! command -v journalctl >/dev/null 2>&1; then
+  echo "gpu-watch: journalctl が無いのでファン PWM は表示しない" >&2
+  fan_unit=""
+fi
 
 # 窓に入るサンプル数（切り上げ、最低 1）
 slots=$(( (window + interval - 1) / interval ))
@@ -261,6 +287,29 @@ feeder() {
     stamp=$(date '+%Y/%m/%d %H:%M:%S.%3N')
     printf 'HOST, %s, %s, %s, %s, %s, %s, %s, %s\n' \
       "$stamp" "$cpu_pct" "$cpu_temp" "$mem_pct" "$mem_used_mib" "$mem_total_mib" "$cpu_w" "$psys_w"
+
+    # --- ファン PWM（journal の最新 "fan PWM N% [MODE]" 行） ---
+    # USB エラー行などが挟まっても拾えるよう、末尾数行から PWM 行だけを選ぶ。
+    if [ -n "$fan_unit" ]; then
+      local fan_pwm="na" fan_mode="na" fan_state="none" fan_age="na" fan_log fan_parsed
+      fan_log=$(journalctl -u "$fan_unit" -n 20 -o short-unix --no-pager -q 2>/dev/null \
+                  | grep -E 'fan PWM [0-9]{1,3}% \[[A-Za-z_]+\]$' | tail -1 || true)
+      if [ -n "$fan_log" ]; then
+        fan_parsed=$(printf '%s\n' "$fan_log" \
+          | sed -n -E 's/^([0-9]+(\.[0-9]+)?) .*fan PWM ([0-9]{1,3})% \[([A-Za-z_]+)\]$/\1 \3 \4/p')
+        if [ -n "$fan_parsed" ]; then
+          local fan_ts
+          read -r fan_ts fan_pwm fan_mode <<<"$fan_parsed"
+          fan_age=$(awk -v a="$now_time" -v b="$fan_ts" 'BEGIN{ d=a-b; if (d<0) d=0; printf "%.0f", d }')
+          if [ "$fan_age" -le "$fan_stale" ]; then
+            fan_state="ok"
+          else
+            fan_state="stale"; fan_pwm="na"
+          fi
+        fi
+      fi
+      printf 'FAN, %s, %s, %s, %s, %s\n' "$stamp" "$fan_pwm" "$fan_mode" "$fan_state" "$fan_age"
+    fi
 
     local smi_args=(--query-gpu="$gpu_query" --format=csv,noheader,nounits)
     [ -n "$gpu_index" ] && smi_args+=(-i "$gpu_index")
@@ -445,6 +494,22 @@ function render(   gpu_no, idx, used, span, header, row, alert_shown,
     }
   }
 
+  # ---- ファン PWM ----
+  if (fan_unit != "" && count["F"] > 0) {
+    used = (count["F"] < slots) ? count["F"] : slots
+    out("")
+    out(sprintf("FAN %-40s window %d/%d samples (%ds)",
+                substr(fan_unit, 1, 40), used, slots, used * interval))
+    header = sprintf("  %-7s %9s %11s %11s %11s", "", "now", "max(win)", "avg(win)", "max(all)")
+    out(header)
+    row = metric_row("PWM", "fan", "F", used, "%", "", 0, 0)
+    if (fan_state == "ok")         row = row "  [" fan_mode "]"
+    else if (fan_state == "stale") row = row "  " tint(sprintf("最新の PWM ログが %s 秒前", fan_age), "\033[1;33m")
+    else                           row = row "  " tint("journal に PWM ログが無い（停止中か権限不足）", "\033[1;33m")
+    out(row)
+    out("  ※Pico への指令値。TACH 未接続のため回転の実測ではない")
+  }
+
   # ---- 電力の合計 ----
   out("")
   if (cur_ok["cpuw", "H"] && gpu_watt_ok) {
@@ -507,6 +572,10 @@ function summary(   gpu_no, idx, span) {
     else
       printf "  %d C 超過: なし\n", threshold
   }
+  if (fan_unit != "" && count["F"] > 0) {
+    printf "FAN %s   サンプル %d 件（PWM 指令値。回転の実測ではない）\n", fan_unit, count["F"]
+    summary_line("PWM", "fan", "F", "%")
+  }
   print "  筐体全体の電力は測っていない（センサーが無い）。"
   fflush()
 }
@@ -549,6 +618,16 @@ $1 == "HOST" && NF >= 9 {
   } else {
     in_alert["CPU"] = 0
   }
+  next
+}
+
+# FAN, stamp, pwm, mode, state(ok|stale|none), age_sec
+# HOST と GPU の間に来る。描画は GPU 行が揃った時点で行う。
+$1 == "FAN" && NF >= 6 {
+  slot = count["F"] % slots
+  record("fan", "F", slot, $3)
+  fan_mode = $4; fan_state = $5; fan_age = $6
+  count["F"]++
   next
 }
 
@@ -642,6 +721,7 @@ awk ${awk_opts[@]+"${awk_opts[@]}"} \
     -v bell_mode="$bell_mode" -v log_file="$log_file" \
     -v cpu_model="$cpu_model ($cpu_threads threads)" \
     -v rapl_note="$rapl_note" -v baseline_raw="$baseline_watt" \
+    -v fan_unit="$fan_unit" \
     "$awk_prog" <&3 &
 awk_pid=$!
 
