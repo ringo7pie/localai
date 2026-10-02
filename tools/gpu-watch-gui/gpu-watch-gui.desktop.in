@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=GPU Watch
+Comment=GPU・CPU・メモリ・ファン PWM を見る小さな常駐ウィンドウ
+Exec=@ROOT@/run-gpu-watch-gui
+Terminal=false
+NoDisplay=false
+X-GNOME-Autostart-Delay=5

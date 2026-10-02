@@ -42,6 +42,7 @@ color_mode="auto" # auto | always | never
 baseline_watt=""  # -P。筐体ベースライン（W）。指定時だけ全体推定を出す
 fan_unit="a30-fan.service" # -F。ファン PWM を読む systemd ユニット。off で無効
 fan_stale=10      # この秒数より古い PWM ログは n/a にする（Pico の指令途絶タイムアウト）
+output_mode="tui" # -o。tui | raw
 
 usage() {
   cat <<'USAGE_EOF'
@@ -59,6 +60,8 @@ usage() {
             省略すると推定は出さない（推測値で埋めないため）。
             値はスマートプラグ等で実測して決めること。
   -F UNIT   ファン PWM を読む systemd ユニット。既定 a30-fan.service。off で表示しない
+  -o MODE   出力モード。tui=画面描画（既定） / raw=feeder の行（HOST/FAN/GPU）をそのまま stdout へ。
+            raw は gpu-watch-gui など他プロセスが機械可読で読むための経路で、awk の描画は行わない
   -h        このヘルプ
 
 表示する値
@@ -81,7 +84,7 @@ Ctrl-C で終了する。終了時に全期間のサマリーを表示する。
 USAGE_EOF
 }
 
-while getopts 'n:w:t:T:i:l:b:c:P:F:h' opt; do
+while getopts 'n:w:t:T:i:l:b:c:P:F:o:h' opt; do
   case "$opt" in
     n) interval=$OPTARG ;;
     w) window=$OPTARG ;;
@@ -93,6 +96,7 @@ while getopts 'n:w:t:T:i:l:b:c:P:F:h' opt; do
     c) color_mode=$OPTARG ;;
     P) baseline_watt=$OPTARG ;;
     F) fan_unit=$OPTARG ;;
+    o) output_mode=$OPTARG ;;
     h) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
   esac
@@ -106,6 +110,7 @@ case "$cpu_threshold" in ''|*[!0-9]*) echo "gpu-watch: -T は整数で指定す�
 [ "$window" -ge 1 ]   || { echo "gpu-watch: -w は 1 以上で指定する" >&2; exit 2; }
 case "$bell_mode" in edge|always|off) ;; *) echo "gpu-watch: -b は edge / always / off のいずれか: $bell_mode" >&2; exit 2 ;; esac
 case "$color_mode" in auto|always|never) ;; *) echo "gpu-watch: -c は auto / always / never のいずれか: $color_mode" >&2; exit 2 ;; esac
+case "$output_mode" in tui|raw) ;; *) echo "gpu-watch: -o は tui / raw のいずれか: $output_mode" >&2; exit 2 ;; esac
 if [ -n "$baseline_watt" ]; then
   case "$baseline_watt" in
     ''|*[!0-9.]*) echo "gpu-watch: -P は 0 以上の数値で指定する: $baseline_watt" >&2; exit 2 ;;
@@ -703,6 +708,21 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+
+if [ "$output_mode" = raw ]; then
+  # raw: 引数検証・センサー解決はここまでと同じに行い、awk の描画を起動せず
+  # feeder の出力（HOST/FAN/GPU 行）をそのまま stdout へ流す。
+  # 先頭に INFO 行を 1 回だけ出す。gpu-watch-gui が「CPU 電力が n/a の理由」の表示に使う。
+  printf 'INFO, rapl_note=%s\n' "$rapl_note"
+  printf 'INFO, cpu_model=%s (%s threads)\n' "$cpu_model" "$cpu_threads"
+
+  feeder &
+  feeder_pid=$!
+
+  trap 'kill "$feeder_pid" 2>/dev/null || true' TERM HUP
+  wait "$feeder_pid" || true
+  exit 0
+fi
 
 if [ "$is_tty" -eq 1 ]; then printf '\033[?25l\033[2J'; fi
 

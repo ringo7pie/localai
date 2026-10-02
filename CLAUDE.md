@@ -13,6 +13,7 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 | `tools/hunyuan3d/` | 正面・背面・左・右の 4 枚の画像から 3D メッシュを作る Hunyuan3D-2mv（ポート 7860） |
 | `tools/pixal3d/` | 同じく複数画像から 3D メッシュを作る Pixal3D（TencentARC、ポート 7861）。Hunyuan3D とは排他 |
 | `tools/portal/` | ポート 8080 のサービス入口ページ。Open WebUI / Hunyuan3D / ComfyUI を選ぶ |
+| `tools/gpu-watch-gui/` | gpu-watch.sh の値を見る小さな常駐ウィンドウ（GTK4）。ログイン時に自動起動できる |
 
 新しく作るリポジトリ・試験データは必ずこの中（例 `tools/*/fixtures/`）に置く。`~/Proj` 直下には作らない。
 `~/.local/share/qwen-worker` は `tools/qwen-worker` へのシンボリックリンク。MCP 登録と authorized_keys の強制コマンドがそのパスを指す。
@@ -41,6 +42,13 @@ tools/pixal3d/run-pixal3d doctor
 
 # portal は依存ゼロ。venv を作らない。試験だけ uv の一時環境で走らせる。
 uvx --with pytest pytest tools/portal/tests/test_units.py -q
+
+# gpu-watch-gui も依存ゼロ（システムの python3 + python3-gi の GTK4）。venv を作らない。
+uvx --with pytest pytest tools/gpu-watch-gui/tests/test_units.py -q
+tools/gpu-watch-gui/run-gpu-watch-gui
+# ログイン時の自動起動を入れる/外す
+tools/gpu-watch-gui/install-autostart.sh
+tools/gpu-watch-gui/install-autostart.sh --uninstall
 ```
 
 ## 常時ロードされる知識

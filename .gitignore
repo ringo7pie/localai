@@ -66,3 +66,7 @@ tools/pixal3d/fixtures/
 # 結合ツールの入れ方: tools/qwen-model-bench/README.md
 tools/qwen-model-bench/bin/
 tools/qwen-model-bench/work/
+
+# gpu-watch-gui の電力較正データ。この機械の RAPL 実測値（CPU モデル・PL1・負荷段階ごとの
+# 電力点）を含み、機械ごとに作り直す値のため持ち運ばない。再作成は GUI の「電力を較正」ボタン。
+tools/gpu-watch-gui/state/

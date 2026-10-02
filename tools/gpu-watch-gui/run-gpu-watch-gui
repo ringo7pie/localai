@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# gpu-watch.sh の値を見る小さな常駐ウィンドウ（GTK4）を起動する。
+# venv は作らない。依存ゼロでシステムの python3 + python3-gi（GTK4）をそのまま使う。
+set -euo pipefail
+
+GUI_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+
+if [ ! -x /usr/bin/python3 ]; then
+  echo "run-gpu-watch-gui: /usr/bin/python3 がありません" >&2
+  exit 1
+fi
+
+export PYTHONPATH="$GUI_DIR${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/bin/python3 -m gpu_watch_gui.app "$@"
