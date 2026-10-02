@@ -55,6 +55,12 @@ def temp_level(value: Optional[float], limit: float) -> str:
     return "ok"
 
 
+def plain_level(value: Optional[float]) -> str:
+    """しきい値を決めていない項目（VRAM・電力・ファン PWM）。値があれば普通の文字色、
+    取れなければ灰色。灰色を「n/a・未較正」だけの意味にするため、正常値は灰色にしない。"""
+    return "unknown" if value is None else "plain"
+
+
 def load_level(value: Optional[float]) -> str:
     """gpu-watch.sh の load_color と同じしきい値（90 以上=critical / 70 以上=warning / 未満=ok）。"""
     if value is None:

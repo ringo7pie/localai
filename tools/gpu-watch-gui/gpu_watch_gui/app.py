@@ -18,16 +18,17 @@ import argparse
 import json
 import signal
 import subprocess
+import time
 from pathlib import Path
 from typing import Dict, Optional
 
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gio, GLib, Gtk  # noqa: E402  (gi.require_version の後に import する)
+from gi.repository import Gio, GLib, Gtk, Pango  # noqa: E402  (gi.require_version の後に import する)
 
 from gpu_watch_gui import model
-from gpu_watch_gui.model import AlertEvent, GpuWatchModel, load_level, temp_level
+from gpu_watch_gui.model import AlertEvent, GpuWatchModel, load_level, plain_level, temp_level
 
 APP_ID = "jp.localai.GpuWatchGui"
 GUI_DIR = Path(__file__).resolve().parent.parent
@@ -40,15 +41,22 @@ CALIBRATION_FILE = STATE_DIR / "calibration.json"
 
 RESTART_DELAY_SEC = 5
 CALIBRATE_DONE_DISPLAY_SEC = 5
-LEVEL_CSS_CLASSES = ("level-critical", "level-warning", "level-ok", "level-unknown")
+FAILURE_DISPLAY_SEC = 15  # 失敗の理由は読めるよう長めに残す（全文はツールチップ）
+VALUE_WIDTH_CHARS = 7  # 「未較正」「21% 13G」「3.5/24G」が収まる幅
+MAX_WIDTH_CHARS = 5
+ESTIMATE_PREFIX = "≈"  # 推定値の印。項目名に (推定) と書くと横幅が伸びるため値の頭に付ける
+LEVEL_CSS_CLASSES = ("level-critical", "level-warning", "level-ok", "level-unknown", "level-plain")
 
 CSS = b"""
 .level-critical { color: #ff4d4d; font-weight: bold; }
 .level-warning  { color: #e6b800; font-weight: bold; }
 .level-ok       { color: #2ecc71; }
 .level-unknown  { color: #888888; }
-.gpu-watch-heading { font-weight: bold; margin-top: 6px; }
-.gpu-watch-status { font-style: italic; }
+.level-plain    { }
+.gpu-watch-colhead { font-size: smaller; }
+separator.gpu-watch-separator { background: #808080; min-height: 1px; }
+.gpu-watch-status { font-size: smaller; }
+button.gpu-watch-calibrate { padding: 0 6px; min-height: 0; font-size: smaller; }
 """
 
 
@@ -107,25 +115,39 @@ def notify_critical(summary: str, body: str) -> None:
         pass
 
 
-def format_scalar(value: Optional[float], unit: str, precision: int = 1) -> str:
+def format_scalar(value: Optional[float], unit: str, precision: int = 0, prefix: str = "") -> str:
     if value is None:
         return "n/a"
-    return f"{value:.{precision}f} {unit}"
+    return f"{prefix}{value:.{precision}f}{unit}"
 
 
-def format_mem_gib(used_mib: Optional[float], total_mib: Optional[float], pct: Optional[float]) -> str:
+def format_mem(used_mib: Optional[float], pct: Optional[float]) -> str:
+    """「21% 13G」。詳しい値（小数・全体量）はツールチップに出す。"""
+    if used_mib is None or pct is None:
+        return "n/a"
+    return f"{pct:.0f}% {used_mib / 1024:.0f}G"
+
+
+def format_vram(used_mib: Optional[float], total_mib: Optional[float]) -> str:
+    """「3.5/24G」。MiB の値はツールチップに出す。"""
     if used_mib is None or total_mib is None:
         return "n/a"
-    used_gib = used_mib / 1024
-    total_gib = total_mib / 1024
-    pct_text = f"{pct:.1f}%" if pct is not None else "n/a"
-    return f"{used_gib:.1f}/{total_gib:.1f} GiB ({pct_text})"
+    return f"{used_mib / 1024:.1f}/{total_mib / 1024:.0f}G"
 
 
-def format_vram_mib(used_mib: Optional[float], total_mib: Optional[float]) -> str:
-    if used_mib is None or total_mib is None:
+def format_gib(used_mib: Optional[float]) -> str:
+    if used_mib is None:
         return "n/a"
-    return f"{used_mib:.0f}/{total_mib:.0f} MiB"
+    return f"{used_mib / 1024:.1f}G"
+
+
+def stamp_time_part(stamp: Optional[str]) -> str:
+    """gpu-watch.sh の "2026/10/02 10:40:25.135" から "10:40:25" だけを取り出す。"""
+    if not stamp:
+        return ""
+    parts = stamp.split()
+    clock = parts[1] if len(parts) >= 2 else parts[0]
+    return clock.split(".")[0]
 
 
 class MetricRow:
@@ -135,8 +157,8 @@ class MetricRow:
         self.name_label = Gtk.Label(label=label_text, xalign=0)
         self.value_label = Gtk.Label(label="n/a", xalign=1)
         self.max_label = Gtk.Label(label="n/a", xalign=1)
-        self.name_label.set_margin_end(8)
-        self.value_label.set_margin_end(8)
+        self.value_label.set_width_chars(VALUE_WIDTH_CHARS)
+        self.max_label.set_width_chars(MAX_WIDTH_CHARS)
         grid.attach(self.name_label, 0, row, 1, 1)
         grid.attach(self.value_label, 1, row, 1, 1)
         grid.attach(self.max_label, 2, row, 1, 1)
@@ -151,6 +173,9 @@ class MetricRow:
     def set_tooltip(self, text: str) -> None:
         self.value_label.set_tooltip_text(text or None)
 
+    def set_name_tooltip(self, text: str) -> None:
+        self.name_label.set_tooltip_text(text or None)
+
     def set_name(self, text: str) -> None:
         """実測/推定の切り替えなど、項目名を後から変える行のためのメソッド。"""
         self.name_label.set_label(text)
@@ -159,7 +184,8 @@ class MetricRow:
 class GpuWatchWindow(Gtk.ApplicationWindow):
     def __init__(self, application: Gtk.Application, args: argparse.Namespace):
         super().__init__(application=application, title="GPU Watch")
-        self.set_default_size(360, -1)
+        # 中身の自然な大きさに合わせる。値の列は幅を固定しているので伸び縮みしない。
+        self.set_resizable(False)
 
         self.args = args
         self.model = GpuWatchModel(
@@ -179,7 +205,9 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
         self._gpu_rows: Dict[str, Dict[str, MetricRow]] = {}
         self._gpu_headings: Dict[str, Gtk.Label] = {}
         self._calibrate_process: Optional[Gio.Subprocess] = None
-        self._calibrate_done_source_id: Optional[int] = None
+        # 一定時間だけ最下行に残すメッセージ（較正の完了・失敗）。毎秒の「更新」で消さないため。
+        self._held_message: Optional[str] = None
+        self._held_until = 0.0
 
         self._build_ui()
         self.connect("close-request", self._on_close_request)
@@ -191,39 +219,64 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
     # ---- UI 組み立て --------------------------------------------------
 
     def _build_ui(self) -> None:
-        self.grid = Gtk.Grid(column_spacing=12, row_spacing=2)
-        self.grid.set_margin_top(8)
-        self.grid.set_margin_bottom(8)
-        self.grid.set_margin_start(8)
-        self.grid.set_margin_end(8)
-        self.set_child(self.grid)
+        # 縦に詰めるため見出し行（HOST / FAN / 較正 / 最終更新）は置かない。
+        # 表の下に「較正ボタン + 状態 1 行」を別の箱で置く。GPU の行は値が届いてから表に足すので、
+        # 表と最下行を分けておかないと GPU の行が最下行より下に並んでしまう。
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        outer.set_margin_top(6)
+        outer.set_margin_bottom(6)
+        outer.set_margin_start(8)
+        outer.set_margin_end(8)
+        self.set_child(outer)
+
+        self.grid = Gtk.Grid(column_spacing=8, row_spacing=0)
+        outer.append(self.grid)
 
         self._next_row = 0
-        self._header_row("HOST")
-        self.row_cpu = self._metric_row("CPU 使用率")
+        for column, text_value in enumerate(("", "現在", f"最大{self.args.window}s")):
+            head = Gtk.Label(label=text_value, xalign=1)
+            head.add_css_class("gpu-watch-colhead")
+            self.grid.attach(head, column, self._next_row, 1, 1)
+        self._next_row += 1
+
+        # 並びは「PC 全体 ─ CPU 系 ─ GPU 系」。区切り線で 3 つに分ける。
+        self.row_system_w = self._metric_row("PC 全体")
+        self._separator_row()
+
+        self.row_cpu = self._metric_row("CPU")
         self.row_cpu_temp = self._metric_row("CPU 温度")
         self.row_mem = self._metric_row("メモリ")
-        self.row_cpu_w = self._metric_row("CPU 電力(推定)")
-        self.row_psys_w = self._metric_row("PSys(推定)")
-        self.row_system_w = self._metric_row("PC 全体(推定)")
+        self.row_cpu_w = self._metric_row("CPU 電力")
+        self.row_psys_w = self._metric_row("PSys")
+        for row in (self.row_cpu_w, self.row_psys_w, self.row_system_w):
+            row.set_name_tooltip(f"値の頭の {ESTIMATE_PREFIX} は推定値。付いていなければ実測")
+        self.row_cpu.set_name_tooltip("CPU 使用率")
+        self._separator_row()
 
+        # GPU の行は値が届いてから、この位置（ファンの行の手前）に差し込む。
+        # ファンは A30 を冷やすファン（a30-fan.service）なので GPU 系の最後に置く。
+        self._gpu_insert_row = self._next_row
         if self.args.fan_unit != "off":
-            self._header_row("FAN")
-            self.row_fan = self._metric_row("PWM")
+            self.row_fan = self._metric_row("ファン")
+            self.row_fan.set_name_tooltip("A30 のファン。Pico H への PWM 指令値で、回転数の実測ではない")
         else:
             self.row_fan = None
 
-        self._header_row("較正")
-        self.calibrate_button = Gtk.Button(label="電力を較正")
+        bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.calibrate_button = Gtk.Button(label="較正")
+        self.calibrate_button.add_css_class("gpu-watch-calibrate")
+        self.calibrate_button.set_tooltip_text("電力の推定式を作り直す（pkexec でパスワードを聞かれる。約 1 分）")
         self.calibrate_button.connect("clicked", self._on_calibrate_clicked)
-        self.grid.attach(self.calibrate_button, 0, self._next_row, 3, 1)
-        self._next_row += 1
+        bottom.append(self.calibrate_button)
 
-        self._header_row("最終更新")
-        self.status_label = Gtk.Label(label="起動中...", xalign=0)
+        self.status_label = Gtk.Label(label="起動中", xalign=0)
         self.status_label.add_css_class("gpu-watch-status")
-        self.grid.attach(self.status_label, 0, self._next_row, 3, 1)
-        self._next_row += 1
+        self.status_label.set_hexpand(True)
+        # 長い理由でウィンドウが横に伸びないよう省略する。全文はツールチップ。
+        self.status_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.status_label.set_max_width_chars(14)
+        bottom.append(self.status_label)
+        outer.append(bottom)
 
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(CSS)
@@ -231,27 +284,40 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
             self.get_display(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-    def _header_row(self, text: str) -> None:
-        label = Gtk.Label(label=text, xalign=0)
-        label.add_css_class("gpu-watch-heading")
-        self.grid.attach(label, 0, self._next_row, 3, 1)
-        self._next_row += 1
-
     def _metric_row(self, label_text: str) -> MetricRow:
         row = MetricRow(self.grid, self._next_row, label_text)
+        self._next_row += 1
+        return row
+
+    def _separator_row(self) -> None:
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        separator.add_css_class("gpu-watch-separator")
+        separator.set_margin_top(3)
+        separator.set_margin_bottom(3)
+        self.grid.attach(separator, 0, self._next_row, 3, 1)
+        self._next_row += 1
+
+    def _gpu_metric_row(self, label_text: str) -> MetricRow:
+        """GPU 系の行を、ファンの行より前に差し込む（Gtk.Grid.insert_row で下の行をずらす）。"""
+        self.grid.insert_row(self._gpu_insert_row)
+        row = MetricRow(self.grid, self._gpu_insert_row, label_text)
+        self._gpu_insert_row += 1
         self._next_row += 1
         return row
 
     def _ensure_gpu_rows(self, index: str, name: str) -> Dict[str, MetricRow]:
         if index in self._gpu_rows:
             return self._gpu_rows[index]
-        self._header_row(f"GPU {index}  {name}")
+        # 見出し行の代わりに項目名へ GPU 番号を入れ、GPU 名はツールチップに出す。
+        prefix = f"GPU{index}"
         rows = {
-            "temp": self._metric_row("温度"),
-            "util": self._metric_row("使用率"),
-            "vram": self._metric_row("VRAM"),
-            "power": self._metric_row("電力"),
+            "util": self._gpu_metric_row(prefix),
+            "temp": self._gpu_metric_row(f"{prefix} 温度"),
+            "vram": self._gpu_metric_row("VRAM" if index == "0" else f"VRAM{index}"),
+            "power": self._gpu_metric_row(f"{prefix} 電力"),
         }
+        for row in rows.values():
+            row.set_name_tooltip(f"GPU {index}: {name}")
         self._gpu_rows[index] = rows
         return rows
 
@@ -328,7 +394,7 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
         self._subprocess = None
         self._stdout_stream = None
         self._stderr_stream = None
-        self.status_label.set_label(f"停止中: {reason}（{RESTART_DELAY_SEC} 秒後に再起動）")
+        self._set_status(f"停止中（{RESTART_DELAY_SEC}秒後に再起動）", f"停止中: {reason}")
         if self._restart_source_id is None:
             self._restart_source_id = GLib.timeout_add_seconds(RESTART_DELAY_SEC, self._on_restart_timeout)
 
@@ -360,13 +426,31 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
         self._refresh_status()
         return GLib.SOURCE_CONTINUE
 
+    def _set_status(self, text: str, detail: str = "") -> None:
+        self.status_label.set_label(text)
+        self.status_label.set_tooltip_text(detail or text)
+
+    def _hold_message(self, text: str, seconds: float) -> None:
+        self._held_message = text
+        self._held_until = time.monotonic() + seconds
+        self._set_status(text)
+
     def _refresh_status(self) -> None:
+        if self._calibrate_process is not None:
+            self._set_status("較正中（約1分）")
+            return
+        if self._held_message is not None:
+            if time.monotonic() < self._held_until:
+                self._set_status(self._held_message)
+                return
+            self._held_message = None
         if self._subprocess is None:
             return  # 停止中の理由表示を上書きしない
         if self.model.last_update is None:
-            self.status_label.set_label("まだ値を受け取っていません")
+            self._set_status("値の受信待ち")
             return
-        self.status_label.set_label(f"最終更新: {self.model.host.stamp or ''}")
+        stamp = self.model.host.stamp or ""
+        self._set_status(f"更新 {stamp_time_part(stamp)}", f"最終更新: {stamp}")
 
     def _refresh_view(self) -> None:
         host = self.model.host
@@ -375,54 +459,64 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
             load_level(host.cpu_pct_now),
         )
         self.row_cpu_temp.set_values(
-            format_scalar(host.cpu_temp_now, "C"), format_scalar(host.cpu_temp.max(), "C"),
+            format_scalar(host.cpu_temp_now, "℃"), format_scalar(host.cpu_temp.max(), "℃"),
             temp_level(host.cpu_temp_now, self.model.cpu_threshold),
         )
         self.row_mem.set_values(
-            format_mem_gib(host.mem_used_mib, host.mem_total_mib, host.mem_pct_now),
+            format_mem(host.mem_used_mib, host.mem_pct_now),
             format_scalar(host.mem_pct.max(), "%"),
             load_level(host.mem_pct_now),
         )
+        if host.mem_used_mib is not None and host.mem_total_mib is not None:
+            self.row_mem.set_tooltip(f"{host.mem_used_mib / 1024:.1f} / {host.mem_total_mib / 1024:.1f} GiB")
         self._refresh_power_rows(host)
 
         for index in self.model.gpu_order:
             gpu = self.model.gpus[index]
             rows = self._ensure_gpu_rows(index, gpu.name)
             rows["temp"].set_values(
-                format_scalar(gpu.temp_now, "C", 0), format_scalar(gpu.temp.max(), "C", 0),
+                format_scalar(gpu.temp_now, "℃"), format_scalar(gpu.temp.max(), "℃"),
                 temp_level(gpu.temp_now, self.model.gpu_threshold),
             )
             rows["util"].set_values(
-                format_scalar(gpu.util_now, "%", 0), format_scalar(gpu.util.max(), "%", 0),
+                format_scalar(gpu.util_now, "%"), format_scalar(gpu.util.max(), "%"),
                 load_level(gpu.util_now),
             )
             rows["vram"].set_values(
-                format_vram_mib(gpu.mem_used_mib, gpu.mem_total_mib),
-                format_vram_mib(gpu.mem_used.max(), gpu.mem_total_mib),
-                "unknown",
+                format_vram(gpu.mem_used_mib, gpu.mem_total_mib),
+                format_gib(gpu.mem_used.max()),
+                plain_level(gpu.mem_used_mib),
             )
+            if gpu.mem_used_mib is not None and gpu.mem_total_mib is not None:
+                rows["vram"].set_tooltip(f"{gpu.mem_used_mib:.0f} / {gpu.mem_total_mib:.0f} MiB")
             rows["power"].set_values(
-                format_scalar(gpu.power_w_now, "W"), format_scalar(gpu.power_w.max(), "W"), "unknown",
+                format_scalar(gpu.power_w_now, "W"), format_scalar(gpu.power_w.max(), "W"), plain_level(gpu.power_w_now),
             )
 
         if self.row_fan is not None:
             fan = self.model.fan
             if fan.state == "ok":
-                current_text = f"{format_scalar(fan.pwm_now, '%', 0)} [{fan.mode}]"
-                self.row_fan.set_tooltip("")
+                # 普段は CONTROL しか出ない。それ以外のモードのときだけ値に添えて目立たせる。
+                current_text = format_scalar(fan.pwm_now, "%")
+                if fan.mode != "CONTROL":
+                    current_text += f" {fan.mode}"
+                self.row_fan.set_tooltip(f"モード {fan.mode}")
             elif fan.state == "stale":
                 current_text = "n/a"
                 self.row_fan.set_tooltip(f"最新の PWM ログが {fan.age_sec} 秒前（サービスが指令を出せていない可能性）")
             else:
                 current_text = "n/a"
                 self.row_fan.set_tooltip("journal に PWM ログが無い（サービス停止中か権限不足）")
-            self.row_fan.set_values(current_text, format_scalar(fan.pwm.max(), "%", 0), "unknown")
+            self.row_fan.set_values(
+                current_text, format_scalar(fan.pwm.max(), "%"),
+                plain_level(fan.pwm_now if fan.state == "ok" else None),
+            )
 
         self._refresh_status()
 
     def _power_label_for_status(self, status: str) -> str:
         if status == "cpu_mismatch":
-            return "未較正（CPU が較正時と違う）"
+            return "要再較正"  # CPU が較正時と違う。理由はツールチップ
         return "未較正"
 
     def _calibration_tooltip_text(self) -> str:
@@ -447,32 +541,32 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
         label = self._power_label_for_status(status)
 
         if host.cpu_w_now is not None:
-            self.row_cpu_w.set_name("CPU 電力(実測)")
             self.row_cpu_w.set_values(
-                format_scalar(host.cpu_w_now, "W"), format_scalar(host.cpu_w.max(), "W"), "unknown",
+                format_scalar(host.cpu_w_now, "W"), format_scalar(host.cpu_w.max(), "W"), plain_level(host.cpu_w_now),
             )
             self.row_cpu_w.set_tooltip("")
         else:
-            self.row_cpu_w.set_name("CPU 電力(推定)")
             if status == "ok":
                 self.row_cpu_w.set_values(
-                    format_scalar(host.cpu_w_est_now, "W"), format_scalar(host.cpu_w_est.max(), "W"), "unknown",
+                    format_scalar(host.cpu_w_est_now, "W", prefix=ESTIMATE_PREFIX),
+                    format_scalar(host.cpu_w_est.max(), "W", prefix=ESTIMATE_PREFIX),
+                    plain_level(host.cpu_w_est_now),
                 )
             else:
                 self.row_cpu_w.set_values(label, label, "unknown")
             self.row_cpu_w.set_tooltip(tooltip)
 
         if host.psys_w_now is not None:
-            self.row_psys_w.set_name("PSys(実測)")
             self.row_psys_w.set_values(
-                format_scalar(host.psys_w_now, "W"), format_scalar(host.psys_w.max(), "W"), "unknown",
+                format_scalar(host.psys_w_now, "W"), format_scalar(host.psys_w.max(), "W"), plain_level(host.psys_w_now),
             )
             self.row_psys_w.set_tooltip("")
         else:
-            self.row_psys_w.set_name("PSys(推定)")
             if status == "ok":
                 self.row_psys_w.set_values(
-                    format_scalar(host.psys_w_est_now, "W"), format_scalar(host.psys_w_est.max(), "W"), "unknown",
+                    format_scalar(host.psys_w_est_now, "W", prefix=ESTIMATE_PREFIX),
+                    format_scalar(host.psys_w_est.max(), "W", prefix=ESTIMATE_PREFIX),
+                    plain_level(host.psys_w_est_now),
                 )
             else:
                 self.row_psys_w.set_values(label, label, "unknown")
@@ -481,7 +575,9 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
         # PC 全体はこの筐体に実測センサーが無いため、較正済みでも常に「推定」表示。
         if status == "ok":
             self.row_system_w.set_values(
-                format_scalar(host.system_w_est_now, "W"), format_scalar(host.system_w_est.max(), "W"), "unknown",
+                format_scalar(host.system_w_est_now, "W", prefix=ESTIMATE_PREFIX),
+                format_scalar(host.system_w_est.max(), "W", prefix=ESTIMATE_PREFIX),
+                plain_level(host.system_w_est_now),
             )
         else:
             self.row_system_w.set_values(label, label, "unknown")
@@ -497,11 +593,8 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
             self.model.set_calibration(calibration)
 
     def _on_calibrate_clicked(self, button: Gtk.Button) -> None:
-        if self._calibrate_done_source_id is not None:
-            GLib.source_remove(self._calibrate_done_source_id)
-            self._calibrate_done_source_id = None
+        self._held_message = None
         self.calibrate_button.set_sensitive(False)
-        self.status_label.set_label("較正中（約 1 分）")
         argv = ["pkexec", "/usr/bin/python3", str(CALIBRATE_SCRIPT)]
         launcher = Gio.SubprocessLauncher.new(
             Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
@@ -512,6 +605,7 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
             self._on_calibrate_failed(f"較正の起動に失敗しました: {error.message}")
             return
         self._calibrate_process = process
+        self._refresh_status()
         process.communicate_utf8_async(None, None, self._on_calibrate_done)
 
     def _on_calibrate_done(self, process: Gio.Subprocess, result: Gio.AsyncResult) -> None:
@@ -554,20 +648,12 @@ class GpuWatchWindow(Gtk.ApplicationWindow):
 
         self.model.set_calibration(calibration)
         self.calibrate_button.set_sensitive(True)
-        self.status_label.set_label("較正が完了しました")
+        self._hold_message("較正が完了しました", CALIBRATE_DONE_DISPLAY_SEC)
         self._refresh_view()
-        self._calibrate_done_source_id = GLib.timeout_add_seconds(
-            CALIBRATE_DONE_DISPLAY_SEC, self._on_calibrate_done_timeout,
-        )
-
-    def _on_calibrate_done_timeout(self) -> bool:
-        self._calibrate_done_source_id = None
-        self._refresh_status()
-        return GLib.SOURCE_REMOVE
 
     def _on_calibrate_failed(self, reason: str) -> None:
         self.calibrate_button.set_sensitive(True)
-        self.status_label.set_label(reason)
+        self._hold_message(reason, FAILURE_DISPLAY_SEC)
 
     def _save_calibration(self, data: dict) -> None:
         """一時ファイル→rename で保存する（書き込み途中の壊れた JSON を読まないため）。"""

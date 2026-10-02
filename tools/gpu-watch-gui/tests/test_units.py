@@ -221,6 +221,13 @@ def test_load_level_thresholds():
     assert model.load_level(None) == "unknown"
 
 
+def test_plain_level_is_gray_only_when_missing():
+    # しきい値の無い項目: 値があれば普通の文字色、n/a・未較正のときだけ灰色
+    assert model.plain_level(0.0) == "plain"
+    assert model.plain_level(145.7) == "plain"
+    assert model.plain_level(None) == "unknown"
+
+
 # ---------------------------------------------------------------------------
 # GpuWatchModel（統合: raw 行を順に取り込み、状態と edge 検出をまとめて確認）
 # ---------------------------------------------------------------------------
