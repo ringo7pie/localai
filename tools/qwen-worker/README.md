@@ -23,13 +23,14 @@ Qwen が調査・実装・テストコード作成を担当する。
 ## ツール
 
 ### `qwen_research`（読み取り専用）
-`project_root`, `task`, `allowed_read_paths`, `constraints`, `acceptance_criteria`, `context_profile`
+`project_root`, `task`, `allowed_read_paths`, `constraints`, `acceptance_criteria`, `context_profile`, `model`
 
 Qwen 自身が `search_text` / `list_files` / `read_file` を繰り返し呼び、
 根拠となるファイルと行番号を付けて返す。ファイルは書き換えない。
+`model` は省略可（詳細は下の「モデルを選ぶ」）。
 
 ### `qwen_implement`（隔離された作業コピー内）
-`project_root`, `task`, `allowed_write_paths`（必須）, `allowed_read_paths`, `constraints`, `acceptance_criteria`, `context_profile`
+`project_root`, `task`, `allowed_write_paths`（必須）, `allowed_read_paths`, `constraints`, `acceptance_criteria`, `context_profile`, `model`
 
 元の作業ツリーには**一切書き込まない**。`tasks/<id>/baseline/` に原本スナップショットを、
 `tasks/<id>/work/` に作業コピーを作り、Qwen は work/ だけを編集する。
@@ -39,7 +40,8 @@ Qwen 自身が `search_text` / `list_files` / `read_file` を繰り返し呼び�
 git worktree は使わない。worktree は元リポジトリの `.git` 配下にメタデータを書くため。
 
 ### `qwen_status`
-接続先・モデル・有効なプロファイル・検証状況・ロックの保持者・許可ルートを返す。推論しない。
+接続先・既定モデル・使えるモデルの一覧（名前とサイズ）・有効なプロファイル・
+検証状況・ロックの保持者・許可ルートを返す。推論しない。
 
 ## 返る形（親の文脈を圧迫しない）
 
@@ -67,11 +69,79 @@ Ollama は 1 リクエストのプロンプトを **`num_ctx / 2` トークン�
 `blocked` を返して止まる。**黙って切り捨てることはしない。**
 超えたら渡す範囲を絞るか、親でタスクを分割する。
 
+## モデルを選ぶ
+
+`qwen_research` / `qwen_implement` は呼び出しごとに **`model` 引数**（省略可）で、
+この機体（A30・`OLLAMA_CONTEXT_LENGTH=65536` 固定）にある任意のモデルを選べる。
+省略時は `config.toml` の `[ollama] model`（既定 `qwen3.8:27b`）を使う。
+
+| モデル | サイズ | GPU 配置 | 速度 | 使いどころ |
+|---|---|---|---|---|
+| `gemma4:e4b` | 8.9GB | 100% | **81.5 tok/s** | 軽くて速い。下調べ・要約向き |
+| `gemma4:31b-ctx32k` | 17.6GB | 100% | **29.9 tok/s** | 賢くて比較的速い。`num_ctx` を 32768 に固定した派生 |
+| `qwen3.8:27b` | 16.5GB | 100% | 23〜26 tok/s | 既定。実績あり |
+| `qwen3.8-flash-next:*`（5 種） | 67〜112GB | 43% 程度 | 6.9 tok/s | 巨大すぎて CPU に溢れる。**非推奨** |
+
+- **存在しないモデル名は実行前に弾く。** `/api/tags` の一覧に無ければ `blocked` を返し、
+  使えるモデルの一覧をメッセージに含める。実行してから失敗するより親がすぐ選び直せるようにするため。
+- **モデル一覧は 60 秒キャッシュする。** `/api/tags` 自体は速いが、無駄な往復は避ける。
+  `/api/tags` が取れないときは、一覧を確認できないことを理由に止めず、警告ログだけ出して
+  指定モデルをそのまま使う（実在しなければこの後の `/api/chat` がそこで失敗する）。
+- **`qwen_status` が使えるモデルの一覧（名前とサイズ）を返す。** 何が使えるか 1 回で分かる。
+- **1 タスクは 1 モデルに固定すること。** モデル切替はロードに **13〜60 秒**かかる
+  （実測。初回ロードはさらに時間がかかることがある）。タスクの途中で切り替える運用は現状無い。
+- 巨大モデル（`qwen3.8-flash-next` 系）は VRAM 24GiB に載り切らず CPU に溢れて遅い。選ばないこと。
+- **重複実行の防止（下記「排他制御」）に使うフィンガープリントには実際に使うモデル名を含む。**
+  同じ依頼を別モデルで出し直しても「実行中」と誤判定されない。
+- サンプリング値（`temperature` 等）とトークン推定係数（入力予算のチェックに使う）も
+  モデルごとに変えられる。詳しくは次の 2 節。
+
+### サンプリング値のモデル別上書き
+
+`[sampling.thinking]` / `[sampling.non_thinking]` は Qwen3.8 向けの既定のまま変わらない
+（`model` 省略時、または上書きが無いモデルはこれを使う）。
+
+`config.toml` の `[model_sampling."<モデル名>".thinking]` /
+`[model_sampling."<モデル名>".non_thinking]` で、モデルごとにサンプリング値を上書きできる
+（`config.toml.example` にコメントアウトした例あり）。**Gemma 4 の公式既定は
+`temperature=1, top_k=64, top_p=0.95`** で、Qwen の既定（`top_k=20`）とは異なる。
+thinking / non_thinking は個別に省略でき、省略した側は Qwen 向けの既定にフォールバックする。
+
+### トークン推定係数のモデル別上書き（未実測に注意）
+
+入力予算のチェック（上の「入力予算」）は `tokens.py` の文字/トークン比の推定に基づく。
+既定値（ASCII 3.2 文字/トークン、非 ASCII 1.0 文字/トークン）は **Qwen3.8 実測ベース**。
+
+`config.toml` の `[tokens.model_overrides."<モデル名>"]` でモデルごとに上書きできる口を
+用意したが、**Gemma 4 など Qwen 以外のトークナイザーは実測していない。**
+推測値を実測のように書くと誤解を招くため、`config.toml.example` にも値を書いていない。
+上書きが無いモデルは Qwen 向けの既定をそのまま使う。**Gemma 4 で入力予算の見積りが
+実際より甘い/厳しい方向にずれる可能性がある。** 気になる場合は実測してから
+`[tokens.model_overrides."gemma4:e4b"]` 等に値を足すこと。
+
+## 構造化出力（Ollama の `format`）
+
+`ollama_client.py` の `chat()` は `response_format`（Ollama の `format`。JSON Schema）を
+渡せるようになっている。`None` なら `format` キー自体を送らない。
+
+**現状は配線だけで、実際には使われていない。** ワーカーの最終回答は
+`report_findings` / `report_changes` という**ツール呼び出し**で受け取る設計のままで、
+これは変えていない。`format` はツール呼び出しの最中に掛けると、モデルがツール呼び出しを
+やめて JSON を直接吐く方向に寄り、壊れる可能性がある。安全のため、エージェントループ
+（`agent.py` の `QwenAgent.run()`）は `chat()` を呼ぶときに `response_format` を一切渡さない。
+
+有効にするための `config.toml` の `[ollama] structured_output`（既定 `false`）は読み込まれる
+だけで、今のところどこにも接続されていない。「ツール呼び出しが尽きた後の、構造化された
+最終まとめだけをもう 1 往復させる」段があれば理想的だが、今の実装にその段は無く、
+無理に作ってはいない。動かない機能を動くように見せないための判断。
+
 ## 排他制御
 
 同時推論はプロセスをまたいで **1 件**。`flock(~/.local/state/qwen-worker/inference.lock)` で
 Claude Code と Codex の合計を 1 に保つ。取れなければ既定 30 秒待ち、それでも駄目なら `busy`。
 同一内容の依頼は 1 時間のフィンガープリントで重複実行を防ぐ。
+**フィンガープリントには実際に使うモデル名を含む**（同じ依頼を別モデルで出し直しても
+誤って busy にならない）。
 
 ## 制限（初期構成で意図的にやらないこと）
 
@@ -80,6 +150,30 @@ Claude Code と Codex の合計を 1 に保つ。取れなければ既定 30 秒
 - `.env` / 秘密鍵 / 認証設定は読み込み・複製の対象外（`config.toml` の `denied_globs`）
 - `project_root` は `allowed_roots` 配下に限る。モデルの申告だけを根拠にしない
 - パストラバーサルとシンボリックリンク経由の範囲外アクセスは realpath で防ぐ
+
+## インターネットへのアクセス
+
+`web_search`（DuckDuckGo 検索。ライブラリは `ddgs`）と `fetch_url`（ページ取得と本文抽出）を
+`qwen_research` と `qwen_implement` の両方に渡す。既定で有効（`config.toml` の
+`[web] enabled = true`）。自分の学習済み知識より新しい情報が要るとき、`web_search` で
+見つけた URL の中身を確認したいときに Qwen 自身の判断で呼ぶ。
+
+- **有効な間、Qwen の判断で外部へ HTTP リクエストが飛ぶ。** 「推論も検索もローカルで
+  完結する」わけではなくなる点に注意する。
+- 無効にするには `~/.config/qwen-worker/config.toml` の `[web]` で `enabled = false` に
+  する。次回起動からツール仕様ごとモデルへ渡さなくなる（Qwen はツールの存在自体を知らない）。
+- 呼び出し回数は 1 タスクにつき既定 10 回ずつ（`max_searches_per_task` / `max_fetches_per_task`）。
+  超えると上限に達した旨をツールが返す（例外にはしない）。
+- `fetch_url` は内部・特殊用途アドレスへのアクセスを拒否する
+  （プライベート・ループバック・リンクローカル。クラウドのメタデータ `169.254.169.254` を含む。
+  判定は `ipaddress` モジュールの `is_private` / `is_loopback` / `is_link_local` / `is_reserved`
+  などに任せる）。この機体は Ollama（11434）・Open WebUI（8080）・入口ページ（8080）などを
+  動かしており、モデルにそれらを叩かせないための設計。ホスト名は実際に解決した IP で判定し、
+  リダイレクト先も自動追跡せず同じ基準で 1 段ずつ検査してから追う（上限 3 回）。
+  `http` / `https` 以外のスキーム（`file:`、`ftp:` 等）は拒否する。
+
+`local-ai-bridge`（OpenCode 経由での委譲、`/qwen` `/qwen-read`）はこの変更の対象外。
+OpenCode 自身が持つツール群を使うため、ここでの `web_search` / `fetch_url` とは無関係。
 
 ## 使い方
 

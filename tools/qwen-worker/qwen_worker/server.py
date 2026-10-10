@@ -41,6 +41,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger("qwen_worker.server")
 
+# /api/tags（ダウンロード済みモデルの一覧）のキャッシュ。呼び出しごとに素朴に叩くと
+# 無駄な往復が増えるため、この秒数だけ使い回す。プロセス内グローバル
+# （_execute のたびに OllamaChatClient を作り直すため、キャッシュはクライアントの
+# 外に持つ必要がある）。
+_MODEL_CACHE_TTL_SEC = 60.0
+_model_cache: dict[str, Any] = {"models": None, "fetched_at": 0.0}
+
 server = MCPServer(
     name="qwen-worker",
     version=__version__,
@@ -98,6 +105,59 @@ def _new_task_dir(kind: str) -> tuple[str, Path]:
     return task_id, task_dir
 
 
+def _cached_models(client: OllamaChatClient) -> list[dict[str, Any]] | None:
+    """/api/tags の結果を _MODEL_CACHE_TTL_SEC 秒だけキャッシュして返す。
+
+    取得できなければ None（0 件と取得失敗を混同しない。古い値でごまかさない）。
+    """
+    now = time.monotonic()
+    if _model_cache["models"] is not None and now - _model_cache["fetched_at"] < _MODEL_CACHE_TTL_SEC:
+        return _model_cache["models"]
+    models = client.list_models()
+    if models is not None:
+        _model_cache["models"] = models
+        _model_cache["fetched_at"] = now
+    return models
+
+
+def _resolve_model(
+    client: OllamaChatClient, requested: str | None, default_model: str
+) -> tuple[str | None, list[dict[str, Any]] | None, str | None]:
+    """呼び出しごとの model 引数を検証する。
+
+    戻り値は (使うモデル名 or None, 取得できたモデル一覧 or None, エラーメッセージ or None)。
+    エラーメッセージが None でなければ実行前に打ち切ること（存在しないモデルで
+    実際に呼んで失敗させるより、親がすぐ選び直せるようにするため）。
+
+    /api/tags が取得できない場合は、指定モデルの存在確認をあきらめて
+    そのまま通す（警告ログのみ）。一覧が取れないことを理由に、親が明示的に
+    選んだモデルの実行そのものを止めたくないため。実在しなければ、この後の
+    /api/chat がそのとき失敗する。
+    """
+    if not requested:
+        return default_model, None, None
+    models = _cached_models(client)
+    if models is None:
+        logger.warning(
+            "モデル一覧（/api/tags）を取得できなかったため、%s の存在確認をせずに進めます",
+            requested,
+        )
+        return requested, None, None
+    names = {m.get("name") for m in models if isinstance(m, dict) and m.get("name")}
+    if requested not in names:
+        # ollama はタグ省略を :latest とみなす。親が "名前" だけを渡したときに
+        # 一覧と一致しないだけで弾かれないよう、:latest を補って再照合する。
+        if ":" not in requested and f"{requested}:latest" in names:
+            return f"{requested}:latest", models, None
+        available = "\n".join(f"- {name}" for name in sorted(names)) or "（一覧が空です）"
+        return (
+            None,
+            models,
+            f"モデル {requested!r} は使えません。使えるのは次のとおり:\n{available}",
+        )
+    return requested, models, None
+
+
 def _fingerprint(payload: dict[str, Any]) -> str:
     import hashlib
 
@@ -150,8 +210,9 @@ def _run_metrics(agent_result) -> dict[str, Any]:
 @server.tool(
     name="qwen_status",
     description=(
-        "ローカル Qwen ワーカーの状態を返す。接続先、モデル、有効なプロファイル、"
-        "検証状況、実行中タスク、許可ルートを含む。推論は行わない。"
+        "ローカル Qwen ワーカーの状態を返す。接続先、既定モデル、使えるモデルの一覧"
+        "（名前とサイズ。qwen_research / qwen_implement の model 引数に渡せる候補）、"
+        "有効なプロファイル、検証状況、実行中タスク、許可ルートを含む。推論は行わない。"
         "他の PC から SSH 越しに使っている場合は、このホストのパスと SMB 共有の対応も返す。"
     ),
 )
@@ -165,6 +226,7 @@ def qwen_status() -> dict[str, Any]:
         config.ollama.base_url, config.ollama.model, config.ollama.read_timeout_sec
     )
     running = client.running_models()
+    available_models = _cached_models(client)
     holder = lock_holder(INFERENCE_LOCK_PATH)
 
     verification_path = TASKS_DIR.parent / "verification.json"
@@ -184,7 +246,17 @@ def qwen_status() -> dict[str, Any]:
             "version": client.version(),
             "reachable": client.version() is not None,
             "loaded_models": running if running is not None else "未取得",
+            "structured_output": config.ollama.structured_output,
         },
+        "available_models": (
+            [
+                {"name": m.get("name"), "size_bytes": m.get("size")}
+                for m in available_models
+                if isinstance(m, dict)
+            ]
+            if available_models is not None
+            else "未取得（/api/tags に到達できません）"
+        ),
         "profiles": {
             name: {
                 "num_ctx": p.num_ctx,
@@ -202,6 +274,11 @@ def qwen_status() -> dict[str, Any]:
             "max_repair_retries": config.limits.max_repair_retries,
             "lock_wait_sec": config.limits.lock_wait_sec,
         },
+        "web": {
+            "enabled": config.web.enabled,
+            "max_searches_per_task": config.web.max_searches_per_task,
+            "max_fetches_per_task": config.web.max_fetches_per_task,
+        },
         "allowed_roots": [str(p) for p in config.allowed_roots],
         "host": _host_info(),
         "concurrency": {
@@ -218,6 +295,16 @@ def qwen_status() -> dict[str, Any]:
     }
 
 
+_MODEL_DESCRIPTION = (
+    "model は省略可（既定 qwen3.8:27b、23〜26 tok/s、実績あり）。"
+    "速さ優先なら gemma4:e4b（9.6GB・81.5 tok/s、下調べ・要約向き）、"
+    "賢さと速さの両方なら gemma4:31b-ctx32k（18.9GB・29.9 tok/s）。"
+    "巨大モデル（flash-next 系等）は VRAM に載り切らず CPU に溢れて遅いため勧めない。"
+    "存在しない名前は実行前にエラーとし使えるモデル一覧を返す。切替はロードに"
+    "13〜60 秒かかるため 1 タスクは 1 モデルに固定すること（qwen_status で一覧を取れる）。"
+)
+
+
 @server.tool(
     name="qwen_research",
     description=(
@@ -226,6 +313,7 @@ def qwen_status() -> dict[str, Any]:
         "目的・範囲・完了条件を明示すること。親の会話全体は渡さないこと。"
         "project_root と allowed_read_paths は、ワーカーが動いているホスト上の絶対パス"
         "（例 /home/mt/Proj/xxx）。他の PC から使うときも SMB パスではなくこのホスト側のパスで渡す。"
+        + _MODEL_DESCRIPTION
     ),
 )
 def qwen_research(
@@ -235,6 +323,7 @@ def qwen_research(
     constraints: list[str] | None = None,
     acceptance_criteria: list[str] | None = None,
     context_profile: str = "standard",
+    model: str | None = None,
 ) -> dict[str, Any]:
     return _run_job(
         kind="research",
@@ -245,6 +334,7 @@ def qwen_research(
         constraints=constraints or [],
         acceptance_criteria=acceptance_criteria or [],
         context_profile=context_profile,
+        model=model,
     )
 
 
@@ -257,6 +347,7 @@ def qwen_research(
         "差分の適用・コミット・テスト実行は行わない。親が確認してから親の権限で行うこと。"
         "project_root と allowed_*_paths は、ワーカーが動いているホスト上の絶対パス"
         "（例 /home/mt/Proj/xxx）。他の PC から使うときも SMB パスではなくこのホスト側のパスで渡す。"
+        + _MODEL_DESCRIPTION
     ),
 )
 def qwen_implement(
@@ -267,6 +358,7 @@ def qwen_implement(
     constraints: list[str] | None = None,
     acceptance_criteria: list[str] | None = None,
     context_profile: str = "standard",
+    model: str | None = None,
 ) -> dict[str, Any]:
     if not allowed_write_paths:
         return _error_result(None, "blocked", "allowed_write_paths は必須です。空にはできません。")
@@ -279,6 +371,7 @@ def qwen_implement(
         constraints=constraints or [],
         acceptance_criteria=acceptance_criteria or [],
         context_profile=context_profile,
+        model=model,
     )
 
 
@@ -292,6 +385,7 @@ def _run_job(
     constraints: list[str],
     acceptance_criteria: list[str],
     context_profile: str,
+    model: str | None = None,
 ) -> dict[str, Any]:
     started = time.monotonic()
     try:
@@ -303,6 +397,17 @@ def _run_job(
         profile = config.profile(context_profile)
     except ConfigError as exc:
         return _error_result(None, "blocked", str(exc))
+
+    # モデルの検証は実行前に行う。存在しない名前で最後まで走らせてから
+    # 失敗させるより、親がすぐ選び直せるようにするため。
+    probe_client = OllamaChatClient(
+        config.ollama.base_url, config.ollama.model, config.ollama.read_timeout_sec
+    )
+    resolved_model, _available_models, model_error = _resolve_model(
+        probe_client, model, config.ollama.model
+    )
+    if model_error is not None:
+        return _error_result(None, "blocked", model_error)
 
     try:
         root = resolve_project_root(project_root, config.allowed_roots)
@@ -318,6 +423,9 @@ def _run_job(
             "read": sorted(allowed_read_paths),
             "write": sorted(allowed_write_paths),
             "profile": context_profile,
+            # モデルを指紋に含めないと、同じ依頼を別モデルで出し直したときに
+            # 「実行中」と誤判定され 1 時間 busy になる（実際に踏む不具合）。
+            "model": resolved_model,
         }
     )
     marker = _claim_fingerprint(fingerprint)
@@ -331,7 +439,9 @@ def _run_job(
         )
 
     task_id, task_dir = _new_task_dir(kind)
-    logger.info("task %s start (profile=%s root=%s)", task_id, context_profile, root)
+    logger.info(
+        "task %s start (profile=%s model=%s root=%s)", task_id, context_profile, resolved_model, root
+    )
 
     try:
         deadline = started + config.limits.job_deadline_sec
@@ -351,6 +461,7 @@ def _run_job(
                 acceptance_criteria=acceptance_criteria,
                 deadline=deadline,
                 started=started,
+                model=resolved_model,
             )
     except LockBusy as exc:
         return _error_result(task_id, "busy", str(exc))
@@ -381,10 +492,9 @@ def _execute(
     acceptance_criteria: list[str],
     deadline: float,
     started: float,
+    model: str,
 ) -> dict[str, Any]:
-    client = OllamaChatClient(
-        config.ollama.base_url, config.ollama.model, config.ollama.read_timeout_sec
-    )
+    client = OllamaChatClient(config.ollama.base_url, model, config.ollama.read_timeout_sec)
 
     working_copy = None
     if kind == "implement":
@@ -396,12 +506,26 @@ def _execute(
             [str(Path(p)) for p in allowed_write_paths],
             config.denied_globs,
         )
-        tool_specs = implement_tool_specs()
-        runner = ToolRunner(sandbox, config.limits.max_tool_result_chars, allow_write=True)
+        tool_specs = implement_tool_specs(web_enabled=config.web.enabled)
+        runner = ToolRunner(
+            sandbox,
+            config.limits.max_tool_result_chars,
+            allow_write=True,
+            web_enabled=config.web.enabled,
+            max_web_searches=config.web.max_searches_per_task,
+            max_web_fetches=config.web.max_fetches_per_task,
+        )
         display_root = str(working_copy.work_dir)
     else:
-        tool_specs = read_only_tool_specs()
-        runner = ToolRunner(sandbox, config.limits.max_tool_result_chars, allow_write=False)
+        tool_specs = read_only_tool_specs(web_enabled=config.web.enabled)
+        runner = ToolRunner(
+            sandbox,
+            config.limits.max_tool_result_chars,
+            allow_write=False,
+            web_enabled=config.web.enabled,
+            max_web_searches=config.web.max_searches_per_task,
+            max_web_fetches=config.web.max_fetches_per_task,
+        )
         display_root = str(root)
 
     agent = QwenAgent(
@@ -409,8 +533,9 @@ def _execute(
         tool_runner=runner,
         tool_specs=tool_specs,
         profile=profile,
-        sampling=config.sampling_for(profile.think),
+        sampling=config.sampling_for(profile.think, model=model),
         limits=config.limits,
+        token_estimation=config.token_estimation_for(model),
     )
 
     system_prompt = build_system_prompt("implement" if kind == "implement" else "research")
@@ -427,7 +552,9 @@ def _execute(
     elapsed = round(time.monotonic() - started, 1)
     metrics = _run_metrics(agent_result)
     metrics["elapsed_sec"] = elapsed
-    metrics["model"] = config.ollama.model
+    # 設定の既定ではなく、実際にこの実行で使ったモデル名を記録する。
+    # そうしないと、どのモデルで得た結果か metrics.json から分からなくなる。
+    metrics["model"] = model
     metrics["ollama_version"] = client.version()
     metrics["profile"] = {
         "name": profile.name,
@@ -435,7 +562,7 @@ def _execute(
         "num_predict": profile.num_predict,
         "think": profile.think,
     }
-    metrics["sampling"] = config.sampling_for(profile.think).as_options()
+    metrics["sampling"] = config.sampling_for(profile.think, model=model).as_options()
     running = client.running_models()
     metrics["ollama_ps_after_run"] = running if running is not None else "未取得"
 
@@ -458,6 +585,7 @@ def _execute(
         "transcript_path": transcript_path,
         "metrics_path": metrics_path,
         "metrics_brief": {
+            "model": model,
             "rounds_used": metrics["rounds_used"],
             "elapsed_sec": elapsed,
             "peak_prompt_eval_count": metrics["peak_prompt_eval_count"],

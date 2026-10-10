@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from .sandbox import AccessDenied, Sandbox
+from .web_tools import fetch_url, web_search
 
 _SKIP_DIR_NAMES = {".git", "node_modules", "__pycache__", ".venv", "venv", ".mypy_cache", "dist", "build"}
 _MAX_READ_LINES = 400
@@ -29,14 +30,22 @@ class ToolOutcome:
     is_error: bool = False
 
 
-def read_only_tool_specs() -> list[dict[str, Any]]:
-    """qwen_research 用。読み取り専用。"""
-    return [_LIST_FILES, _SEARCH_TEXT, _READ_FILE, _REPORT_FINDINGS]
+def read_only_tool_specs(*, web_enabled: bool = True) -> list[dict[str, Any]]:
+    """qwen_research 用。読み取り専用。web_enabled=False ならウェブツールを仕様ごと外す。"""
+    specs = [_LIST_FILES, _SEARCH_TEXT, _READ_FILE]
+    if web_enabled:
+        specs += [_WEB_SEARCH, _FETCH_URL]
+    specs.append(_REPORT_FINDINGS)
+    return specs
 
 
-def implement_tool_specs() -> list[dict[str, Any]]:
-    """qwen_implement 用。作業コピー内での書き込みを含む。"""
-    return [_LIST_FILES, _SEARCH_TEXT, _READ_FILE, _WRITE_FILE, _REPLACE_IN_FILE, _REPORT_CHANGES]
+def implement_tool_specs(*, web_enabled: bool = True) -> list[dict[str, Any]]:
+    """qwen_implement 用。作業コピー内での書き込みを含む。web_enabled=False ならウェブツールを仕様ごと外す。"""
+    specs = [_LIST_FILES, _SEARCH_TEXT, _READ_FILE]
+    if web_enabled:
+        specs += [_WEB_SEARCH, _FETCH_URL]
+    specs += [_WRITE_FILE, _REPLACE_IN_FILE, _REPORT_CHANGES]
+    return specs
 
 
 _LIST_FILES = {
@@ -86,6 +95,49 @@ _READ_FILE = {
                 "end_line": {"type": "integer", "description": "終了行。含む。省略時は start_line から最大行数ぶん。"},
             },
             "required": ["path"],
+        },
+    },
+}
+
+_WEB_SEARCH = {
+    "type": "function",
+    "function": {
+        "name": "web_search",
+        "description": (
+            "インターネットを DuckDuckGo で検索する。自分の学習済み知識より新しい情報が"
+            "要るとき（最新バージョン、直近の仕様変更、見たことのないエラーメッセージなど）に使う。"
+            "結果はタイトル・URL・抜粋だけ。本文を読みたいときは fetch_url を続けて呼ぶこと。"
+            "1 タスクあたりの呼び出し回数に上限があり、超えたらその旨を返す。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "検索語。"},
+                "max_results": {"type": "integer", "description": "返す最大件数。既定 5。"},
+            },
+            "required": ["query"],
+        },
+    },
+}
+
+_FETCH_URL = {
+    "type": "function",
+    "function": {
+        "name": "fetch_url",
+        "description": (
+            "URL を取得し、本文をテキストにして返す。web_search で見つけた URL の中身を"
+            "実際に読みたいとき、または既に知っている URL の最新の内容を確認したいときに使う。"
+            "http と https だけを許可し、この機体で動くローカルサービス"
+            "（Ollama・Open WebUI・入口ページなど）を含む内部アドレスへは安全のため取得できない。"
+            "1 タスクあたりの呼び出し回数に上限があり、超えたらその旨を返す。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "取得する URL。"},
+                "max_chars": {"type": "integer", "description": "返す本文の最大文字数。既定 20000。"},
+            },
+            "required": ["url"],
         },
     },
 }
@@ -192,10 +244,24 @@ TERMINAL_TOOLS = {"report_findings", "report_changes"}
 class ToolRunner:
     """Qwen からのツール呼び出しを、範囲制限つきで実行する。"""
 
-    def __init__(self, sandbox: Sandbox, max_result_chars: int, allow_write: bool) -> None:
+    def __init__(
+        self,
+        sandbox: Sandbox,
+        max_result_chars: int,
+        allow_write: bool,
+        *,
+        web_enabled: bool = True,
+        max_web_searches: int = 10,
+        max_web_fetches: int = 10,
+    ) -> None:
         self.sandbox = sandbox
         self.max_result_chars = max_result_chars
         self.allow_write = allow_write
+        self.web_enabled = web_enabled
+        self.max_web_searches = max_web_searches
+        self.max_web_fetches = max_web_fetches
+        self.web_search_count = 0
+        self.web_fetch_count = 0
         self.files_touched: set[str] = set()
         self.denied_attempts: list[str] = []
 
@@ -204,6 +270,8 @@ class ToolRunner:
         names = {"list_files", "search_text", "read_file", "report_findings"}
         if self.allow_write:
             names = {"list_files", "search_text", "read_file", "write_file", "replace_in_file", "report_changes"}
+        if self.web_enabled:
+            names = names | {"web_search", "fetch_url"}
         return names
 
     def run(self, name: str, arguments: dict[str, Any]) -> ToolOutcome:
@@ -222,6 +290,8 @@ class ToolRunner:
             "read_file": self._read_file,
             "write_file": self._write_file,
             "replace_in_file": self._replace_in_file,
+            "web_search": self._web_search,
+            "fetch_url": self._fetch_url,
         }[name]
 
         try:
@@ -396,6 +466,53 @@ class ToolRunner:
         target.write_text(original.replace(old_text, new_text, 1), encoding="utf-8")
         self.files_touched.add(self._relative(target))
         return f"{self._relative(target)} の 1 箇所を置き換えました。"
+
+    def _web_search(self, arguments: dict[str, Any]) -> str:
+        query = arguments.get("query")
+        if not isinstance(query, str) or not query.strip():
+            raise ToolInvocationError("query は空でない文字列にしてください")
+        if self.web_search_count >= self.max_web_searches:
+            return (
+                f"web_search の上限（1 タスクにつき {self.max_web_searches} 回）に達しました。"
+                "これ以上は検索できません。今ある情報で判断すること。"
+            )
+        max_results = _clamp_int(arguments.get("max_results"), default=5, low=1, high=20)
+        self.web_search_count += 1
+        outcome = web_search(query, max_results)
+        if "error" in outcome:
+            raise ToolInvocationError(outcome["error"])
+        return _format_search_results(query, outcome["results"])
+
+    def _fetch_url(self, arguments: dict[str, Any]) -> str:
+        url = arguments.get("url")
+        if not isinstance(url, str) or not url.strip():
+            raise ToolInvocationError("url は空でない文字列にしてください")
+        if self.web_fetch_count >= self.max_web_fetches:
+            return (
+                f"fetch_url の上限（1 タスクにつき {self.max_web_fetches} 回）に達しました。"
+                "これ以上は取得できません。今ある情報で判断すること。"
+            )
+        max_chars = _clamp_int(arguments.get("max_chars"), default=20000, low=500, high=200_000)
+        self.web_fetch_count += 1
+        outcome = fetch_url(url, max_chars)
+        if "error" in outcome:
+            raise ToolInvocationError(outcome["error"])
+        return _format_fetch_result(url, outcome)
+
+
+def _format_search_results(query: str, results: list[dict[str, Any]]) -> str:
+    if not results:
+        return f"{query!r} の検索結果: 0 件"
+    lines = [
+        f"{i}. {r.get('title') or '(無題)'} — {r.get('url') or '(URL不明)'}\n   {r.get('snippet') or ''}"
+        for i, r in enumerate(results, start=1)
+    ]
+    return f"{query!r} の検索結果 {len(results)} 件:\n" + "\n".join(lines)
+
+
+def _format_fetch_result(url: str, outcome: dict[str, Any]) -> str:
+    note = "（切り詰めあり。全文ではない）" if outcome.get("truncated") else ""
+    return f"{url} の取得結果{note}:\n{outcome.get('text', '')}"
 
 
 def sorted_walk(base: Path):

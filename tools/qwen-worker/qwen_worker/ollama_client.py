@@ -120,10 +120,15 @@ class OllamaChatClient:
         tools: list[dict[str, Any]] | None = None,
         keep_alive: str | None = None,
         timeout: float | None = None,
+        response_format: dict[str, Any] | None = None,
     ) -> ChatResult:
         """/api/chat を 1 回呼ぶ。
 
         think は options の中ではなくトップレベルに置く（Ollama の API 仕様）。
+        response_format は Ollama の `format`（JSON Schema）にそのまま渡す配線のみ。
+        None なら format キー自体を送らない。ツール呼び出しループの最中に渡すと
+        モデルがツール呼び出しをやめて JSON を吐く可能性があるため、呼び出し側
+        （agent.py）は現状ここに値を渡していない（未使用。README 参照）。
         """
         body: dict[str, Any] = {
             "model": self.model,
@@ -136,6 +141,8 @@ class OllamaChatClient:
             body["tools"] = tools
         if keep_alive is not None:
             body["keep_alive"] = keep_alive
+        if response_format is not None:
+            body["format"] = response_format
 
         payload = self._post("/api/chat", body, timeout or self.read_timeout_sec)
         message = payload.get("message") or {}
@@ -158,6 +165,14 @@ class OllamaChatClient:
         """/api/ps。取得できなければ None（0 や推測値で埋めない）。"""
         try:
             with urllib.request.urlopen(f"{self.base_url}/api/ps", timeout=timeout) as resp:
+                return list(json.loads(resp.read().decode("utf-8")).get("models") or [])
+        except Exception:
+            return None
+
+    def list_models(self, timeout: float = 5.0) -> list[dict[str, Any]] | None:
+        """/api/tags。ダウンロード済みモデルの一覧。取得できなければ None（読み取り専用）。"""
+        try:
+            with urllib.request.urlopen(f"{self.base_url}/api/tags", timeout=timeout) as resp:
                 return list(json.loads(resp.read().decode("utf-8")).get("models") or [])
         except Exception:
             return None

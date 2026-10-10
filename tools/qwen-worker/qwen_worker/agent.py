@@ -13,9 +13,14 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from .config import Limits, Profile, SamplingSettings
+from .config import Limits, Profile, SamplingSettings, TokenEstimationSettings
 from .ollama_client import ChatResult, OllamaChatClient, OllamaError
-from .tokens import estimate_messages_tokens, estimate_tools_tokens
+from .tokens import (
+    DEFAULT_ASCII_CHARS_PER_TOKEN,
+    DEFAULT_NON_ASCII_CHARS_PER_TOKEN,
+    estimate_messages_tokens,
+    estimate_tools_tokens,
+)
 from .worker_tools import TERMINAL_TOOLS, ToolRunner
 
 logger = logging.getLogger("qwen_worker.agent")
@@ -62,6 +67,7 @@ class QwenAgent:
         profile: Profile,
         sampling: SamplingSettings,
         limits: Limits,
+        token_estimation: TokenEstimationSettings | None = None,
     ) -> None:
         self.client = client
         self.tool_runner = tool_runner
@@ -69,12 +75,33 @@ class QwenAgent:
         self.profile = profile
         self.sampling = sampling
         self.limits = limits
+        # モデルごとの文字/トークン比。呼び出し側（server.py）が
+        # WorkerConfig.token_estimation_for(model) で解決して渡す。
+        # 省略時は tokens.py の既定（Qwen3.8 実測ベース）と同じ値になる。
+        self.token_estimation = token_estimation or TokenEstimationSettings(
+            ascii_chars_per_token=DEFAULT_ASCII_CHARS_PER_TOKEN,
+            non_ascii_chars_per_token=DEFAULT_NON_ASCII_CHARS_PER_TOKEN,
+        )
 
     def _options(self) -> dict[str, Any]:
         options = self.sampling.as_options()
         options["num_ctx"] = self.profile.num_ctx
         options["num_predict"] = self.profile.num_predict
         return options
+
+    def _estimate_messages(self, messages: list[dict[str, Any]]) -> int:
+        return estimate_messages_tokens(
+            messages,
+            ascii_chars_per_token=self.token_estimation.ascii_chars_per_token,
+            non_ascii_chars_per_token=self.token_estimation.non_ascii_chars_per_token,
+        )
+
+    def _estimate_tools(self) -> int:
+        return estimate_tools_tokens(
+            self.tool_specs,
+            ascii_chars_per_token=self.token_estimation.ascii_chars_per_token,
+            non_ascii_chars_per_token=self.token_estimation.non_ascii_chars_per_token,
+        )
 
     def run(
         self,
@@ -87,7 +114,7 @@ class QwenAgent:
             {"role": "user", "content": user_prompt},
         ]
 
-        estimated_input = estimate_messages_tokens(messages) + estimate_tools_tokens(self.tool_specs)
+        estimated_input = self._estimate_messages(messages) + self._estimate_tools()
         if self.profile.input_budget_tokens and estimated_input > self.profile.input_budget_tokens:
             raise BudgetExceeded(
                 f"入力の推定トークン数 {estimated_input} が "
@@ -97,7 +124,7 @@ class QwenAgent:
 
         result = AgentResult(status="failed", final_payload=None, estimated_input_tokens=estimated_input)
         consecutive_errors = 0
-        tools_tokens = estimate_tools_tokens(self.tool_specs)
+        tools_tokens = self._estimate_tools()
 
         for round_index in range(1, self.limits.max_rounds + 1):
             remaining = deadline_monotonic - time.monotonic()
@@ -110,7 +137,7 @@ class QwenAgent:
             # 切り捨てる（実測: num_ctx=65536 でも取り込みは 32770 トークンで頭打ちになり、
             # 先頭に置いたマーカーが消えた。done_reason は stop で警告も出ない）。
             # 黙って切り捨てさせず、ここで止めて親へ返す。
-            conversation_tokens = estimate_messages_tokens(messages) + tools_tokens
+            conversation_tokens = self._estimate_messages(messages) + tools_tokens
             result.estimated_input_tokens = max(result.estimated_input_tokens, conversation_tokens)
             if self.profile.input_budget_tokens and conversation_tokens > self.profile.input_budget_tokens:
                 result.status = "needs_review"
@@ -124,6 +151,10 @@ class QwenAgent:
                 return result
 
             try:
+                # response_format（Ollama の format）はここでは渡さない。ツール呼び出し
+                # ループの最中はモデルに report_findings / report_changes を呼ばせたい。
+                # format を掛けると JSON 直接生成に寄って壊れる可能性があるため
+                # （config.toml の structured_output=true でも、ここでは常に未使用）。
                 chat_result = self.client.chat(
                     messages,
                     think=self.profile.think,

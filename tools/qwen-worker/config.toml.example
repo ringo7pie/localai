@@ -23,9 +23,24 @@ denied_globs = [
 
 [ollama]
 base_url            = "http://127.0.0.1:11434"
+# ここに書くのは「呼び出し側が model 引数を省略したときの既定」。
+# qwen_research / qwen_implement は呼び出しごとに model 引数でこの機体にある
+# 任意のモデル（例 gemma4:e4b、gemma4:31b-ctx32k）を選べる。存在しないモデル名は
+# 実行前に弾かれ、使えるモデルの一覧（/api/tags 由来）が返る。
+# 実測（A30・OLLAMA_CONTEXT_LENGTH=65536）:
+#   qwen3.8:27b        16.5GB 100%GPU 23-26 tok/s  既定。実績あり
+#   gemma4:e4b          8.9GB 100%GPU 81.5 tok/s   速い。下調べ・要約向き
+#   gemma4:31b-ctx32k  17.6GB 100%GPU 29.9 tok/s    賢くて比較的速い
+#   qwen3.8-flash-next 系（IQ1_M 等）67-112GB 43%GPU 6.9 tok/s  CPU に溢れる。非推奨
+# モデル切替はロードに 13-60 秒かかるため、1 タスクは 1 モデルに固定する運用にする。
 model               = "qwen3.8:27b"
 connect_timeout_sec = 10
 read_timeout_sec    = 900        # 1 リクエストの上限。ジョブ期限より短くする。
+# Ollama の構造化出力（format に JSON Schema を渡す）を使うかどうか。既定 false。
+# true にしても、いまのワーカーはツール呼び出し（report_findings / report_changes）
+# だけで最終回答を受け取っており、format を使う「ツール呼び出し後の最終まとめ」段が
+# 実装にまだ無いため、現状は配線だけで未使用（README「構造化出力」参照）。
+structured_output   = false
 
 [limits]
 job_deadline_sec      = 1800     # ジョブ全体の期限
@@ -65,6 +80,16 @@ enabled              = true
 
 # Qwen3.8 公式モデルカード由来の初期値。
 # Ollama 側の対応名に読み替えてある（repetition_penalty -> repeat_penalty）。
+[web]
+# Qwen にインターネット検索（web_search）とページ取得（fetch_url）をさせるかどうか。
+# true の間は Qwen の判断で外部へ HTTP リクエストが飛ぶ（DuckDuckGo 検索、任意 URL の取得）。
+# 内部アドレス（127.0.0.1、192.168/16、10/8、172.16/12、169.254/16 など。この機体で動く
+# Ollama・Open WebUI・入口ページを含む）へは validate_url が拒否するため到達できない。
+# 無効にするには enabled を false にする（ツール仕様ごとモデルへ渡さなくなる）。
+enabled                 = true
+max_searches_per_task   = 10   # 1 タスクでの web_search 呼び出し上限
+max_fetches_per_task    = 10   # 1 タスクでの fetch_url 呼び出し上限
+
 [sampling.thinking]
 temperature      = 1.0
 top_p            = 0.95
@@ -80,3 +105,42 @@ top_k            = 20
 min_p            = 0.0
 presence_penalty = 1.5
 repeat_penalty   = 1.0
+
+# モデルごとのサンプリング上書き。キーは model 引数と同じ Ollama タグ名
+# （コロンを含むので必ずクォートする）。thinking / non_thinking は個別に省略でき、
+# 省略した側と、ここに無いモデルは上の [sampling.thinking] / [sampling.non_thinking]
+# （Qwen3.8 向けの既定）にそのままフォールバックする。
+# Gemma 4 の公式既定は temperature=1, top_k=64, top_p=0.95 で、Qwen（top_k=20）とは違う。
+# 以下は例。実際に使う場合はコメントを外すこと（既定では無効＝コメントのまま）。
+# [model_sampling."gemma4:e4b".thinking]
+# temperature      = 1.0
+# top_p            = 0.95
+# top_k            = 64
+# min_p            = 0.0
+# presence_penalty = 0.0
+# repeat_penalty   = 1.0
+#
+# [model_sampling."gemma4:e4b".non_thinking]
+# temperature      = 1.0
+# top_p            = 0.95
+# top_k            = 64
+# min_p            = 0.0
+# presence_penalty = 0.0
+# repeat_penalty   = 1.0
+#
+# [model_sampling."gemma4:31b-ctx32k".thinking]
+# temperature      = 1.0
+# top_p            = 0.95
+# top_k            = 64
+# min_p            = 0.0
+# presence_penalty = 0.0
+# repeat_penalty   = 1.0
+
+# トークン推定（tokens.py）の文字/トークン比。既定は Qwen3.8 実測ベース。
+# 変更しない。モデルごとの上書きは [tokens.model_overrides."<モデル名>"] に書けるが、
+# Gemma 4 など Qwen 以外は未実測のため、ここには意図的に何も書いていない
+# （＝ Gemma 4 の入力予算チェックは Qwen 向けの係数のままで、ずれる可能性がある。
+# README「モデルを選ぶ」参照）。
+[tokens]
+ascii_chars_per_token     = 3.2
+non_ascii_chars_per_token = 1.0
