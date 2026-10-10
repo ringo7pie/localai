@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import http.client
+import http.server
 import importlib.util
 import json
 import re
@@ -237,9 +238,46 @@ def test_build_service_status_includes_state_and_controllable():
     }
 
 
+def test_build_control_command_start_does_not_block_but_stop_does():
+    # Strata のユニットは API の応答まで systemctl start が戻らない（最大 15 分）ので、start は待たない。
+    assert portal.build_control_command("strata", "start") == ["systemctl", "--user", "start", "--no-block", "strata"]
+    assert portal.build_control_command("strata", "stop") == ["systemctl", "--user", "stop", "strata"]
+    # コード向けの Strata（strata-coder）も同じ。
+    assert portal.build_control_command("strata-coder", "start") == [
+        "systemctl", "--user", "start", "--no-block", "strata-coder"
+    ]
+    assert portal.build_control_command("strata-coder", "stop") == ["systemctl", "--user", "stop", "strata-coder"]
+    # 公式量子化版の Strata（strata-official）も同じ。
+    assert portal.build_control_command("strata-official", "start") == [
+        "systemctl", "--user", "start", "--no-block", "strata-official"
+    ]
+    assert portal.build_control_command("strata-official", "stop") == [
+        "systemctl", "--user", "stop", "strata-official"
+    ]
+
+
+def test_build_memory_entry_uses_service_default_or_common_default():
+    values = {"high_gib": 10.0, "max_gib": 12.0, "current_gib": 1.0}
+    common = portal.build_memory_entry({"key": "x"}, values)
+    assert common["default_high_gib"] == portal.MEMORY_DEFAULT_HIGH_GIB
+    assert common["default_max_gib"] == portal.MEMORY_DEFAULT_MAX_GIB
+    custom = portal.build_memory_entry({"key": "y", "memory_default": {"high_gib": 54, "max_gib": 58}}, values)
+    assert (custom["default_high_gib"], custom["default_max_gib"]) == (54, 58)
+    # 元の辞書は書き換えない。unit を持たないサービス（memory が None）は None のまま。
+    assert "default_high_gib" not in values
+    assert portal.build_memory_entry({"key": "z"}, None) is None
+    # 既定値は許容上限（RAM 総量 - 4 GiB、この機体で 58 GiB）を超えない。
+    bounds = portal.memory_bounds(62.5)
+    for service in portal.SERVICES:
+        memory_default = service.get("memory_default")
+        if memory_default:
+            assert memory_default["high_gib"] <= memory_default["max_gib"] <= bounds["allowed_max_gib"]
+
+
 def test_build_service_status_not_installed_is_not_controllable():
+    # ComfyUI のユニットがまだ作られていない（systemd が not-found を返す）間は未導入扱い。
     entry = portal.build_service_status(
-        {"key": "comfyui", "name": "ComfyUI", "port": 8188, "unit": None},
+        portal.SERVICES_BY_KEY["comfyui"],
         port_open=False,
         active_state="unknown",
         load_state="not-found",
@@ -248,11 +286,22 @@ def test_build_service_status_not_installed_is_not_controllable():
     assert entry["controllable"] is False
 
 
+def test_build_service_status_comfyui_with_unit_is_controllable():
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["comfyui"],
+        port_open=False,
+        active_state="inactive",
+        load_state="loaded",
+    )
+    assert entry["state"] == "stopped"
+    assert entry["controllable"] is True
+
+
 def test_build_status_shape_all_available():
     services = [
         {"key": "open-webui", "name": "Open WebUI", "port": 8081, "up": True, "state": "running", "controllable": True},
         {"key": "hunyuan3d", "name": "Hunyuan3D", "port": 7860, "up": False, "state": "stopped", "controllable": True},
-        {"key": "comfyui", "name": "ComfyUI", "port": 8188, "up": False, "state": "not_installed", "controllable": False},
+        {"key": "comfyui", "name": "ComfyUI", "port": 8188, "up": False, "state": "stopped", "controllable": True},
     ]
     status = portal.build_status(
         {"used_mib": 4, "total_mib": 24576},
@@ -299,7 +348,17 @@ def running_server(monkeypatch):
     # （個々のテストで必要なら上書きする）。
     monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("active", "loaded"))
 
+    # 実際の Ollama へモデルを降ろす要求は送らない（Strata の起動を試すテストが、手元の Qwen を
+    # 降ろしてしまわないように）。呼ばれたモデル名は server.unload_calls に残る。
+    unload_calls: list[str] = []
+    monkeypatch.setattr(
+        portal,
+        "request_ollama_unload",
+        lambda model_name, timeout=portal.OLLAMA_UNLOAD_TIMEOUT_SEC: unload_calls.append(model_name) or True,
+    )
+
     server = portal.ThreadingHTTPServer(("127.0.0.1", 0), portal.PortalRequestHandler)
+    server.unload_calls = unload_calls
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
     try:
@@ -335,8 +394,14 @@ def test_get_api_status_returns_200_and_json(running_server):
     assert service_by_key["open-webui"]["controllable"] is True
     assert service_by_key["hunyuan3d"]["state"] == "starting"
     assert service_by_key["hunyuan3d"]["controllable"] is True
-    assert service_by_key["comfyui"]["state"] == "not_installed"
-    assert service_by_key["comfyui"]["controllable"] is False
+    # ComfyUI もユニットを持つので、他のサービスと同じ判定になる（ユニット active・ポート閉 = 起動中）。
+    assert service_by_key["comfyui"]["state"] == "starting"
+    assert service_by_key["comfyui"]["controllable"] is True
+    # Strata も同じ（ユニット active・ポート 8082 閉 = 起動中）。
+    assert service_by_key["strata"]["port"] == 8082
+    assert service_by_key["strata"]["up"] is False
+    assert service_by_key["strata"]["state"] == "starting"
+    assert service_by_key["strata"]["controllable"] is True
 
 
 def test_get_root_returns_index_html(running_server):
@@ -405,7 +470,7 @@ def test_post_start_calls_systemctl_with_our_unit_name(running_server, monkeypat
     # こちらが持っているユニット名（"hunyuan3d"）で呼ばれていて、利用者からの入力はどこにも渡らない。
     start_calls = [call for call in captured_calls if call["args"][2] == "start"]
     assert len(start_calls) == 1
-    assert start_calls[0]["args"] == ["systemctl", "--user", "start", "hunyuan3d"]
+    assert start_calls[0]["args"] == ["systemctl", "--user", "start", "--no-block", "hunyuan3d"]
     assert start_calls[0]["timeout"] == portal.SYSTEMCTL_START_TIMEOUT_SEC
 
 
@@ -430,11 +495,45 @@ def test_get_service_action_path_returns_405(running_server):
     assert payload["ok"] is False
 
 
-def test_post_comfyui_start_returns_409_not_installed(running_server):
+def test_post_comfyui_start_returns_409_when_unit_not_installed(running_server, monkeypatch):
+    # ComfyUI のユニットがまだ無い間（systemd が not-found）は、未導入として操作を断る。
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("unknown", "not-found"))
+    called = []
+    monkeypatch.setattr(
+        portal, "control_unit", lambda *args, **kwargs: called.append(args) or None
+    )
     response, body = _request(running_server, "POST", "/api/service/comfyui/start")
     assert response.status == 409
     payload = json.loads(body)
     assert payload["ok"] is False
+    assert called == [], "未導入のユニットに systemctl を呼んではいけない"
+
+
+def test_post_comfyui_start_calls_systemctl_with_comfyui_unit(running_server, monkeypatch):
+    calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        calls.append(list(args))
+        return FakeCompletedProcess()
+
+    # 全サービスが停止中（ComfyUI を start できる状態。他に止めるものも無い）。
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("inactive", "loaded"))
+    monkeypatch.setattr(portal, "port_is_open", lambda port, host="127.0.0.1", timeout=0.3: False)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/service/comfyui/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert "stopped" not in payload
+    assert ["systemctl", "--user", "start", "--no-block", "comfyui"] in calls
+    assert [call for call in calls if call[2] == "stop"] == []
 
 
 def test_post_portal_itself_returns_404():
@@ -695,8 +794,44 @@ def test_services_to_stop_before_start_excludes_self():
 
 
 def test_services_to_stop_before_start_empty_for_non_exclusive_key():
-    states = {"hunyuan3d": "running", "pixal3d": "running"}
+    states = {"hunyuan3d": "running", "pixal3d": "running", "comfyui": "running"}
     assert portal.services_to_stop_before_start("open-webui", states) == []
+
+
+def test_services_to_stop_before_start_comfyui_stops_running_pixal3d():
+    states = {"hunyuan3d": "stopped", "pixal3d": "running", "comfyui": "stopped"}
+    assert portal.services_to_stop_before_start("comfyui", states) == ["pixal3d"]
+
+
+def test_services_to_stop_before_start_comfyui_stops_starting_hunyuan3d():
+    states = {"hunyuan3d": "starting", "pixal3d": "stopped", "comfyui": "stopped"}
+    assert portal.services_to_stop_before_start("comfyui", states) == ["hunyuan3d"]
+
+
+def test_services_to_stop_before_start_pixal3d_stops_running_comfyui():
+    states = {"hunyuan3d": "stopped", "pixal3d": "stopped", "comfyui": "running"}
+    assert portal.services_to_stop_before_start("pixal3d", states) == ["comfyui"]
+
+
+def test_services_to_stop_before_start_hunyuan3d_stops_both_others():
+    states = {"hunyuan3d": "stopped", "pixal3d": "running", "comfyui": "running"}
+    assert portal.services_to_stop_before_start("hunyuan3d", states) == ["pixal3d", "comfyui"]
+
+
+def test_services_to_stop_before_start_ignores_stopped_and_not_installed_in_three_way_group():
+    states = {"hunyuan3d": "stopped", "pixal3d": "not_installed", "comfyui": "stopped"}
+    assert portal.services_to_stop_before_start("comfyui", states) == []
+
+
+def test_comfyui_is_in_gpu_exclusive_group_with_unit_and_no_options():
+    assert portal.GPU_EXCLUSIVE_KEYS == (
+        "hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official"
+    )
+    comfyui_service = portal.SERVICES_BY_KEY["comfyui"]
+    assert comfyui_service["unit"] == "comfyui"
+    assert comfyui_service["port"] == 8188
+    # 低 VRAM のスイッチは持たない
+    assert portal.find_service_option(comfyui_service, "low_vram") is None
 
 
 # ---------------------------------------------------------------------------
@@ -850,9 +985,123 @@ def test_post_pixal3d_start_stops_hunyuan3d_first(running_server, monkeypatch):
         index for index, call in enumerate(calls) if call == ["systemctl", "--user", "stop", "hunyuan3d"]
     )
     start_call_index = next(
-        index for index, call in enumerate(calls) if call == ["systemctl", "--user", "start", "pixal3d"]
+        index for index, call in enumerate(calls) if call == ["systemctl", "--user", "start", "--no-block", "pixal3d"]
     )
     assert stop_call_index < start_call_index
+
+
+def _fake_states_for_exclusive_test(monkeypatch, running_unit_to_port):
+    """`running_unit_to_port`（{ユニット名: ポート}）のユニットだけを稼働中（active・ポート開）にする。
+
+    それ以外のユニットは loaded・inactive・ポート閉（start できる停止中）。
+    systemctl の呼び出しは記録して返す。
+    """
+    calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        calls.append(list(args))
+        return FakeCompletedProcess()
+
+    def fake_read_unit_state(unit):
+        if unit in running_unit_to_port:
+            return ("active", "loaded")
+        return ("inactive", "loaded")
+
+    def fake_port_is_open(port, host="127.0.0.1", timeout=0.3):
+        return port in running_unit_to_port.values()
+
+    monkeypatch.setattr(portal, "read_unit_state", fake_read_unit_state)
+    monkeypatch.setattr(portal, "port_is_open", fake_port_is_open)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+    return calls
+
+
+def test_post_comfyui_start_stops_pixal3d_first(running_server, monkeypatch):
+    calls = _fake_states_for_exclusive_test(monkeypatch, {"pixal3d": 7861})
+
+    response, body = _request(running_server, "POST", "/api/service/comfyui/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["pixal3d"]
+    assert "Pixal3D" in payload["message"]
+
+    stop_call_index = calls.index(["systemctl", "--user", "stop", "pixal3d"])
+    start_call_index = calls.index(["systemctl", "--user", "start", "--no-block", "comfyui"])
+    assert stop_call_index < start_call_index
+
+
+def test_post_pixal3d_start_stops_comfyui_first(running_server, monkeypatch):
+    calls = _fake_states_for_exclusive_test(monkeypatch, {"comfyui": 8188})
+
+    response, body = _request(running_server, "POST", "/api/service/pixal3d/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["comfyui"]
+
+    stop_call_index = calls.index(["systemctl", "--user", "stop", "comfyui"])
+    start_call_index = calls.index(["systemctl", "--user", "start", "--no-block", "pixal3d"])
+    assert stop_call_index < start_call_index
+
+
+def test_post_hunyuan3d_start_stops_comfyui_first(running_server, monkeypatch):
+    calls = _fake_states_for_exclusive_test(monkeypatch, {"comfyui": 8188})
+
+    response, body = _request(running_server, "POST", "/api/service/hunyuan3d/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["stopped"] == ["comfyui"]
+    assert ["systemctl", "--user", "stop", "comfyui"] in calls
+
+
+def test_post_comfyui_start_does_not_stop_open_webui(running_server, monkeypatch):
+    # Open WebUI は GPU の排他グループに入っていないので、動いていても止めない。
+    calls = _fake_states_for_exclusive_test(monkeypatch, {"open-webui": 8081})
+
+    response, body = _request(running_server, "POST", "/api/service/comfyui/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert "stopped" not in payload
+    assert [call for call in calls if call[2] == "stop"] == []
+
+
+def test_post_comfyui_start_aborts_when_stopping_pixal3d_fails(running_server, monkeypatch):
+    calls = []
+
+    def fake_run(args, capture_output, text, timeout):
+        calls.append(list(args))
+        if args[2] == "stop":
+            return type("FakeCompletedProcess", (), {"returncode": 1, "stdout": "", "stderr": "失敗"})()
+        return type("FakeCompletedProcess", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    def fake_read_unit_state(unit):
+        if unit == "pixal3d":
+            return ("active", "loaded")
+        return ("inactive", "loaded")
+
+    monkeypatch.setattr(portal, "read_unit_state", fake_read_unit_state)
+    monkeypatch.setattr(
+        portal, "port_is_open", lambda port, host="127.0.0.1", timeout=0.3: port == 7861
+    )
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/service/comfyui/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is False
+    assert [call for call in calls if call[2] == "start"] == []
 
 
 # ---------------------------------------------------------------------------
@@ -1065,12 +1314,53 @@ def test_post_memory_unknown_key_returns_404(running_server):
     assert payload["ok"] is False
 
 
-def test_post_memory_comfyui_returns_404(running_server):
-    # ComfyUI は unit を持たないため対象外。
+def test_post_memory_comfyui_sets_limits_on_comfyui_unit(running_server, monkeypatch):
+    # ComfyUI も unit を持つので、他のサービスと同じようにメモリ上限を設定できる。
+    captured_calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        captured_calls.append(list(args))
+        return FakeCompletedProcess()
+
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
     response, body = _request(running_server, "POST", "/api/memory/comfyui/44/48")
-    assert response.status == 404
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    set_property_calls = [call for call in captured_calls if "set-property" in call]
+    assert len(set_property_calls) == 2
+    for call in set_property_calls:
+        assert "comfyui" in call
+        assert "MemoryHigh=44G" in call
+        assert "MemoryMax=48G" in call
+
+
+def test_post_memory_not_installed_unit_returns_409(running_server, monkeypatch):
+    # ComfyUI のユニットがまだ無い間は、set-property を呼ばずに断る。
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("unknown", "not-found"))
+    called = []
+    monkeypatch.setattr(
+        portal, "set_unit_memory_limits", lambda *args, **kwargs: called.append(args) or []
+    )
+    response, body = _request(running_server, "POST", "/api/memory/comfyui/44/48")
+    assert response.status == 409
     payload = json.loads(body)
     assert payload["ok"] is False
+    assert "未導入" in payload["message"]
+    assert called == []
+
+
+def test_index_html_hides_memory_panel_for_not_installed():
+    html_text = INDEX_HTML.read_text(encoding="utf-8")
+    assert 'service.state === "not_installed"' in html_text
 
 
 def test_post_memory_portal_itself_returns_404(running_server):
@@ -1177,13 +1467,48 @@ def test_get_api_status_includes_ram_and_service_memory(running_server, monkeypa
         "high_gib": 44.0,
         "max_gib": 48.0,
         "current_gib": 12.0,
+        "default_high_gib": portal.MEMORY_DEFAULT_HIGH_GIB,
+        "default_max_gib": portal.MEMORY_DEFAULT_MAX_GIB,
     }
-    assert service_by_key["comfyui"]["memory"] is None
+    assert service_by_key["comfyui"]["memory"] == {
+        "high_gib": 44.0,
+        "max_gib": 48.0,
+        "current_gib": 12.0,
+        "default_high_gib": portal.MEMORY_DEFAULT_HIGH_GIB,
+        "default_max_gib": portal.MEMORY_DEFAULT_MAX_GIB,
+    }
+    # Strata は RAM を約 50 GiB 以上使うので、共通の既定値（44 / 48）より大きい既定値を持つ。
+    assert service_by_key["strata"]["memory"]["default_high_gib"] == 50
+    assert service_by_key["strata"]["memory"]["default_max_gib"] == 54
+    # Strata Flash-Next Coder は RAM を約 36 GiB 使う（実測）。既定値は 36 / 40。
+    assert service_by_key["strata-coder"]["memory"]["default_high_gib"] == 36
+    assert service_by_key["strata-coder"]["memory"]["default_max_gib"] == 40
+    # Strata 公式版は汎用の Strata と同じ値（50 / 54）。2026-10-07 の実測（memory.peak 50.00 GiB）で、この値のままでよいと確かめた。
+    assert service_by_key["strata-official"]["memory"]["default_high_gib"] == 50
+    assert service_by_key["strata-official"]["memory"]["default_max_gib"] == 54
 
 
 def test_index_html_calls_memory_endpoint():
     html_text = INDEX_HTML.read_text(encoding="utf-8")
     assert "/api/memory/" in html_text
+
+
+def test_index_html_gpu_exclusive_keys_match_portal_py():
+    # 確認ダイアログの対象（画面側）と、実際に止める対象（サーバー側）がずれないこと。
+    html_text = INDEX_HTML.read_text(encoding="utf-8")
+    match = re.search(r"const GPU_EXCLUSIVE_KEYS = \[([^\]]*)\];", html_text)
+    assert match is not None
+    html_keys = tuple(re.findall(r'"([^"]+)"', match.group(1)))
+    assert html_keys == portal.GPU_EXCLUSIVE_KEYS
+
+
+def test_index_html_comfyui_card_describes_installed_service():
+    html_text = INDEX_HTML.read_text(encoding="utf-8")
+    comfyui_block = html_text[html_text.index('"comfyui": {'):]
+    comfyui_block = comfyui_block[:comfyui_block.index("}")]
+    assert "まだ導入されていません" not in comfyui_block
+    assert "stoppedReason" in comfyui_block
+    assert "startingReason" in comfyui_block
 
 
 def test_post_start_does_not_start_when_conflicting_stop_fails(running_server, monkeypatch):
@@ -1240,3 +1565,1136 @@ def test_validate_memory_limits_names_the_offending_value() -> None:
     assert "整数" in not_integer and "abc" in not_integer
 
     assert portal.validate_memory_limits(44, 48, bounds) is None
+
+
+# ---------------------------------------------------------------------------
+# Strata（ポート 8082。GPU 排他グループの 4 つ目。起動前に Ollama のモデルを降ろす）
+# ---------------------------------------------------------------------------
+
+def test_strata_service_definition_and_order():
+    strata_service = portal.SERVICES_BY_KEY["strata"]
+    assert strata_service["name"] == "Strata（Qwen3.8 Flash Next）"
+    assert strata_service["port"] == 8082
+    assert strata_service["unit"] == "strata"
+    # 低 VRAM のスイッチは持たない
+    assert portal.find_service_option(strata_service, "low_vram") is None
+    # チャット系なので Open WebUI の次に並べる（画面のカードの並びはこの順）。
+    service_keys = [service["key"] for service in portal.SERVICES]
+    assert service_keys.index("strata") == service_keys.index("open-webui") + 1
+
+
+def test_build_service_status_strata_not_installed():
+    # strata のユニットがまだ作られていない間は「未導入」。ボタンも出さない。
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["strata"],
+        port_open=False,
+        active_state="unknown",
+        load_state="not-found",
+    )
+    assert entry["state"] == "not_installed"
+    assert entry["controllable"] is False
+    assert entry["port"] == 8082
+
+
+def test_build_service_status_strata_stopped():
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["strata"],
+        port_open=False,
+        active_state="inactive",
+        load_state="loaded",
+    )
+    assert entry["state"] == "stopped"
+    assert entry["controllable"] is True
+
+
+def test_build_service_status_strata_running():
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["strata"],
+        port_open=True,
+        active_state="active",
+        load_state="loaded",
+    )
+    assert entry["state"] == "running"
+    assert entry["up"] is True
+
+
+def test_services_to_stop_before_start_strata_stops_all_running_others():
+    states = {"hunyuan3d": "running", "pixal3d": "starting", "comfyui": "running", "strata": "stopped"}
+    assert portal.services_to_stop_before_start("strata", states) == ["hunyuan3d", "pixal3d", "comfyui"]
+
+
+def test_services_to_stop_before_start_others_stop_running_strata():
+    states = {"hunyuan3d": "stopped", "pixal3d": "stopped", "comfyui": "stopped", "strata": "running"}
+    for key in ("hunyuan3d", "pixal3d", "comfyui"):
+        assert portal.services_to_stop_before_start(key, states) == ["strata"]
+
+
+def test_services_to_stop_before_start_exclusive_group_is_symmetric():
+    # 排他グループ（6 つ）のどれを起動しても、自分以外のうち動いているものだけが対象になる。
+    for key in portal.GPU_EXCLUSIVE_KEYS:
+        states = {other_key: "running" for other_key in portal.GPU_EXCLUSIVE_KEYS}
+        expected = [other_key for other_key in portal.GPU_EXCLUSIVE_KEYS if other_key != key]
+        assert portal.services_to_stop_before_start(key, states) == expected
+
+
+def test_services_to_stop_before_start_ignores_not_installed_strata():
+    states = {"hunyuan3d": "stopped", "pixal3d": "stopped", "comfyui": "stopped", "strata": "not_installed"}
+    assert portal.services_to_stop_before_start("comfyui", states) == []
+
+
+# --- Ollama のモデルを降ろす純粋関数 -------------------------------------------
+
+def test_ollama_models_to_unload_returns_names_in_order_without_duplicates():
+    models = [
+        {"name": "qwen3.8:27b", "size_vram_mib": 22201},
+        {"name": "gemma4:e4b", "size_vram_mib": 9000},
+        {"name": "qwen3.8:27b", "size_vram_mib": 1},
+    ]
+    assert portal.ollama_models_to_unload(models) == ["qwen3.8:27b", "gemma4:e4b"]
+
+
+def test_ollama_models_to_unload_empty_for_none_and_empty_list():
+    assert portal.ollama_models_to_unload(None) == []
+    assert portal.ollama_models_to_unload([]) == []
+
+
+def test_ollama_models_to_unload_skips_unnamed_entries():
+    # parse_ollama_ps は名前の無い項目を "?" にする。それを降ろす要求の model に使ってはいけない。
+    models = [{"name": "?", "size_vram_mib": 0}, {"name": "", "size_vram_mib": 0}, {"size_vram_mib": 0}, "壊れた項目"]
+    assert portal.ollama_models_to_unload(models) == []
+
+
+def test_build_ollama_unload_body_has_model_and_keep_alive_zero_only():
+    body = json.loads(portal.build_ollama_unload_body("qwen3.8:27b"))
+    # prompt を付けない（付けると生成が始まる）。keep_alive は文字列ではなく数値の 0。
+    assert body == {"model": "qwen3.8:27b", "keep_alive": 0}
+    assert body["keep_alive"] == 0 and not isinstance(body["keep_alive"], str)
+
+
+def test_describe_ollama_unload_nothing_to_say_when_nothing_loaded():
+    assert portal.describe_ollama_unload({"unloaded": [], "failed": [], "checked": True}) == ""
+
+
+def test_describe_ollama_unload_lists_unloaded_models():
+    message = portal.describe_ollama_unload(
+        {"unloaded": ["qwen3.8:27b", "gemma4:e4b"], "failed": [], "checked": True}
+    )
+    assert "qwen3.8:27b" in message and "gemma4:e4b" in message
+    assert "降ろしました" in message
+    assert "注意" not in message
+
+
+def test_describe_ollama_unload_warns_about_failed_models():
+    message = portal.describe_ollama_unload({"unloaded": [], "failed": ["qwen3.8:27b"], "checked": True})
+    assert message.startswith("注意")
+    assert "qwen3.8:27b" in message and "降ろせませんでした" in message
+
+
+def test_describe_ollama_unload_warns_when_ollama_unreachable():
+    message = portal.describe_ollama_unload({"unloaded": [], "failed": [], "checked": False})
+    assert message.startswith("注意")
+    assert "接続できず" in message
+
+
+def test_describe_ollama_unload_reports_both_unloaded_and_failed():
+    message = portal.describe_ollama_unload({"unloaded": ["a"], "failed": ["b"], "checked": True})
+    assert "（a）を VRAM から降ろしました" in message
+    assert "注意" in message and "（b）を降ろせませんでした" in message
+
+
+def test_unload_ollama_models_unloads_every_loaded_model(monkeypatch):
+    monkeypatch.setattr(
+        portal,
+        "read_ollama_ps",
+        lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 1}, {"name": "gemma4:e4b", "size_vram_mib": 1}],
+    )
+    requested = []
+    monkeypatch.setattr(
+        portal,
+        "request_ollama_unload",
+        lambda model_name, timeout=1.0: requested.append(model_name) or True,
+    )
+    result = portal.unload_ollama_models()
+    assert requested == ["qwen3.8:27b", "gemma4:e4b"]
+    assert result == {"unloaded": ["qwen3.8:27b", "gemma4:e4b"], "failed": [], "checked": True}
+
+
+def test_unload_ollama_models_separates_failed_from_unloaded(monkeypatch):
+    monkeypatch.setattr(
+        portal,
+        "read_ollama_ps",
+        lambda: [{"name": "a", "size_vram_mib": 1}, {"name": "b", "size_vram_mib": 1}],
+    )
+    monkeypatch.setattr(portal, "request_ollama_unload", lambda model_name, timeout=1.0: model_name == "a")
+    result = portal.unload_ollama_models()
+    assert result == {"unloaded": ["a"], "failed": ["b"], "checked": True}
+
+
+def test_unload_ollama_models_reports_unchecked_when_ps_unreachable(monkeypatch):
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: None)
+    called = []
+    monkeypatch.setattr(
+        portal, "request_ollama_unload", lambda model_name, timeout=1.0: called.append(model_name) or True
+    )
+    result = portal.unload_ollama_models()
+    assert result == {"unloaded": [], "failed": [], "checked": False}
+    assert called == []
+
+
+# --- request_ollama_unload（手元の偽 Ollama に対する実際の HTTP。外には出ない） ---------
+
+@pytest.fixture()
+def fake_ollama(monkeypatch):
+    """POST /api/generate を受けて内容を記録する偽の Ollama を、エフェメラルポートで立てる。"""
+    received: list[dict] = []
+
+    class FakeOllamaHandler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers.get("Content-Length", "0"))
+            received.append(
+                {
+                    "path": self.path,
+                    "content_type": self.headers.get("Content-Type"),
+                    "body": json.loads(self.rfile.read(length)),
+                }
+            )
+            response_body = json.dumps({"done": True, "done_reason": "unload"}).encode("utf-8")
+            self.send_response(self.server.response_status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(response_body)))
+            self.end_headers()
+            self.wfile.write(response_body)
+
+        def log_message(self, format_string, *args):
+            return
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), FakeOllamaHandler)
+    server.response_status = 200
+    server.received = received
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    host, port = server.server_address
+    monkeypatch.setattr(portal, "OLLAMA_GENERATE_URL", f"http://{host}:{port}/api/generate")
+    try:
+        yield server
+    finally:
+        server.shutdown()
+        server.server_close()
+        server_thread.join(timeout=5)
+
+
+def test_request_ollama_unload_posts_model_and_keep_alive_zero(fake_ollama):
+    assert portal.request_ollama_unload("qwen3.8:27b", timeout=5) is True
+    assert fake_ollama.received == [
+        {
+            "path": "/api/generate",
+            "content_type": "application/json",
+            "body": {"model": "qwen3.8:27b", "keep_alive": 0},
+        }
+    ]
+
+
+def test_request_ollama_unload_returns_false_on_http_error(fake_ollama):
+    fake_ollama.response_status = 500
+    assert portal.request_ollama_unload("qwen3.8:27b", timeout=5) is False
+
+
+def test_request_ollama_unload_returns_false_when_ollama_unreachable(monkeypatch):
+    # 待受の無いポートへ向ける（接続拒否）。例外ではなく False を返す。
+    probe = socket.socket()
+    probe.bind(("127.0.0.1", 0))
+    closed_port = probe.getsockname()[1]
+    probe.close()
+    monkeypatch.setattr(portal, "OLLAMA_GENERATE_URL", f"http://127.0.0.1:{closed_port}/api/generate")
+    assert portal.request_ollama_unload("qwen3.8:27b", timeout=2) is False
+
+
+# --- POST /api/service/strata/start（起動の応答に unloaded_models が入る） -------------
+
+def _record_start_events(monkeypatch, running_unit_to_port):
+    """systemctl の呼び出しと Ollama を降ろす要求を、1 つの時系列リストへ記録する。
+
+    要素は ["systemctl", "--user", "stop", "pixal3d"] のような systemctl の引数、または
+    ["unload", "<モデル名>"]。`running_unit_to_port` の使い方は _fake_states_for_exclusive_test と同じ。
+    """
+    events = _fake_states_for_exclusive_test(monkeypatch, running_unit_to_port)
+    monkeypatch.setattr(
+        portal,
+        "request_ollama_unload",
+        lambda model_name, timeout=1.0: events.append(["unload", model_name]) or True,
+    )
+    return events
+
+
+def test_post_strata_start_unloads_ollama_models_and_reports_them(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(
+        portal,
+        "read_ollama_ps",
+        lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 22201}, {"name": "gemma4:e4b", "size_vram_mib": 1}],
+    )
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["unloaded_models"] == ["qwen3.8:27b", "gemma4:e4b"]
+    assert "qwen3.8:27b" in payload["message"] and "降ろしました" in payload["message"]
+    assert "注意" not in payload["message"]
+    assert "stopped" not in payload
+    # 降ろしてから起動する（起動のあとに降ろしても、VRAM を取り合ってしまうため）。
+    start_index = events.index(["systemctl", "--user", "start", "--no-block", "strata"])
+    assert events.index(["unload", "qwen3.8:27b"]) < start_index
+    assert events.index(["unload", "gemma4:e4b"]) < start_index
+
+
+def test_post_strata_start_stops_other_services_before_unloading_ollama(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"comfyui": 8188})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 1}])
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["comfyui"]
+    assert payload["unloaded_models"] == ["qwen3.8:27b"]
+    stop_index = events.index(["systemctl", "--user", "stop", "comfyui"])
+    unload_index = events.index(["unload", "qwen3.8:27b"])
+    start_index = events.index(["systemctl", "--user", "start", "--no-block", "strata"])
+    assert stop_index < unload_index < start_index
+
+
+def test_post_strata_start_with_nothing_loaded_returns_empty_unloaded_models(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [])
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["unloaded_models"] == []
+    assert [event for event in events if event[0] == "unload"] == []
+    assert "注意" not in payload["message"]
+
+
+def test_post_strata_start_continues_with_warning_when_unload_fails(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 1}])
+    monkeypatch.setattr(portal, "request_ollama_unload", lambda model_name, timeout=1.0: False)
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    # 降ろせなくても起動は続ける。注意を message に書く。
+    assert payload["ok"] is True
+    assert payload["unloaded_models"] == []
+    assert "注意" in payload["message"] and "qwen3.8:27b" in payload["message"]
+    assert ["systemctl", "--user", "start", "--no-block", "strata"] in events
+
+
+def test_post_strata_start_continues_with_warning_when_ollama_unreachable(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: None)
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["unloaded_models"] == []
+    assert "注意" in payload["message"] and "接続できず" in payload["message"]
+    assert ["systemctl", "--user", "start", "--no-block", "strata"] in events
+
+
+def test_post_strata_start_does_not_unload_when_not_installed(running_server, monkeypatch):
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("unknown", "not-found"))
+    monkeypatch.setattr(portal, "port_is_open", lambda port, host="127.0.0.1", timeout=0.3: False)
+    started = []
+    monkeypatch.setattr(portal, "control_unit", lambda *args, **kwargs: started.append(args) or None)
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    assert response.status == 409
+    assert json.loads(body)["ok"] is False
+    assert started == []
+    assert running_server.unload_calls == [], "起動できないのに Ollama のモデルを降ろしてはいけない"
+
+
+def test_post_strata_start_does_not_unload_when_already_running(running_server, monkeypatch):
+    # すでに動いている Strata への start は何も起こさない。Qwen を巻き込んで降ろさない。
+    events = _record_start_events(monkeypatch, {"strata": 8082})
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    payload = json.loads(body)
+    assert "unloaded_models" not in payload
+    assert [event for event in events if event[0] == "unload"] == []
+
+
+def test_post_strata_start_does_not_unload_when_stopping_other_service_fails(running_server, monkeypatch):
+    events = []
+
+    def fake_run(args, capture_output, text, timeout):
+        events.append(list(args))
+        if args[2] == "stop":
+            return type("FakeCompletedProcess", (), {"returncode": 1, "stdout": "", "stderr": "失敗"})()
+        return type("FakeCompletedProcess", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(
+        portal, "read_unit_state", lambda unit: ("active", "loaded") if unit == "comfyui" else ("inactive", "loaded")
+    )
+    monkeypatch.setattr(portal, "port_is_open", lambda port, host="127.0.0.1", timeout=0.3: port == 8188)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is False
+    assert [event for event in events if event[2] == "start"] == []
+    assert running_server.unload_calls == [], "起動を中止したときは Ollama のモデルを降ろさない"
+
+
+def test_post_strata_stop_does_not_unload_ollama(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata": 8082})
+
+    response, body = _request(running_server, "POST", "/api/service/strata/stop")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert "unloaded_models" not in payload
+    assert [event for event in events if event[0] == "unload"] == []
+
+
+def test_post_other_exclusive_services_do_not_unload_ollama(running_server, monkeypatch):
+    # 対象は Strata の 3 つ（汎用版・Coder 版・公式版）だけ。ComfyUI などの起動では、これまでどおり Ollama に触らない。
+    assert portal.OLLAMA_UNLOAD_BEFORE_START_KEYS == ("strata", "strata-coder", "strata-official")
+    events = _record_start_events(monkeypatch, {})
+    for key in ("comfyui", "hunyuan3d", "pixal3d", "open-webui"):
+        response, body = _request(running_server, "POST", f"/api/service/{key}/start")
+        assert response.status == 200
+        assert "unloaded_models" not in json.loads(body)
+    assert [event for event in events if event[0] == "unload"] == []
+
+
+def test_post_hunyuan3d_start_stops_running_strata_first(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata": 8082})
+
+    response, body = _request(running_server, "POST", "/api/service/hunyuan3d/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["strata"]
+    assert events.index(["systemctl", "--user", "stop", "strata"]) < events.index(
+        ["systemctl", "--user", "start", "--no-block", "hunyuan3d"]
+    )
+
+
+# --- メモリ上限（ユニットがあれば他のサービスと同じ仕組みで対象になる） -----------------
+
+def test_post_memory_strata_sets_limits_on_strata_unit(running_server, monkeypatch):
+    captured_calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        captured_calls.append(list(args))
+        return FakeCompletedProcess()
+
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/memory/strata/52/56")
+
+    assert response.status == 200
+    assert json.loads(body)["ok"] is True
+    set_property_calls = [call for call in captured_calls if "set-property" in call]
+    assert len(set_property_calls) == 2
+    for call in set_property_calls:
+        assert "strata" in call
+        assert "MemoryHigh=52G" in call
+        assert "MemoryMax=56G" in call
+
+
+def test_post_memory_strata_not_installed_returns_409(running_server, monkeypatch):
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("unknown", "not-found"))
+    called = []
+    monkeypatch.setattr(
+        portal, "set_unit_memory_limits", lambda *args, **kwargs: called.append(args) or []
+    )
+    response, body = _request(running_server, "POST", "/api/memory/strata/52/56")
+    assert response.status == 409
+    assert "未導入" in json.loads(body)["message"]
+    assert called == []
+
+
+def test_get_api_status_strata_not_installed_has_no_controls(running_server, monkeypatch):
+    # ユニットが無い間は未導入と出し、操作もメモリ上限も対象外（画面は state でボタン・欄を出さない）。
+    monkeypatch.setattr(
+        portal, "read_unit_state", lambda unit: ("unknown", "not-found") if unit == "strata" else ("active", "loaded")
+    )
+    _, body = _request(running_server, "GET", "/api/status")
+    service_by_key = {service["key"]: service for service in json.loads(body)["services"]}
+    assert service_by_key["strata"]["state"] == "not_installed"
+    assert service_by_key["strata"]["controllable"] is False
+    assert service_by_key["open-webui"]["state"] == "running"
+
+
+# --- index.html の Strata ---------------------------------------------------
+
+def _strata_meta_block(service_key: str = "strata") -> str:
+    html_text = _html_text()
+    block = html_text[html_text.index(f'"{service_key}": {{'):]
+    # 入れ子の波括弧があっても切れるよう、_extract_js_object_block と同じ要領で閉じ括弧を数える。
+    depth = 0
+    for index, character in enumerate(block):
+        if character == "{":
+            depth += 1
+        elif character == "}":
+            depth -= 1
+            if depth == 0:
+                return block[:index + 1]
+    raise AssertionError(f"SERVICE_META.{service_key} の閉じ括弧が見つかりません")
+
+
+def test_index_html_strata_card_has_required_texts():
+    strata_block = _strata_meta_block()
+    for field in ("description:", "stoppedReason:", "startingReason:", "note:"):
+        assert field in strata_block, f"SERVICE_META.strata に {field} が無い"
+    # 起動に数分かかること・83GB のモデルを読むこと。
+    assert "数分" in strata_block and "83GB" in strata_block
+    # note: チャットの入口・Ollama のモデルが降ろされること・他サービスと同時に使えないこと。
+    assert "Open WebUI（8081）" in strata_block
+    assert "Ollama のモデルは、Strata の起動時に降ろされます" in strata_block
+    assert "ComfyUI" in strata_block and "同時に使えません" in strata_block
+
+
+def test_index_html_strata_card_points_to_open_webui_for_chat():
+    # 稼働中の 2 つ目のリンクは Open WebUI へ。key が SERVICES に実在すること。
+    # リンクの定義は 2 つの Strata カードで共有する STRATA_OPEN_LINKS にある（Strata の画面リンクの節を参照）。
+    assert "alsoOpen: STRATA_OPEN_LINKS.alsoOpen" in _strata_meta_block()
+    links_block = _extract_js_object_block(_html_text(), "STRATA_OPEN_LINKS")
+    match = re.search(r'alsoOpen:\s*\{\s*key:\s*"([^"]+)"', links_block)
+    assert match is not None
+    assert match.group(1) in portal.SERVICES_BY_KEY
+    assert match.group(1) == "open-webui"
+
+
+def test_index_html_glossary_has_strata_and_abliterated():
+    glossary_block = _extract_js_object_block(_html_text(), "GLOSSARY")
+    glossary_keys = set(re.findall(r'"([^"]+)":\s*\n?\s*"', glossary_block))
+    assert "Strata" in glossary_keys
+    assert "abliterated" in glossary_keys
+    # 説明に「拒否を取り除いた改変版」という意味を書く。
+    assert "拒否を取り除いた改変版" in glossary_block
+
+
+def test_index_html_ollama_unload_keys_match_portal_py():
+    # 確認ダイアログに出す「降ろされるモデル」の対象（画面側）と、実際に降ろす対象（サーバー側）がずれないこと。
+    match = re.search(r"const OLLAMA_UNLOAD_BEFORE_START_KEYS = \[([^\]]*)\];", _html_text())
+    assert match is not None
+    html_keys = tuple(re.findall(r'"([^"]+)"', match.group(1)))
+    assert html_keys == portal.OLLAMA_UNLOAD_BEFORE_START_KEYS
+
+
+def test_index_html_gpu_exclusive_keys_include_strata_in_both():
+    assert "strata" in portal.GPU_EXCLUSIVE_KEYS
+    match = re.search(r"const GPU_EXCLUSIVE_KEYS = \[([^\]]*)\];", _html_text())
+    assert match is not None and '"strata"' in match.group(1)
+    # コード向けの版（strata-coder）も、サーバー側・画面側の両方に入っていること。
+    assert "strata-coder" in portal.GPU_EXCLUSIVE_KEYS
+    assert '"strata-coder"' in match.group(1)
+    # 公式量子化版（strata-official）も同じ。
+    assert "strata-official" in portal.GPU_EXCLUSIVE_KEYS
+    assert '"strata-official"' in match.group(1)
+
+
+def test_index_html_service_meta_keys_cover_every_service():
+    # SERVICES に足したのに SERVICE_META を書き忘れると、カードの説明が空になる。
+    meta_block = _extract_js_object_block(_html_text(), "SERVICE_META")
+    for key in portal.SERVICES_BY_KEY:
+        assert f'"{key}": {{' in meta_block, f"SERVICE_META に {key} が無い"
+
+
+# ---------------------------------------------------------------------------
+# Strata Flash-Next Coder（ポート 8083。コード向けの 2 つ目の Strata。GPU 排他グループの 5 つ目）
+# ---------------------------------------------------------------------------
+
+def test_strata_coder_service_definition_and_order():
+    coder_service = portal.SERVICES_BY_KEY["strata-coder"]
+    assert coder_service["name"] == "Strata Flash-Next Coder"
+    assert coder_service["port"] == 8083
+    assert coder_service["unit"] == "strata-coder"
+    # 低 VRAM のスイッチは持たない
+    assert portal.find_service_option(coder_service, "low_vram") is None
+    # 汎用の Strata の次に並べる（画面のカードの並びはこの順）。
+    service_keys = [service["key"] for service in portal.SERVICES]
+    assert service_keys.index("strata-coder") == service_keys.index("strata") + 1
+    # ポートと unit は他のサービスと重ならない（portal 自身の 8080 も含む）。
+    ports = [service["port"] for service in portal.SERVICES]
+    assert len(ports) == len(set(ports)) and 8080 not in ports
+    units = [service["unit"] for service in portal.SERVICES]
+    assert len(units) == len(set(units))
+
+
+def test_strata_coder_memory_default_is_measured_and_within_allowed_max():
+    # 36 / 40 GiB は実測の値（cgroup の memory.peak 36.00 GiB）。汎用の Strata（50 / 54）より小さく、共通の既定値（44 / 48）以下。
+    entry = portal.build_memory_entry(
+        portal.SERVICES_BY_KEY["strata-coder"], {"high_gib": 10.0, "max_gib": 12.0, "current_gib": 1.0}
+    )
+    assert (entry["default_high_gib"], entry["default_max_gib"]) == (36, 40)
+    # 既定値は許容上限（RAM 総量 - 4 GiB）以下で、画面の検証（validate_memory_limits）も通る。
+    bounds = portal.memory_bounds(62.5)
+    assert entry["default_max_gib"] <= bounds["allowed_max_gib"]
+    assert portal.validate_memory_limits(entry["default_high_gib"], entry["default_max_gib"], bounds) is None
+
+
+def test_build_service_status_strata_coder_not_installed():
+    # strata-coder のユニットがまだ作られていない間は「未導入」。ボタンも出さない。
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["strata-coder"],
+        port_open=False,
+        active_state="unknown",
+        load_state="not-found",
+    )
+    assert entry["state"] == "not_installed"
+    assert entry["controllable"] is False
+    assert entry["port"] == 8083
+
+
+def test_build_service_status_strata_coder_stopped():
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["strata-coder"],
+        port_open=False,
+        active_state="inactive",
+        load_state="loaded",
+    )
+    assert entry["state"] == "stopped"
+    assert entry["controllable"] is True
+
+
+def test_build_service_status_strata_coder_running():
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["strata-coder"],
+        port_open=True,
+        active_state="active",
+        load_state="loaded",
+    )
+    assert entry["state"] == "running"
+    assert entry["up"] is True
+
+
+def test_build_service_status_strata_coder_starting():
+    # ユニット active・ポート閉 = 起動中（モデルの読み込みに数分かかる間）。
+    entry = portal.build_service_status(
+        portal.SERVICES_BY_KEY["strata-coder"],
+        port_open=False,
+        active_state="active",
+        load_state="loaded",
+    )
+    assert entry["state"] == "starting"
+    assert entry["controllable"] is True
+
+
+def test_services_to_stop_before_start_six_services_are_mutually_exclusive():
+    # 6 つ（hunyuan3d・pixal3d・comfyui・strata・strata-coder・strata-official）のうち同時に動くのは 1 つだけ。
+    exclusive_keys = ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official")
+    assert set(portal.GPU_EXCLUSIVE_KEYS) == set(exclusive_keys)
+    for running_key in exclusive_keys:
+        states = {key: ("running" if key == running_key else "stopped") for key in exclusive_keys}
+        for start_key in exclusive_keys:
+            expected = [] if start_key == running_key else [running_key]
+            assert portal.services_to_stop_before_start(start_key, states) == expected
+
+
+def test_services_to_stop_before_start_strata_coder_stops_all_running_others():
+    states = {
+        "hunyuan3d": "running",
+        "pixal3d": "starting",
+        "comfyui": "running",
+        "strata": "running",
+        "strata-coder": "stopped",
+        "strata-official": "running",
+    }
+    assert portal.services_to_stop_before_start("strata-coder", states) == [
+        "hunyuan3d", "pixal3d", "comfyui", "strata", "strata-official"
+    ]
+
+
+def test_services_to_stop_before_start_strata_variants_stop_each_other():
+    # 汎用の Strata・Coder 版・公式版は、どれも同時に動かせない（RAM・VRAM が足りない）。
+    states = {"strata": "running", "strata-coder": "stopped", "strata-official": "stopped"}
+    assert portal.services_to_stop_before_start("strata-coder", states) == ["strata"]
+    states = {"strata": "stopped", "strata-coder": "starting", "strata-official": "stopped"}
+    assert portal.services_to_stop_before_start("strata", states) == ["strata-coder"]
+    states = {"strata": "running", "strata-coder": "running", "strata-official": "stopped"}
+    assert portal.services_to_stop_before_start("strata-official", states) == ["strata", "strata-coder"]
+
+
+def test_services_to_stop_before_start_ignores_not_installed_strata_coder():
+    states = {"strata": "stopped", "strata-coder": "not_installed"}
+    assert portal.services_to_stop_before_start("strata", states) == []
+    assert portal.services_to_stop_before_start("comfyui", states) == []
+
+
+def test_ollama_unload_targets_are_all_strata():
+    # 起動前に Ollama のモデルを降ろす対象は Strata の 3 つ（汎用版・Coder 版・公式版）だけ。
+    assert set(portal.OLLAMA_UNLOAD_BEFORE_START_KEYS) == {"strata", "strata-coder", "strata-official"}
+    for key in portal.OLLAMA_UNLOAD_BEFORE_START_KEYS:
+        assert key in portal.GPU_EXCLUSIVE_KEYS
+
+
+# --- POST /api/service/strata-coder/... ------------------------------------------
+
+def test_post_strata_coder_start_unloads_ollama_models_and_reports_them(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(
+        portal,
+        "read_ollama_ps",
+        lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 22201}],
+    )
+
+    response, body = _request(running_server, "POST", "/api/service/strata-coder/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["unloaded_models"] == ["qwen3.8:27b"]
+    assert "stopped" not in payload
+    # 降ろしてから、--no-block で起動する。
+    start_index = events.index(["systemctl", "--user", "start", "--no-block", "strata-coder"])
+    assert events.index(["unload", "qwen3.8:27b"]) < start_index
+
+
+def test_post_strata_coder_start_stops_running_general_strata_first(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata": 8082})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [])
+
+    response, body = _request(running_server, "POST", "/api/service/strata-coder/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["strata"]
+    assert payload["unloaded_models"] == []
+    assert events.index(["systemctl", "--user", "stop", "strata"]) < events.index(
+        ["systemctl", "--user", "start", "--no-block", "strata-coder"]
+    )
+
+
+def test_post_strata_start_stops_running_strata_coder_first(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata-coder": 8083})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [])
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["strata-coder"]
+    assert events.index(["systemctl", "--user", "stop", "strata-coder"]) < events.index(
+        ["systemctl", "--user", "start", "--no-block", "strata"]
+    )
+
+
+def test_post_hunyuan3d_start_stops_running_strata_coder_first(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata-coder": 8083})
+
+    response, body = _request(running_server, "POST", "/api/service/hunyuan3d/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["strata-coder"]
+    assert events.index(["systemctl", "--user", "stop", "strata-coder"]) < events.index(
+        ["systemctl", "--user", "start", "--no-block", "hunyuan3d"]
+    )
+
+
+def test_post_strata_coder_start_does_not_unload_when_already_running(running_server, monkeypatch):
+    # すでに動いている Coder 版への start は何も起こさない。Qwen を巻き込んで降ろさない。
+    events = _record_start_events(monkeypatch, {"strata-coder": 8083})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 22201}])
+
+    response, body = _request(running_server, "POST", "/api/service/strata-coder/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert "unloaded_models" not in payload
+    assert [event for event in events if event[0] == "unload"] == []
+
+
+def test_post_strata_coder_start_not_installed_returns_409_without_unloading(running_server, monkeypatch):
+    # ユニットが無い間は未導入。Ollama のモデルも降ろさない。
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("unknown", "not-found"))
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 22201}])
+
+    response, body = _request(running_server, "POST", "/api/service/strata-coder/start")
+
+    assert response.status == 409
+    assert "未導入" in json.loads(body)["message"]
+    assert [event for event in events if event[0] == "unload"] == []
+    assert not any(event[:3] == ["systemctl", "--user", "start"] for event in events)
+
+
+def test_post_strata_coder_stop_does_not_unload_ollama(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata-coder": 8083})
+
+    response, body = _request(running_server, "POST", "/api/service/strata-coder/stop")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert "unloaded_models" not in payload
+    assert ["systemctl", "--user", "stop", "strata-coder"] in events
+    assert [event for event in events if event[0] == "unload"] == []
+
+
+def test_post_memory_strata_coder_sets_limits_on_strata_coder_unit(running_server, monkeypatch):
+    captured_calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        captured_calls.append(list(args))
+        return FakeCompletedProcess()
+
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/memory/strata-coder/36/40")
+
+    assert response.status == 200
+    assert json.loads(body)["ok"] is True
+    set_property_calls = [call for call in captured_calls if "set-property" in call]
+    assert len(set_property_calls) == 2
+    for call in set_property_calls:
+        assert "strata-coder" in call
+        assert "MemoryHigh=36G" in call
+        assert "MemoryMax=40G" in call
+
+
+def test_get_api_status_strata_coder_not_installed_has_no_controls(running_server, monkeypatch):
+    # ユニットが無い間は未導入と出し、操作もメモリ上限も対象外。他のサービスには影響しない。
+    monkeypatch.setattr(
+        portal,
+        "read_unit_state",
+        lambda unit: ("unknown", "not-found") if unit == "strata-coder" else ("active", "loaded"),
+    )
+    _, body = _request(running_server, "GET", "/api/status")
+    service_by_key = {service["key"]: service for service in json.loads(body)["services"]}
+    assert service_by_key["strata-coder"]["state"] == "not_installed"
+    assert service_by_key["strata-coder"]["controllable"] is False
+    assert service_by_key["strata-coder"]["port"] == 8083
+    assert service_by_key["strata"]["state"] != "not_installed"
+
+
+# --- index.html の Strata Flash-Next Coder ---------------------------------------
+
+def test_index_html_strata_coder_card_has_required_texts():
+    coder_block = _strata_meta_block("strata-coder")
+    for field in ("description:", "stoppedReason:", "startingReason:", "note:"):
+        assert field in coder_block, f"SERVICE_META.strata-coder に {field} が無い"
+    # 説明: 半分に削ったコード向けのモデル。作者の数字は「作者の報告」と明記する。
+    assert "512 エキスパート" in coder_block and "半分" in coder_block and "コード向け" in coder_block
+    assert "SWE-bench Verified 75.6" in coder_block and "作者の報告" in coder_block
+    # 起動に数分かかること。
+    assert "数分" in coder_block
+    # note: チャットの入口・Ollama のモデルが降ろされること・汎用の Strata などと同時に使えないこと・
+    # 日本語が弱いこと・画像入力が未対応であること。
+    assert "Open WebUI（8081）" in coder_block
+    assert "Ollama のモデルは" in coder_block and "降ろされます" in coder_block
+    assert "汎用の Strata" in coder_block and "ComfyUI" in coder_block and "同時に使えません" in coder_block
+    assert "日本語は実用になりません" in coder_block
+    assert "画像入力は未対応" in coder_block
+
+
+def test_index_html_all_strata_cards_share_open_links():
+    # 「Strata の画面」リンクは、カードのポート（service.port）で開く共通の定義を 3 つのカードで使う。
+    # 汎用版（8082）だけに固定せず、Coder 版（8083）・公式版（8084）も同じ書き方で動くこと。
+    html_text = _html_text()
+    links_block = _extract_js_object_block(html_text, "STRATA_OPEN_LINKS")
+    assert "8082" not in links_block and "8083" not in links_block and "8084" not in links_block
+    for service_key in ("strata", "strata-coder", "strata-official"):
+        service_block = _strata_meta_block(service_key)
+        assert "openLabel: STRATA_OPEN_LINKS.openLabel" in service_block
+        assert "openTooltip: STRATA_OPEN_LINKS.openTooltip" in service_block
+        assert "alsoOpen: STRATA_OPEN_LINKS.alsoOpen" in service_block
+    # リンク先のポートは SERVICES 由来（サービスごとの service.port）。
+    assert "buildOpenLink(service.port, meta.openLabel" in html_text
+
+
+def test_index_html_glossary_has_strata_coder_and_mentions_both_strata():
+    html_text = _html_text()
+    glossary_block = _extract_js_object_block(html_text, "GLOSSARY")
+    glossary_keys = set(re.findall(r'"([^"]+)":\s*\n?\s*"', glossary_block))
+    # カードの名前（括弧が無いので名前全体）が用語になるので、用語集に同じ名前が要る。
+    assert portal.SERVICES_BY_KEY["strata-coder"]["name"] in glossary_keys
+    assert "Strata" in glossary_keys
+    # ポートの説明に 8083 が入っている。
+    port_start = glossary_block.index('"ポート":')
+    assert "8083" in glossary_block[port_start:port_start + 600]
+    # 排他の説明は 6 つを挙げる。
+    exclusive_start = glossary_block.index('"GPU の排他":')
+    exclusive_text = glossary_block[exclusive_start:exclusive_start + 600]
+    assert "Strata Flash-Next Coder" in exclusive_text and "Strata 公式版" in exclusive_text and "6 つ" in exclusive_text
+
+
+def test_index_html_qwen_warning_mentions_all_strata():
+    # Ollama にモデルが載っているときの警告文。Strata は 3 つとも起動時に自動で降ろす。
+    assert "Strata（汎用版・Coder 版・公式版）は起動時に自動で降ろします" in _html_text()
+
+
+def test_index_html_other_gpu_cards_mention_strata_variants_in_exclusive_notes():
+    # Pixal3D・ComfyUI のカードの「同時に使えない」説明に、Coder 版・公式版も含まれる。
+    for service_key in ("pixal3d", "comfyui"):
+        block = _strata_meta_block(service_key)
+        assert "Strata（Coder 版・公式版を含む）" in block, (
+            f"SERVICE_META.{service_key} の排他の説明に Coder 版・公式版が無い"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Strata 公式版（ポート 8084。3 つ目の Strata。Qwen3.8-Flash-Next の公式量子化 IQ3_XXS。GPU 排他グループの 6 つ目）
+# ---------------------------------------------------------------------------
+
+def test_strata_official_service_definition_and_order():
+    official_service = portal.SERVICES_BY_KEY["strata-official"]
+    assert official_service["name"] == "Strata 公式版（IQ3_XXS）"
+    assert official_service["port"] == 8084
+    assert official_service["unit"] == "strata-official"
+    # 低 VRAM のスイッチは持たない
+    assert portal.find_service_option(official_service, "low_vram") is None
+    # 汎用の Strata・Coder 版の次に並べる（画面のカードの並びはこの順）。
+    service_keys = [service["key"] for service in portal.SERVICES]
+    assert service_keys.index("strata-official") == service_keys.index("strata-coder") + 1
+    # サービスは 7 つ（open-webui・strata 3 つ・hunyuan3d・pixal3d・comfyui）。
+    assert len(service_keys) == 7
+    # ポートと unit は他のサービスと重ならない（portal 自身の 8080 も含む）。
+    ports = [service["port"] for service in portal.SERVICES]
+    assert len(ports) == len(set(ports)) and 8080 not in ports
+    units = [service["unit"] for service in portal.SERVICES]
+    assert len(units) == len(set(units))
+
+
+def test_strata_official_memory_default_is_measured_and_equal_to_general_strata():
+    # 50 / 54 GiB は汎用の Strata と同じ値。2026-10-07 の実測（cgroup の memory.peak 50.00 GiB = MemoryHigh）で確かめた。
+    entry = portal.build_memory_entry(
+        portal.SERVICES_BY_KEY["strata-official"], {"high_gib": 10.0, "max_gib": 12.0, "current_gib": 1.0}
+    )
+    assert (entry["default_high_gib"], entry["default_max_gib"]) == (50, 54)
+    assert portal.SERVICES_BY_KEY["strata-official"]["memory_default"] == portal.SERVICES_BY_KEY["strata"]["memory_default"]
+    # 既定値は許容上限（RAM 総量 - 4 GiB）以下で、画面の検証（validate_memory_limits）も通る。
+    bounds = portal.memory_bounds(62.5)
+    assert entry["default_max_gib"] <= bounds["allowed_max_gib"]
+    assert portal.validate_memory_limits(entry["default_high_gib"], entry["default_max_gib"], bounds) is None
+
+
+def test_build_service_status_strata_official_states():
+    service = portal.SERVICES_BY_KEY["strata-official"]
+    # ユニットがまだ作られていない間は「未導入」。ボタンも出さない。
+    entry = portal.build_service_status(service, port_open=False, active_state="unknown", load_state="not-found")
+    assert (entry["state"], entry["controllable"], entry["port"]) == ("not_installed", False, 8084)
+    entry = portal.build_service_status(service, port_open=False, active_state="inactive", load_state="loaded")
+    assert (entry["state"], entry["controllable"]) == ("stopped", True)
+    # ユニット active・ポート閉 = 起動中（モデルの読み込みに数分かかる間）。
+    entry = portal.build_service_status(service, port_open=False, active_state="active", load_state="loaded")
+    assert (entry["state"], entry["controllable"]) == ("starting", True)
+    entry = portal.build_service_status(service, port_open=True, active_state="active", load_state="loaded")
+    assert (entry["state"], entry["up"]) == ("running", True)
+
+
+def test_services_to_stop_before_start_strata_official_stops_all_running_others():
+    states = {
+        "hunyuan3d": "running",
+        "pixal3d": "starting",
+        "comfyui": "running",
+        "strata": "running",
+        "strata-coder": "running",
+        "strata-official": "stopped",
+    }
+    assert portal.services_to_stop_before_start("strata-official", states) == [
+        "hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder"
+    ]
+
+
+def test_services_to_stop_before_start_ignores_not_installed_strata_official():
+    states = {"strata": "stopped", "strata-coder": "stopped", "strata-official": "not_installed"}
+    assert portal.services_to_stop_before_start("strata", states) == []
+    assert portal.services_to_stop_before_start("comfyui", states) == []
+
+
+# --- POST /api/service/strata-official/... ---------------------------------------
+
+def test_post_strata_official_start_unloads_ollama_models_and_reports_them(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(
+        portal,
+        "read_ollama_ps",
+        lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 22201}],
+    )
+
+    response, body = _request(running_server, "POST", "/api/service/strata-official/start")
+
+    assert response.status == 200
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["unloaded_models"] == ["qwen3.8:27b"]
+    assert "stopped" not in payload
+    # 降ろしてから、--no-block で起動する。
+    start_index = events.index(["systemctl", "--user", "start", "--no-block", "strata-official"])
+    assert events.index(["unload", "qwen3.8:27b"]) < start_index
+
+
+def test_post_strata_official_start_stops_running_general_and_coder_strata_first(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata": 8082, "strata-coder": 8083})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [])
+
+    response, body = _request(running_server, "POST", "/api/service/strata-official/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["strata", "strata-coder"]
+    start_index = events.index(["systemctl", "--user", "start", "--no-block", "strata-official"])
+    assert events.index(["systemctl", "--user", "stop", "strata"]) < start_index
+    assert events.index(["systemctl", "--user", "stop", "strata-coder"]) < start_index
+
+
+def test_post_strata_start_stops_running_strata_official_first(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata-official": 8084})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [])
+
+    response, body = _request(running_server, "POST", "/api/service/strata/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert payload["stopped"] == ["strata-official"]
+    assert events.index(["systemctl", "--user", "stop", "strata-official"]) < events.index(
+        ["systemctl", "--user", "start", "--no-block", "strata"]
+    )
+
+
+def test_post_strata_official_start_does_not_unload_when_already_running(running_server, monkeypatch):
+    # すでに動いている公式版への start は何も起こさない。Qwen を巻き込んで降ろさない。
+    events = _record_start_events(monkeypatch, {"strata-official": 8084})
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 22201}])
+
+    response, body = _request(running_server, "POST", "/api/service/strata-official/start")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert "unloaded_models" not in payload
+    assert [event for event in events if event[0] == "unload"] == []
+
+
+def test_post_strata_official_start_not_installed_returns_409_without_unloading(running_server, monkeypatch):
+    # ユニットが無い間は未導入。Ollama のモデルも降ろさない。
+    events = _record_start_events(monkeypatch, {})
+    monkeypatch.setattr(portal, "read_unit_state", lambda unit: ("unknown", "not-found"))
+    monkeypatch.setattr(portal, "read_ollama_ps", lambda: [{"name": "qwen3.8:27b", "size_vram_mib": 22201}])
+
+    response, body = _request(running_server, "POST", "/api/service/strata-official/start")
+
+    assert response.status == 409
+    assert "未導入" in json.loads(body)["message"]
+    assert [event for event in events if event[0] == "unload"] == []
+    assert not any(event[:3] == ["systemctl", "--user", "start"] for event in events)
+
+
+def test_post_strata_official_stop_does_not_unload_ollama(running_server, monkeypatch):
+    events = _record_start_events(monkeypatch, {"strata-official": 8084})
+
+    response, body = _request(running_server, "POST", "/api/service/strata-official/stop")
+
+    payload = json.loads(body)
+    assert payload["ok"] is True
+    assert "unloaded_models" not in payload
+    assert ["systemctl", "--user", "stop", "strata-official"] in events
+    assert [event for event in events if event[0] == "unload"] == []
+
+
+def test_post_memory_strata_official_sets_limits_on_strata_official_unit(running_server, monkeypatch):
+    captured_calls = []
+
+    class FakeCompletedProcess:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, capture_output, text, timeout):
+        captured_calls.append(list(args))
+        return FakeCompletedProcess()
+
+    monkeypatch.setattr(portal, "read_meminfo_total_gib", lambda: 62.47)
+    monkeypatch.setattr(portal.subprocess, "run", fake_run)
+
+    response, body = _request(running_server, "POST", "/api/memory/strata-official/50/54")
+
+    assert response.status == 200
+    assert json.loads(body)["ok"] is True
+    set_property_calls = [call for call in captured_calls if "set-property" in call]
+    assert len(set_property_calls) == 2
+    for call in set_property_calls:
+        assert "strata-official" in call
+        assert "MemoryHigh=50G" in call
+        assert "MemoryMax=54G" in call
+
+
+def test_get_api_status_strata_official_not_installed_has_no_controls(running_server, monkeypatch):
+    # ユニットが無い間は未導入と出し、操作もメモリ上限も対象外。他のサービスには影響しない。
+    monkeypatch.setattr(
+        portal,
+        "read_unit_state",
+        lambda unit: ("unknown", "not-found") if unit == "strata-official" else ("active", "loaded"),
+    )
+    _, body = _request(running_server, "GET", "/api/status")
+    payload = json.loads(body)
+    service_by_key = {service["key"]: service for service in payload["services"]}
+    assert len(payload["services"]) == 7
+    assert service_by_key["strata-official"]["state"] == "not_installed"
+    assert service_by_key["strata-official"]["controllable"] is False
+    assert service_by_key["strata-official"]["port"] == 8084
+    assert service_by_key["strata"]["state"] != "not_installed"
+    assert service_by_key["strata-coder"]["state"] != "not_installed"
+
+
+# --- index.html の Strata 公式版 ---------------------------------------------------
+
+def test_index_html_strata_official_card_has_required_texts():
+    official_block = _strata_meta_block("strata-official")
+    for field in ("description:", "stoppedReason:", "startingReason:", "note:"):
+        assert field in official_block, f"SERVICE_META.strata-official に {field} が無い"
+    # 説明: 公式の量子化（ISTA-DASLab の GSQ-RCO・IQ3_XXS）・512 エキスパートのまま・abliterated ではない・汎用版と比べる用。
+    assert "ISTA-DASLab" in official_block and "GSQ-RCO" in official_block and "IQ3_XXS" in official_block
+    assert "512 エキスパート" in official_block and "abliterated ではない" in official_block
+    assert "汎用版" in official_block and "比べる" in official_block
+    # 起動に数分かかること。
+    assert "数分" in official_block
+    # note: チャットの入口・API のモデル名・Ollama のモデルが降ろされること・他と同時に使えないこと・RAM と VRAM が実測の値で書かれていること。
+    assert "Open WebUI（8081）" in official_block and "strata-official:IQ3_XXS" in official_block
+    assert "Ollama のモデルは" in official_block and "降ろされます" in official_block
+    assert "汎用の Strata" in official_block and "ComfyUI" in official_block and "同時に使えません" in official_block
+    # 実測の値（RAM 約 50GiB・VRAM 23,899 MiB・実測の日付）が入っていて、「未計測」「見込み」は残っていない。
+    assert "約 50GiB" in official_block and "23,899 MiB" in official_block and "2026-10-07 の実測" in official_block
+    assert "未計測" not in official_block and "見込み" not in official_block
+    # 用途の説明に、数学など長く考える問題は公式版のほうが答えに届きやすいという実測が入っている。
+    assert "長く考える問題は公式版のほうが答えに届きやすい" in official_block
+
+
+def test_index_html_glossary_has_strata_official_and_port_8084():
+    glossary_block = _extract_js_object_block(_html_text(), "GLOSSARY")
+    glossary_keys = set(re.findall(r'"([^"]+)":\s*\n?\s*"', glossary_block))
+    # カードの名前は括弧の前（「Strata 公式版」）が用語になるので、用語集に同じ語が要る。
+    assert portal.SERVICES_BY_KEY["strata-official"]["name"].split("（")[0] in glossary_keys
+    # ポートの説明に 8084 が入っている。
+    port_start = glossary_block.index('"ポート":')
+    assert "8084" in glossary_block[port_start:port_start + 600]
+    # 用語集の公式版と RAM の説明は実測の値で書かれていて、「未計測」「見込み」は残っていない。
+    official_start = glossary_block.index('"Strata 公式版":')
+    assert "約 50 GiB" in glossary_block[official_start:official_start + 800]
+    assert "23,899 MiB" in glossary_block[official_start:official_start + 800]
+    assert "未計測" not in glossary_block and "見込み" not in glossary_block
+

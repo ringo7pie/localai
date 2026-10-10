@@ -7,16 +7,19 @@
 エンドポイント:
     GET  /                                    index.html を返す（このファイルと同じディレクトリから読む）
     GET  /api/status                          GPU / Ollama / 各サービスの状態を JSON で返す
-    POST /api/service/<key>/<action>          Open WebUI・Hunyuan3D・Pixal3D の起動 (start) / 停止 (stop)。
+    POST /api/service/<key>/<action>          Open WebUI・Strata（汎用版・Coder 版・公式版）・Hunyuan3D・Pixal3D・ComfyUI の
+                                               起動 (start) / 停止 (stop)。
                                                GET では 405。未導入の key・action 以外は 404/400。
-                                               Hunyuan3D と Pixal3D は GPU を同時に使えないため、
-                                               片方の起動時にもう片方が動いていれば自動で止めてから起動する。
+                                               Hunyuan3D・Pixal3D・ComfyUI・Strata（3 つとも）は GPU を同時に使えない
+                                               ため、どれかの起動時に他が動いていれば自動で止めてから起動する。
+                                               Strata（3 つとも）の起動前には Ollama に載っているモデルも降ろし、
+                                               応答の JSON に "unloaded_models" として入れる。
     POST /api/option/<key>/low-vram/<on|off>  低 VRAM モードの切り替え（Hunyuan3D・Pixal3D のみ）。
                                                稼働中・起動中は 409（systemd の EnvironmentFile は
                                                起動時にしか読まれないため）。GET では 405。
     POST /api/memory/<key>/<high_gib>/<max_gib>  systemd のメモリ上限（MemoryHigh / MemoryMax）を
-                                               GiB 単位の整数で設定する（Open WebUI・Hunyuan3D・Pixal3D
-                                               のみ。ComfyUI・portal は 404）。稼働中でも再起動なしで
+                                               GiB 単位の整数で設定する（Open WebUI・Strata（3 つ）・
+                                               Hunyuan3D・Pixal3D・ComfyUI のみ。portal は 404）。稼働中でも再起動なしで
                                                即座に効く。GET では 405。
 
 方針: nvidia-smi・Ollama・各ポート・各 systemd ユニット・/proc/meminfo への疎通確認はどれも
@@ -28,6 +31,7 @@ available/reachable=false にして返す。/api/service/... や /api/option/...
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import math
 import os
@@ -44,8 +48,11 @@ BASE_DIR = Path(__file__).resolve().parent
 INDEX_FILE = BASE_DIR / "index.html"
 
 OLLAMA_STATUS_URL = "http://127.0.0.1:11434/api/ps"
+OLLAMA_GENERATE_URL = "http://127.0.0.1:11434/api/generate"
 NVIDIA_SMI_TIMEOUT_SEC = 2.0
 OLLAMA_TIMEOUT_SEC = 2.0
+# モデルを降ろす要求は、生成中のモデルがあるとその終わりを待たされることがあるため、状態の確認より長くする。
+OLLAMA_UNLOAD_TIMEOUT_SEC = 20.0
 PORT_CHECK_TIMEOUT_SEC = 0.3
 MIB_BYTES = 1024 * 1024
 GIB_BYTES = 1024 * 1024 * 1024
@@ -65,7 +72,8 @@ MEMORY_RESERVE_GIB = 4
 MEMORY_RECOMMENDED_MARGIN_GIB = 14
 
 # 入口ページが表示するサービス一覧（ポート配置は knowledge/10-silver/areas/env.md の決定に従う）
-# unit は systemd --user のユニット名。無い場合（ComfyUI）は None にし、起動・停止の対象から外す。
+# unit は systemd --user のユニット名。ユニットを持たないサービスを足すときは None にし、
+# 起動・停止・メモリ上限の対象から外す（今は全サービスがユニットを持つ）。
 # portal 自身は絶対にここへ入れない（自分を止めたらページが死ぬ）。
 #
 # options を持つサービスは、入口ページから切り替えられる設定を持つ（今のところ低 VRAM モードのみ）。
@@ -73,6 +81,41 @@ MEMORY_RECOMMENDED_MARGIN_GIB = 14
 # 変数名、default はファイル・変数が無いときにみなす値。
 SERVICES = [
     {"key": "open-webui", "name": "Open WebUI", "port": 8081, "unit": "open-webui"},
+    # Strata は推論エンジン（OpenAI 互換 API）。チャット系なので Open WebUI の次に並べる。
+    # 同じエンジンで動くモデルが 3 つあり、汎用版（strata）・コード向け（strata-coder）・公式量子化版（strata-official）を
+    # 別のサービスとして持つ。
+    # どちらも低 VRAM のスイッチは持たない（options 無し）。GPU の排他グループに入り、起動前に
+    # Ollama のモデルを降ろす（GPU_EXCLUSIVE_KEYS・OLLAMA_UNLOAD_BEFORE_START_KEYS）。
+    # 汎用版は 125B の MoE のエキスパートを RAM に置く（約 50 GiB 以上）。既定の 44 / 48 GiB では足りず
+    # 絞られるので、メモリ上限の既定値だけ別に持つ（memory_default。値は実機の計測で見直す）。
+    {
+        "key": "strata",
+        "name": "Strata（Qwen3.8 Flash Next）",
+        "port": 8082,
+        "unit": "strata",
+        "memory_default": {"high_gib": 50, "max_gib": 54},
+    },
+    # コード向け版は 512 エキスパートを半分に削ったモデルで、RAM を約 36 GiB 使う。
+    # memory_default の 36 / 40 GiB は実測（2026-10-07、cgroup の memory.peak 36.00 GiB。32/36 と 40/44 で
+    # 起動・prefill・生成に差が無かった）。根拠は tools/strata/README.md。
+    {
+        "key": "strata-coder",
+        "name": "Strata Flash-Next Coder",
+        "port": 8083,
+        "unit": "strata-coder",
+        "memory_default": {"high_gib": 36, "max_gib": 40},
+    },
+    # 公式版は汎用版と同じ Qwen3.8-Flash-Next（512 エキスパートのまま）の ISTA-DASLab 公式量子化（GSQ-RCO）IQ3_XXS で、
+    # abliterated ではない（汎用版は abliterated の RVN 版 IQ3_S）。数学などで汎用版と答えを比べる用。
+    # memory_default は汎用版 strata と同じ 50 / 54 GiB。2026-10-07 に MemoryHigh 50G / MemoryMax 54G のまま動かして実測した
+    # （cgroup の memory.peak 50.00 GiB = MemoryHigh、落とせない分 約 30.2 GiB）ので、値は変えていない。根拠は tools/strata/README.md。
+    {
+        "key": "strata-official",
+        "name": "Strata 公式版（IQ3_XXS）",
+        "port": 8084,
+        "unit": "strata-official",
+        "memory_default": {"high_gib": 50, "max_gib": 54},
+    },
     {
         "key": "hunyuan3d",
         "name": "Hunyuan3D",
@@ -99,20 +142,30 @@ SERVICES = [
             }
         },
     },
-    {"key": "comfyui", "name": "ComfyUI", "port": 8188, "unit": None},
+    # 低 VRAM のスイッチは持たない（options 無し）。GPU の排他グループには入る（GPU_EXCLUSIVE_KEYS）。
+    {"key": "comfyui", "name": "ComfyUI", "port": 8188, "unit": "comfyui"},
 ]
 SERVICES_BY_KEY = {service["key"]: service for service in SERVICES}
 
-# GPU（VRAM）を排他的に使うサービス。どちらかを起動するとき、もう片方が動いていれば
-# 先に止める（A30 は 1 枚しかなく、両方同時に載せると RAM 含めて枯れるため）。
-GPU_EXCLUSIVE_KEYS = ("hunyuan3d", "pixal3d")
+# GPU（VRAM）を排他的に使うサービス。どれかを起動するとき、他が動いていれば先に止める
+# （A30 は 1 枚しかなく、同時に載せると RAM 含めて枯れるため）。ComfyUI は Pixal3D / TRELLIS.2 の
+# 3D 生成で GPU を大きく使うので、Hunyuan3D・Pixal3D と同じグループに入れる。Strata の汎用版は VRAM を約 20GB 以上、
+# RAM を約 50GB 以上、Coder 版は VRAM を大きく・RAM を約 32GB 級、公式版は汎用版と同じ程度（2026-10-07 の実測で、
+# RAM は memory.peak 50 GiB、VRAM は生成中 23,899 MiB）使うので、
+# これらとは同時に動かせない（Strata の 3 つどうしも同時には動かせない。6 つのうち同時に動くのは 1 つだけ）。
+GPU_EXCLUSIVE_KEYS = ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official")
+
+# 起動する前に、Ollama に載っているモデルを VRAM から降ろすサービス。Strata（汎用版・Coder 版・公式版とも）は
+# VRAM を大きく使い、Qwen（実測 22 GiB）と同居できない。Hunyuan3D は生成の直前に自分で降ろす（knowledge の hunyuan3d.md）。
+# Pixal3D・ComfyUI は、これまでの動作（画面の警告で利用者が降ろす）を変えないため対象にしない。
+OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official")
 
 # POST /api/service/<key>/<action> で許可する action と、それぞれの操作の性質。
 ALLOWED_ACTIONS = ("start", "stop")
 ACTION_LABELS = {"start": "起動", "stop": "停止"}
 
 SYSTEMCTL_SHOW_TIMEOUT_SEC = 5.0
-SYSTEMCTL_START_TIMEOUT_SEC = 30.0  # Type=simple なのですぐ返る
+SYSTEMCTL_START_TIMEOUT_SEC = 30.0  # --no-block で待たずに返る（build_control_command）
 SYSTEMCTL_STOP_TIMEOUT_SEC = 90.0  # Hunyuan3D は終了に時間がかかることがある
 ACTION_TIMEOUTS = {"start": SYSTEMCTL_START_TIMEOUT_SEC, "stop": SYSTEMCTL_STOP_TIMEOUT_SEC}
 
@@ -222,6 +275,88 @@ def read_ollama_ps(timeout: float = OLLAMA_TIMEOUT_SEC) -> list[dict[str, Any]] 
     return parse_ollama_ps(payload)
 
 
+def ollama_models_to_unload(models: list[dict[str, Any]] | None) -> list[str]:
+    """`read_ollama_ps` の戻り値から、降ろすモデル名を載っている順・重複なしで返す（純粋関数）。
+
+    None（Ollama に到達できない）と、名前が分からない項目（parse_ollama_ps が "?" にしたもの）は対象にしない。
+    """
+    model_names: list[str] = []
+    for model in models or []:
+        model_name = model.get("name") if isinstance(model, dict) else None
+        if not model_name or model_name == "?" or model_name in model_names:
+            continue
+        model_names.append(model_name)
+    return model_names
+
+
+def build_ollama_unload_body(model_name: str) -> bytes:
+    """`POST /api/generate` でモデルを VRAM から降ろす本文を作る（純粋関数）。
+
+    prompt を付けず keep_alive=0 だけを送ると、Ollama は生成せずにそのモデルを降ろす。
+    """
+    return json.dumps({"model": model_name, "keep_alive": 0}).encode("utf-8")
+
+
+def request_ollama_unload(model_name: str, timeout: float = OLLAMA_UNLOAD_TIMEOUT_SEC) -> bool:
+    """Ollama へモデル 1 つを降ろす要求を送る。受け付けられれば True、失敗はすべて False（例外は投げない）。
+
+    要求が受け付けられたことだけを見る。降ろし終えて VRAM が空いたことまでは確かめない。
+    """
+    request = urllib.request.Request(
+        OLLAMA_GENERATE_URL,
+        data=build_ollama_unload_body(model_name),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            response.read()
+    except (urllib.error.URLError, http.client.HTTPException, TimeoutError, OSError, ValueError):
+        return False
+    return True
+
+
+def unload_ollama_models() -> dict[str, Any]:
+    """Ollama に載っているモデルをすべて VRAM から降ろす。例外は外に投げない。
+
+    戻り値は {"unloaded": [降ろせたモデル名], "failed": [降ろせなかったモデル名], "checked": bool}。
+    checked が False のときは /api/ps に到達できず、載っているモデルを確認できなかった。
+    """
+    models = read_ollama_ps()
+    if models is None:
+        return {"unloaded": [], "failed": [], "checked": False}
+    unloaded: list[str] = []
+    failed: list[str] = []
+    for model_name in ollama_models_to_unload(models):
+        if request_ollama_unload(model_name):
+            unloaded.append(model_name)
+        else:
+            failed.append(model_name)
+    return {"unloaded": unloaded, "failed": failed, "checked": True}
+
+
+def describe_ollama_unload(result: dict[str, Any]) -> str:
+    """`unload_ollama_models` の結果を、起動の応答の message に足す日本語の文にする（純粋関数）。
+
+    降ろしたものも注意すべきこともなければ空文字。失敗しても起動は続けるので、
+    ここでは「VRAM が足りないと起動に失敗するおそれがある」という注意だけを返す。
+    """
+    sentences: list[str] = []
+    if result["unloaded"]:
+        sentences.append(f"Ollama のモデル（{'、'.join(result['unloaded'])}）を VRAM から降ろしました。")
+    if not result["checked"]:
+        sentences.append(
+            "注意: Ollama に接続できず、載っているモデルを確認できませんでした。"
+            "VRAM が足りないと起動に失敗するおそれがあります（`ollama ps` で確認してください）。"
+        )
+    if result["failed"]:
+        sentences.append(
+            f"注意: Ollama のモデル（{'、'.join(result['failed'])}）を降ろせませんでした。"
+            "VRAM が足りないと起動に失敗するおそれがあります（`ollama stop <モデル名>` で手動で降ろせます）。"
+        )
+    return "".join(sentences)
+
+
 def parse_env_file(text: str) -> dict[str, str]:
     """env ファイルの中身から `KEY=VALUE` を読む（純粋関数）。
 
@@ -318,7 +453,7 @@ def unit_state(active_state: str, load_state: str, port_open: bool) -> str:
     - "starting"      ユニットは active/activating だが、ポートはまだ開いていない
                        （Hunyuan3D はモデルの読み込みに 50〜140 秒かかるため、この状態が長く続く）
     - "stopped"       ユニットは動いていない
-    - "not_installed" ユニットが存在しない（load_state が "loaded" 以外。ComfyUI が該当）
+    - "not_installed" ユニットが存在しない（load_state が "loaded" 以外。ユニットを作る前など）
     """
     if load_state != "loaded":
         return "not_installed"
@@ -407,13 +542,28 @@ def read_unit_state(unit: str, timeout: float = SYSTEMCTL_SHOW_TIMEOUT_SEC) -> t
     return (active_state, load_state)
 
 
+def build_control_command(unit: str, action: str) -> list[str]:
+    """`systemctl --user <action> <unit>` のコマンド列を作る（純粋関数）。
+
+    start は `--no-block` を付けて、ジョブの完了を待たずに返す。Strata のユニット（汎用版・Coder 版・公式版）は
+    API が応答するまで（最大 15 分）`systemctl start` が戻らない作り（ExecStartPost で待つ）なので、待つと
+    タイムアウトして、実際には起動できているのに失敗と表示してしまう。起動の進み具合は
+    `/api/status` のポーリングで「起動中…」→「稼働中」と見える。ユニットが無い・systemctl が
+    拒否した場合は --no-block でも即座にエラーで返る。ただし起動ジョブそのものの失敗
+    （プロセスがすぐ落ちる等）はここでは分からず、状態が「停止中」に戻ることで分かる。
+    """
+    if action == "start":
+        return ["systemctl", "--user", "start", "--no-block", unit]
+    return ["systemctl", "--user", action, unit]
+
+
 def control_unit(unit: str, action: str, timeout: float) -> subprocess.CompletedProcess[str]:
     """`systemctl --user <action> <unit>` を実行する。呼び出し元がタイムアウトを選ぶ。
 
     ここに渡す unit は必ず SERVICES 由来のもの。利用者が渡した文字列をそのまま渡してはならない。
     """
     return subprocess.run(
-        ["systemctl", "--user", action, unit],
+        build_control_command(unit, action),
         capture_output=True,
         text=True,
         timeout=timeout,
@@ -645,6 +795,21 @@ def parse_memory_path(path: str) -> tuple[str, str, str] | None:
     return key, high_raw, max_raw
 
 
+def build_memory_entry(service: dict[str, Any], memory_values: dict[str, Any] | None) -> dict[str, Any] | None:
+    """services[] の "memory" を組み立てる（純粋関数）。unit を持たない（None）ならそのまま None。
+
+    現在値に、画面の「既定に戻す」が使う既定値（`default_high_gib` / `default_max_gib`）を添える。
+    SERVICES の `memory_default` があればそれ、無ければ全サービス共通の定数。
+    """
+    if memory_values is None:
+        return None
+    memory_default = service.get("memory_default") or {}
+    entry = dict(memory_values)
+    entry["default_high_gib"] = memory_default.get("high_gib", MEMORY_DEFAULT_HIGH_GIB)
+    entry["default_max_gib"] = memory_default.get("max_gib", MEMORY_DEFAULT_MAX_GIB)
+    return entry
+
+
 def build_service_status(
     service: dict[str, Any],
     port_open: bool,
@@ -659,7 +824,7 @@ def build_service_status(
     読むのは呼び出し元（collect_status）の役目で、この関数はそれをそのまま "options" として
     素通しするだけ。渡さなければ空の辞書になる（設定を持たないサービス向け）。
     `memory_values` は unit を持つサービスの現在のメモリ上限（parse_memory_properties の戻り値）。
-    unit を持たないサービス（ComfyUI）では None のまま渡す。
+    unit を持たないサービスでは None のまま渡す。
     """
     state = unit_state(active_state, load_state, port_open)
     controllable = is_controllable({"unit": service["unit"], "state": state})
@@ -671,7 +836,7 @@ def build_service_status(
         "state": state,
         "controllable": controllable,
         "options": dict(option_values) if option_values else {},
-        "memory": dict(memory_values) if memory_values is not None else None,
+        "memory": build_memory_entry(service, memory_values),
     }
 
 
@@ -952,7 +1117,7 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
 
         stopped_keys: list[str] = []
         if action == "start" and key in GPU_EXCLUSIVE_KEYS:
-            # Hunyuan3D と Pixal3D は GPU を排他的に使う。起動する前に、同じグループで
+            # Hunyuan3D・Pixal3D・ComfyUI・Strata（3 つ）は GPU を排他的に使う。起動する前に、同じグループで
             # 動いている（running / starting）他サービスを止める。
             states = {
                 exclusive_key: self._current_service_state(SERVICES_BY_KEY[exclusive_key])
@@ -978,13 +1143,28 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                     return
                 stopped_keys.append(key_to_stop)
 
+        # 同じ GPU を使うサービスを止めたあと（止めるのに失敗したら上で中止している）、Ollama のモデルを降ろす。
+        # すでに動いている・起動中のものへの start は何も起こらないので、停止中のときだけ降ろす
+        # （無関係な Qwen の応答を途中で切らないため）。降ろすのに失敗しても起動は続ける。
+        unload_result: dict[str, Any] | None = None
+        if action == "start" and key in OLLAMA_UNLOAD_BEFORE_START_KEYS and current_state == "stopped":
+            unload_result = unload_ollama_models()
+            sys.stderr.write(
+                f"portal: Ollama のモデルを降ろす処理 降ろした={unload_result['unloaded']} "
+                f"失敗={unload_result['failed']} 一覧を確認できた={unload_result['checked']}\n"
+            )
+
         # ここに来るのは SERVICES 由来の unit のみ。利用者が渡した文字列をコマンドへ渡すことはない。
         result = perform_service_action(service, action)
-        if stopped_keys:
+        if stopped_keys or unload_result is not None:
             result = dict(result)
+        if stopped_keys:
             stopped_names = "、".join(SERVICES_BY_KEY[stopped_key]["name"] for stopped_key in stopped_keys)
             result["stopped"] = stopped_keys
             result["message"] = f"{stopped_names} を停止してから起動しました。{result['message']}"
+        if unload_result is not None:
+            result["unloaded_models"] = unload_result["unloaded"]
+            result["message"] = f"{result['message']}{describe_ollama_unload(unload_result)}"
         self._send_json(200, result)
 
     def _handle_option_action(self, key: str, option_name: str, value: str) -> None:
@@ -1072,6 +1252,14 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
         service = SERVICES_BY_KEY.get(key)
         if service is None or service["unit"] is None:
             self._send_json(404, {"ok": False, "message": "そのサービスは存在しません。"})
+            return
+
+        # ユニットがまだ無い間（Strata の 3 つ・ComfyUI を導入する前など）は set-property の宛先が無い。
+        if self._current_service_state(service) == "not_installed":
+            self._send_json(
+                409,
+                {"ok": False, "message": f"{service['name']} は未導入です。メモリ上限は設定できません。"},
+            )
             return
 
         try:

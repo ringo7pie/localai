@@ -289,6 +289,14 @@
     color: var(--accent-fg);
   }
   a.card-link:hover { filter: brightness(1.08); }
+  /* 同じカードの 2 つ目のリンク。1 つ目の直下に並べるので上の余白は詰め、主張を弱める。 */
+  a.card-link.secondary {
+    margin-top: 0;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+  .card-link.disabled.secondary { margin-top: 0; }
   .card-link.disabled {
     background: transparent;
     border: 1px dashed var(--border);
@@ -366,7 +374,7 @@
 
   <footer>
     5 秒ごとに自動更新します。各サービスへのリンクはこのページを開いたホスト名を使って組み立てます。
-    Open WebUI・Hunyuan3D・Pixal3D は<span class="term" data-term="自動起動">自動起動</span>しません。使うときだけ「起動」ボタンで立ち上げてください
+    Open WebUI・Strata・Strata Flash-Next Coder・Strata 公式版・Hunyuan3D・Pixal3D・ComfyUI は<span class="term" data-term="自動起動">自動起動</span>しません。使うときだけ「起動」ボタンで立ち上げてください
     （各サービスは<span class="term" data-term="systemd user ユニット">systemd user ユニット</span>として動きます）。
     起動・停止・設定変更の通信には内部ヘッダ（<span class="term" data-term="X-Portal-Request">X-Portal-Request</span>）を必須にし、
     他サイトからの誤操作を防いでいます。各カードの「<span class="term" data-term="ポート">ポート</span> nnnn」はそのサービスの待受番号です。
@@ -385,8 +393,9 @@
   const TOOLTIPS = {
     startButton:
       "このサービスを起動します（systemctl --user start）。起動には数秒〜数分かかることがあり、" +
-      "その間は「起動中…」と表示されます。Hunyuan3D と Pixal3D は GPU（VRAM）を同時に使えないため、" +
-      "一方を起動すると動いているもう一方は自動で停止します。",
+      "その間は「起動中…」と表示されます。Hunyuan3D・Pixal3D・ComfyUI・Strata・Strata Flash-Next Coder・Strata 公式版は GPU（VRAM）を" +
+      "同時に使えないため、どれかを起動すると動いている他のサービスは自動で停止します。Strata の 3 つはさらに、" +
+      "起動の前に Ollama に載っているモデルも VRAM から降ろします。",
     stopButton:
       "このサービスを停止します（systemctl --user stop）。停止すると VRAM・RAM を解放します。" +
       "Hunyuan3D・Pixal3D の停止は終了処理に時間がかかることがあり、最大 90 秒待ちます。",
@@ -409,17 +418,24 @@
       "自動で戻すことはできないため、必要なら押す前に控えておいてください。",
     badgeRunning: "ポートが実際に開いていて、すぐ使える状態です。",
     badgeStarting:
-      "systemd 上は動作中ですが、ポートはまだ開いていません。Hunyuan3D・Pixal3D はモデルの読み込みに" +
-      "数十秒〜数分かかるため、この表示がしばらく続くことがあります。",
+      "systemd 上は動作中ですが、ポートはまだ開いていません。Hunyuan3D・Pixal3D・Strata（Coder 版・公式版を含む）はモデルの" +
+      "読み込みに数十秒〜数分かかるため、この表示がしばらく続くことがあります。",
     badgeStopped: "ユニットは動いていません。「起動」ボタンで起動できます。",
     badgeNotInstalled:
-      "systemd のユニットが存在せず、導入されていません。起動・停止の操作はできません（例: ComfyUI）。",
+      "systemd のユニットがまだ存在せず、導入されていません。起動・停止の操作はできません。",
     gpuBar:
       "nvidia-smi で取得した VRAM の使用量です。A30 1 枚の VRAM は 24576 MiB（24 GiB）で、" +
       "Qwen（qwen3.8:27b）を単独で載せると実測 22201 MiB を使います。50% を超えると赤系の表示に変わります。",
     openLink:
       "稼働中のサービスを新しいタブで開きます。リンクはこのページを開いたホスト名" +
-      "（location.hostname）を使って組み立てます。"
+      "（location.hostname）を使って組み立てます。",
+    openStrataLink:
+      "Strata 自身の画面（チャットと、モデル・GPU の負荷を見る Monitor）を新しいタブで開きます。" +
+      "汎用版・Coder 版・公式版のどのカードでも、そのカードのポートで開きます。" +
+      "ふだんのチャットは、下の Open WebUI から使うほうが履歴を残せます。",
+    openChatLink:
+      "Open WebUI を新しいタブで開きます。Strata のモデルは、開いた画面の上部のモデル一覧から選んで使います。" +
+      "Strata が停止しているとき、そのモデルは選べないか、エラーになります。"
   };
 
   // 専門用語クリックで開くダイアログの見出し・本文。キーは画面の data-term と一致させる。
@@ -428,12 +444,12 @@
     "VRAM":
       "GPU（グラフィックボード）に載っている専用メモリ。A30 1 枚の VRAM は 24576 MiB（24 GiB）です。" +
       "Qwen（qwen3.8:27b）を単独で載せると実測 22201 MiB を使い、Hunyuan3D は待機時だけで約 5,365 MiB、" +
-      "Pixal3D は生成のピークで約 17,337 MiB を使います。A30 は 1 枚しか無いため、使う量の合計が" +
-      "24 GiB を超えると動きません。",
+      "Pixal3D は生成のピークで約 17,337 MiB を使い、Strata の汎用版は約 20 GiB 以上、Coder 版・公式版も大きく使います。" +
+      "A30 は 1 枚しか無いため、使う量の合計が 24 GiB を超えると動きません。",
     "RAM":
       "主記憶（メインメモリ）。この機体は実測 62.5 GiB（/proc/meminfo の MemTotal 65504276 kB）です。" +
       "VRAM に入りきらない分（低 VRAM モードなど）はここに置かれ、使いすぎると systemd-oomd が" +
-      "デスクトップごと止めるおそれがあります。",
+      "デスクトップごと止めるおそれがあります。Strata は汎用版で約 50 GiB 以上、Coder 版で約 32 GiB 級を使います（公式版も汎用版と同じく約 50 GiB。2026-10-07 の実測）。",
     "swap":
       "RAM が足りなくなったときにディスクへ逃がす予備領域。Pixal3D の低 VRAM モードは RAM を" +
       "28GB 前後まで使い swap へあふれることがあります。以前は swap 8 GiB のままで RAM 残り 200MiB まで" +
@@ -441,25 +457,55 @@
     "Qwen":
       "このサーバーで動かしているローカル LLM（qwen3.8:27b、Q4_K_M 量子化、17 GB）。Ollama 経由で" +
       "動き、Open WebUI のチャットや MCP 経由の作業委譲に使います。VRAM に入りきらないと一部が" +
-      "RAM・CPU に溢れ、生成速度が落ちます。",
+      "RAM・CPU に溢れ、生成速度が落ちます。Strata が動かす Qwen3.8 Flash Next 125B・Coder 版・公式版は別のモデルで、" +
+      "Ollama ではなく Strata が動かします。",
     "Ollama":
       "Qwen を動かしている推論サーバー。127.0.0.1:11434 で待ち受け、LAN には公開していません。" +
       "無操作が続くと既定 5 分でモデルを VRAM から降ろし、次のリクエストで再度読み込む" +
-      "（約 60 秒かかる）ため、直後の応答速度は当てになりません。",
+      "（約 60 秒かかる）ため、直後の応答速度は当てになりません。Strata（3 つとも）を起動するときは、" +
+      "入口ページが先にここへ載っているモデルを降ろします。",
     "Open WebUI":
-      "Ollama（Qwen）を使うブラウザチャット画面。ポート 8081 で動きます。起動・停止・メモリ上限の" +
-      "変更をこの入口ページから行えます。",
+      "Ollama（Qwen）を使うブラウザチャット画面。ポート 8081 で動きます。Strata のモデルも、" +
+      "この画面のモデル一覧から選んで使います。起動・停止・メモリ上限の変更をこの入口ページから行えます。",
+    "Strata":
+      "OpenAI 互換の API で LLM を提供する推論エンジン。同じエンジンで動くモデルが 3 つあり、別々のサービス" +
+      "として起動します。汎用版は Qwen3.8 Flash Next 125B の abliterated 版（IQ3_S 量子化、" +
+      "ポート 8082）で、VRAM を約 20GB 以上、RAM を約 50GB 以上使い、モデル（約 83GB）の読み込みに" +
+      "数分かかります。コード向けの版は Strata Flash-Next Coder（ポート 8083）、同じモデルの公式の量子化版は " +
+      "Strata 公式版（ポート 8084）です。Ollama・Hunyuan3D・" +
+      "Pixal3D・ComfyUI、そして Strata の他の 2 つとは同時に使えず、起動するときは、動いている他のサービスを" +
+      "停止し、Ollama に載っているモデルも降ろします。チャットは Open WebUI のモデル一覧から選びます。",
+    "Strata Flash-Next Coder":
+      "Strata で動かす、コード向けのモデル（ポート 8083）。Qwen3.8-Flash-Next の 512 エキスパートを半分に" +
+      "削った版で、RAM を約 36GiB、VRAM を大きく使い、起動に数分かかります。SWE-bench Verified 75.6 などの" +
+      "数字は作者の報告です。日本語は実用になりません（実測で中国語・英語が混じり、反復に陥りました。日本語は汎用の Strata を使ってください）。画像入力は未対応です。汎用の Strata・Strata 公式版・Hunyuan3D・Pixal3D・ComfyUI とは" +
+      "同時に使えず、起動するときは、動いている他のサービスを停止し、Ollama に載っているモデルも降ろします。" +
+      "チャットは Open WebUI のモデル一覧から選びます。",
+    "Strata 公式版":
+      "Strata で動かす、Qwen3.8-Flash-Next（512 エキスパートのまま）の公式の量子化版（ポート 8084）。" +
+      "ISTA-DASLab が公開した GSQ-RCO の IQ3_XXS で、abliterated ではありません（汎用版は abliterated の RVN 版 IQ3_S）。" +
+      "用途は汎用版と同じで、数学などで汎用版と答えを比べるために使います。RAM は汎用版と同じく約 50 GiB、VRAM は生成中にほぼ全部（実測 23,899 MiB）を使います。" +
+      "汎用の Strata・Strata Flash-Next Coder・Hunyuan3D・Pixal3D・ComfyUI とは同時に使えず、" +
+      "起動するときは、動いている他のサービスを停止し、Ollama に載っているモデルも降ろします。" +
+      "チャットは Open WebUI のモデル一覧（strata-official:IQ3_XXS）から選びます。",
+    "abliterated":
+      "拒否を取り除いた改変版。モデルの内部から「依頼を断る方向」の成分を取り除く加工（abliteration）を" +
+      "したもので、元のモデルより断らなくなります。そのぶん安全対策も弱まるため、出力の扱いは利用者が" +
+      "責任を持ちます。",
     "Hunyuan3D":
       "正面・背面・左・右の画像 4 枚から 3D メッシュを作るツール（ポート 7860）。起動すると VRAM を" +
-      "約 5,365 MiB（待機時）使います。Pixal3D とは GPU を同時に使えず、片方の起動時にもう片方は" +
-      "自動で停止します。",
+      "約 5,365 MiB（待機時）使います。Pixal3D・ComfyUI・Strata（Coder 版・公式版を含む）とは GPU を同時に使えず、どれかの起動時に" +
+      "動いている他のサービスは自動で停止します。",
     "Pixal3D":
       "画像 1〜4 枚から 3D メッシュを作る、Hunyuan3D とは別方式のツール（ポート 7861）。VRAM ピークは" +
       "実測約 17,337 MiB。低 VRAM モードを Off にすると VRAM 不足で生成に失敗するため常時 On が必須です。" +
-      "Hunyuan3D とは GPU を同時に使えません。",
+      "Hunyuan3D・ComfyUI・Strata（Coder 版・公式版を含む）とは GPU を同時に使えません。",
     "ComfyUI":
-      "画像・ワークフロー生成 UI（ポート 8188 を予定）。まだ導入されていないため、この画面では" +
-      "常に「未導入」と表示され、起動・停止はできません。",
+      "ノードをつないだワークフローで生成を行う UI（ポート 8188）。ここでは PixelArtistry の" +
+      "ワークフロー（Pixal3D / TRELLIS.2 + WTiVo + LODTailor）で、1 枚の画像から水密（watertight）" +
+      "メッシュや低ポリのゲーム用アセットを作ります。3D 生成で GPU を大きく使うため、Hunyuan3D・" +
+      "Pixal3D・Strata（Coder 版・公式版を含む）とは同時に使えず、どれかの起動時に動いている他のサービスは自動で" +
+      "停止します。起動・停止・メモリ上限の変更はこの画面から行えます。",
     "低 VRAM モード":
       "Hunyuan3D・Pixal3D が VRAM の使用量を RAM と引き換えに減らす設定。既定は On です。稼働中・" +
       "起動中は変更できません（systemd の EnvironmentFile は起動時にしか読まれないため）。Pixal3D は" +
@@ -467,15 +513,17 @@
       "RAM が 20 GiB 近くまで伸び、OOM killer に殺されてデスクトップごとハングした事故があったため、" +
       "ユニット側の MemoryHigh/MemoryMax でも保護しています。",
     "GPU の排他":
-      "Hunyuan3D と Pixal3D は A30 1 枚の VRAM を同時に使えません。そのため、どちらかを起動すると、" +
-      "もう片方が動いていれば（稼働中・起動中）自動的に先に停止してから起動します。停止に失敗した" +
-      "場合は、両方が立ち上がって RAM が枯れるのを防ぐため起動を中止します。",
+      "Hunyuan3D・Pixal3D・ComfyUI・Strata・Strata Flash-Next Coder・Strata 公式版の 6 つは A30 1 枚の VRAM を同時に使えません" +
+      "（同時に動くのは 6 つのうち 1 つだけ）。そのため、どれかを起動すると、" +
+      "他のサービスが動いていれば（稼働中・起動中）自動的に先に停止してから起動します。停止に失敗した" +
+      "場合は、同時に立ち上がって RAM が枯れるのを防ぐため起動を中止します。Strata の 3 つはさらに、起動の前に" +
+      "Ollama に載っているモデル（Qwen など）も VRAM から降ろします（降ろせなくても起動は続け、注意を表示します）。",
     "MemoryHigh":
       "systemd --user ユニットの cgroup メモリ制御の 1 つ。これを超えると、そのサービスは cgroup に" +
-      "絞られて遅くなります。既定は 44 GiB。この画面から即座に（再起動なしで）変更できます。",
+      "絞られて遅くなります。既定は 44 GiB（Strata の 3 つは別の既定値）。この画面から即座に（再起動なしで）変更できます。",
     "MemoryMax":
       "systemd --user ユニットの cgroup メモリ制御の 1 つ。これを超えると、そのサービスだけが" +
-      "強制終了されます（デスクトップは巻き込まれません）。既定は 48 GiB。",
+      "強制終了されます（デスクトップは巻き込まれません）。既定は 48 GiB（Strata の 3 つは別の既定値）。",
     "推奨上限":
       "MemoryMax の目安。RAM 総量からデスクトップ等の常駐分（14 GiB）を引いた値で、この機体では" +
       "48 GiB です。超えても画面は拒否しませんが、警告を表示します。",
@@ -486,15 +534,16 @@
       "事故を受けての制限です）。",
     "systemd user ユニット":
       "各サービスの実体。ユーザー権限（root ではない）で動く systemd のサービス単位です。ユニットが" +
-      "無いサービス（ComfyUI）は、この画面から起動・停止・メモリ上限の操作ができません。",
+      "まだ無いサービスは「未導入」と表示され、この画面から起動・停止・メモリ上限の操作ができません。",
     "自動起動":
       "PC 起動時に自動で立ち上がるかどうか。この構成では入口ページ（portal）だけが自動起動します。" +
-      "Open WebUI・Hunyuan3D・Pixal3D は常時起動しておくと待機中でも VRAM・RAM を占有し、実際に PC が" +
-      "ハングした経緯があるため、使うときだけこの画面から手動で起動する運用にしています。",
+      "Open WebUI・Strata・Strata Flash-Next Coder・Strata 公式版・Hunyuan3D・Pixal3D・ComfyUI は常時起動しておくと待機中でも" +
+      "VRAM・RAM を占有しかねず、実際に PC がハングした経緯があるため、使うときだけこの画面から手動で起動する" +
+      "運用にしています。",
     "ポート":
-      "サービスが待ち受ける TCP の番号。入口ページは 8080、Open WebUI は 8081、Hunyuan3D は 7860、" +
-      "Pixal3D は 7861、ComfyUI は 8188（導入時）を使う想定です。各サービスへのリンクはこの番号と" +
-      "ページを開いたホスト名から組み立てます。",
+      "サービスが待ち受ける TCP の番号。入口ページは 8080、Open WebUI は 8081、Strata は 8082、" +
+      "Strata Flash-Next Coder は 8083、Strata 公式版は 8084、Hunyuan3D は 7860、Pixal3D は 7861、ComfyUI は 8188 を使います。" +
+      "各サービスへのリンクはこの番号とページを開いたホスト名から組み立てます。",
     "X-Portal-Request":
       "起動・停止・設定変更の POST に必須の独自ヘッダです。ヘッダの無い単純な POST は他サイトの" +
       "JavaScript からでも送れてしまうため、このヘッダを必須にしてブラウザに事前確認（preflight）を" +
@@ -547,12 +596,64 @@
     appendTextWithGlossaryTerms(element, text);
   }
 
+  // Strata（汎用版・Coder 版・公式版）の稼働中のリンク。1 つ目は Strata 自身の画面（そのカードのポートの /）。
+  // チャットの入口は Open WebUI なので、2 つ目のリンクで案内する。3 つのカードで同じものを使う。
+  const STRATA_OPEN_LINKS = {
+    openLabel: "Strata の画面を開く →",
+    openTooltip: TOOLTIPS.openStrataLink,
+    alsoOpen: {
+      key: "open-webui",
+      label: "Open WebUI でチャットする →",
+      tooltip: TOOLTIPS.openChatLink,
+      unavailable: "チャットするには、先に Open WebUI を起動してください。"
+    }
+  };
+
   const SERVICE_META = {
     "open-webui": {
-      description: "Ollama を使ったブラウザチャット。AI モデルの切り替えは、開いた画面の上部の" +
+      description: "Ollama と Strata を使ったブラウザチャット。AI モデルの切り替えは、開いた画面の上部の" +
         "モデル選択で行います（例: qwen3.8:27b、qwen3.8-flash-next）。入口ページではモデルを選びません。",
       stoppedReason: "起動していません。下のボタンから起動できます。",
       startingReason: "起動処理中です。まもなく利用できるようになります。"
+    },
+    "strata": {
+      description: "Qwen3.8 Flash Next 125B の abliterated 版（IQ3_S 量子化）を、OpenAI 互換の API で提供する推論エンジン",
+      stoppedReason: "起動していません。下のボタンから起動できます。",
+      startingReason: "モデル（約 83GB）を読み込んでいます（数分かかります）。",
+      note: "チャットは Open WebUI（8081）のモデル一覧から選びます。Strata が停止中のときは、選べないかエラーになります。"
+        + " Ollama のモデルは、Strata の起動時に降ろされます。"
+        + " GPU の排他: Strata Flash-Next Coder・Strata 公式版・ComfyUI・Hunyuan3D・Pixal3D とは同時に使えません。起動すると、動いているほうは自動で停止します。"
+        + " VRAM を約 20GB 以上、RAM を約 50GB 以上使います。",
+      openLabel: STRATA_OPEN_LINKS.openLabel,
+      openTooltip: STRATA_OPEN_LINKS.openTooltip,
+      alsoOpen: STRATA_OPEN_LINKS.alsoOpen
+    },
+    "strata-coder": {
+      description: "Qwen3.8-Flash-Next の 512 エキスパートを半分に削った、コード向けのモデル（Strata で動かす）。" +
+        "作者の報告では SWE-bench Verified 75.6 など",
+      stoppedReason: "起動していません。下のボタンから起動できます。",
+      startingReason: "モデルを読み込んでいます（数分かかります）。",
+      note: "チャットは Open WebUI（8081）のモデル一覧から選びます。Strata Flash-Next Coder が停止中のときは、選べないかエラーになります。"
+        + " Ollama のモデルは、Strata Flash-Next Coder の起動時に降ろされます。"
+        + " GPU の排他: 汎用の Strata・Strata 公式版・ComfyUI・Hunyuan3D・Pixal3D とは同時に使えません。起動すると、動いているほうは自動で停止します。"
+        + " RAM を約 36GiB、VRAM を大きく使います。日本語は実用になりません（日本語は汎用の Strata を使ってください）。画像入力は未対応です。",
+      openLabel: STRATA_OPEN_LINKS.openLabel,
+      openTooltip: STRATA_OPEN_LINKS.openTooltip,
+      alsoOpen: STRATA_OPEN_LINKS.alsoOpen
+    },
+    "strata-official": {
+      description: "Qwen3.8-Flash-Next（512 エキスパートのまま）の公式の量子化版（ISTA-DASLab の GSQ-RCO、IQ3_XXS）。" +
+        "abliterated ではない。汎用版と同じ用途で、数学などで汎用版と答えを比べる用。" +
+        "数学など長く考える問題は公式版のほうが答えに届きやすい（2026-10-07 の実測）",
+      stoppedReason: "起動していません。下のボタンから起動できます。",
+      startingReason: "モデルを読み込んでいます（数分かかります）。",
+      note: "チャットは Open WebUI（8081）のモデル一覧（strata-official:IQ3_XXS）から選びます。Strata 公式版が停止中のときは、選べないかエラーになります。"
+        + " Ollama のモデルは、Strata 公式版の起動時に降ろされます。"
+        + " GPU の排他: 汎用の Strata・Strata Flash-Next Coder・ComfyUI・Hunyuan3D・Pixal3D とは同時に使えません。起動すると、動いているほうは自動で停止します。"
+        + " RAM は汎用の Strata と同じく約 50GiB、VRAM は生成中にほぼ全部（23,899 MiB）を使います（2026-10-07 の実測）。",
+      openLabel: STRATA_OPEN_LINKS.openLabel,
+      openTooltip: STRATA_OPEN_LINKS.openTooltip,
+      alsoOpen: STRATA_OPEN_LINKS.alsoOpen
     },
     "hunyuan3d": {
       description: "画像 4 枚から 3D メッシュを生成",
@@ -564,13 +665,17 @@
       description: "画像 1〜4 枚から 3D メッシュを生成（別方式）",
       stoppedReason: "起動していません。下のボタンから起動できます。",
       startingReason: "モデルを読み込んでいます（数分かかります）。",
-      note: "GPU の排他: Hunyuan3D とは同時に使えません。起動すると Hunyuan3D は自動で停止します。"
+      note: "GPU の排他: Hunyuan3D・ComfyUI・Strata（Coder 版・公式版を含む）とは同時に使えません。起動すると、動いているほうは自動で停止します。"
         + " 生成中は RAM を 28GB 前後まで使い swap へあふれます（実測）。"
         + " ほかの重いアプリを閉じてから使ってください。生成は 4 分ほどかかります。"
     },
     "comfyui": {
-      description: "画像・ワークフロー生成 UI",
-      stoppedReason: "まだ導入されていません（後日追加予定）"
+      description: "1 枚の画像から水密（watertight）メッシュや低ポリのゲーム用アセットを作る、" +
+        "PixelArtistry のワークフロー（ノードをつないで生成する UI）",
+      stoppedReason: "起動していません。下のボタンから起動できます。",
+      startingReason: "起動処理中です。まもなく利用できるようになります。",
+      note: "GPU の排他: Hunyuan3D・Pixal3D・Strata（Coder 版・公式版を含む）とは同時に使えません。起動すると、動いているほうは自動で停止します。"
+        + " 3D 生成で GPU を大きく使います。"
     }
   };
 
@@ -589,6 +694,8 @@
   const optionMessages = {};
   const pendingOptions = {};
   let latestServices = [];
+  // /api/status の ollama（reachable・models）。起動前の確認文に、降ろされるモデル名を出すために持つ。
+  let latestOllama = null;
 
   // メモリ上限（MemoryHigh / MemoryMax）関連の状態。キーはサービスの key。
   // cardsContainer は 5 秒ごとに丸ごと作り直す（renderCards）が、入力欄が編集中のときに
@@ -610,7 +717,11 @@
   // GPU を排他的に使うサービス。portal.py の GPU_EXCLUSIVE_KEYS と同じ組み合わせ。
   // 起動ボタンを押したときに「もう片方を止めてよいか」を確認するために使う
   // （実際に止めるかどうかの最終判断はサーバー側が行う。ここは確認ダイアログの文言のためだけ）。
-  const GPU_EXCLUSIVE_KEYS = ["hunyuan3d", "pixal3d"];
+  const GPU_EXCLUSIVE_KEYS = ["hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official"];
+
+  // 起動前に Ollama のモデルを降ろすサービス。portal.py の OLLAMA_UNLOAD_BEFORE_START_KEYS と同じ組み合わせ。
+  // 実際に降ろすのはサーバー側。ここは確認ダイアログに、降ろされるモデル名を出すためだけ。
+  const OLLAMA_UNLOAD_BEFORE_START_KEYS = ["strata", "strata-coder", "strata-official"];
 
   function servicesToStopBeforeStart(key, servicesList) {
     if (GPU_EXCLUSIVE_KEYS.indexOf(key) === -1) { return []; }
@@ -621,6 +732,12 @@
       const state = stateByKey[otherKey];
       return state === "running" || state === "starting";
     });
+  }
+
+  function ollamaModelsToUnloadBeforeStart(key, ollama) {
+    if (OLLAMA_UNLOAD_BEFORE_START_KEYS.indexOf(key) === -1) { return []; }
+    if (!ollama || !ollama.reachable) { return []; }
+    return (ollama.models || []).map(function (model) { return model.name; });
   }
 
   function findServiceByKey(key, servicesList) {
@@ -705,7 +822,8 @@
         gpuWarning.hidden = false;
         setTextWithGlossaryTerms(
           gpuWarning,
-          "Qwen（" + names + "）が VRAM を使っています。Hunyuan3D や ComfyUI を起動する前に Qwen を降ろす必要があります。"
+          "Qwen（" + names + "）が VRAM を使っています。Strata（汎用版・Coder 版・公式版）は起動時に自動で降ろします。" +
+            "Hunyuan3D・Pixal3D・ComfyUI を起動する前には Qwen を降ろす必要があります。"
         );
       } else {
         setTextWithGlossaryTerms(gpuModels, "Ollama にモデルは読み込まれていません");
@@ -815,8 +933,8 @@
   }
 
   function renderMemoryPanel(card, service, ram) {
-    // unit を持たないサービス（ComfyUI）には出さない。
-    if (!service.memory) { return; }
+    // メモリ上限を取れないサービス（unit を持たないもの）と、ユニットがまだ無い未導入のものには出さない。
+    if (!service.memory || service.state === "not_installed") { return; }
 
     const key = service.key;
     const memory = service.memory;
@@ -826,8 +944,8 @@
     if (!memoryDirtyKeys[key]) {
       const synced = syncedFieldValues(memory);
       memoryFieldValues[key] = {
-        high: synced.high || (ram && ram.available ? String(ram.default_high_gib) : ""),
-        max: synced.max || (ram && ram.available ? String(ram.default_max_gib) : "")
+        high: synced.high || (ram && ram.available ? String(memory.default_high_gib || ram.default_high_gib) : ""),
+        max: synced.max || (ram && ram.available ? String(memory.default_max_gib || ram.default_max_gib) : "")
       };
     }
     const fieldValues = memoryFieldValues[key] || { high: "", max: "" };
@@ -893,8 +1011,9 @@
     const actions = document.createElement("div");
     actions.className = "memory-actions";
 
-    const defaultHigh = ram && ram.available ? ram.default_high_gib : 44;
-    const defaultMax = ram && ram.available ? ram.default_max_gib : 48;
+    // サービスごとの既定値（memory.default_*）を優先し、無ければ全体の既定値を使う。
+    const defaultHigh = memory.default_high_gib || (ram && ram.available ? ram.default_high_gib : 44);
+    const defaultMax = memory.default_max_gib || (ram && ram.available ? ram.default_max_gib : 48);
 
     const applyButton = document.createElement("button");
     applyButton.type = "button";
@@ -944,20 +1063,29 @@
 
   function performAction(key, action) {
     if (action === "start") {
-      // GPU を排他的に使うサービスは、起動前に確認する。実際に止めるかどうかの判断・実行は
-      // サーバー側（portal.py の services_to_stop_before_start）が行う。ここは文言のためだけ。
+      // 他のサービスを止める起動と、Ollama のモデルを降ろす起動は、起動前に確認する。実際に止める・降ろすかの
+      // 判断・実行はサーバー側（portal.py の services_to_stop_before_start・unload_ollama_models）が行う。
+      // ここは文言のためだけ。
       const keysToStop = servicesToStopBeforeStart(key, latestServices);
-      if (keysToStop.length > 0) {
-        const namesToStop = keysToStop
-          .map(function (stopKey) {
-            const service = findServiceByKey(stopKey, latestServices);
-            return service ? service.name : stopKey;
-          })
-          .join("、");
+      const modelsToUnload = ollamaModelsToUnloadBeforeStart(key, latestOllama);
+      if (keysToStop.length > 0 || modelsToUnload.length > 0) {
+        const clauses = [];
+        if (keysToStop.length > 0) {
+          const namesToStop = keysToStop
+            .map(function (stopKey) {
+              const service = findServiceByKey(stopKey, latestServices);
+              return service ? service.name : stopKey;
+            })
+            .join("、");
+          clauses.push(namesToStop + " を停止して");
+        }
+        if (modelsToUnload.length > 0) {
+          clauses.push("Ollama のモデル（" + modelsToUnload.join("、") + "）を VRAM から降ろして");
+        }
         const targetService = findServiceByKey(key, latestServices);
         const targetName = targetService ? targetService.name : key;
         const confirmed = window.confirm(
-          namesToStop + " を停止して " + targetName + " を起動します。よろしいですか？"
+          clauses.join("、") + " " + targetName + " を起動します。よろしいですか？"
         );
         if (!confirmed) { return; }
       }
@@ -1121,6 +1249,18 @@
     card.appendChild(wrapper);
   }
 
+  // 稼働中のサービスを新しいタブで開くリンク。isSecondary は 1 つ目のリンクの下に並べる 2 つ目のとき。
+  function buildOpenLink(port, label, tooltip, isSecondary) {
+    const link = document.createElement("a");
+    link.className = "card-link" + (isSecondary ? " secondary" : "");
+    link.href = buildServiceUrl(port);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.title = tooltip;
+    link.textContent = label;
+    return link;
+  }
+
   function renderCards(services) {
     cardsContainer.innerHTML = "";
     services.forEach(function (service) {
@@ -1135,8 +1275,12 @@
       head.className = "card-head";
       const name = document.createElement("span");
       name.className = "card-name";
-      if (GLOSSARY[service.name]) {
-        name.appendChild(buildTermSpan(service.name));
+      // 「Strata（Qwen3.8 Flash Next）」のように括弧で補足が付く名前は、括弧の前だけを用語にする
+      // （「Strata Flash-Next Coder」は括弧が無いので、名前全体が 1 つの用語。「Strata 公式版（IQ3_XXS）」は括弧の前の「Strata 公式版」）。
+      const nameBase = service.name.split("（")[0];
+      if (GLOSSARY[nameBase]) {
+        name.appendChild(buildTermSpan(nameBase));
+        name.appendChild(document.createTextNode(service.name.slice(nameBase.length)));
       } else {
         name.textContent = service.name;
       }
@@ -1177,19 +1321,28 @@
       renderActionMessage(card, service);
 
       if (service.state === "running") {
-        const link = document.createElement("a");
-        link.className = "card-link";
-        link.href = buildServiceUrl(service.port);
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.title = TOOLTIPS.openLink;
-        link.textContent = "開く →";
-        card.appendChild(link);
+        card.appendChild(
+          buildOpenLink(service.port, meta.openLabel || "開く →", meta.openTooltip || TOOLTIPS.openLink, false)
+        );
+        if (meta.alsoOpen) {
+          // 2 つ目のリンク（Strata の 3 つのカードから Open WebUI へ）。相手が動いていなければ、押せない案内文にする。
+          const alsoService = findServiceByKey(meta.alsoOpen.key, services);
+          if (alsoService && alsoService.state === "running") {
+            card.appendChild(buildOpenLink(alsoService.port, meta.alsoOpen.label, meta.alsoOpen.tooltip, true));
+          } else {
+            const unavailable = document.createElement("div");
+            unavailable.className = "card-link disabled secondary";
+            unavailable.textContent = meta.alsoOpen.unavailable;
+            card.appendChild(unavailable);
+          }
+        }
       } else {
         const disabled = document.createElement("div");
         disabled.className = "card-link disabled";
         if (service.state === "starting") {
           disabled.textContent = meta.startingReason || "起動処理中です。";
+        } else if (service.state === "not_installed") {
+          disabled.textContent = "systemd のユニットがまだありません。導入後に操作できます。";
         } else {
           disabled.textContent = meta.stoppedReason || "停止しています";
         }
@@ -1205,6 +1358,7 @@
     renderGpu(data.gpu, data.ollama);
     renderMemoryInfo(data.ram);
     latestServices = data.services || [];
+    latestOllama = data.ollama || null;
     latestRam = data.ram || null;
     // メモリ上限の入力欄が編集中（フォーカス中・未適用の変更がある）のときは、カードを
     // 丸ごと作り直さない。renderCards は毎回 innerHTML を空にするため、そのまま呼ぶと
@@ -1224,6 +1378,7 @@
     gpuWarning.hidden = true;
     memoryInfoText.textContent = "取得できません";
     latestServices = [];
+    latestOllama = null;
     latestRam = null;
     cardsContainer.innerHTML = "";
   }
