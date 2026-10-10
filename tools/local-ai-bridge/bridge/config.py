@@ -76,7 +76,7 @@ class Limits:
     result_max_bytes: int = 8192
     # wait_for_task が 1 回の呼び出しでブロックしてよい秒数の上限。
     # MCP_TOOL_TIMEOUT=2,100,000ms（35 分）の内側に収める。
-    wait_for_task_max_sec: int = 1200
+    wait_for_task_max_sec: int = 2000
 
 
 @dataclass(frozen=True)
@@ -233,7 +233,7 @@ def load(path: Path | None = None) -> Config:
         verify_timeout_sec=int(limits_raw.get("verify_timeout_sec", 600)),
         result_summary_max_chars=int(limits_raw.get("result_summary_max_chars", 600)),
         result_max_bytes=int(limits_raw.get("result_max_bytes", 8192)),
-        wait_for_task_max_sec=int(limits_raw.get("wait_for_task_max_sec", 1200)),
+        wait_for_task_max_sec=int(limits_raw.get("wait_for_task_max_sec", 2000)),
     )
     for name, value in (
         ("max_job_seconds", limits.max_job_seconds),

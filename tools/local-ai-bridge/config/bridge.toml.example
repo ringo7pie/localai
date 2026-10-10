@@ -38,8 +38,10 @@ connect_timeout_sec      = 15     # Ollama への接続確認
 verify_timeout_sec       = 600    # 検証コマンドの上限（プロファイル側の値と小さい方を使う）
 result_summary_max_chars = 600
 result_max_bytes         = 8192
-wait_for_task_max_sec    = 1200   # wait_for_task が 1 回でブロックする上限。
-                                  # MCP_TOOL_TIMEOUT=2,100,000ms（35 分）の内側に収める
+wait_for_task_max_sec    = 2000   # wait_for_task が 1 回でブロックする上限。
+                                  # MCP_TOOL_TIMEOUT=2,100,000ms（35 分）の内側に収める。
+                                  # 実装 600 + 検証 600 + レビューでジョブが 1200 秒を超えうるため、
+                                  # 1200 では時間切れになり wait をもう一度呼ぶ往復が生じていた。
 
 # ---- 作業場所の登録 -------------------------------------------------
 # ここに書いた workspace_id でしか作業しない。全ディレクトリを自動では許可しない。

@@ -42,6 +42,23 @@ if "$CODEX_BIN" mcp get "$NAME" >/dev/null 2>&1; then
 fi
 
 "$CODEX_BIN" mcp add "$NAME" -- "$LAUNCHER"
+
+# Codex のツール呼び出しは既定 60 秒で切れる。wait_for_task は
+# bridge.toml の wait_for_task_max_sec（既定 2000 秒）までブロックするので、
+# 足さないと必ず時間切れになり、親が wait を呼び直す往復が増える。
+if [ -f "$CONFIG" ] && ! grep -A6 "^\[mcp_servers.$NAME\]" "$CONFIG" | grep -q tool_timeout_sec; then
+  python3 - "$CONFIG" "$NAME" <<'PY'
+import pathlib, sys
+path = pathlib.Path(sys.argv[1]); name = sys.argv[2]
+text = path.read_text(encoding="utf-8")
+head, sep, tail = text.partition(f"[mcp_servers.{name}]\n")
+if sep:
+    body, marker, rest = tail.partition("\n[")
+    body = body.rstrip("\n") + "\nstartup_timeout_sec = 30\ntool_timeout_sec = 2100\n"
+    path.write_text(head + sep + body + (marker + rest if marker else ""), encoding="utf-8")
+    print("config.toml にタイムアウト（startup 30 秒 / tool 2100 秒）を足しました。")
+PY
+fi
 echo
 echo "登録しました。確認:"
 "$CODEX_BIN" mcp get "$NAME" || true
