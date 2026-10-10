@@ -1,0 +1,30 @@
+diff --git a/native/core/wtivo_core.cpp b/native/core/wtivo_core.cpp
+index a5803b3..dbbcb0d 100644
+--- a/native/core/wtivo_core.cpp
++++ b/native/core/wtivo_core.cpp
+@@ -86,7 +86,8 @@ static py::tuple tetrahedralize_neighbors(
+     const int n = static_cast<int>(vertices.rows());
+     if (n <= 0) {
+         MatrixXi z(0, 4);
+-        return py::make_tuple(vertices, z, z);
++        // localai: 下の return と同じ理由で、所有するコピーを返す。
++        return py::make_tuple(MatrixXd(vertices), z, z);
+     }
+ 
+     const int threads = wtivo_threads(requested_threads);
+@@ -161,7 +162,14 @@ static py::tuple tetrahedralize_neighbors(
+ 
+     // Returning vertices keeps the same public shape as the proven runtime and
+     // lets Python reuse the exact vertex array for label sampling and graph math.
+-    return py::make_tuple(vertices, std::move(tets), std::move(nbrs));
++    //
++    // localai: vertices は Eigen::Ref<const MatrixXd>（列優先）。wtivo.py は行優先の float64 配列を渡すので、
++    // pybind11 は呼び出しの間だけ生きる一時コピーを作って Ref に渡す。それを参照のまま返すと、関数を
++    // 抜けた時点で解放済みの領域を指す numpy 配列になる。Linux（glibc）では大きな領域が munmap され、
++    // 次の np.ascontiguousarray(tet_verts) が SIGSEGV になった（2026-10-02、自己試験の 20 万点で再現）。
++    // Python が所有するコピーを返す（値は同じ。12M 点で約 288 MB 増える）。
++    MatrixXd vertices_out = vertices;
++    return py::make_tuple(std::move(vertices_out), std::move(tets), std::move(nbrs));
+ }
+ 
+ // -----------------------------------------------------------------------------

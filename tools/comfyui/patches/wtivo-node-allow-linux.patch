@@ -1,0 +1,16 @@
+diff --git a/wtivo.py b/wtivo.py
+index 368b4eb..f78b9bd 100644
+--- a/wtivo.py
++++ b/wtivo.py
+@@ -894,8 +894,9 @@ def main():
+         raise ValueError("--lambda_fill must be >=0")
+     if a.threads < 1:
+         raise ValueError("--threads must be >=1")
+-    if os.name != "nt":
+-        raise SystemExit("WTiVo 1.1 currently supports Windows 10/11 x64 only.")
++    # localai: Linux でも動かす（ネイティブ部は姉妹 repo の v1.0 から Linux 向けにビルドした .so）。
++    if os.name not in ("nt", "posix"):
++        raise SystemExit("WTiVo 1.1 supports Windows 10/11 x64 and Linux x86_64 only.")
+     if not torch.cuda.is_available():
+         raise SystemExit("WTiVo requires an NVIDIA CUDA-capable GPU. Run Setup-Windows.cmd first.")
+ 

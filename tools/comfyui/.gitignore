@@ -1,0 +1,9 @@
+# comfyui の仮想環境・上流ソース（ComfyUI 本体・custom_nodes・拡張・WTiVo）・モデルの重み・ログ。
+# いずれも大きいか絶対パスを埋め込むため持ち運べない。
+# モデルは vendor/ComfyUI/models/ にあるので vendor/ で除外される。models/ は念のため。
+# 再作成: tools/comfyui/setup-server.sh
+.venv/
+vendor/
+models/
+logs/
+*.log

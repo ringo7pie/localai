@@ -1,0 +1,67 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9bc6e81..651547b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,8 +2,9 @@
+ cmake_minimum_required(VERSION 3.24)
+ project(WTiVoNative VERSION 1.0.0 LANGUAGES CXX)
+ 
+-if(NOT WIN32)
+-  message(FATAL_ERROR "WTiVo v1.0 native build currently supports Windows x64 only")
++# localai: Linux x86_64 (Ubuntu 24.04, apt CGAL 5.6 / OpenVDB 10 / oneTBB 2021 / Eigen 3.4) でもビルドする。
++if(NOT WIN32 AND NOT (UNIX AND NOT APPLE))
++  message(FATAL_ERROR "WTiVo v1.0 native build supports Windows x64 and Linux x86_64 only")
+ endif()
+ if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+   message(FATAL_ERROR "WTiVo requires a 64-bit compiler/toolchain")
+diff --git a/scripts/build_gpupr.py b/scripts/build_gpupr.py
+index 5fc78e5..977702b 100644
+--- a/scripts/build_gpupr.py
++++ b/scripts/build_gpupr.py
+@@ -5,10 +5,11 @@ from __future__ import annotations
+ import os
+ import shutil
+ import sys
++import sysconfig
+ from pathlib import Path
+ 
+-if os.name != "nt":
+-    raise SystemExit("WTiVo GPUPr build currently supports Windows only.")
++# localai: Linux でもビルドする（torch.utils.cpp_extension は gcc / nvcc を使う）。
++IS_WINDOWS = os.name == "nt"
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ BUILD_DIR = ROOT / ".build" / "gpupr"
+@@ -36,11 +37,12 @@ arch = forced_arch or detected_arch
+ os.environ["TORCH_CUDA_ARCH_LIST"] = arch
+ 
+ cuda_home = os.environ.get("WTIVO_CUDA_HOME") or os.environ.get("CUDA_HOME") or os.environ.get("CUDA_PATH")
+-if not cuda_home:
++if not cuda_home and IS_WINDOWS:
+     default = Path(r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8")
+     if default.exists():
+         cuda_home = str(default)
+-if not cuda_home or not (Path(cuda_home) / "bin" / "nvcc.exe").exists():
++nvcc_name = "nvcc.exe" if IS_WINDOWS else "nvcc"
++if not cuda_home or not (Path(cuda_home) / "bin" / nvcc_name).exists():
+     raise RuntimeError("CUDA Toolkit with nvcc was not found. Install CUDA Toolkit 12.8 or set WTIVO_CUDA_HOME.")
+ os.environ["CUDA_HOME"] = cuda_home
+ os.environ["CUDA_PATH"] = cuda_home
+@@ -65,14 +67,15 @@ mod = load(
+         str(ROOT / "native" / "gpupr" / "gpu_push_relabel_fast.cu"),
+     ],
+     build_directory=str(BUILD_DIR),
+-    extra_cflags=["/O2", "/std:c++17", "/fp:precise"],
++    extra_cflags=(["/O2", "/std:c++17", "/fp:precise"] if IS_WINDOWS else ["-O3", "-std=c++17"]),
+     extra_cuda_cflags=extra_cuda,
+     with_cuda=True,
+     verbose=True,
+ )
+ 
+ built = Path(mod.__file__).resolve()
+-dst = OUT_DIR / "wtivo_gpupr.pyd"
++# Linux の拡張子は .pyd ではなく EXT_SUFFIX（例: .cpython-312-x86_64-linux-gnu.so）。
++dst = OUT_DIR / ("wtivo_gpupr.pyd" if IS_WINDOWS else "wtivo_gpupr" + sysconfig.get_config_var("EXT_SUFFIX"))
+ shutil.copy2(built, dst)
+ print("[SUCCESS] built:", dst)
+ 

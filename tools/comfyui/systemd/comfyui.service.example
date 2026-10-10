@@ -1,0 +1,28 @@
+[Unit]
+Description=ComfyUI (PixelArtistry watertight workflows, port 8188)
+# Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。
+# Hunyuan3D / Pixal3D とも VRAM を取り合う。生成の前にどちらかを止めること。
+After=network.target
+
+[Service]
+Type=simple
+# インストール先に合わせて書き換える。既定は tools/comfyui をこのパスに置いた場合。
+WorkingDirectory=%h/Proj/localai/tools/comfyui
+# COMFYUI_EXTRA_ARGS（main.py に足す引数。例: --lowvram）などを読む。先頭の "-" はファイルが無くても
+# エラーにしない意味（pixal3d.service / hunyuan3d.service の EnvironmentFile と同じ型）。
+EnvironmentFile=-%h/.config/comfyui/comfyui.env
+ExecStart=%h/Proj/localai/tools/comfyui/run-comfyui serve
+Restart=on-failure
+RestartSec=5
+# custom_nodes の読み込み（ComfyUI-Trellis2 が triton・open3d などを読む）に時間がかかることがある。
+TimeoutStartSec=600
+# RAM の安全弁。WTiVo（CGAL の四面体分割）と LODTailor（Blender）は RAM を強く使う
+# （配布元 README: 1536 / 12M 点で約 6 GB、2048 / 25M 点で約 11 GB、RTX 5080 での実測）。
+# 上限に当たったサービスだけがカーネルに落とされ、デスクトップは巻き込まれない。
+# 値は pixal3d.service と同じ（RAM 62.5 GiB の機体に合わせた値。2026-09-24 決定）。
+# まず MemoryHigh で swap へ逃がし、MemoryMax で最後の歯止めをかける。
+MemoryHigh=44G
+MemoryMax=48G
+
+[Install]
+WantedBy=default.target

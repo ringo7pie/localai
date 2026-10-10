@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# cfui CLI の起動スクリプト。venv の python を経由して cfui.cli を呼ぶ。
+#   run-comfyui serve          ComfyUI を 0.0.0.0:8188 で起動する（exec）
+#   run-comfyui doctor         動作環境を点検する
+#   run-comfyui fetch-models   重みとサンプル画像を取得する
+#   run-comfyui selftest       WTiVo の自己試験だけを行う
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON="$HERE/.venv/bin/python"
+if [ ! -x "$PYTHON" ]; then
+  echo "venv が見つかりません: $PYTHON" >&2
+  echo "先に setup-server.sh を実行してください（$HERE/setup-server.sh）。" >&2
+  exit 1
+fi
+exec "$PYTHON" -m cfui.cli "$@"

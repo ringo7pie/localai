@@ -1,0 +1,49 @@
+# requirements.lock.txt を作り直すときの元になる直接の依存（固定はしない）。
+# 普段の導入（setup-server.sh）はこのファイルではなく requirements.lock.txt を使う。
+#
+# torch / torchvision / torchaudio は index が別（cu126）なので、ここには書かない。
+# setup-server.sh の [5/12] で --index-url https://download.pytorch.org/whl/cu126 を付けて入れる。
+# 下の -r で読む vendor/ComfyUI/requirements.txt には torch の行があるが、venv に入っている
+# torch==2.9.1+cu126 で満たされるので入れ替わらない（uv は入っている版を優先する）。
+#
+# 作り直し方（venv に torch が入った状態で、tools/comfyui で実行する）:
+#   uv pip install --python .venv/bin/python -r requirements.in
+#   uv pip freeze --python .venv/bin/python   … から torch 系・ネイティブ拡張を除いて lock へ写す
+#   （除くものは requirements.lock.txt の冒頭に書いてある）
+
+# ComfyUI 本体（v0.38.2）
+-r vendor/ComfyUI/requirements.txt
+
+# visualbruno/ComfyUI-Trellis2。nodes.py が import 時に cv2・pymeshlab・meshlib を読む。
+# open3d・rembg・plotly は一部のノードが関数の中で読むだけだが、上流の指定どおり入れる。
+-r vendor/ComfyUI/custom_nodes/ComfyUI-Trellis2/requirements.txt
+
+# rembg は onnxruntime が無いと import の時点で sys.exit(1) する（rembg 2.0.85 の bg.py:8-20。
+# 2026-10-02 に venv で確認）。ComfyUI の中で呼ばれるとサーバーごと落ちるので、CPU 版の
+# onnxruntime を一緒に入れる。上流の requirements.txt は extras 無しの rembg。
+rembg[cpu]
+
+# Mstafa-awad の各ノード（setup が読むのは bat と同じこの 2 本と Quad の install.py）
+-r vendor/ComfyUI/custom_nodes/Trellis2-Mesh-Encoder/requirements.txt
+-r vendor/ComfyUI/custom_nodes/WTiVo-FastMergeByDistance/requirements.txt
+# ComfyUI-Mesh-Quad-Reconstruct の install.py が pip で入れるもの。先に lock で入れておき、
+# install.py の pip は「既に入っている」で終わるようにする。
+-r vendor/ComfyUI/custom_nodes/ComfyUI-Mesh-Quad-Reconstruct/requirements.txt
+
+# ネイティブ拡張の実行時依存。拡張は --no-deps で入れるため、ここで補う。
+#   o_voxel: plyfile / zstandard / easydict / trimesh / tqdm（cv2 は上の opencv-python）
+#   flex_gemm: filelock（triton は torch と一緒に入る）
+#   WTiVo: trimesh（姉妹 repo の requirements-runtime.txt）
+plyfile
+zstandard
+easydict
+trimesh
+tqdm
+filelock
+
+# ビルドの道具。拡張は --no-build-isolation でこの venv を使ってビルドする。
+# pybind11 は WTiVo の core / vdb（cmake + pybind11）用。版は姉妹 repo の requirements-build.txt。
+setuptools
+wheel
+ninja
+pybind11==3.0.1
