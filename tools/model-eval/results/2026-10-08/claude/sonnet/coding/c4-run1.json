@@ -1,0 +1,151 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c4",
+  "run": 1,
+  "content": "```python\nimport re\n\n_WS_CHARS = frozenset(\" \\t\\n\\r\")\n_WS = re.compile(r\"[ \\t\\n\\r]*\")\n_STR_CHUNK = re.compile(r'[^\"\\\\\\x00-\\x1f]*')\n_HEX4 = re.compile(r\"[0-9a-fA-F]{4}\")\n_LOW_ESC = re.compile(r\"\\\\u([dD][c-fC-F][0-9a-fA-F]{2})\")\n_NUMBER = re.compile(r\"-?(?:0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?\")\n_SIMPLE_ESCAPES = {\n    '\"': '\"',\n    \"\\\\\": \"\\\\\",\n    \"/\": \"/\",\n    \"b\": \"\\b\",\n    \"f\": \"\\f\",\n    \"n\": \"\\n\",\n    \"r\": \"\\r\",\n    \"t\": \"\\t\",\n}\n_INT_CHUNK_DIGITS = 4000\n\n\ndef _digits_to_int(digits):\n    length = len(digits)\n    if length <= _INT_CHUNK_DIGITS:\n        return int(digits)\n    low_length = length // 2\n    high = digits[: length - low_length]\n    low = digits[length - low_length:]\n    return _digits_to_int(high) * (10 ** low_length) + _digits_to_int(low)\n\n\ndef _parse_int(literal):\n    if len(literal) <= _INT_CHUNK_DIGITS:\n        return int(literal)\n    if literal[0] == \"-\":\n        return -_digits_to_int(literal[1:])\n    return _digits_to_int(literal)\n\n\ndef _read_string(text, pos, n):\n    # pos は開き引用符の次の位置。閉じ引用符の次の位置とともに値を返す。\n    parts = []\n    chunk_match = _STR_CHUNK.match\n    while True:\n        end = chunk_match(text, pos).end()\n        if end > pos:\n            parts.append(text[pos:end])\n        if end >= n:\n            raise ValueError(\"unterminated string\")\n        ch = text[end]\n        if ch == '\"':\n            if len(parts) == 1:\n                return parts[0], end + 1\n            return \"\".join(parts), end + 1\n        if ch != \"\\\\\":\n            raise ValueError(\"control character in string\")\n        if end + 1 >= n:\n            raise ValueError(\"unterminated escape\")\n        esc = text[end + 1]\n        simple = _SIMPLE_ESCAPES.get(esc)\n        if simple is not None:\n            parts.append(simple)\n            pos = end + 2\n            continue\n        if esc != \"u\":\n            raise ValueError(\"invalid escape\")\n        hex_match = _HEX4.match(text, end + 2)\n        if hex_match is None:\n            raise ValueError(\"invalid unicode escape\")\n        code = int(hex_match.group(), 16)\n        pos = end + 6\n        if 0xD800 <= code <= 0xDBFF:\n            low_match = _LOW_ESC.match(text, pos)\n            if low_match is None:\n                raise ValueError(\"unpaired high surrogate\")\n            low = int(low_match.group(1), 16)\n            code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00)\n            pos = low_match.end()\n        elif 0xDC00 <= code <= 0xDFFF:\n            raise ValueError(\"unpaired low surrogate\")\n        parts.append(chr(code))\n\n\ndef _read_member_key(text, pos, n):\n    # オブジェクトのキーと ':' を読み、値の先頭（空白を飛ばしたあと）の位置を返す。\n    if pos >= n or text[pos] != '\"':\n        raise ValueError(\"object key must be a string\")\n    key, pos = _read_string(text, pos + 1, n)\n    pos = _WS.match(text, pos).end()\n    if pos >= n or text[pos] != \":\":\n        raise ValueError(\"expected ':'\")\n    pos = _WS.match(text, pos + 1).end()\n    return key, pos\n\n\ndef parse_json(text: str) -> object:\n    n = len(text)\n    ws = _WS.match\n    stack = []  # 作りかけのコンテナ（list か dict）\n    keys = []  # stack と対応。dict なら今のキー、list なら None\n    pos = ws(text, 0).end()\n\n    while True:\n        # ここで値を 1 つ読み始める\n        if pos >= n:\n            raise ValueError(\"unexpected end of input\")\n        ch = text[pos]\n        if ch == '\"':\n            value, pos = _read_string(text, pos + 1, n)\n        elif ch == \"{\":\n            pos = ws(text, pos + 1).end()\n            if pos < n and text[pos] == \"}\":\n                value = {}\n                pos += 1\n            else:\n                key, pos = _read_member_key(text, pos, n)\n                stack.append({})\n                keys.append(key)\n                continue\n        elif ch == \"[\":\n            pos = ws(text, pos + 1).end()\n            if pos < n and text[pos] == \"]\":\n                value = []\n                pos += 1\n            else:\n                stack.append([])\n                keys.append(None)\n                continue\n        elif ch in \"-0123456789\":\n            match = _NUMBER.match(text, pos)\n            if match is None:\n                raise ValueError(\"invalid number\")\n            literal = match.group()\n            pos = match.end()\n            if match.group(1) is not None or match.group(2) is not None:\n                value = float(literal)\n            else:\n                value = _parse_int(literal)\n        elif text.startswith(\"true\", pos):\n            value = True\n            pos += 4\n        elif text.startswith(\"false\", pos):\n            value = False\n            pos += 5\n        elif text.startswith(\"null\", pos):\n            value = None\n            pos += 4\n        else:\n            raise ValueError(\"unexpected character\")\n\n        # 値が 1 つ読めた。親に入れて、閉じるか、次の値へ進む\n        while True:\n            if pos < n and text[pos] in _WS_CHARS:\n                pos = ws(text, pos).end()\n            if not stack:\n                if pos != n:\n                    raise ValueError(\"extra data after value\")\n                return value\n            if pos >= n:\n                raise ValueError(\"unexpected end of input\")\n            ch = text[pos]\n            container = stack[-1]\n            key = keys[-1]\n            if key is None:\n                container.append(value)\n                if ch == \",\":\n                    pos = ws(text, pos + 1).end()\n                    break\n                if ch == \"]\":\n                    pos += 1\n                    value = stack.pop()\n                    keys.pop()\n                    continue\n                raise ValueError(\"expected ',' or ']'\")\n            else:\n                if key in container:\n                    raise ValueError(\"duplicate key\")\n                container[key] = value\n                if ch == \",\":\n                    pos = ws(text, pos + 1).end()\n                    keys[-1], pos = _read_member_key(text, pos, n)\n                    break\n                if ch == \"}\":\n                    pos += 1\n                    value = stack.pop()\n                    keys.pop()\n                    continue\n                raise ValueError(\"expected ',' or '}'\")\n```",
+  "wall_s": 69.104,
+  "usage": {
+    "subagent_tokens": 38854
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 23,
+    "total": 23,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_literals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_and_types",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_zero_and_extreme_exponents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_simple_strings",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_string_escapes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_surrogate_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lone_surrogates_are_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_escapes_and_control_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_containers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested_document",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_whitespace_rules",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_and_trailing_input",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_literals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_numbers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_container_syntax",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicate_keys_are_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_values_adjacent_to_literals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_top_level_scalars_with_whitespace",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_small_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_long_string_with_escapes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_random_document",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_nesting",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.47,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:38:36+09:00"
+}

@@ -1,0 +1,991 @@
+We need solve geometry problem in Japanese. Need provide full solution. Let's parse problem carefully.
+
+We have points O=(0,0,0), A=(1,0,0), B=(1,1,0), C=(1,1,1). r between 1/2 and 1.
+For P moving on segment OA, sphere radius r centered at P sweeps solid V1 (union of balls). Similarly P on AB gives V2, P on BC gives V3. So V1 is r-neighborhood of segment OA (capsule/solid cylinder plus hemispheres?), V2 of segment AB length 1, V3 of segment BC length 1. Segments are edges of a unit cube polyline: from (0,0,0) along x to (1,0,0), then along y to (1,1,0), then along z to (1,1,1). Actually OA along x-axis [0,1] at y=z=0. AB along y from (1,0,0) to (1,1,0). BC along z from (1,1,0) to (1,1,1). Each segment length 1. V_i = set of points within distance <= r of the corresponding segment.
+
+Part (1): Plane y=t. Find t range where plane intersects both V1 and V3. And for such t, draw cross sections of V1 and V3 on same plane.
+
+Need derive. Since V1 around OA: center line y=0,z=0, x∈[0,1]. V3 around BC: x=1,z∈[0,1], y=1? Wait BC segment endpoints B=(1,1,0), C=(1,1,1): x=1,y=1,z∈[0,1]. Yes V3 distance to line x=1,y=1, z∈[0,1]. Plane y=t. Intersection with V1: points (x,z) satisfying distance from point (x,t,z) to segment OA <= r. V1 cross-section in xz plane at y=t. Need describe. Intersection with V3 similarly at y=t.
+
+Find t where nonempty intersection with both: For V1, since line y=0, minimum distance to y coordinate is t, must <= r. So t∈[-r,r]? Also z? Need also possible z and x. Since segment endpoints x∈[0,1]; for any |y|≤r and |z|≤r? Wait cross-section nonempty if there exists point within r of segment. The capsule extends along x. The orthogonal disk radius r in yz cross-section around segment; for |y|≤r and |z|≤r, need x within interval [some], yes if within rectangle? More precisely distance to segment is min_{x0∈[0,1]} sqrt((x-x0)^2 + y^2+z^2) ≤ r. Exists if sqrt(y^2+z^2) ≤ r, and choose x near [0,1]. So cross-section is rectangle [0,1]×[-r,r] in x,z? Actually if sqrt(y^2+z^2) ≤ r, then for any x between 0 and 1 distance sqrt(y^2+z^2) <= r. Outside x interval need endpoints. So V1∩plane y=t is nonempty iff |t|≤r, yes.
+
+V3: line y=1, z∈[0,1], x=1. Plane y=t distance in y direction 1-t; nonempty if |1-t|≤r, i.e. t∈[1-r,1+r]. Given 0<r<1, r>1/2, both ranges overlap if [-r,r]∩[1-r,1+r] = [1-r, r] nonempty iff r≥1/2. They have strict? r>1/2 => length positive? endpoints 1-r and r; at r=1/2 single t=1/2. Given 1/2<r<1, t∈(1-r,r) possibly include endpoints? Nonempty includes endpoints; but "両方と共通点" means intersection nonempty includes endpoints. The range is [1-r, r]. Need likely t ∈ [1-r, r]. Since r>1/2, okay. Maybe they want t interval.
+
+Then for such t, draw cross sections of V1 and V3 in plane y=t on same plane. Need give coordinates in plane maybe coordinates x,z. We can describe two shapes:
+V1∩{y=t}: For given t with |t|≤r, set in xz plane:
+If z^2+t^2 ≤ r^2? Actually distance to segment: if z^2+t^2 ≤ r^2 then any x∈[0,1] included (rectangle central). If outside this central band, include portions near endpoints x=0 or x=1 as quarter circles? Need derive exact cross-section shape: Minkowski sum of segment [0,1] along x with disk radius r in yz plane. Cross-section by y=t is segment [0,1] plus disk? Let's characterize.
+
+Set S1_t = {(x,z): ∃u∈[0,1] such that (x-u)^2 + t^2 + z^2 ≤ r^2}. This is union over u∈[0,1] of intervals in x for each z satisfying |x-u| ≤ sqrt(r^2 - z^2 - t^2). For fixed (x,z), condition equivalent to distance from point (x,z) to interval [0,1] on x-axis in xz plane plus y^2+t^2? Actually distance to segment OA: sqrt((distance from x to [0,1])^2 + z^2 + t^2) ≤ r. Yes in xz-plane, projection onto segment [0,1] along x. So S1_t = { (x,z) : dist_x_to_interval([0,1])^2 + z^2 + t^2 ≤ r^2 }. This is rectangle [0,1] × [-√(r^2-t^2), √(r^2-t^2)] plus two semicircular disks of radius √(r^2-t^2) centered at (0,0) and (1,0) (capsule shape in xz plane). More precisely intersection of capsule? It's a 2D capsule of length 1, radius s=√(r^2-t^2): points whose distance to segment [0,1] on x-axis ≤ s. Yes. So cross-section of V1 by y=t is a 2D capsule (rectangle plus two half-disks) radius s1 = √(r^2 - t^2). If |t|≤r.
+
+For V3∩{y=t}: Distance to segment BC: line at (x=1, y=1), z∈[0,1]. In plane y=t, coordinates x,z. Condition: dist to segment in xz? The projection of point (x,z) to line x=1? Distance components: (x-1)^2 + z_to_[0,1]^2 + (t-1)^2 ≤ r^2. Let s3=√(r^2-(1-t)^2). Cross-section is 2D capsule radius s3 along z-axis segment [0,1] at x=1? Since x is fixed coordinate, the segment is vertical z from 0 to1 at x=1; set is points within distance ≤ s3 of that segment in xz plane: rectangle? It is a 2D capsule oriented along z centered at x=1. Specifically set of (x,z) where dist((x,z), {1}×[0,1]) ≤ s3. This is a rectangle in z [0,1] with x∈[1-s3,1+s3], plus semicircular disks centered at (1,0) and (1,1) of radius s3. Wait also distance in x direction only; yes segment along z. So V3 cross-section is capsule radius s3 = sqrt(r^2-(1-t)^2) centered at (x=1,z∈[0,1]) (vertical segment length 1). It is a "vertical capsule" along z at x=1. It includes x from 1-s3 to 1+s3 for z in [0,1]; plus half-disks at endpoints z=0,1. If s3 maybe nonnegative. For t in [1-r,r], s3≥0.
+
+We need "図示せよ" likely expects drawing. In text we can describe coordinate diagram. Need maybe show V1 cross-section is horizontal capsule centered at z=0, x∈[0,1]; V3 cross-section vertical capsule centered at x=1, z∈[0,1]. Radii a=√(r^2-t^2), b=√(r^2-(1-t)^2). The two capsules: one centered along x-axis from x=0 to x=1 at z=0; the other along vertical line x=1, z=0 to z=1. Their intersection in the plane maybe? Since t chosen ensures nonempty individually but not necessarily intersection of cross-sections. Need part (1) just both nonempty. The drawings should have shared plane maybe coordinates. We can draw ascii or mathematical description. We'll describe in xz plane. Need ensure V1 and V3 cross-sections overlap? Not asked; only plane with both nonempty. "両方と共通点" means the plane has a common point with each solid? Actually Japanese: plane y=t and V1 and V3 both have a common point? "が V1 と V3 の両方と共通点をもつような t" = t such that the plane and V1 and V3 both have a common point, i.e. plane intersects both V1 and V3 (not necessarily V1∩V3). Yes.
+
+Part (2): V1 ∩ V3 is contained in V2 condition for r. Need find r such that any point within distance r of both segment OA and BC is also within r of segment AB. Need condition for inclusion. Since r between 1/2 and 1. Need analyze. This is inclusion of intersection of two r-neighborhoods (capsules) by middle capsule. Segments OA and BC are skew? OA from (0,0,0) to (1,0,0); BC from (1,1,0) to (1,1,1). They are perpendicular? OA direction (1,0,0), BC direction (0,0,1). Their closest points: OA point (1,0,0)=A, BC point (1,1,0)=B, distance 1 along y. So two segments distance 1 apart (share x=1? Actually A and B). For r>1/2, neighborhoods overlap? Distance between segments =1, each radius r, if r≥1/2 intersection along plane near y=1/2. The intersection is around the common perpendicular connecting A and B. We need inclusion inside neighborhood of AB (the vertical y segment from (1,0,0) to (1,1,0)), which connects closest points. The intersection of V1 and V3 lies around the segment AB? Need determine. Since V2 is r-neighborhood of AB, perhaps if r large enough? Actually as r approaches 1, V1 and V3 bigger, intersection may extend farther in x,z away from AB, maybe not contained in V2. Need find threshold likely r≤? Let's derive.
+
+Let segments: S1 = {(x,0,0): 0≤x≤1}. S2 = {(1,y,0):0≤y≤1}. S3 = {(1,1,z):0≤z≤1}. V_i = {distance to Si ≤ r}.
+
+Inclusion: I = V1∩V3 ⊆ V2.
+
+Because all sets are Minkowski sums of unit segments and balls radius r. We need characterize I.
+
+Point X=(x,y,z). Conditions:
+d1(X)=min_{u∈[0,1]} sqrt((x-u)^2 + y^2 + z^2) ≤ r.
+d3(X)=min_{w∈[0,1]} sqrt((x-1)^2 + (y-1)^2 + (z-w)^2) ≤ r.
+Need for all X satisfying both, d2(X)=min_{v∈[0,1]} sqrt((x-1)^2 + (y-v)^2 + z^2) ≤ r.
+
+Since d2 condition is |(x-1)|^2 + distance to y interval [0,1]^2 + |z|^2 ≤ r^2? Actually d2^2=(x-1)^2 + (distance y to [0,1])^2 + z^2. Need ensure if d1≤r and d3≤r then this ≤r^2.
+
+The likely extremal points? V1 and V3 are capsules. Intersection perhaps determined by endpoints and middle? We can use distances to infinite lines and coordinate clamping.
+
+Let a = x-1? Maybe due to S1 and S3 both near x=1? But V1 extends along x from 0 to1; V3 at x=1; V2 at x=1. Points with x<1 far from V3? Maybe x coordinate limited near 1? But V3 includes points x from 1-r to 1+r; V1 includes x up to 1; intersection maybe x between 1-r and 1? Because S3 centered x=1. But V1 also x can up to 1-r? Actually if x<1-r, distance to x=1 > r so not in V3 (since (x-1)^2 + ... ≤ r^2 implies x∈[1-r,1+r]). Also V1 extends x∈[-r,1+r]. So intersection x∈[1-r,1+r], and since V1 central x maybe [0,1] but not necessarily upper limit.
+
+Maybe inclusion fails near x<1-r? No V3 not there.
+
+Need find maximum of d2^2 over I. If max ≤ r^2 then inclusion. Need compute.
+
+Set constraints:
+(1) (x - clamp? to [0,1])^2 + y^2 + z^2 ≤ r^2.
+(2) (x-1)^2 + (y-1)^2 + (z - clamp to [0,1])^2 ≤ r^2.
+Need check (3) (x-1)^2 + (y - clamp[0,1])^2 + z^2 ≤ r^2.
+
+This is piecewise depending on coordinates relative to intervals.
+
+Because r<1 and segments intervals [0,1]. For intersection I, likely x,y,z in some ranges: For V1, |y|≤r<1 => y∈[-r,r], so y≤r<1, so y is below [0,1] maybe can be negative but also >0. Since r<1, y∈[-r,r], so y<1. If y>0, within interval? d2 for y coordinate clamp: if y∈[0,1], contribution 0; if y<0, contribution -y; if y>1 not possible because y<1. Since y∈[-r,r] and r<1. V3 condition requires y∈[1-r,1+r]. With r<1, lower positive if r<1? 1-r>0. For y∈[1-r,r] (if nonempty) positive; y in [0,1] because r<1, lower≥0. Thus for intersection I, y ∈ [1-r, r] subset [0,1]. Good. So d2 uses y contribution 0. d1 uses y (because y>0) contribution y^2. d3 uses y-1 negative contribution (1-y)^2. Good.
+
+For z: V3 requires z∈[-r,r]? Wait V3 along z∈[0,1] so z∈[-r,1+r], but r<1 so z∈[-r,1+r]. V1 along z=0, so z∈[-r,r]. Intersection z ∈ [-r, r]. This could be positive and negative. If z∈[0,1], V1 contribution z^2; V3 clamp contribution maybe 0 for z∈[0,1]; if z<0, V3 clamp 0 contribution z^2. Since r<1, upper z ≤r<1, so z≤1. Thus z ∈ [-r, r] ⊂ (-1,1). Cases: z<0 => V1 contribution z^2, V3 contribution z^2; z≥0 => V1 contribution z^2, V3 contribution 0 (if z≤1). Wait V3 z clamp: if z∈[0,1], distance to segment along z zero; if z<0, distance -z. So for z≥0, d3 doesn't penalize z, d1 does. For z≤0, both penalize z. Symmetric? Intersection maybe biased z≥0 due V3 along positive z and V1 at z=0; V3 extends up to z=1; V1 only to r<1, so positive z up to r, V3 no cost; negative z costs both. So extremal might positive z.
+
+For x: V1 along x∈[0,1], so x∈[-r,1+r]. V3 at x=1, so x∈[1-r,1+r]. Intersection x ∈ [1-r, 1+r]. Also V1 distance to x interval: if x∈[0,1] contribution 0; if x>1 contribution x-1; if x<0 contribution -x. Since 1-r>0 because r<1? r<1 so 1-r>0, so x≥1-r >0. Thus x is never <0 in intersection. So V1 x contribution is 0 if x≤1, (x-1)^2 if x≥1. V3 x contribution (x-1)^2. d2 x contribution (x-1)^2 always. Thus for x≤1, V1 x cost 0, V3 and V2 cost (1-x)^2. For x≥1, all three x costs: V1 cost (x-1)^2, V3 (x-1)^2, V2 (x-1)^2. So x≥1 same x term in all constraints; likely if x≤1 then V1 constraint easier (no x cost) and V2 same as V3.
+
+So I can be split by x≤1 or x≥1.
+
+Since V2 inclusion condition: (1-x)^2 + z^2 ≤ r^2 (because y in [0,1]) (with y no cost). For x≥1, x cost = (x-1)^2; same as V3 x cost. For x≤1, x cost same. So d2^2 = (x-1)^2 + z^2.
+
+Constraints:
+Case A: x∈[1-r,1] (since x≥0):
+ V1: y^2 + z^2 ≤ r^2.
+ V3: (1-x)^2 + (1-y)^2 + (z if z<0? wait clamp). Need z cases.
+ d2: (1-x)^2 + z^2 ≤ r^2.
+Need check whether for all X satisfying V1 and V3, d2≤r.
+Potential violation: V1 allows large z or y; V3 allows large z positive no cost; d2 penalizes z.
+
+Case z∈[0,r] (since intersection):
+A x≤1: V1: y^2+z^2 ≤ r^2. V3: (1-x)^2 + (1-y)^2 ≤ r^2. d2: (1-x)^2 + z^2 ≤ r^2. Is this automatically? We need (1-x)^2 + z^2 ≤ r^2 given there exists y with y^2+z^2≤r^2 and (1-x)^2+(1-y)^2≤r^2, with y∈[1-r,r]. Need maximize (1-x)^2+z^2. Let p=1-x≥0, q=y∈[?], z≥0. Conditions: q^2+z^2 ≤ r^2; p^2+(1-q)^2≤r^2. Need p^2+z^2≤r^2? Equivalent if for all q with q^2+z^2≤r^2, there must be q satisfying second? Actually given X, q is fixed. We need for each q,z,p satisfying both inequalities, p^2+z^2≤r^2. Is this always? Let's check. From first z^2 ≤ r^2 - q^2. From second p^2 ≤ r^2 - (1-q)^2. Need max over q of max p^2+z^2 = max_q [r^2-(1-q)^2 + r^2-q^2] = max_q [2r^2 - (1-q)^2 - q^2] over q in feasible intersection? q must satisfy both p,z nonnegative so also intervals overlap. But p,z can be chosen independently max for each q. Function f(q)=2r^2 - (1-q)^2 - q^2 = 2r^2 - (1 -2q+2q^2) = 2r^2 -1 +2q -2q^2 = (2r^2-1)+2q(1-q). Max over q∈[0,1] at q=1/2 gives value 2r^2 -1 + 1/2? Wait 2q(1-q)=2*1/4=1/2. So max = 2r^2 - 1/2? Let's re-evaluate: (1-q)^2+q^2 = 1 -2q+2q^2; at q=1/2 gives 1/2. So fmax=2r^2 -1/2. Need ≤r^2 => r^2 ≤ 1/2 => r ≤1/√2 ≈0.707. But r>1/2. This suggests inclusion fails for r>1/√2? Need check because q must be within both intervals and p,z chosen may not have x? q in [1-r,r]. For r near 0.8, max >r^2. So threshold r≤1/√2 perhaps. But need check other cases x≥1, z<0 etc may impose stricter.
+
+But if r>1/√2, can construct counterexample: x=1? Then p=0. Need conditions: q^2+z^2≤r^2, (1-q)^2≤r^2 -> q∈[1-r,r]; d2: z^2≤r^2; holds if V1. Actually p=0 always holds. Need p positive. q=1/2, p^2=r^2-(1/2)^2, z^2=r^2-(1/2)^2, then p^2+z^2=2r^2-1/2>r^2 if r>1/√2. That gives x=1-p, z=√(r^2-1/4), y=1/2, x≤1. Check d1: y^2+z^2=r^2; d3: p^2+(1-y)^2=1/4+p^2=r^2; yes. d2: p^2+z^2=2r^2-1/2>r^2. So violation. So condition at most r≤1/√2 for case A.
+
+But must also check x≥1 and z≥0 maybe. For x≥1, constraints: V1 p? Let s=x-1≥0. Conditions:
+V1: s^2 + y^2 + z^2 ≤ r^2.
+V3: s^2 + (1-y)^2 + (z_clamp cost) ≤ r^2.
+d2: s^2+z^2 ≤ r^2.
+If z≥0: V3 cost s^2+(1-y)^2 ≤r^2. Then need s^2+z^2≤r^2. From first s^2≤r^2-y^2-z^2; second s^2≤r^2-(1-y)^2. We can combine to show s^2+z^2 ≤ max? Let s^2 ≤ min(r^2-y^2-z^2, r^2-(1-y)^2). Need s^2+z^2 ≤ r^2 means s^2 ≤ r^2 - z^2. Does first imply s^2 ≤ r^2-y^2-z^2 ≤ r^2-z^2 since y^2≥0. So first alone implies. So no violation. If z<0: V3 cost s^2+(1-y)^2+z^2 ≤r^2; first cost s^2+y^2+z^2≤r^2. d2 s^2+z^2≤r^2 from first? Yes first has +y^2 extra, so implies s^2+z^2≤r^2. So no violation. Thus case x≥1 automatically included for z≥0, z<0? Wait if z<0 V3 has z^2 and first has y^2, first still implies d2? first: s^2+y^2+z^2≤r^2 => s^2+z^2≤r^2. Yes. So x≥1 not an issue.
+
+Case z<0, x≤1. Need check. Conditions:
+V1: y^2+z^2≤r^2.
+V3: (1-x)^2+(1-y)^2+z^2≤r^2.
+d2: (1-x)^2+z^2≤r^2. Since V3 has + (1-y)^2, implies d2? (1-x)^2+z^2 ≤ r^2 - (1-y)^2 ≤ r^2. So automatic. So only x≤1,z≥0 gives issue.
+
+Thus inclusion condition seems r ≤ 1/√2? Need check if all cases y in [0,1]? Need ensure any point in V1∩V3 has y∈[1-r,r] subset [0,1]? Since r<1 yes 1-r>0 and r<1. So y∈[0,1]. Good. But what about x≥1? first implies V2. Good. What about z positive >? Since z∈[-r, r] but r<1 so if z positive maybe z≤r<1, within [0,1] so V3 clamp zero. We used. If z positive and >1 impossible because r<1. Good.
+
+Thus condition likely r ≤ 1/√2. But given r∈(1/2,1), answer for (2): 1/2 < r ≤ 1/√2. Need verify inclusion at boundary? At r=1/√2, p^2+z^2≤r^2 with equality at q=1/2. Condition "is contained in V2" includes boundary. So r ≤ 1/√2.
+
+Could there be stricter from z=0 maybe? Let's re-evaluate with set inclusion rigorously. For z≥0,x≤1, conditions imply p^2+(1-q)^2≤r^2 and q^2+z^2≤r^2. Need prove p^2+z^2≤r^2 if r^2≤1/2? Let's derive max p^2+z^2. q variable but fixed. From inequalities:
+p^2 ≤ r^2 - (1-q)^2.
+z^2 ≤ r^2 - q^2.
+So p^2+z^2 ≤ 2r^2 - (1-q)^2 - q^2. If r^2≤1/2, maximum of RHS is 2r^2 - 1/2. We need ≤r^2 for all q? Equivalent r^2≤(1-q)^2+q^2. The minimum of (1-q)^2+q^2 on q∈[0,1] is 1/2. So if r^2≥1/2? Wait need (1-q)^2+q^2 ≥ r^2 for all q in [0,1]? At q=1/2, value=1/2. For all q to have p^2+z^2≤r^2? Let's recalc: For given r, p^2+z^2 max over q is 2r^2 - [minimum of g(q)] = 2r^2 - 1/2. Need 2r^2 - 1/2 ≤ r^2 => r^2≤1/2. If r^2 <1/2 yes. If r^2=1/2 yes. But if r^2=0.3 (<1/2) okay. For r>0.5. Fine. But there is also condition that for given q, p,z must both feasible and nonnegative, not issue.
+
+Could inclusion fail for r just >1/2 in other region where q not [0,1]? q = y from intersection is [1-r,r] ⊂ (0,1). Minimum of g on this interval maybe not at 1/2 if interval does not include 1/2. For r>1/2, interval [1-r,r] includes 1/2 iff 1-r ≤1/2 ≤r, i.e. r≥1/2. Yes strict for r>1/2 includes 1/2 interior. So counterexample valid for any r>1/√2 (≥0.707). For r∈(0.5,0.707) inclusion holds. For r<0.5 intersection empty, inclusion vacuous but not in range.
+
+Part (3): Volume of V1. V1 is tube around segment OA length L=1 radius r. Solid = cylinder length 1 plus two hemispheres? Standard capsule volume = π r^2 L + 4/3 π r^3 (since cylinder radius r along segment plus two hemispheres = sphere). But is there self-overlap if segment length 1, r<1? For a capsule of radius r around segment length 1, volume = πr^2*1 + 4/3πr^3. Need verify because internal sphere union. Yes. Could maybe because P on line segment OA, sphere radius r includes cylinder (segment) plus two hemispherical caps. If r arbitrary positive, volume formula holds (Minkowski sum of segment with ball). In 3D, volume = Lπr^2 + 4πr^3/3. Since r between 1/2 and1 no overlap? Capsule formula always works for Minkowski segment⊕ball, even if length 0 volume sphere; if length >0 no overlap between caps? Spherical caps at endpoints are half-balls outside cylinder, disjoint except boundary if L>0. So V1=πr^2 + 4/3πr^3 = π r^2(1 + 4r/3). Need maybe if r? yes.
+
+Part (4): When condition (2) holds (r≤1/√2), find volume of union V1∪V2∪V3. Need use inclusion? V1∩V3⊆V2. Thus union V1∪V2∪V3 = V2 ∪ V1 ∪ V3. Volume = Vol(V1)+Vol(V2)+Vol(V3) - Vol(V1∩V2) - Vol(V2∩V3) - Vol(V1∩V3) + Vol(V1∩V2∩V3). Since V1∩V3⊆V2, triple intersection = V1∩V3. Then union volume = V1+V2+V3 - V1∩V2 - V2∩V3 (because V1∩V3 and triple cancel? Inclusion-exclusion: sum singles - pair intersections + triple. If triple=V1∩V3, then subtract pair V1∩V3 + add triple = cancel. So union volume = sum singles - V12 - V23. Yes.
+
+Need compute volumes of pairwise intersections under r≤1/√2. Segments adjacent: OA and AB share endpoint A, perpendicular length 1; AB and BC share endpoint B, perpendicular length 1. V1∩V2 = neighborhood of two perpendicular segments sharing endpoint? More generally two orthogonal unit segments meeting at endpoint (OA and AB). Need volume of intersection of r-neighborhoods of the two segments. V2∩V3 similarly by symmetry? AB and BC are orthogonal sharing B. Yes same volume. Need compute for r between 1/2 and 1/√2? Actually condition r≤1/√2; also >1/2. Pair intersection volume formula piecewise? Need derive. Pair segments share endpoint; each length 1. Volumes depend on r relative to? r∈(1/2,1/√2) <1. Since both radius less than segment length? r<1, yes. Need volume of intersection of capsules along x-axis [0,1] and y-axis [0,1], both at z=0 sharing at A=(1,0,0) for V1 and V2. Let's set coordinate centered at shared endpoint maybe. V1 around segment [0,1] on x-axis at origin; V2 around segment [0,1] on y-axis. Both radius r. Need Vol of K = {dist to x-segment ≤r} ∩ {dist to y-segment ≤r}. r∈(0.5,1/√2≈0.707). r<1. This is not trivial. Need compute exactly. We need also maybe V1∩V3 not needed because cancels, but maybe could compute triple? We canceled. Need ensure inclusion condition ensures V1∩V3⊆V2, then union = V1+V2+V3 - pair intersections adjacent. Since Vol V1=Vol V2=Vol V3 = single volume. Pair intersections V1∩V2 and V2∩V3 equal due symmetry. Need compute J(r)=Vol(V1∩V2). Then union = 3S - 2J.
+
+But perhaps there are intersections V1∩V3 nonempty for r>1/2; but inclusion means within V2. Cancel. So only J needed.
+
+However pair intersection of adjacent capsules of radius r length 1; need volume for 1/2<r≤1/√2. Could be easier using symmetry/inclusion? Maybe V1∩V2 itself can be expressed? Need derive.
+
+Let's coordinate for adjacent segments: Segment Sx = { (x,0,0): 0≤x≤1 }. Segment Sy = { (1,y,0): 0≤y≤1 } if V1 and V2 as original. To simplify shift A to origin: Let A=(0,0,0). V1 around negative x segment? Original OA: A at (1,0,0), segment from (0,0,0) to (1,0,0). Shift to origin: V1 around segment from (-1,0,0) to (0,0,0) on x negative. V2 around segment from (0,0,0) to (0,1,0) on y positive. Rotations/reflection make V1∩V2 symmetric? Intersection of capsules on two perpendicular unit rays from origin? One ray extends negative x and positive y. Volume independent orientation. Let S_x = {(x,0,0): x∈[0,1]} maybe and S_y={(0,y,0): y∈[0,1]} sharing origin, but original OA segment is opposite ray from origin? If shift A to origin, OA is x∈[-1,0]; AB is y∈[0,1]. Reflect x→-x maps OA to x∈[0,1]. So yes intersection of two orthogonal unit segments meeting at endpoint, both rays from origin. Let's work with Sx = [0,1] along x-axis, Sy = [0,1] along y-axis. Need volume of points within r of Sx and Sy. But note if we reflect, V1 becomes segment [0,1] x-axis, V2 [0,1] y-axis. Yes.
+
+So J(r)=Vol( {X: d(X,Sx)≤r} ∩ {d(X,Sy)≤r} ), Sx = {(x,0,0):0≤x≤1}, Sy={(0,y,0):0≤y≤1}. Since r<1, segments length 1, radius r< segment length. But maybe formula simpler if r≤? The two capsules intersect mainly around origin plus cylinder crossing? Let's characterize.
+
+Distance to Sx: If projection x∈[0,1] then dist^2=y^2+z^2; if x<0: (x)^? Actually Sx at x∈[0,1], so distance component α = dist_x([0,1]) = max(-x, x-1, 0). d_x^2 = α^2 + y^2 + z^2. Similarly to Sy: β = dist_y([0,1])=max(-y,y-1,0); d_y^2 = x^2 + β^2 + z^2. Both ≤r^2.
+
+Because r<1 and segments length 1, intersections of neighborhoods: The coordinates x,y? For d_x≤r, y,z constraints; x can be [-r,1+r]. For d_y≤r, y ∈ [-r,1+r], x∈[-r,1+r]. So x,y in [-r,1+r], z in [-r,r]. Since r<1, negative possible, positive up to 1+r>1.
+
+But due r≤1/√2 <1, perhaps only regions near origin and near the square [0,1]^2? Need split by x,y signs relative to intervals [0,1]. Because d_x uses x contribution α (0 if x∈[0,1], -x if x<0, x-1 if x>1). Similarly for y.
+
+There may be four main regions relative to x,y in [0,1] quadrant and negative, etc. Need integrate. But maybe pair intersection of two capsules along perpendicular segments can be decomposed into simpler parts: intersection of two cylinders (orthogonal cylinders around infinite axes?) plus spherical endpoint overlaps? Let's think.
+
+V1 and V2 are capsules length 1. The intersection might be union of several pieces:
+- Common cylinder near the origin? The neighborhoods around infinite x-axis and y-axis: intersection of two orthogonal cylinders radius r along x and y. The portion near where x,y∈[0,1] and no endpoint caps? For x,y∈[0,1], constraints reduce to y^2+z^2≤r^2 and x^2+z^2≤r^2. This is intersection of orthogonal infinite cylinders, with x,y restricted to [0,1]^2 and z. Since r<1, in the quadrant x,y∈[0,1] it's basically x,y≥0 and x^2+z^2≤r^2, y^2+z^2≤r^2; plus endpoint constraints x≤1 automatically if r<1? Since x≤r<1, yes. y≤r<1. So in central quadrant near origin, x,y≥0 with x^2+z^2≤r^2, y^2+z^2≤r^2. That's intersection of two quarter-cylinders? Actually infinite cylinders along x (cyl x-axis: y^2+z^2≤r^2) and along y (cyl y-axis: x^2+z^2≤r^2) intersect. With x,y≥0 and x,y≤r, so entire intersection of cylinders lies within [0,r]^2; length along x and y bounded by r? Wait x in first cylinder not bounded by x, but second gives x^2+z^2≤r^2 so x∈[-r,r]; first gives y∈[-r,r]. So intersection of cylinders in central quadrant: x,y≥0, x^2+z^2≤r^2, y^2+z^2≤r^2. Its volume can be integrated over z: for z∈[-r,r], x,y∈[0,√(r^2-z^2)], area (s)^2. Volume = ∫_{-r}^r (r^2 - z^2) dz = 4/3 r^3? Wait ∫_{-r}^r (r^2-z^2) = [r^3? ∫ -r to r r^2 dz=2r^3; ∫z^2=2r^3/3; diff=4r^3/3]. Yes quarter? Actually x,y restricted ≥0, area s^2, so volume 4/3 r^3. But intersection of two infinite cylinders (full four quadrants) volume 16/3 r^3? Known volume of intersection of two equal perpendicular cylinders is 16/3 r^3. Quarter is 4/3 r^3. Good.
+
+But our capsules also include negative x, negative y, and positive beyond [0,1] endpoint caps, maybe adding regions. Let's split all sign regions relative to the shared endpoint (origin). We set segments Sx and Sy as positive rays from origin to length 1. Since r<1, endpoints at x=1 and y=1 are outside intersection? Points with x>1: to be within V2 (distance to y segment) x≤r? Since r<1, x>1 impossible (x≤r<1). So x cannot exceed 1? Wait d_y≤r implies x^2 + β^2 + z^2≤r^2 => |x|≤r<1, so x∈[-r,r]. Thus x>1 impossible. So upper endpoint of Sx at x=1 has no effect? Since r<1, the caps at far ends x=1 for Vx and y=1 for Vy do not intersect with the other segment's neighborhood? Let's check original: V1 and V2 adjacent share at A; r<1 means the neighborhoods around far endpoints (O and B?) may not intersect? The far endpoint O at x=0 shifted? Actually after shift, Vx segment from 0 to1, Vy from 0 to1. The cap at x=1 (point (1,0,0)) is within Vx; for it to be within Vy: distance to Vy includes x=1, so min at y maybe if r<1, distance to Vy from (1,0,0) = sqrt(1^2+0+0)=1 > r. So cap at x=1 entirely outside Vy. Similarly cap at y=1 outside Vx. Thus pair intersection is entirely near shared endpoint and does not involve far endpoints? But points with x,y within [-r,r] maybe yes. Since r<1, far caps at x=1, y=1 cannot contribute; indeed x,y bounded by r in [-r,r], so no coordinate >1 because r<1. Thus pair intersection of adjacent capsules for r<1 is just intersection of two orthogonal infinite cylinders (full radius r) but only maybe not full four quadrants? Wait segments are rays from origin to length 1. Since x,y in [-r,r], if x<0 then distance to Sx includes -x (endpoint at 0), okay; similarly y<0. For x<0,y<0 quadrant: distance to Sx: α=-x, to Sy: β=-y; constraints x^2+z^2? Actually d_x^2=x^2 + y^2 + z^2? For x<0,y arbitrary: d_x^2=x^2+y^2+z^2 (since y in? if y<0, distance to Sx uses y not β; yes). d_y^2=x^2+y^2+z^2 as well? For Sy with y<0: d_y^2=x^2+y^2+z^2. Both constraints same: x^2+y^2+z^2≤r^2 (sphere radius r). But in negative quadrant (x<0,y<0), intersection region is quarter? Actually x<0,y<0 half-space in x,y, with z any, sphere radius r. This region is a quarter of a ball? x,y negative quadrant -> angular region π/2 in xy-plane, times z -> volume = (1/4)*4/3πr^3 = π/3 r^3? Let's check.
+
+Full intersection of two infinite cylinders along x and y axes radius r in 3D is region where x^2+z^2≤r^2 and y^2+z^2≤r^2. It has four quadrants in xy? For x,y can be negative. For given z, x ∈ [-√(r^2-z^2),√(...)] and y similarly. Volume 16/3 r^3 (known). This includes all sign combinations. Does that equal our pair intersection? For x,y in [0,r] central positive quadrant: both segment distances = y^2+z^2, x^2+z^2, yes. For x<0,y<0: constraints from Vx: x^2 + y^2 + z^2≤r^2. From Vy same, yes sphere. Intersection of cylinders in this quadrant? For x<0,y<0, cylinder x-axis constraint y^2+z^2≤r^2, cylinder y-axis x^2+z^2≤r^2. This allows e.g. x=-r,y=0,z=0, but sphere constraint x^2+y^2+z^2≤r^2? At x=-r,y=0,z=0, x^2+y^2= r^2 okay. But cylinder constraints allow x=-r,y=√(r^2-z^2)? Example r=1, z=0, x=-1,y=1: cylinder constraints x^2≤1,y^2≤1, point (x,y,z)=(-1,1,0); sphere constraint x^2+y^2=2>1. Is (-1,1,0) within Vx? distance to Sx (positive x-axis segment [0,1]) = sqrt((-1)^2+1^2)=√2>r, so not in Vx. So cylinder full intersection includes region not in capsules because for negative coordinates distance to segment includes both coordinates? Wait Vx distance for x<0: distance to endpoint 0: sqrt(x^2 + y^2 + z^2). But cylinder x-axis distance is sqrt(y^2+z^2) ignoring x, because infinite line; but capsule endpoint cap adds constraint x^2+y^2+z^2≤r^2 for x<0? Actually for point x<0, distance to Sx is distance to endpoint 0: sqrt(x^2+y^2+z^2). Condition is sphere radius r, stricter than cylinder. So pair intersection not just infinite cylinders; it includes quarter spheres at negative sides. The positive quadrant (x,y≥0) has distances to lines (if x,y≤1, r<1), equal infinite cylinders and bounded by cylinder constraints. Negative x: constraint sphere. Negative y: sphere. Mixed signs: e.g. x<0,y≥0. Vx: x^2+y^2+z^2≤r^2; Vy: x^2+z^2≤r^2 (since y∈[0,1]). Sphere implies cylinder. So region is quarter? x<0, y≥0: within sphere radius r? Yes sphere constraint. Similarly x≥0,y<0. Positive x,y: cylinder intersection. Negative negative: sphere. So decomposition by four quadrants (relative to shared endpoint):
+- Q++ (x>0,y>0): both projections inside segments, constraints are two cylinders: x^2+z^2≤r^2, y^2+z^2≤r^2. Since r<1, x,y automatically <1? Cylinder constraints imply |x|≤r<1, |y|≤r<1, so no far end effects. Volume C1 = ∫_{-r}^r [√(r^2-z^2)]^2 dz = 4/3 r^3 (positive x,y quadrant).
+- Q-+ (x<0,y>0): Vx distance to endpoint 0 => sphere radius r; Vy distance to line? x^2+z^2≤r^2 but sphere implies. So region = {x<0,y>0, x^2+y^2+z^2≤r^2}. That's one quarter of ball? Sign constraints x≤0,y≥0: one quadrant in xy-plane, angular measure π/2. Volume C2 = (π/2)/(4π)? In 3D sign constraints only x and y signs; z unrestricted. This is half of space? Wait signs x<0,y>0 define a quadrant in xy-plane, a vertical dihedral angle π/2; volume fraction of full ball = π/2 / (2π) in azimuth? In spherical coordinates, fraction of solid angle = (π/2)/(2π)=1/4 of ball. Yes volume = 1/4*(4/3πr^3)=π/3 r^3.
+- Q+- (x>0,y<0): similarly π/3 r^3.
+- Q-- (x<0,y<0): both Vx and Vy sphere constraints; intersection of two spheres same sphere? For x<0,y<0, d_x^2=x^2+y^2+z^2, d_y^2=x^2+y^2+z^2, condition sphere. So region also quadrant of ball: volume π/3 r^3.
+
+But careful: Is there overlap/double counting boundaries? okay. Sum = Q++ cylinder quadrant 4/3 r^3 + three quadrants of ball = π r^3? π/3*3 = π r^3. So J(r)= π r^3 + (4/3) r^3? Wait 4/3 has dimension r^3; π r^3 + 4/3 r^3 = (π+4/3)r^3. But need check positive quadrant cylinder volume formula not missing restrictions x,y≤1? r<1, yes. What about r near 1/√2, still <1. Far caps no effect. But wait positive quadrant with x,y>0 includes both x,y can be up to r <1; okay. But what about region x,y positive but one of x,y beyond segment? r<1 so no beyond length 1. Good.
+
+But this seems too simple and independent of whether r>1/2? Pair intersection exists for any r>0; formula J=(π+4/3)r^3 for r≤1? Let's test small r? For r=0.1, positive quadrant cylinder volume ~0.001333, three quadrants sphere ~π*0.001=0.00314 total ~0.00447. Does intersection of two short segments of length 1 with small r: near shared endpoint; full intersection around origin of two cylinders/rays? Yes. Could it be? Need check in positive quadrant constraints: If x,y positive, but if x<0? done. For small r, endpoint caps? fine.
+
+But wait Vx and Vy include cylinders not infinite; in positive quadrant constraints are y^2+z^2≤r^2 and x^2+z^2≤r^2. This is exactly intersection of two half-cylinders restricted x,y≥0. The cross-section at fixed z is square [0,s]^2 (where s=√(r^2-z^2)). That cylinder-quadrant volume = ∫ s^2 dz. correct.
+
+For negative x,y quadrant: constraints sphere. The union of Q-+, Q+-, Q-- = x<0 or y<0 but not both? Actually Q-- is both negative, but sphere quadrant. Sum of three quadrants = x≤0,y≤0? Wait there are four xy quadrants around origin: Q++ cylinder; Q-+ sphere; Q+- sphere; Q-- sphere. Together the three negative-or-mixed quadrants is the union of all points with at least one coordinate negative? Yes sphere restricted to x<0 or y<0, fraction 3/4 of ball? Each quadrant of ball has equal volume by symmetry; yes 3/4 of ball = π r^3. So J=(4/3)r^3 + π r^3. But is there overlap between cylinder quadrant and sphere quadrants? Boundaries x=0 or y=0; measure zero. So total.
+
+But wait for negative x,y (Q--), the region is sphere radius r. But is every point in sphere quadrant within both capsules? For x<0,y<0 yes distance to Sx is distance to endpoint at origin? Segment Sx from 0 to1; nearest point maybe not origin if y,z? For x<0, closest point on segment in x direction is x=0; distance squared x^2+y^2+z^2. For y<0, distance to Sy closest y=0, distance squared x^2+y^2+z^2. So if inside sphere radius r yes. Good.
+
+Thus J(r)= (π + 4/3) r^3. Is that plausible compared to volume of two cylinders intersection? Intersection of two full cylinders radius r = 16/3 r^3 ~5.33r^3. Our pair intersection = ~4.475r^3 for r small. The full cylinders intersection includes Q++ and Q+- etc not spherical? Wait full cylinders Q-+ volume is ∫ s_x? For Q-+ in full cylinders: x negative, y positive: constraints x^2+z^2≤r^2, y^2+z^2≤r^2, area s^2 too (quarter square) volume 4/3 r^3, but our segment intersection for mixed signs is sphere quadrant volume π/3≈1.047r^3, smaller than 4/3≈1.333. Q-- full cylinders volume 4/3; our sphere quadrant π/3. Sum = cylinder quadrant 4/3 + 3*π/3 =4/3+π =4.475; full cylinders 16/3=5.333. So indeed less.
+
+But let's not jump: Pair segments in original are not both rays positive from shared endpoint? V1 OA from O=(0,0,0) to A=(1,0,0), V2 AB from A=(1,0,0) to B=(1,1,0). Shift/reflect at A makes them rays along negative x? If reflect OA direction from A to O is (-1,0,0) and AB (0,1,0); the angle between them is 90°, one positive, one negative? Reflection x→-x turns OA to positive x; AB to positive y. Yes both rays from origin with angle 90. Good.
+
+Need also part (4) condition r≤1/√2; then union volume formula 3S - 2J, where S=πr^2+4/3πr^3. So union volume = 3πr^2 +4πr^3 - 2(π+4/3)r^3 = 3π r^2 + (4π -2π -8/3)r^3 = 3π r^2 + (2π - 8/3)r^3 = π r^2(3 + (2r? wait factor) Let's compute: (4π - 2π) r^3 =2π r^3; minus 8/3 r^3. So volume = 3π r^2 + (2π - 8/3) r^3 = π(3r^2 +2r^3) - (8/3)r^3 = π r^2(3+2r) - (8/3)r^3. Factor r^2: r^2[3π +(2π - 8/3)r]. Is that positive? For r=0.6, 3π=9.425, (3.734)r=2.24, times .36=4.2, plausible. Could also write π(3r^2+2r^3)-8r^3/3.
+
+But need ensure inclusion condition used. However if V1∩V3⊆V2 for r≤1/√2, union volume via inclusion-exclusion as above. But wait V1∩V2 and V2∩V3 are both adjacent intersections; but what about V1∩V3 nonempty and subset V2. Triple intersection=V1∩V3. The inclusion-exclusion cancellation works. Need verify V1∩V3 subset V2 not just pair intersection? Yes condition. So union = V1∪V2∪V3 = V2∪(V1∪V3) but since V1∩V3 inside V2, any points in intersection counted? We can derive:
+Vol union = Vol(V1∪V3)+Vol(V2) - Vol((V1∪V3)∩V2). Now (V1∪V3)∩V2 = (V1∩V2)∪(V3∩V2)∪(V1∩V3) (but V1∩V3 subset V2 already; included in intersections? Actually (V1∪V3)∩V2 = (V1∩V2)∪(V3∩V2). Since V1∩V3⊆V2 but if a point in V1∩V3, it is in both V1 and V3 and V2, so it is in V1∩V2 and V2∩V3 too. So union of adjacent intersections. Are V1∩V2 and V2∩V3 overlapping? Their overlap is V1∩V2∩V3 = V1∩V3 (under condition). So Vol = J+J - V13. Then union volume = S+S? Let's use original formula: singles 3S; pairs J,J,V13; triple V13. 3S - (2J+V13)+V13=3S-2J. Yes independent of V13. Good.
+
+Need maybe if r≤1/√2, V1∩V2 and V2∩V3 are disjoint except V13? They can overlap; inclusion-exclusion handles. J includes overlap (the triple). Wait J is volume of adjacent pair intersection; two adjacent pairs may intersect in V1∩V2∩V3. But union of adjacent intersections volume = 2J - V13. Then total union = S+Vol(V2∪? etc) but formula okay. Need check if adjacent pair intersections overlap only V13? V1∩V2 and V2∩V3 overlap in V1∩V2∩V3. Since triple = V1∩V3 (subset V2). Yes.
+
+But do we know V1∩V2 and V2∩V3 are each volume J? Yes by symmetry of configuration: OA and AB adjacent; BC and AB adjacent. Rotational symmetry? The entire configuration OA, AB, BC is not symmetric swapping V1 and V3? V1 OA direction x from O to A, V3 BC vertical z from B to C; with V2 AB, it is symmetric under swapping? The polyline has two bends perpendicular; V1 and V3 adjacent to V2. Are the segment pairs V1,V2 and V2,V3 identical up to rigid motion? OA and AB share A and are perpendicular length 1. AB and BC share B and perpendicular length 1. Yes map AB to itself? There is isometry around midpoint? Should be same distance pair angle; volume same. Need maybe no translation/rotation issue because both share endpoint and segments length 1. Yes.
+
+Need ensure J formula for r between 1/2 and1/√2 is valid. r<1 but r maybe >0.5. For J, condition r<1? Yes because if r≥1, far endpoint effects appear; but r≤1/√2<1. So formula valid. But problem range 1/2<r<1, condition from (2) r≤1/√2. So J formula applies for all r in condition. Good.
+
+However maybe V1∩V2 volume has different piecewise due to r>1/2? Our derivation didn't use r>1/2, only r<1. Good. But wait in positive quadrant Q++, constraints x,y≥0 and x^2+z^2≤r^2, y^2+z^2≤r^2. This region includes points with x,y up to r<1. But segment lengths are 1, okay. The intersection of cylinders in Q++ has cross-section square. No need for r≤? If r close 0.9 (<1), x,y≤0.9 <1, okay. So formula J valid for r≤1. Good.
+
+But hold on: Are the original adjacent segments V1 and V2 at a right angle but not sharing at one endpoint with both rays positive? Reflecting V1 at A from OA to x negative to positive x; V2 AB y positive. The angle is 90 but one segment originally on negative side? We reflected x-axis to map OA to positive x. Rigid reflection orientation okay; distances same. So yes.
+
+Need maybe provide rigorous derivation for (2) inclusion condition. Could be an alternative via geometry: V1∩V3 subset V2 if r≤1/√2. Need prove both sufficiency and necessity. Need be careful with endpoints and piecewise conditions. Let's formalize elegantly.
+
+Let S1 = OA, S2=AB, S3=BC. For any X=(x,y,z). The squared distances to the three segments:
+Because r<1 and if X∈V1∩V3:
+We can show y∈[1-r,r]⊂[0,1], and (for d2) y doesn't contribute. Also x coordinate relative to 1. Let u=1-x, v=z maybe. But need account x≥? We need prove for points in V1∩V3:
+- If x≤1 (and automatically x≥1-r>0 because r<1), then conditions become:
+ d1^2 = y^2+z^2 ≤r^2.
+ d3^2 = (1-x)^2+(1-y)^2+z_+^2? Need z cases. For z≥0, z_+=0; for z<0, z_+=z^2. If z≥0, need show (1-x)^2+z^2≤r^2. From d1,d3 as above. If z<0, d3 includes z^2+(1-y)^2, so immediate.
+- If x≥1, then d1 includes x cost and directly gives d2 because d2 = (x-1)^2+z^2 ≤ d1? Check if z? d1^2=(x-1)^2 + y^2 + z_1cost? Actually V1 distance: if x∈[0,1] x cost 0; if x≥1, distance component α=x-1; y,z: z to? OA at z=0, so z^2. Thus d1^2=(x-1)^2+y^2+z^2 ≤ r^2. V2 distance if x≥1: (x-1)^2 + 0_y? y in [0,1]? Need y∈[0,1] from V1∩V3 yes; +z^2. Since y^2≥0, d2≤d1. Good. If x≤1, d1 no x cost; cannot.
+
+Also need if z<0 and x≤1, d2 immediate from d3? d3^2=(1-x)^2+(1-y)^2+z^2 ≤ r^2 -> (1-x)^2+z^2 ≤r^2. Good.
+
+Thus only hard case x≤1,z≥0. Then conditions:
+y^2+z^2≤r^2, (1-x)^2+(1-y)^2≤r^2. Need derive if r^2≤1/2, then (1-x)^2+z^2≤r^2. Proof: Let a=(1-x)^2≥0, b=y^2≥0? Actually (1-y)^2. We can use inequality:
+(1-x)^2+z^2 = [r^2 - (1-y)^2] + [r^2 - y^2] minus? Since from constraints: (1-x)^2≤r^2-(1-y)^2 and z^2≤r^2-y^2, sum ≤2r^2 - [(1-y)^2+y^2]. Since y∈[0,1], (1-y)^2+y^2 ≥1/2. Thus sum ≤2r^2 -1/2 ≤r^2 if r^2≤1/2. Good.
+
+Necessity: If r>1/√2, choose X with x=1-p, y=1/2, z=√(r^2-1/4) (assuming ≤? Since r<1 and r>0.707, z≈0.64<1 okay; r^2-1/4 positive). Need check x=1-p with p=√(r^2-1/4); x = 1 - √(r^2-1/4). Need ensure x≥1-r? V3 condition p^2+(1-y)^2 = r^2 yes. But x coordinate x=1-p; since p≤r, x≥1-r. Need x≤1. Yes. Also y=1/2 in [1-r,r]? r>0.707 so interval includes 1/2. z≥0 ≤r. Then X∈V1: y^2+z^2=1/4+(r^2-1/4)=r^2; x within [0,1]? x=1-p; since r≤1/√? Wait necessity r<1, p=√(r^2-1/4). For r up to 1, p up to √3/4 ≈0.866, x≥0.134 ≥0. So x∈[0,1], V1 condition no x cost. V3 condition p^2+1/4=r^2; no z cost. V2 condition p^2+z^2=2r^2-1/2 > r^2 for r^2>1/2. Thus not in V2. Need ensure z within? z≤1? For r<1, z^2=r^2-1/4<3/4, z<0.866<1. Good. Thus inclusion fails. At r=1/√2 equality inclusion? The counterexample not in V2? p^2+z^2 =r^2, so on boundary of V2; condition contained? yes boundary included. So r≤1/√2 sufficient.
+
+Part (3): straightforward.
+
+Part (4): Need provide volume formula. Let's verify via direct union decomposition maybe can be simplified differently. But need ensure V1∩V2 volume J formula is correct for r in condition. Let's do a detailed derivation perhaps using coordinate centered at A. Need avoid confusion with original coordinates. We'll define for pair V1∩V2: Shift/rotate so V1 and V2 are neighborhoods of orthogonal unit segments [0,1] on x-axis and y-axis from origin. Because r<1, points in the intersection satisfy |x|,|y|≤r<1, hence x,y never exceed 1. Then split by signs of x,y:
+- x≥0,y≥0: constraints y^2+z^2≤r^2 and x^2+z^2≤r^2, area cross-section [0,√(r^2-z^2)]^2. Volume ∫_{-r}^r (r^2-z^2) dz = 4/3 r^3.
+- exactly one of x,y negative or both negative: the relevant distance is to the shared endpoint (0,0,0), so constraints reduce to x^2+y^2+z^2≤r^2, restricted to that quadrant. Each such quadrant volume = π r^3/3; three quadrants = πr^3. But wait exactly one negative includes x<0,y≥0 and x≥0,y<0. Both negative x<0,y<0. Total three quadrant regions. But are all points in those quadrants constrained by sphere only? Let's check exactly one negative, x<0,y≥0: V1 distance to segment OA: closest point at (0,0,0) in x? Actually if x<0 but y≥0, distance to segment Sx [0,1] is sqrt(x^2+y^2+z^2) yes endpoint origin. V2 distance to Sy [0,1]: if y≥0 and y≤r<1, distance = x^2+z^2. Sphere condition includes x^2+z^2 + y^2≤r^2 -> cylinder condition. So intersection in x<0,y≥0 = sphere quadrant. Yes.
+But what about point with x<0,y≥0 but y maybe >1? Since y≥0 and sphere implies y≤r<1. okay.
+- Both negative: distances to both origin, sphere.
+Thus total as above. But wait for x≥0,y≥0, could also sphere constraints? No because if both coordinates positive, distance to each segment doesn't include the other coordinate for distance to Sx? For point (x,y,z) with x,y positive, distance to Sx is sqrt(y^2+z^2) if x∈[0,1], independent of x; distance to Sy independent of y. Intersection constraints are cylinder intersection, not sphere. Good.
+
+But is there region with x,y positive and one coordinate negative? That's the sign split covers all (with boundaries zero). Good.
+
+Alternative: J = πr^3 +4/3r^3. Let's check with numerical integration at r=0.5? Single volume S=π*0.25+4/3π*0.125=0.785+0.524=1.309. Pair intersection J=π*0.125+4/3*0.125=0.3927+0.1667=0.5594. Union of three if inclusion (r=0.5 not strict but if condition? V1∩V3 maybe one point) volume=3*1.309-2*0.559=3.927-1.119=2.808. Maybe plausible.
+
+However wait part (4) says "(2) の条件 satisfies" meaning r must be >1/2 and ≤1/√2. So formula valid. But do we need subtract V1∩V3? We said cancels. But what if r=1/2? Not included strict but at boundary inclusion (intersection single point) still formula. Fine.
+
+Need also consider V1∩V2 and V2∩V3 volumes maybe depend on r relative to 1/2? Since r<1/√2, but >1/2. J formula independent. But the intersection V1∩V2 may overlap with V3? That's triple. Inclusion-exclusion okay. But maybe union volume can be computed by other means; need present clearly.
+
+Potential subtlety: V1∩V2 and V2∩V3 are themselves included in V2? No, not all pair intersection maybe extends outside V2? Wait V1∩V2 by definition inside V2. V2∩V3 inside V2. Their union is subset of V2. The union of all three = V2 ∪ V1 ∪ V3. Under condition V1∩V3 inside V2. But V1 and V3 parts outside V2 disjoint? Let's see union = V2 ∪ (V1\V2) ∪ (V3\V2). Are V1\V2 and V3\V2 disjoint? If a point is in V1\V2 and V3\V2, then it would be in V1∩V3 but not V2, violating inclusion. So yes. Then union volume = Vol(V2)+Vol(V1\V2)+Vol(V3\V2) = S + (S-J) + (S-J) = 3S-2J. This avoids V1∩V3. Nice. Need check V1\V2 volume = S-J? Since J=V1∩V2. Yes. V2∩V3 also J. Good. This is simpler. We can present union as V2 plus parts of V1 and V3 outside V2; under inclusion V1\V2 and V3\V2 disjoint. This relies on V1∩V3⊆V2. Good. But wait V1\V2 and V3\V2 disjoint? Suppose p in both V1\V2 and V3\V2 => p∈V1∩V3 but p∉V2, contradict inclusion. So yes. Then union volume = S + (S-J)+(S-J)=3S-2J. Nice.
+
+But need be careful: Does condition V1∩V3⊆V2 imply V1\V2 and V3\V2 are disjoint; yes. So we don't need V13.
+
+Now, let's double-check pair intersection J. Perhaps there is also overlap between V1 and V2 outside positive quadrant due to far endpoints? We reasoned far endpoint of V1 at x=1 cannot intersect V2 because distance to V2 minimum x=1 > r (since r<1). But points with x near 1 and y small? For a point in V1 near far endpoint, V2 distance = sqrt((x)^2+...? In shifted coordinates Sx=[0,1], Sy=[0,1]; for point near (1,0,0), distance to Sy = min sqrt(1^2 + (y-v)^2+z^2)≥1>r. Thus no. More generally x must satisfy x^2≤r^2? Because to be in V2, x^2+(... )≤r^2 with x component if y∈[0,1] or if y outside? If y not [0,1], x^2 + β^2+z^2≤r^2 => |x|≤r. So indeed x≤r<1. So far endpoint no effect. Good.
+
+Let's see if pair intersection volume could be computed via inclusion/exclusion of cylinders? Another check with known formula for intersection of two perpendicular cylinders of radius r and length L? For two capsules of radius r length 1 sharing endpoint. If length L large enough, intersection would be full cylinders intersection volume 16/3 r^3. For short segments, caps near origin restrict negative quadrants? Let's imagine two very long rays (half-lines?) The intersection of two orthogonal infinite cylinders volume 16/3r^3. If two segments length 1 and r<1, positive quadrant still length? In positive quadrant, full cylinder intersection already bounded by x,y≤r<1, so same. In negative quadrants, full cylinder intersection allows far along negative axis with small other coordinate; but short segment cap at origin restricts to sphere. For full line neighborhoods, negative side constraints would be y^2+z^2≤r^2 and x^2+z^2≤r^2, giving quarter-cylinder volume 4/3r^3 per quadrant, total 16/3. For segments ray positive from origin, negative side uses sphere π/3r^3, less by (4-π)/3r^3 each? For three negative quadrants difference = 3*(4/3 - π/3)=4-π? Total difference = 5.333 - (4/3+π)=4-π≈0.858r^3. So pair intersection smaller than full cylinder intersection. plausible.
+
+But wait original adjacent segments not rays from same origin both positive; they share endpoint and extend in opposite directions? Let's map: OA from O(0,0,0) to A(1,0,0). At A, OA extends backward to negative x. AB extends forward positive y. So at shared endpoint, one segment is ray negative x, the other positive y. If we reflect x→-x, OA becomes ray positive x; AB remains positive y. Yes both positive. But is reflection about A? It is an isometry (reflection across x coordinate? It maps coordinate x' = 1 - original x? Actually to put shared A at origin, original local coordinates u = x-1 for OA? Original OA x∈[0,1]; at A, coordinate u=x-1 ∈[-1,0]; V2 coordinate v=y ∈[0,1]. If reflect u→-u, segment OA becomes u'∈[0,1]. So yes both positive. Good.
+
+Need ensure coordinate signs in pair intersection reflect original orientation? Reflection is isometry, volume unchanged. Good.
+
+Let's also think about part (1) diagrams. Need maybe provide coordinate cross sections with formulas, maybe also ASCII. The problem likely from Japanese contest; they expect a drawing of the cross sections in the plane y=t. We need produce text description maybe enough. Need include "図示せよ" could ask to show drawing; as text can't draw but can describe and maybe provide SVG/ASCII. We can include clear diagrams with axes and radii. Need maybe produce coordinate formulas and a rough sketch. Let's design.
+
+Part (1) coordinate: In plane y=t, use horizontal coordinate x and vertical coordinate z perhaps. V1 cross-section: 2D capsule with center segment from (0,0) to (1,0) (x-axis) radius a=√(r^2-t^2). V3 cross-section: 2D capsule with center segment from (1,0) to (1,1) (vertical line x=1) radius b=√(r^2-(1-t)^2). Need specify t ∈ [1-r,r]. For endpoints t=1-r, b=0; V3 cross-section is line segment (1,z) with 0≤z≤1. At t=r, a=0; V1 is segment (x,0), 0≤x≤1. Since r>1/2, interval nonempty. At intermediate, both radii positive.
+
+But wait cross-section of V1 when |t|≤r is a capsule of radius a, but if t range [1-r,r] and r>1/2, t could be negative? r>1/2 and r<1; 1-r>0. Since t in [1-r,r], lower >0? If r<1, 1-r>0, so t positive. For t positive. Good. For V3, 1-t maybe positive? t≤r<1, so 1-t>0; b positive except t=1-r (1-t=r). So b positive until t=r. V1 radius a: t≤r; at t=r zero. Since t≥1-r>0, a positive except endpoint.
+
+Could cross-section V1 include full rectangle [0,1]×[-a,a] plus semicircles centered at (0,0),(1,0). Yes. V3 rectangle? Vertical segment [0,1] at x=1; set of points within distance b from vertical segment: x between 1-b and 1+b for z∈[0,1], plus semicircular disks at z=0,z=1 (right/left half-disks? Since capsule around segment along z: at endpoints z=0 and 1, half-disks outside rectangle; full disks of radius b centered at (1,0),(1,1) union rectangle). In 2D, capsule is [1-b,1+b]×[0,1] plus two disks of radius b centered at (1,0),(1,1) (actually disks full; when union with rectangle, the outer halves outside z interval produce half-circles; inside overlap). If describing as points distance to segment [0,1] along z at x=1 ≤b. Good.
+
+Need maybe mention in the same plane, the V1 capsule has lower cap at (1,0) and V3 capsule has lower cap at (1,0) (common point A cross-section? At y=t, original point A? Plane y=t passes through? The original A is y=0 not in plane except t=0. But cross-section lower center at (1,0) (point (x=1,z=0) in plane y=t), not actual A but vertical translate. V1's right endpoint cap center (1,0) and V3's bottom cap center (1,0). Radii a and b; they share tangent? The centers same (1,0) in xz-plane. Their intersection maybe? At t range, a,b positive. The two capsules centered around orthogonal segments sharing the same point (1,0) in cross-section? Wait V1 segment x-axis 0≤x≤1 at z=0; V3 vertical segment x=1 at 0≤z≤1. They share the point (1,0) (projection of A? plane y=t, cross-section includes points (x, z), not 3D A unless t=0. In cross-section, both center segments meet at (1,0), forming an L shape. Yes interesting: In plane y=t, the two cross-section centerlines meet at (x=1,z=0). Their radii a,b. The cross-section of V1 is horizontal L capsule; V3 vertical L capsule; they share same center point (1,0). This is analogous to pair intersection J cross-sections. Maybe drawing should show them. Need note.
+
+But wait V3 cross-section centerline vertical at x=1, z∈[0,1]. In plane y=t, t between 1-r and r; yes centerline from z=0 to1. It shares centerline point (1,0). V1 centerline from x=0 to1 at z=0. So they meet at (1,0). In cross-section, the radii are different. The cross-sections overlap around (1,0) as two perpendicular capsules. This may be used for inclusion? Not exactly because in each cross-section they are in 2D; part (1) only both nonempty. But diagram should show.
+
+Maybe there's a more direct geometry: In plane y=t, both nonempty if t within. Cross-sections are two "cylindrical surfaces"? Need draw: V1∩plane: horizontal capsule length 1 radius α; V3∩plane: vertical capsule length 1 radius β. The axes cross at (1,0). The radii α,β. If t=?? We can draw axes with x horizontal, z vertical.
+
+Need perhaps include formulas for cross-section as set:
+For V1:
+{(x,z) : 0≤x≤1, |z|≤α} ∪ D((0,0),α) ∪ D((1,0),α). Actually rectangle plus disks centered endpoints. But if α may be larger than? r<1, t positive, α<1 maybe. It's okay. More compact: { (x,z): dist((x,z), [0,1]×{0}) ≤ α }.
+For V3:
+{(x,z): dist((x,z), {1}×[0,1]) ≤ β }.
+
+Need maybe if using x,z in plane y=t, the plane coordinate system: horizontal x, vertical z. Draw perhaps using TikZ? We can output pseudo-TikZ or ASCII. We can include a rough figure in text:
+
+```
+ z
+ ↑        (1,1) ●——
+               | β |
+               |  ●
+               | (1,0) ●───→ x
+             α |      \____ capsule V1 (0,0)-(1,0)
+```
+But better to provide explicit drawing instructions and formulas. Since final answer text, can use ASCII and perhaps say "draw ...". Need enough for contest? We can provide a detailed description.
+
+Let's examine part (1) t range. Need note t in [1-r,r]. Since r>1/2, interval length 2r-1 >0. If include endpoints? The plane intersects solid at boundary, yes. If "共通点" includes tangency; usually yes. If they expect open? They say "両方と共通点" means has common point; at endpoints nonempty (tangent). Since r strict, endpoints included. Could say [1-r, r]. If they ask "範囲" maybe 1-r ≤ t ≤ r. Need mention if strict? At t=1-r, V3 cross-section is line segment (radius 0); still common point. At t=r, V1 line segment. Yes include.
+
+Need part (2) condition maybe r ∈ (1/2, 1/√2]. But the condition might be r ≤ √2/2; given 1/2<r<1, answer: √2/2? Actually 1/√2=√2/2. Need include strict? Since r already >1/2, condition: 1/2 < r ≤ √2/2. Could also mention if r=√2/2, inclusion holds (boundary). If r<√2/2 but >1/2. If r=1/√2 equality: inclusion holds? Need double-check with equality proof: The counterexample gives d2=r (in V2). Any other points? If r=1/√2, p^2+z^2≤r^2 from inequality. Yes all included. So ≤.
+
+Need part (4) formula maybe if condition includes r=√2/2, J formula valid at r=0.707. Check r^2=0.5, z at example=√(0.5-0.25)=0.5, x=1-√(0.25)=0.5. Fine.
+
+Potential issue: Pair intersection volume J formula for r at 1/√2: r<1 still. Good.
+
+Let's maybe compute pair intersection volume using inclusion-exclusion from cross-section? Could also derive by cross-sectional area for fixed z: For pair intersection, for each z ∈[-r,r], consider xy-plane. We can integrate area. Maybe more elegant than sign regions. Let's explore to ensure no missing region for fixed z.
+
+For shifted adjacent segments positive x and y [0,1]. Let d1^2 = dist_x_to_[0,1]^2 + y^2+z^2. d2^2 = x^2 + dist_y_to_[0,1]^2 + z^2.
+For fixed z with s=√(r^2-z^2). Conditions:
+V1: dist_x_to_[0,1]^2 + y^2 ≤ s^2.
+V2: x^2 + dist_y_to_[0,1]^2 ≤ s^2.
+Because s≤r<1.
+We want area in xy-plane. Let's characterize: For fixed z, s in [0,r]. Since s<1, no coordinate >1? If x>1 then dist_x≥x-1; could x up to1+s? Wait d1 constraint dist_x_to_[0,1]^2 + y^2 ≤s^2 allows x up to 1+s (>1) if y=0. But d2 constraint includes x^2+dist_y≤s^2 (since y≥? If dist_y maybe). If x>1, then x^2 >s^2? Since s<1 but x>1, x^2>1>s^2, impossible. Thus x≤s<1. Similarly y≤s<1. So lower upper boundaries [0,1] only matter at 0. For x,y≥0, constraints: y^2≤s^2, x^2≤s^2 (no cross? Wait V1 for x≥0: dist_x=0 if x∈[0,1], so condition y^2≤s^2. V2 x^2≤s^2. So x,y independent [-?]. But also x≥0,y≥0, area s^2. For x<0,y≥0: V1 x^2+y^2≤s^2, V2 x^2≤s^2; sphere quadrant. For x<0,y<0: both x^2+y^2≤s^2. For x≥0,y<0: same. So area cross-section = s^2 (first quadrant) + 3*(π/4)s^2? Quarter circle area radius s: each quadrant area π/4 s^2. So area = s^2 + 3π/4 s^2 = (1+3π/4)s^2. Integrate s^2=r^2-z^2 over z from -r to r gives (1+3π/4)*(4/3 r^3)=4/3 r^3 + π r^3. Same. Good. This cross-sectional derivation might be clearer for volume J. Need use boundaries not double counted.
+
+Let's consider if original pair intersection V1∩V2 has center point at A? In shifted coordinates, yes origin. For fixed z, the area shape: first quadrant square of side s; three quadrants quarter disks radius s. The volume is ∫ area dz. Could present.
+
+For union volume: 3S-2J = 3(πr^2+4πr^3/3)-2(πr^3+4r^3/3)=3πr^2+(4π-2π-8/3)r^3=3πr^2+(2π-8/3)r^3. Need simplify maybe:
+V_union = π r^2(3+2r) - (8/3)r^3 = (π(9? Wait factor). Let's ensure no algebra mistake:
+S = π r^2 + (4/3)π r^3.
+3S = 3πr^2 + 4πr^3.
+2J = 2πr^3 + (8/3)r^3.
+Difference = 3πr^2 + (4π-2π) r^3 - 8/3 r^3 = 3πr^2 + 2πr^3 - 8/3 r^3.
+= π r^2(3+2r) - (8/3)r^3.
+Could write = r^2{3π + (2π - 8/3)r}.
+At r=0.6: 3π*0.36=3.3929; (2π-2.6667)*0.216=3.583? Wait 2π=6.283, -2.666=3.617, times .216=0.781, total 4.174. Earlier 4.2 okay. At r=√2/2≈0.7071: r^2=0.5, r^3=0.3536; 3πr^2=4.712; (2π-2.666)*0.3536=1.278; total 5.99. Single volume S=π*0.5+4π/3*0.3536=1.571+1.484=3.055; 3S=9.165; J=(π+1.333)*0.3536=1.571; 2J=3.142; union=6.023? Let's compute accurately: 2πr^3=2.221; 8/3r^3=0.943; total 4.712+1.278=5.990. 3S: 3πr^2=4.712; 4πr^3=4.442; total 9.154; J: πr^3=1.110? Wait r^3=(√2/2)^3=√2/4? Actually (1/√2)^3=1/(2√2)=0.35355. πr^3=1.1107. (4/3)r^3=0.4714; J=1.5821. 2J=3.164. 3S=3πr^2 +4πr^3 =4.712+4.443=9.155; diff=5.991. Okay.
+
+Need maybe include note if condition not satisfied union volume would be more complex, but problem only asks condition satisfied.
+
+Let's think if there is any hidden requirement: Title "AI性能テスト用 数学難問（三次元空間）". Problem 9338. They likely expect precise solutions. Need maybe produce Japanese explanation. We can answer in Japanese with math. Need ensure no mistakes.
+
+Let's more deeply analyze (2) inclusion condition: Did we assume V1∩V3 point has x≥0? For r<1, x∈[1-r,1+r] from V3 and x∈[-r,1+r] from V1. But if x<0 possible? V3 requires x∈[1-r,1+r]. Since 1-r>0 for r<1, x>0. So yes x∈[1-r,1+r], positive. Good. But we split x≤1 or ≥1. If x>1, d1 includes x-1; d2 includes x-1. Need ensure y∈[0,1] for V2 y no contribution. Does y∈[0,1] always? V1 gives y^2≤r^2? Actually V1 includes y^2 plus maybe x,z; so |y|≤r<1. V3 gives (y-1)^2≤r^2? Because x,z distances nonnegative; so |y-1|≤r -> y∈[1-r,1+r]. Intersection y∈[max(-r,1-r), min(r,1+r)]. Since r>1/2, 1-r< r; lower positive; upper r<1. So y∈[1-r,r]⊂(0,1). Thus y in [0,1]. Good. If r<1/2 (not considered), y interval empty? Inclusion vacuous. But given >1/2.
+
+What if x= exactly 1? Both cases; d2 = z^2; from V1 y^2+z^2≤r^2, so okay. Good.
+
+Alternative inclusion condition maybe could be derived from cross-sections in (1). V1∩V3 maybe in each plane y=t, cross-sections two capsules with radii α,β; need require their intersection (if any) lies within V2 cross-section (which is? Plane y=t intersects V2? V2 around AB: line x=1,y∈[0,1]; since t∈[0,1]? For t in [1-r,r]⊂[0,1], V2 cross-section is disk? Let's see V2 cross-section at y=t (t∈[0,1]): distance to AB: x=1 vertical? Actually AB along y; plane y=t intersects center line at point (1,0) in xz; cross-section is full disk radius r centered at (1,0) in xz-plane (because t within segment). V1∩V3 cross-sections for a fixed t are intersection of horizontal capsule radius α and vertical capsule radius β. Condition for inclusion: for each t∈[1-r,r], (capsule_h ∩ capsule_v) ⊆ disk centered at (1,0) radius r. Need find r threshold. Could be a simpler 2D problem. At fixed t, radii α=√(r^2-t^2), β=√(r^2-(1-t)^2). The horizontal capsule: dist to [0,1] on x-axis ≤α. Vertical capsule: dist to {1}×[0,1] ≤β. Their intersection includes a point (x,z) with x=1-β? Let's find worst at t=1/2? The counterexample y=1/2, t=1/2. Then α=β=s=√(r^2-1/4). Intersection of cross-sections includes point (x,z)=(1-s, s) (upper left corner of square?) Distance to disk center (1,0) = √(s^2+s^2)=s√2. Inclusion requires √(2(r^2-1/4))≤r => 2r^2-1/2≤r^2 -> r≤1/√2. This may be nice. Could present inclusion proof in 3D or cross-section. 3D piecewise okay. But maybe cross-section proof for (2) more intuitive? We need rigorous for all t. Could present using distances as above. But perhaps using cross-section from (1): For t∈[1-r,r], V2 cross-section is disk D center (1,0) radius r. V1∩V3∩plane y=t is intersection of two capsules. Need show contained in disk iff r≤1/√2. We can analyze cross-section: Let s? For each t, radii α,β. The worst point? Intersection of horizontal capsule radius α and vertical capsule radius β. The disk condition. We need find max over t and point of distance from (1,0). Could maybe derive more elegantly: In xz-plane coordinates with u=1-x (leftwards), v=z (upwards) maybe. For t∈[1-r,r], the part of V1∩V3 in quadrant x≤1,z≥0 corresponds to rectangle [0,α?]? Let's derive.
+
+Cross-section inclusion: In plane y=t, set W1 = dist to x-axis segment [0,1] ≤ α; W3 = dist to vertical segment at x=1,z∈[0,1] ≤ β. Need W1∩W3 ⊆ disk center (1,0) radius r for all t. For t not maybe. The hardest t? We can derive condition α^2+β^2? α^2+β^2 = r^2-t^2 + r^2-(1-t)^2 = 2r^2 - (1-2t^2? let's compute: t^2+(1-t)^2 =1-2t+2t^2; max? The point (1-β, α)? Actually the point that violates is at x=1-β? Let's see at t fixed, constraints in quadrant x≤1,z≥0:
+W1: if x≥0 (maybe), condition t? cross-section: For W1 with x between 0 and1: |z|≤α. For W3 with z between 0 and1: |x-1|≤β. Thus the central rectangle [1-β,1]×[0,α] is in both. To be in disk center (1,0): (x,z) distance = sqrt((1-x)^2+z^2) ≤ sqrt(β^2+α^2) at corner (1-β,α). If this corner within disk then whole rectangle within? For disk convex and center at (1,0), farthest in rectangle at corner. Thus need α^2+β^2≤r^2 for all t? But W1 and W3 also have end disks that extend outside rectangle (x<1-β? z<α? etc). Need check if other parts cause violation. For W1 and W3, in x≤1,z≥0 region, the intersection might be not just rectangle; there are quarter disks around (1,0)? Actually both capsules centered meeting at (1,0). W1 in quadrant x≤1,z≥0 includes points whose distance to segment x-axis [0,1] ≤ α. Since x≤1 and segment includes [0,1], for x∈[0,1], only z≤α; for x<0, also sphere of radius α centered at (0,0). But near center (1,0), for x in [1-α,1], W1 includes z≤α; W3 includes for z in [0,1] x≥1-β; plus caps around endpoints. The intersection near center includes rectangle [1-β,1]×[0,α] plus maybe quarter disks centered at (1,0)? Let's see W3 includes points within β of vertical segment; for z near 0, x within β of x=1; for z in [0,1], x∈[1-β,1+β]. W1 includes within α of x-axis; for x∈[0,1], z∈[-α,α]. The intersection in quadrant x≤1,z≥0 includes rectangle [1-β,1]×[0,α] plus perhaps areas near (0?) if α? But if β large, x can be less than 0? Since r<1, β ≤ r<1, 1-β >0, so x in intersection with vertical central part >0. W1 central rectangle x∈[0,1]. So no x<0 in intersection? Wait W3 has x in [1-β,1+β], and β≤r<1, so 1-β>0. Thus intersection's x≥1-β>0. So within [0,1]. Thus W1 cross-section in that x range only z≤α (central rectangle), not sphere. For W3 with z≥0 and z≤1, central x range; if z>1 maybe W3 cap? β<1 and z up to 1+β>1? But W1 z≤α≤r<1, so z<1, so within [0,1]. Thus intersection in upper-left quadrant is exactly rectangle [1-β,1]×[0,α]. Great. Similarly other quadrants maybe? For z negative, W1 z≥-α, W3 central x range, rectangle [1-β,1]×[-α,0] inside disk? Its farthest from (1,0) has z^2 up to α^2 with x maybe 1? distance α; less than r because α≤r. For x? rectangle same. For z positive, worst corner. What about W1's right cap centered at (1,0) radius α and W3's bottom cap centered at (1,0) radius β; union of disks near center? Actually W1 includes disk radius α centered at (1,0) (end cap), W3 includes disk radius β centered at (1,0) (bottom cap). Their intersection includes smaller disk radius min(α,β) inside larger disk r? Since α,β≤r. No violation. Other end caps at (0,0) and (1,1) maybe could intersect? W1 cap at (0,0) radius α and W3? W3's x range is >1-β≥0; at x=0 if β=1? β<1 so no intersection with W3's x≥1-β>0. W1 end cap at 0 cannot meet W3 because W3 x≥1-β>0. Similarly W3 top cap at z=1? W1 z≤α≤r<1, so no. Thus for fixed t, intersection of cross-sections is union of: maybe rectangle(s) and disks near center? Actually W1∩W3 includes:
+- central rectangle: x∈[1-β,1], z∈[-α,α] (since W1 central x∈[0,1] z≤α; W3 central z∈[0,1] x≥1-β; z upper α≤r<1, lower -α≥-r > -1; z lower within? For z negative, W3 central vertical segment z∈[0,1]? No W3's central rectangle is z∈[0,1]; so z negative not in central rectangle. Need re-evaluate: W3 set: vertical segment at x=1, z∈[0,1]. Distance ≤β. For z in [0,1], x∈[1-β,1+β]. For z<0, distance to endpoint at (1,0): (x-1)^2+z^2≤β^2. For z>1 similarly. Since W1 z∈[-α,α] and α<r<1, negative z not in W3 central rectangle but could be in bottom cap disk centered (1,0) radius β. Intersection for z<0: W1 central x∈[0,1], z≥-α (also x within [1-?]? Wait W1 central x [0,1]; W3 bottom disk: (x-1)^2+z^2≤β^2. With x∈[0,1], left part x≥1-√(β^2-z^2). This area within disk center (1,0) radius β, which is ≤r disk. So no violation beyond maybe if α? Actually intersection with W1 central x [0,1] includes part of W3 bottom cap inside W1 rectangle. All those points are within disk radius β centered (1,0), which is inside radius r disk (since β≤r). Good.
+- central rectangle positive z: [1-β,1]×[0,α], farthest distance √(β^2+α^2). Need ≤r. This is the key. What about x negative? W3 x≥1-β≥0 because β<1. So x nonnegative. Good.
+- x right of 1: W3 central x∈[1,1+β], W1 central x∈[0,1] and W1 right cap radius α. For x>1, W1 right cap disk radius α centered (1,0), W3 central z within [0,1] x distance ≤β. Points in W1 right cap are within α≤r of center, so inside r disk. W1 right cap intersection W3 maybe inside r disk. Good.
+
+Thus cross-section inclusion condition reduces to α^2+β^2≤r^2 for all t? Need α^2+β^2 = 2r^2 - t^2 - (1-t)^2. Need require max over t∈[1-r,r] of this ≤ r^2. The maximum of t^2+(1-t)^2? We want max of α^2+β^2 = 2r^2 - [t^2+(1-t)^2]. The maximum when t^2+(1-t)^2 is minimal on interval. Minimum at t=1/2 if interval contains 1/2. It does for r≥1/2. Minimum value =1/2. Thus max α^2+β^2 = 2r^2 -1/2. Require ≤r^2 -> r^2≤1/2. Exactly. This cross-section proof maybe elegant and tied to part (1). Need maybe include necessity with t=1/2 point (1-β,α). At t=1/2, α=β=√(r^2-1/4). Then point (x,z)=(1-β,α) lies in both cross-sections but not in V2 cross-section if α^2+β^2>r^2. This is a nice proof. But we need ensure the point coordinates valid: x=1-β, z=α. Need x within W1 segment [0,1] and z within W1 rectangle [-α,α], yes; x within W3 central x range [1-β,1+β], z within [0,1] since α≤r<1. So yes.
+
+This proof might be clearer and uses cross-sections from part (1). Let's outline (2) using cross-sections:
+For t in [1-r,r], V1∩plane = horizontal capsule H_t radius a; V3∩plane = vertical capsule V_t radius b; V2∩plane? Since t∈(0,1) (because 1-r>0 and r<1), AB segment crosses plane at point (x=1,z=0); cross-section of V2 is disk radius r centered at (1,0). We need H_t∩V_t⊆D_t (disk center (1,0) radius r) for all t. The only possible part outside D_t would be the upper-left rectangle [1-b,1]×[0,a] in H∩V, with farthest corner (1-b,a) from center. Other parts near caps are inside disks radius a,b≤r. So condition a^2+b^2≤r^2 for all t. Compute a^2+b^2=2r^2 - t^2-(1-t)^2. The maximum over t is at t=1/2, value 2r^2-1/2. Condition 2r^2-1/2≤r^2 ⇒ r≤1/√2. For necessity, at t=1/2 corner point gives violation. This is elegant. Need be careful if "only possible part" rigorous enough. We can state due to r<1, the intersection of H_t and V_t lies in [1-b,1]×[-a,a] near the common center plus disks of radii a or b at the common endpoint, all of which are within radius r except for the corner of the rectangle; the farthest point is (1-b,a). But maybe W1 and W3 central rectangles: H_t's central rectangle is [0,1]×[-a,a]; V_t central rectangle is [1-b,1+b]×[0,1]; intersection central rectangle [1-b,1]×[0,a]. Since b≤r<1, this x≥0, z≤1, so indeed in central rectangles. The caps around (1,0) have radii a,b≤r, contained in disk radius r. Other caps are separated because a,b<1? H_t left cap center (0,0), V_t top cap center (1,1) cannot intersect within? But could H_t left cap and V_t top cap intersect far from center and violate disk? Need check if their intersection can happen for r close? H_t left cap disk center (0,0) radius a, V_t top cap center (1,1) radius b. Distance between centers √2; radii a,b≤r<1/√2? Under condition maybe; for necessity? Need ensure for all r>1/2, H∩V could include left/top cap? Let's check for r up to 1/√2 in condition; a,b≤? At t maybe a or b can be 1/√2? a,b≤r≤0.707. Distance centers (0,0) to (1,1) =√2≈1.414 > a+b≤2r≤1.414. At r=1/√2, sum radii ≤1.414; equality possible when both r? Could left and top caps touch at (0.5,0.5) maybe. That point distance from center (1,0) =√(0.5^2+0.5^2)=0.707=r, inside disk. Okay. For r>1/√2, not condition. For sufficiency maybe a+b could exceed √2? For r≤1/√2, max sum≤√2, so caps may touch at (0.5,0.5), distance exactly r. No violation. If r> condition, inclusion fails elsewhere. So okay. But cross-section proof needs consider all parts; we can simplify by distance inequalities in coordinates maybe easier.
+
+Let's perhaps use the 3D coordinate proof for sufficiency because rigorous and not require hand-wavy "only part". But cross-section ties part (1). Could combine: state in plane y=t, with x,z axes; V2 cross-section is disk center (1,0) radius r. For inclusion, the potentially outside part occurs in rectangle. But we need prove other parts inside disk. We can use a general coordinate inequality as earlier.
+
+Let's see which proof is most clear for (2). We can present coordinate method; it's rigorous and compact. Then maybe note cross-section counterexample. Need ensure we don't confuse.
+
+Let's develop coordinate proof fully.
+
+Let X=(x,y,z)∈V1∩V3. Since r<1, from d1,d3 we have:
+|y|≤r, |1-y|≤r -> y∈[1-r,r]⊂[0,1] (because r>1/2). Also V3 gives |1-x|≤r, so x∈[1-r,1+r]; V1 gives x∈[-r,1+r]; thus x≥1-r>0. So x never negative. Cases:
+
+1. x≥1. Then d1^2=(x-1)^2+y^2+z^2≤r^2. Since y∈[0,1] (so V2 y cost zero), d2^2=(x-1)^2+z^2≤r^2. Thus X∈V2.
+Wait if x≥1 but x maybe 1+r; d1 includes z? For OA line y=0,z=0, x clamp: if x≥1, x cost x-1; y^2+z^2 yes. Good.
+2. 0<x≤1.
+- If z<0. Then d3^2=(1-x)^2+(1-y)^2+z^2≤r^2 (because z clamp to z=0). Then d2^2=(1-x)^2+z^2≤r^2. done.
+- If z≥0. Then d1^2=y^2+z^2≤r^2; d3^2=(1-x)^2+(1-y)^2≤r^2. Need show (1-x)^2+z^2≤r^2. By inequalities:
+(1-x)^2+z^2 ≤ [r^2-(1-y)^2]+[r^2-y^2] =2r^2-[(1-y)^2+y^2] ≤2r^2-1/2 (since y∈[0,1]) ≤ r^2 if r^2≤1/2.
+Thus if r≤1/√2, inclusion. If r>1/√2, choose y=1/2, z=√(r^2-1/4), x=1-√(r^2-1/4). Need check x∈[0,1]. For r<1, z^2=r^2-1/4<3/4, z<1; x=1-z? Actually p=√(r^2-1/4), not necessarily equal z; yes x=1-p. Need p<1; r<1 => p<√(3/4)<1. Good. Then X satisfies d1=d3=r, d2^2=2r^2-1/2>r^2. So inclusion fails. This proof is clean and rigorous.
+
+Need note for necessity: choose t=1/2; y=1/2; p=z? Wait choose z=√(r^2-1/4); p=√(r^2-1/4) same. So point X=(1-p,1/2,p). Then d1 = sqrt((1/2)^2+p^2)=r because x in [0,1]; d3 = sqrt(p^2+(1/2)^2)=r because z∈[0,1]; d2 = sqrt(p^2+p^2)=√(2p^2)=√(2r^2-1/2)>r. Good. Actually p=z, yes x=1-p. Nice.
+
+Let's also verify x∈[0,1]: p=√(r^2-1/4). For r∈(1/√2,1), p∈(1/2,√3/4=0.866), so x∈(0.134,0.5); yes. Good.
+
+Now pair intersection J: Let's derive rigorously with coordinate shift. Let's use original coordinates? We can shift to A=(1,0,0) and maybe change coordinates. Define local coordinates for V1,V2:
+Let X=(x,y,z). In original, V1 is near OA, V2 near AB. Let's set local u = 1-x? Or maybe center at A. But for volume formula, use coordinates with shared endpoint at origin. Need be careful for readers. We can say: By an isometry (translation taking A to the origin and reflection x↦1-x if necessary), V1∩V2 is congruent to the intersection of the r-neighborhoods of two orthogonal unit segments
+S_x = {(s,0,0):0≤s≤1} and S_y={(0,t,0):0≤t≤1}.
+Then compute J.
+
+But wait reflection x↦1-x maps original OA [0,1] at z=0 to segment [-?]. Let's choose a direct isometry: Translate A=(1,0,0) to origin: coordinates relative to A: (x',y',z')=(x-1,y,z). Then V1 around segment x'∈[-1,0], y=z=0; V2 around segment y'∈[0,1], x'=z=0. Reflect x'→ -x' maps V1 segment to x''∈[0,1]. So yes. Or simply state "by symmetry, take segments along positive x and positive y axes from origin". We should mention because the two segments are unit segments meeting at right angle. For V1∩V2, yes. V2∩V3 similar. So volume J independent.
+
+Derive J with cross-section at fixed z. Let s=√(r^2-z^2). Because r<1, s≤r<1, and points of intersection satisfy |x|,|y|≤r<1 (maybe show). Then conditions simplify depending on signs. Let's derive in a concise way:
+For (X in intersection) with coordinates relative to shared endpoint and segments along positive x/y axes length 1:
+Distance to x-segment:
+If 0≤x≤1: δ_x^2 = y^2+z^2.
+If x<0 or x>1: δ_x^2 = (distance from x to [0,1])^2 + y^2+z^2.
+But because in intersection, x∈[-r,r]? Let's prove: Since point is in r-neighborhood of y-segment, |x| ≤ r? Is that always? Distance to y-segment squared = x^2 + (distance y to [0,1])^2 + z^2. So yes x^2≤r^2 -> |x|≤r<1. Similarly |y|≤r<1. Thus far endpoint x=1, y=1 irrelevant; only endpoint at origin matters for negative coordinates.
+Now for fixed z, let s=√(r^2-z^2). The conditions are:
+(1) dist_x_to_[0,1]^2 + y^2 ≤ s^2.
+(2) x^2 + dist_y_to_[0,1]^2 ≤ s^2.
+Since x,y∈[-r,r] and s≤r<1, x,y never exceed 1. Thus:
+If x≥0,y≥0: (1) reduces to y^2≤s^2, (2) to x^2≤s^2; area s^2 in first quadrant.
+If exactly one of x,y is negative: sphere quadrant: constraints x^2+y^2≤s^2? Check for x<0,y≥0: (1) x^2+y^2≤s^2, (2) x^2≤s^2 (implied by first? first includes y^2 nonnegative => x^2≤s^2, yes); so area = quarter disk radius s. Similarly. If both negative: both same quarter disk.
+Thus area = s^2 + 3*(π/4)s^2 = (1+3π/4)s^2. Integrate over z∈[-r,r]: ∫(r^2-z^2) dz = 4/3 r^3; multiply = (1+3π/4)*(4/3)r^3 = 4/3 r^3 + π r^3. Good. Boundaries x=0/y=0 measure zero; no double count.
+
+Potential issue: If x≥0,y≥0 but x or y could be >1? We have |x|≤r<1, so no. Good. If r in condition (r≤1/√2), definitely <1. Actually for J we need r<1 (given). If r=0.9, |x|≤r<1, still no far endpoint; formula would hold for all r<1? Yes. If r close 1, s≤0.9<1, okay. So J=(π+4/3)r^3 for r<1. But is |x|≤r from V2 condition? Distance to y-segment includes x^2 plus... yes if y not in [0,1]? If y<0, distance includes y^2; still x^2 ≤ r^2 - y^2 - ... ≤r^2, so |x|≤r. Good. For any r<1, far endpoints not reached? For point near x=1, distance to y-segment has x^2=1; if r<1, impossible. So yes. So J formula valid for all r<1 (including (1/2,1)). But if r close 1, r<1, s≤r<1. Good. At r=1 exactly far endpoint at (1,0) can be in V2? distance to y-segment =1, equality; but not in range. Good.
+
+Now union volume with condition: Need maybe note condition r≤1/√2 ensures V1∩V3⊆V2, which implies (V1\V2)∩(V3\V2)=∅. So union volume = Vol(V2)+Vol(V1\V2)+Vol(V3\V2). Each V_i volume S; adjacent intersections volume J. So Vol = S + (S-J)+(S-J)=3S-2J. Good. This is perhaps more intuitive than inclusion-exclusion and avoids computing V13. Let's use this.
+
+Need ensure Vol(V1\V2)=S-J? Since J=Vol(V1∩V2). Yes. Similarly V3\V2. Under condition, V1\V2 and V3\V2 disjoint, but do they overlap with V2? no by definition. So union disjoint: V2, V1\V2, V3\V2. Are V1\V2 and V3\V2 disjoint? Need condition yes. So sum volumes. Good.
+
+Need maybe if condition not satisfied, parts overlap, formula would not hold. But problem only condition.
+
+Let's think if there is any possibility that V1∩V2 and V2∩V3 volumes are not just J because one pair V2,V3 shares endpoint B and segments directions: V2 AB direction y, V3 BC direction z, perpendicular. Yes congruent to two positive orthogonal unit segments. Need maybe mention by symmetry/translation-rotation.
+
+Let's produce final answer in Japanese. Need be detailed. Include (1) drawing description. Need maybe include actual cross-section formulas and a text diagram. Could include "図示" by describing; maybe use TikZ? In final text, maybe include a simple ASCII figure:
+
+```
+z
+↑       (1,1)
+        ○---+  V3 (radius β)
+        |   |
+        |   |
+(0,0)●--(1,0)●→ x
+    V1 radius α
+```
+But better to show horizontal capsule (0,0)-(1,0) radius α, vertical (1,0)-(1,1) radius β. Need indicate radii. Could include separate figure in words:
+- Put coordinate axes x (right) and z (up) in the plane y=t.
+- Draw the segment from (0,0) to (1,0), and around it draw a capsule of radius α; draw the segment from (1,0) to (1,1), and around it draw a capsule of radius β. Their common point is (1,0). The radii are as above.
+
+Could maybe include equations:
+
+a_t = √(r^2-t^2), b_t=√(r^2-(1-t)^2).
+Then:
+V_1∩{y=t}: { (x,z): 0≤x≤1, |z|≤a_t } ∪ D((0,0),a_t) ∪ D((1,0),a_t).
+V_3∩{y=t}: { (x,z): 0≤z≤1, 1-b_t≤x≤1+b_t } ∪ D((1,0),b_t) ∪ D((1,1),b_t).
+This is precise; for drawing, just plot these.
+
+Wait the disks in those unions should be full disks but union with rectangles yields capsule. For V1: D((0,0),a) and D((1,0),a) plus rectangle [0,1]×[-a,a]. But note the disks extend beyond x<0 and x>1; if a may be >? fine. For V3: rectangle [1-b,1+b]×[0,1] plus D((1,0),b), D((1,1),b).
+
+Need ensure if t at endpoint a=0: disk radius 0 degenerates; rectangle height 0 line; okay.
+
+For t range: Since V1 cross-section nonempty iff a real: -r≤t≤r. V3 cross-section nonempty iff -r≤1-t≤r -> 1-r≤t≤1+r. Intersection [1-r,r]. Because r>1/2. Good. Since r<1, interval within (0,1).
+
+Part (1) maybe asks "平面 y=t 与 V1 and V3 両方と共通点" not "V1 and V3 intersection". Our range correct. Need maybe if plane tangent to V1 at endpoints t=±r; but t range positive only due V3. At t=1-r, V3 cross-section radius b=0 (line segment x=1,z∈[0,1]); V1 radius positive? a=√(r^2-(1-r)^2). Since r>1/2, a>0. Intersection of plane with V3 is line segment; okay. At t=r, a=0, V1 line segment z=0,x∈[0,1]; V3 radius b=√(r^2-(1-r)^2)>0. Good.
+
+Part (2) maybe could require condition exactly r≤√2/2. We should mention if r=√2/2, inclusion holds; if r>√2/2 fails by explicit point. Need maybe also if r=1/2? Given strict; but if r=1/2, V1∩V3 single point? Inclusion holds. But not needed.
+
+Let's also consider if V1∩V2 volume J should maybe be computed for r≤1/√2 or for all r in condition. Good.
+
+Potential hidden issue: V_i includes "内部を含む" means closed balls. Our boundaries included. Good.
+
+Let's test union volume by alternative decomposition for sanity at r=1/2 (though not strict): Single volume S=1.308; J=0.559; formula 2.808. What is actual union of three adjacent capsules around path O-A-B-C with r=0.5? V1∩V3 point (maybe? at y=0.5, cross-section? a=√(0.25-0.25)=0? b=√(0.25-0.25)=0? At t=0.5, both a=b=0? Wait t=r=0.5 and 1-r=0.5. V1 cross-section line z=0, x∈[0,1]; V3 cross-section line x=1,z∈[0,1]; their intersection at (1,0) in plane y=0.5 -> point (1,0.5,0). This is in V2. Pair intersections? yes. Union volume 2.808. Seems plausible.
+
+Let's maybe compute J for r=0.5 by integration: s at z=0 area = s^2(1+3π/4)=0.25*(3.356)=0.839; integrate 1.118? Wait our J=0.559. Cross-section area integrate s^2: ∫(0.25-z^2) dz from -0.5 to0.5 = 4/3*0.125=0.1667 times 3.356=0.559. good.
+
+Could there be a different pair intersection because original segments OA and AB are not just two segments meeting at a right angle but one along x from 0 to1 and y from 1 to1; local positive x, positive y. Good.
+
+Let's maybe produce a nice formula for union volume:
+\[
+\operatorname{Vol}(V_1\cup V_2\cup V_3)=3\pi r^2+\left(2\pi-\frac83\right)r^3.
+\]
+Since (2π-8/3)>0? 2π≈6.283-2.667=3.617 positive. Good.
+Could write:
+\[
+=\pi r^2(3+2r)-\frac{8}{3}r^3.
+\]
+Need ensure if factoring r^3: =r^3(3/r? no). Keep as 3πr^2 +(2π-8/3)r^3.
+
+Now, let's consider if part (3) volume of V1 maybe could have correction for self-overlap if r > length? r<1, L=1; capsule formula still. If r> length? formula still? For segment plus ball: volume = 4/3πr^3 + πr^2L always? Actually Minkowski sum of convex body segment with ball; Steiner formula: volume = Vol(segment)0 + surface area? For segment (1D) volume = 2r? Wait for a 1-dimensional segment length L, parallel body volume = (4/3πr^3) + (π r^2 L). Yes always, no overlap issue because caps at ends disjoint? If r very large, the two hemispherical caps around endpoints and cylinder still disjoint? Cylinder length L plus two hemispheres: for L=0 they coincide as sphere; for L>0, cylinder between endpoints with radius r, endpoints caps outside x range; disjoint except boundaries? If L small relative r, could the two caps overlap? Imagine segment length L=1, r=10. The union of balls centered along segment: Is it cylinder length 1 with radius 10 plus two half-balls at ends. Do the half-balls overlap beyond cylinder? For L>0, two hemispheres at endpoints: at x=0 and x=L, caps x<0 and x>L disjoint. Cylinder between x=0 andL. No overlap. So formula always. Good.
+
+Let's maybe include a note: It is the "Steiner" formula for tube around segment: volume cylinder πr^2×1 plus sphere 4/3πr^3. Good.
+
+Need ensure in part (4), under condition, V1\V2 and V3\V2 disjoint. Could someone object: V1\V2 and V3\V2 may overlap within V2? No by definition outside V2. If p∈(V1\V2)∩(V3\V2), p∈V1∩V3 but not in V2, contradict. Good. Then volumes sum. We also need disjointness of V2 with V1\V2 and V3\V2 obvious. Good.
+
+Let's think if condition in (2) maybe could be derived as r≥? We found upper bound. Could it be instead r≥√2/2? Let's test small r=0.6 inclusion seems? Try point x=1-p,y=1/2,z=p with p=√(0.36-0.25)=0.331; d2^2=2*0.11=0.22 <r^2 0.36, so in V2. Maybe intersection subset. For r=0.6, V1∩V3 exists, but small. Yes. If r=0.51, inclusion likely. The threshold where intersection grows beyond middle. So upper bound. Good.
+
+Let's maybe check pair intersection volume under condition; condition r≤0.707. For r=0.7, J formula ~? fine.
+
+Potential issue in pair intersection volume: In the negative quadrants, region is a quarter of a sphere, but is it quarter of a full sphere? Because sign constraints on x,y; z free. Full sphere volume 4/3πr^3. Restrict x≤0,y≤0 gives quadrant of xy-plane, angular fraction 1/4. Yes.
+
+Could derive with "at fixed z" easier. Need maybe be explicit that for r in condition, r<1. Already given r<1. We can use this. Need mention boundaries x=0,y=0 have zero volume, so no double count.
+
+Let's perhaps prepare final answer structure:
+
+- Define d(X,S_i) notation.
+- State V_i = {X: d(X,S_i)≤r}.
+- Part (1): t range and cross-sections.
+-- Since d(OA) min includes y coordinate, nonempty iff |t|≤r; d(BC) nonempty iff |1-t|≤r; combine -> [1-r,r]. Draw coordinate formulas.
+-- Maybe include a text figure.
+- Part (2): Inclusion condition.
+-- Necessity via explicit point.
+-- Sufficiency via cases or cross-section inequality. Choose one proof. Coordinate case proof with details.
+-- Result: r≤√2/2. Given 1/2<r<1, answer: 1/2<r≤√2/2.
+- Part (3): Volume V1 = πr^2+4πr^3/3.
+- Part (4): Let S=..., J=... Compute J:
+   By isometry to two positive orthogonal unit segments. Fixed z cross-section area. Integrate. J=(π+4/3)r^3.
+   Under condition, (V1\V2)∩(V3\V2)=∅. Union volume = S + (S-J)+(S-J)=3S-2J=3πr^2+(2π-8/3)r^3.
+
+Need include enough details for "図示せよ" in (1). Could create a small diagram with coordinates and radii. Let's design final with maybe LaTeX and a description. We can include an "ASCII sketch" and formulas. Need make sure not too messy.
+
+Maybe final answer includes:
+
+```
+   z
+   ↑
+ 1 |        (1,1)
+   |          ●
+   |        (radius β)
+   |      ┌──┐
+   |      │  │
+ t?      └──┘
+   |          ● (1,0)
+   |        (radius α)
+ 0 |●-------●
+   |  (0,0) (1,0)
+   +----------------→ x
+```
+
+But drawing both capsules: horizontal around segment (0,0)-(1,0); vertical around (1,0)-(1,1). We can say "the figure is an L-shaped pair of capsules." We can include a TikZ? The environment may not render TikZ, but text okay. Could use Mermaid? Better to provide coordinate description. Maybe include a small schematic using Unicode/brackets:
+
+```
+        z
+        ↑
+      (1,1)●──╮  β-半径
+             |   (V3)
+             |
+      (1,0)●──● (0,0)
+             |←── α-半径 →
+             |        V1
+             +----------------→ x
+```
+
+But need not be exact. Could say "In words: draw an L consisting of a horizontal unit segment from (0,0) to (1,0) and a vertical unit segment from (1,0) to (1,1); thicken the horizontal one by α, vertical one by β." That is likely acceptable for "図示" in text.
+
+Maybe include a separate note: At fixed t, the cross-section of V2 (for later) is a disk radius r centered at (1,0); but part (1) only V1,V3. Could mention as useful.
+
+Let's ensure all notation: Use D(P,ρ) for closed disk in plane.
+
+Let's maybe prove part (1) nonempty ranges:
+For V1, distance to OA: min_{s∈[0,1]}(x-s)^2+y^2+z^2. In plane y=t, nonempty iff t^2≤r^2 because choose x∈[0,1],z=0. Similarly V3 iff (1-t)^2≤r^2. Intersection gives [1-r,r]. Since r>1/2, interval length positive.
+
+Cross-section formulas:
+\[
+C_1(t)=\{(x,z): d((x,t,z),OA)≤r\}
+=\{(x,z): d_{2D}((x,z),[0,1]	imes\{0\})≤a\}
+\]
+where a=√(r^2-t^2). More explicitly. Similarly C_3.
+
+Part (2) detailed coordinate proof: Need present in a way understandable. Let's write:
+Let X∈V1∩V3. Put u=1-x maybe. But need y∈[1-r,r] from constraints:
+Because r<1,
+from d1≤r, |y|≤r; from d3≤r, |y-1|≤r. Hence y∈[1-r,r]⊂[0,1]. Also x∈[1-r,1+r], so x≥0. Then cases.
+Case x≥1: ...
+Case x≤1 and z<0: ...
+Case x≤1,z≥0: inequality with y.
+Need maybe if x exactly 1, falls in both; okay.
+
+For sufficiency: if r^2≤1/2, then for all X, d2≤r. Need note when z<0, d2 uses z^2; when x≤1. If x≥1, use d1. If x≤1,z≥0 use inequality.
+
+Potential missing: What if x≤1 but x not in [0,1]? We showed x≥1-r>0; so yes x∈[0,1]. If r in range >1/2 and <1, 1-r>0. Good. What if x∈[0,1] but z? z may be >1? From d1, |z|≤r<1; so z<1. Good. V3 if z≥0 then z∈[0,1]; if z<0, distance to z endpoint 0. We use. Good.
+
+Need maybe define squared distances with clamped coordinate: For clarity in (2):
+For X=(x,y,z), the conditions can be written depending on x,z cases. But we can present direct distances:
+Since x∈[0,1] for the case, distance to OA squared is y^2+z^2 (because x projection on segment). Distance to BC squared: if z∈[0,1], (1-x)^2+(1-y)^2; if z≤0, (1-x)^2+(1-y)^2+z^2. If z≥0, z∈[0,1], no z term. V2 distance squared = (x-1)^2+z^2 because y∈[0,1]. Good.
+
+Necessity point: Set X=(1-s,1/2,s), s=√(r^2-1/4). Need check if x≥1-r? 1-s ≥1-r iff s≤r yes. z=s∈[0,1] because r<1, s<√3/4<1. y=1/2 ∈[1-r,r] because r>1/2. Then distances:
+d1^2=1/4+s^2=r^2; d3^2=(1-x)^2+(1-y)^2=s^2+1/4=r^2 (since z∈[0,1]); d2^2=s^2+s^2=2r^2-1/2 >r^2 if r^2>1/2. Good. Need maybe use s or p; if r>√2/2, s>1/2. If r close 1, s<1. Good. This point has x>0? 1-s >1-0.866=0.134 >0. Good.
+
+Part (4) pair intersection derivation: Let's be careful with signs after isometry. We should define local coordinates maybe with axes p,q. Let's write:
+For two unit segments on positive x- and y-axes from the origin:
+\[
+S_x=[0,1]\times\{0\}\times\{0\},\quad S_y=\{0\}\times[0,1]\times\{0\}.
+\]
+Let K be their r-neighborhood intersection. Since r<1, for K we have |x|,|y|≤r<1. Therefore the only relevant endpoint is the common endpoint (0,0,0). For fixed z (|z|≤r), set s=√(r^2-z^2). Then conditions in xy-plane are:
+- if x,y≥0: 0≤x≤s,0≤y≤s -> area s^2.
+- if at least one of x,y is negative: x^2+y^2≤s^2 (within that quadrant) -> each quadrant area (π/4)s^2.
+Total area A(z)=(1+3π/4)s^2.
+Then integrate: J=∫_{-r}^{r}A(z)dz = (1+3π/4)(4/3)r^3 = πr^3+4r^3/3.
+
+Need maybe justify for x,y≥0 conditions: Vx: distance to Sx: if x∈[0,1], δ_x^2=y^2+z^2 ≤r^2 => |y|≤s. Since y≥0, 0≤y≤s. Vy: x≤s. So square. For x,y signs with at least one negative: Suppose x<0,y≥0. δ_x^2=x^2+y^2+z^2≤r^2; δ_y^2=x^2+z^2≤r^2, first implies second; so x^2+y^2≤s^2. If both negative, both same sphere constraint. Good. Maybe mention boundary sign measure zero. This is rigorous.
+
+Then union: We need mention under condition (2) V1∩V3⊆V2. Therefore parts of V1 and V3 outside V2 do not overlap. Then union volume:
+\[
+\mathrm{Vol}= \mathrm{Vol}(V_2) + \mathrm{Vol}(V_1\setminus V_2)+\mathrm{Vol}(V_3\setminus V_2)
+= S+(S-J)+(S-J)=3S-2J.
+\]
+Substitute. We should define S.
+
+Let's also maybe include inclusion-exclusion alternative. Not necessary.
+
+Let's consider if in union formula, J=Vol(V1∩V2) and Vol(V2∩V3) are same. We need prove/mention by symmetry. The original configuration: V1 and V2 share endpoint A and angle right; V2 and V3 share B and right. Yes. There is an isometry mapping A to B and OA direction to BC direction? Let's check: Translation from A to B? If map V1 (OA) to V3 (BC)? Need pair V1∩V2 under isometry to V2∩V3 maybe: Map (x,y,z) -> (y,z?); The polyline has a 90-degree bend; there is a 120? Wait configuration: OA along x from 0 to1; AB along y from 0 to1; BC along z from 0 to1. At A, the two segments directions: -x and +y. At B, directions: +y and +z. Are the pair configurations congruent? A right angle at A with directions (-1,0,0) and (0,1,0). At B with directions (0,1,0) and (0,0,1). Is there an isometry preserving V2? We just need volume of pair intersection V1∩V2 and V2∩V3. There is a rigid motion mapping the union pair (OA,AB) to (AB,BC)? For example rotate about y? Let's see map OA segment to? Need map A to B. Consider coordinates relative to shared endpoint: For (OA,AB) at A: directions from shared endpoint: to O = (-1,0,0), to B=(0,1,0). For (AB,BC) at B: to A=(0,-1,0), to C=(0,0,1). Are these two pairs of perpendicular unit segments; an isometry (rotate/reflection) mapping direction (-1,0,0) to (0,-1,0) and (0,1,0) to (0,0,1) exists: map (-x) to (-y), y to z. Linear transformation e_x? Let's map vectors: (-1,0,0) -> (0,-1,0), (0,1,0)->(0,0,1). Matrix columns? v1'=(0,-1,0), v2'=(0,0,1). Need preserve orientation maybe reflection, determinant? determinant of matrix columns? v1' and v2' orthonormal? v1'·v2'=0. Extend v3' maybe (1,0,0). determinant? Matrix [ [0,0,1]? Let's not worry; a reflection works. Distances preserved. Since only pair configurations matter, yes congruent. Or simpler: both are neighborhoods of two orthogonal unit segments sharing an endpoint; volume depends only on r, so equal. Good.
+
+Potential issue: Pair intersection V1∩V2 for original pair has segments length 1 and angle 90 at endpoint; but orientation one segment on negative side and one positive; after reflection we map to positive. Good. Volume same.
+
+Now, let's consider if there might be a more complicated intersection in pair K due to endpoint at x=1,y=1 for r close 1 but still r<1. We proved |x|,|y|≤r from other segment neighborhood. Let's double-check for V2∩V3 pair, after isometry to positive segments, points in intersection satisfy |x|≤r? For segment along positive y, distance includes x^2; yes. So no coordinate beyond r. Good.
+
+Let's think about V1∩V3 pair. We don't compute but maybe under condition, it's inside V2. What is shape? Could be useful? Not necessary. But maybe inclusion condition from cross-section uses cross-sections of V1,V3 in plane y=t and V2 disk. We can use that in (2) to align with part (1). Maybe present (2) with that cross-section proof because it's geometrically intuitive. But coordinate case proof is simpler to verify. Let's decide which final proof to use. Could combine both? Oververbosity desired 9, so can present both intuition and rigorous coordinate inequality. But not too confusing. Let's choose coordinate case proof for sufficiency and necessity. It uses distances and covers all. It does not rely on the cross-section diagram, but part (1) diagram used later maybe. We can mention the point of counterexample also lies at t=1/2 cross-section.
+
+Maybe in (2), after deriving cross-section radii in part (1), we can present a very concise condition:
+For a fixed t, H_t∩W_t is contained in disk D((1,0),r) except possibly the rectangle [1-b,1]×[0,a]. The farthest corner gives condition a^2+b^2≤r^2. Since max at t=1/2 gives threshold. Then prove necessity with corner point. But we need rigorously show other regions inside disk. We can do using coordinates maybe simpler. Let's not overcomplicate.
+
+However part (2) condition might be expected via considering a point in cross-section at y=1/2? They might want a geometric explanation. We can add a note: "Equivalently, in the middle plane y=1/2 the two cross-sections have equal radius s and their farthest common point is at distance √2 s from (1,0)." But main proof coordinate.
+
+Let's ensure variables not conflict: In part (1) use α,β; in part (2) use X coordinate z. We need not confuse.
+
+Let's produce final in Japanese with section headings (1)-(4). Use equations. Use "closed disk" notation.
+
+Potential nuance: In (1), "図示せよ" maybe wants both cross-sections drawn on the plane y=t for any t in range. Since radii depend on t, the drawing has α,β. Could state: draw the following figure, where α,β vary with t. Need include if α or β zero at endpoints. Maybe include endpoints separately: at t=1-r, β=0 (vertical line segment); at t=r, α=0 (horizontal line segment). This will be clear.
+
+Let's maybe add a simple schematic:
+
+```
+       z
+       ↑
+ 1     |              (1,1)
+       |             ╭────╮  β-radius (V_3)
+       |             │    │
+       |             ╰────╯
+       |            (1,0) ●
+ 0     |             /    ╲  α-radius (V_1)
+       |       ╭────╯      ╲
+       |   (0,0)●------------●
+       |
+       +------------------------------→ x
+```
+Not super. Maybe better to just describe with mathematical set; that is the actual diagram. We can say "the figure is obtained by thickening an L-shaped broken line of two unit segments; horizontal part radius α, vertical part radius β." Since problem likely expects a hand-drawing, text description is enough.
+
+Maybe use a table:
+
+```
+Cross-section of V1: capsule centered at horizontal segment (0,0)--(1,0) radius α.
+Cross-section of V3: capsule centered at vertical segment (1,0)--(1,1) radius β.
+```
+
+This is a valid "drawing" instruction.
+
+Let's also maybe mention coordinate axes in the plane: x horizontal, z vertical.
+
+Now, let's check if part (4) union formula could be further simplified using S and J. We can present both forms. Need ensure if condition (2) satisfied, r≤√2/2; but formula contains (2π-8/3)r^3, positive. No dependence on condition upper bound except formula. Maybe if r=√2/2, union volume equals? fine.
+
+Let's think if union volume can be obtained from cross-sectional integration too; maybe there is a risk that pair intersection volume J includes region that also intersects V3, and when we do disjoint decomposition, V1\V2 and V3\V2 are disjoint but their intersection with V2? No issue. However V1\V2 volume = S - J. If V1∩V2 volume J includes regions that also inside V3; that's okay. V3\V2 = S-J includes some overlap? They disjoint by condition. Sum disjoint. Let's formalize:
+Let U=V1∪V2∪V3. Under condition C=(V1∩V3)⊆V2. Then U = V2 ∪ (V1\V2) ∪ (V3\V2). Are the three sets disjoint? V2 disjoint from V1\V2,V3\V2 by definition. (V1\V2)∩(V3\V2) subset V1∩V3 and outside V2. Condition says any point in V1∩V3 is in V2, so no point outside V2 in both. Thus empty. So volumes sum. Good.
+
+But wait, is it possible that V1\V2 and V3\V2 intersect at a point that is in V2? No by V1\V2 definition not in V2. So disjoint. Good.
+
+Let's maybe state: "Because of (2), no point outside V2 can lie in both V1 and V3." This justifies disjointness. Then volume = Vol(V2)+Vol(V1)-Vol(V1∩V2)+Vol(V3)-Vol(V3∩V2). Since V2 volume S; intersections J. Good.
+
+Could also mention Vol(V2)=Vol(V3)=Vol(V1) because all segments length 1. Good.
+
+Now, let's consider possible alternative interpretation of "Pが線分OA上を動くとき、Pをcenter半径r球 that can pass through (内部含む) sweeping solid is V1". Could "球" mean sphere surface or ball? They say "球（内部を含む）" yes ball. Good.
+
+Could "三次元" mean three-dimensional? Yes.
+
+Potential subtlety: The path segments OA,AB,BC have length 1, but P moves along closed segments. The union of balls centered on segment is as described. Good.
+
+Now, let's think about if pair intersection J might have an endpoint cap at shared origin but also at (1,0) in cross-section of (1). In pair K in 3D, we split by x,y signs. What about points near endpoint (1,0) of x segment and y negative? We said x coordinate cannot be positive? Actually x can be positive up to r<1, not near 1 because y segment distance includes x^2; but x could be 0.8 with y negative? For r=0.7, x=0.8 possible? Distance to y segment if x=0.8, y=-0.2,z=0: sqrt(0.64+0.04)=0.825>0.7 not. Maybe x≤√(r^2-y^2-... ) but x max r when y,z=0. If y negative, x max √(r^2-y^2)<r. So x never near 1 unless r near 1; but r≤0.707, max x=0.707<1. Thus the far endpoint at x=1 cannot appear. Good.
+
+Let's maybe compute pair intersection volume directly by considering full cylinder intersection minus three missing parts? But our method fine.
+
+Let's double-check cross-section volume formula with integration variable: ∫_{-r}^r (r^2-z^2) dz = [2r^3 - 2r^3/3]=4r^3/3. Multiply (1+3π/4). Yes.
+
+Potential nuance: If fixed z, s=√(r^2-z^2). For region x,y≥0, area is s^2. But does the x,y≥0 region require x,y≤1? Since s≤r<1 yes. If condition r≤1/√2, yes. But if pair intersection formula for r<1 only; given all r<1. Good. In final, maybe note "because r<1, s<1, hence no far endpoint of length 1 segments is involved." This is important.
+
+Need maybe state "At boundaries x=0, y=0 the regions just touch; volume of boundaries zero." Good.
+
+Let's think if part (2) proof with coordinates can be made even more compact by using squared distances inequalities and a known inequality: For y∈[0,1], y^2+(1-y)^2≥1/2. This is nice.
+
+Let's write part (2) sufficiency in final:
+
+Let X=(x,y,z)∈V1∩V3. Since r<1, we have x∈[0,1] if x≤1; y∈[1-r,r]⊂[0,1]; and z∈[-r,r]⊂[-1,1]. Then:
+If x≥1, d_2^2=(x-1)^2+z^2 ≤ (x-1)^2+y^2+z^2=d_1^2≤r^2.
+If x≤1 and z≤0, d_2^2=(1-x)^2+z^2≤(1-x)^2+(1-y)^2+z^2=d_3^2≤r^2.
+If x≤1,z≥0: Let p=(1-x)^2, q=y^2, etc. Then p≤r^2-(1-y)^2, z^2≤r^2-y^2, so p+z^2≤2r^2-y^2-(1-y)^2≤2r^2-1/2≤r^2. Good.
+Thus X∈V2. Need be careful: In case x≥1, d_1^2 formula includes y^2+z^2 only if x≥1? Distance to OA if x≥1: (x-1)^2+y^2+z^2. yes. And d_2^2 if x≥1 and y∈[0,1] is (x-1)^2+z^2. Good.
+
+But if x≥1 and y maybe in [0,1], yes. If z any; V2 distance to AB: segment x=1,y∈[0,1], z=0; distance squared (x-1)^2 + dist_y_to_[0,1]^2 + z^2. y∈[0,1], so dist=0. Good.
+
+If x≤1 but x may be >? We have x≥1-r>0, but if x exactly maybe 0.7; V1 distance if x∈[0,1], yes y^2+z^2; V3 if z≥0 and z≤r<1, and x≤1, distance to BC: if z∈[0,1], (x-1)^2+(y-1)^2; if x? yes. If z≤0, distance to BC endpoint B at z=0: (x-1)^2+(y-1)^2+z^2. Good. If x≤1,z≥0 but z could be >1? No from d1 z^2≤r^2<1 -> z<1. Good.
+
+Sufficiency if r^2≤1/2. Need note for y∈[1-r,r]⊂[0,1], so y^2+(1-y)^2≥1/2. Good.
+
+Necessity for r>√2/2: Let s=√(r^2-1/4), X=(1-s,1/2,s). Need show X∈V1∩V3 but X∉V2. Distances:
+d1^2= (1/2)^2+s^2 = r^2 (x between 0 and1 because s≤r<1 and s? s≤√(3/4)<1 so x>0; yes x≤1). d3^2 = s^2+(1/2)^2 =r^2 (z=s between 0 and1; yes s≤0.866<1). d2^2=s^2+s^2=2r^2-1/2>r^2. Good. Need perhaps if r is only slightly >1/√2, s>0.5; x=1-s<0.5, positive. Good. This proves strict necessity. Good.
+
+Need maybe if r=√2/2, s=0.5, X=(0.5,0.5,0.5). d2^2=0.5 =r^2 so in V2; inclusion still holds. Good.
+
+Now, part (1) maybe also could ask "plane y=t that V1 and V3 both have a common point" meaning "plane y=t intersects V1∩V3"? Wait Japanese: "平面 y=t  that V1 and V3 の両方と共通点" Could parse as "plane y=t 与 V1 and V3 both have a common point" i.e., there is a point common to the plane, V1, and V3? Hmm let's parse exactly:
+"平面 y=t が V_1 と V_3 の両方と共通点をもつような t の範囲"
+Could mean "Find the range of t such that the plane y=t has common points with both V1 and V3". In Japanese, "が V1とV3の両方と共通点" maybe "that has a common point with both V1 and V3"? It could mean the plane intersects both V1 and V3, not necessarily at the same point. The grammar: "平面 y=t が V1とV3の両方と共通点" - the plane and V1 and V3 all have a common point? Let's parse: "平面 y=t が V1 と V3 の両方と共通点をもつような t の範囲を求めよ" The "が" likely modifies plane: "plane y=t [that] with both V1 and V3 has a common point". In Japanese mathematical phrasing: "平面 y=t 与 V1 and V3 共通点" usually means "平面 y=t 与 V1 and V3 の共通点" = point common to plane, V1, and V3? If so, it asks for t such that plane intersects both V1 and V3 in at least one point each, not necessarily the same point? "両方と共通点" could mean "has a common point with each of V1 and V3" (plane intersects both), but "共通点" singular might mean a common point of the three sets? Let's examine: If plane intersects V1 and V3 separately, the intersection set with each is nonempty. That's t such that plane∩V1≠∅ and plane∩V3≠∅. If they meant plane∩V1∩V3 nonempty, the range of t for existence of point in V1∩V3 at y=t. What is that range? Need check! The problem part (1) might ask for t such that the plane and V1 and V3 all have a common point (i.e., plane intersects V1∩V3). But then they also ask to draw cross-sections of plane with V1 and V3 for such t. Could be either. Need disambiguate. This is crucial! Let's reread original Japanese: 
+"平面
+ y=t
+が V1 と V3 の両方と共通点をもつような t の範囲を求めよ."
+The phrase: "が V1とV3の両方と共通点" Could be translated as: "plane y=t 与 V1 and V3 の両方と共通点" = "a plane y=t which has a common point with both V1 and V3". In Japanese, if they meant three sets share a common point, they'd say "平面 y=t と V1 と V3 の共通点" maybe? "両方と" = both. Let's parse syntactically: "平面 y=t が V1 と V3 の両方と共通点をもつような t" = "plane y=t [which] with both V1 and V3 has a common point". It could mean plane∩V1∩V3 nonempty? If a plane has a common point with V1 and V3 (both), that common point would be in V1 and V3 and on plane, because "共通点" of plane and V1 and V3? The "両方" might emphasize both solids, but still a single point common to plane, V1,V3. But they also in part (1) ask to draw cross-section of plane with V1 and V3. If t only such that plane intersects the intersection V1∩V3, then t range might be narrower: existence of (x,z) in both cross-sections. Let's compute that range. Since t where V1∩V3∩plane nonempty. V1∩V3 nonempty for r≥1/2, y range? Need find t interval. For each t, H_t∩W_t nonempty? They share center point (1,0) if a,b≥0? Actually at any t in [1-r,r], the cross-sections H_t and W_t both contain the center point (1,0)? Let's check: (1,0) is within distance a of x-axis segment [0,1]? Yes distance 0 (since center at endpoint (1,0)). Within distance b of vertical segment x=1,z∈[0,1]? Yes distance 0. Thus for any t with both cross-sections nonempty, the point (x=1,z=0) belongs to both cross-sections! That means plane y=t contains point (1,t,0), which is within V1? Distance to OA: sqrt(0 + t^2+0) = |t| ≤r (since t≤r). Distance to BC: sqrt(0+(1-t)^2+0)=1-t≤r (since t≥1-r). So indeed the entire line segment? For t in [1-r,r], the point (1,t,0) lies in both V1 and V3? Let's verify original: OA closest point A=(1,0,0); distance from (1,t,0)=t. BC closest B=(1,1,0); distance=1-t. If t between [1-r,r], point within both. So plane intersects V1∩V3 for same t interval. Thus whether separate or common point, range is identical! Good. Because cross-sections share (1,0) for any nonempty both. Nice. So no ambiguity. Good. And diagram maybe they share that center point. Good.
+
+Now, part (1) asks "Furthermore, for such t, draw cross-sections ... on same plane." That also fits. Great.
+
+Potential nuance: If t in [1-r,r], point (1,t,0) common to both. Good.
+
+Now, let's think if part (2) inclusion of V1∩V3 in V2: Our condition is for all points in intersection. Since for all t in [1-r,r], H_t∩W_t maybe always contains center. V2 cross-section at t? V2 (AB) for t∈[1-r,r]⊂[0,1], disk radius r. Center (1,0) in disk. Good.
+
+Let's perhaps in part (1) also mention the common point (1,t,0) (center cross-section) exists; this shows ranges. But need not.
+
+Now, part (1) cross-sections: H_t and W_t share the point (1,0) with radii a,b. For t endpoints, one radius zero. Good.
+
+Let's think if part (1) t range maybe if V1∩V3 nonempty requires t∈[1-r,r] but also need z/x coordinate? As above center point works. But nonempty for each separately same range. Intersection of plane with both maybe center point. Good. We can state: The point Q_t=(1,t,0) is common for t in [1-r,r]. For V1: dist to A=t≤r; V3: dist to B=1-t≤r. If t outside this interval no common. But to prove no common, if X∈V1, need |y|≤r? Since y coordinate distance to OA at least |y|; if X∈V3, |1-y|≤r. So t=y ∈ [1-r,r]. Good.
+
+Now, part (1) cross-section drawing: maybe they expect for each t in [1-r,r], the cross-sections are "cylindrical (circle) sections" maybe they want to note that both are "capsules" with radii functions. Let's ensure use term "stadium" in Japanese? "スタディア" or "カプセル". We can say "両端的半圆形圆盘" (two semicircular disks). Japanese geometry terms: 平面上図示 -> "両端の半径 α 半円". We can describe.
+
+Now, let's think if there is another possible interpretation of V1∩V2 volume: The segments are unit, but r may be >1/2; pair intersection could include the far endpoint of one segment with the cap of the other? We argued no because r<1. If r in condition r≤0.707, definitely no far endpoint. Good. Could there be an overlap in the negative quadrant of x,y but z such that sphere radius s; volume quarter sphere each. Good.
+
+Let's maybe do a sanity check with numerical Monte Carlo mental for pair intersection at r=0.7: Formula J=(π+1.333)*0.343=1.545. Single volume S=π*0.49+4.188*0.343=1.539+1.436=2.975. Intersection ratio 0.52. Pair intersection of two radius .7 capsules along adjacent segments: plausible. Union volume =3S-2J=8.925-3.09=5.835. Single total 8.925; union less. okay.
+
+Could pair intersection formula be simplified to πr^3+4/3r^3. Maybe there is a factor with (π+4/3)r^3. Good.
+
+Let's consider if the pair intersection volume includes the shared endpoint sphere portion; yes. The volume around the shared endpoint of two capsules in the three quadrants (negative x, negative y) is 3/4 sphere radius r, and positive quadrant is intersection of two quarter-cylinders volume 4/3r^3. Good.
+
+Now, let's maybe think about if there is a relation to (2) condition that maybe if r≤1/√2, V1∩V3⊆V2. Our condition from inclusion maybe could also be derived using pair intersection J? No.
+
+Let's perhaps include in part (4) an explicit statement: Since by (2) V1∩V3⊆V2, the sets V1∖V2 and V3∖V2 are disjoint. If condition not satisfied, this would fail. Under condition, union decomposition valid. Good.
+
+Now, final answer will be long and detailed. Let's ensure no hidden request: The user just posted problem; likely wants solution. We need answer in Japanese. We can include formulas and explanations. Use high oververbosity. Good.
+
+Let's now consider if there are any edge cases at t endpoints in part (1): t=1-r, b=0; cross-section V3 line segment {1}×[0,1], but our formula with disk D((1,0),0) and rectangle [1,1]×[0,1] plus D((1,1),0) works. At t=r, a=0; V1 line segment [0,1]×{0}. Good. Since r>1/2, 1-r<r. If r=1/2, interval single t=1/2; but strict not. Good.
+
+Potential issue: For t in [1-r,r], t is positive because r<1 -> 1-r>0. So V2 cross-section is indeed disk radius r, not capsule? If t outside [0,1], it would be a different cross-section (endpoint disk or cylinder side). But our range positive and <1. Good. We can note later for inclusion: For t in [1-r,r], because 0≤t≤1, the section of V2 is a disk. Since 1-r≥0, t≥0; r≤? condition r≤0.707<1; t≤r<1; so yes. If r could be >? given <1, yes. For condition upper, still. Actually given r<1, t≤r<1 and t≥1-r>0. So V2 cross-section at t is always disk radius r? For V2 AB, if t∈[0,1], cross-section is disk radius r centered at (1,0) (in xz-plane). Yes. For all r<1. We can mention in (2).
+
+Let's think if part (2) using coordinate proof assumes x∈[0,1] in case x≤1. We know x≥1-r>0 because r<1. If x=0 maybe? Could x=0 and in V3? V3 distance to BC includes x=1, so (1-x)^2≥1>r^2 if r<1, impossible. Thus x not 0 actually. x≥1-r>0. Good. We can state x∈(0,1] or [1-r,1]. Fine.
+
+Now, let's think if pair intersection J after shifting: When r<1, in intersection K, |x|,|y|≤r. Need prove maybe: Since K⊂N(S_y), distance to S_y: squared distance = x^2 + ... ≤r^2 => |x|≤r. Similarly. Good. Then if fixed z, s=√(r^2-z^2). The area formula. Good.
+
+Let's maybe include a diagram for pair intersection cross-section area in text? Not necessary, but could help. In part (4) maybe describe: at each z-level, the cross-section is a square in the first quadrant plus three quarter-disks. We can include formula area. That is enough.
+
+Now, let's think if final answer should use "Vol" or "V". Use standard notation.
+
+Let's also maybe present part (4) result with condition: If and only if 1/2<r≤√2/2, volume is ... If r condition not satisfied, problem doesn't ask; but could mention formula only under condition. Good.
+
+Let's prepare final answer outline:
+
+```
+Let S1=OA, etc. Define d_i.
+
+(1)
+For plane y=t, ...
+Range: t∈[1-r,r].
+In the plane with axes x,z, let a_t=..., b_t=... . Then cross sections are:
+C1=...; C3=...
+Drawing: L-shaped two unit segments from (0,0) to (1,0) and (1,0) to (1,1), thickened with radii a_t,b_t.
+```
+
+Maybe include a note: If a=0 or b=0, degenerate line segment.
+
+```
+(2)
+Condition: r≤1/√2.
+Proof:
+First show necessity: X_s = (1-s,1/2,s), s=... etc.
+Sufficiency: Let X∈V1∩V3. From constraints y∈[1-r,r]⊂[0,1], x∈[1-r,1+r], z∈[-r,r]. Cases... inequality. Therefore under r^2≤1/2, X∈V2.
+```
+
+Need maybe include exact formulas for distances in cases. Let's write carefully:
+Case x≥1:
+Since x≥1, d_1^2=(x-1)^2+y^2+z^2. Since y∈[0,1], d_2^2=(x-1)^2+z^2≤d_1^2≤r^2.
+Case x≤1:
+We know x∈[0,1]. If z<0, d_3^2=(1-x)^2+(1-y)^2+z^2, so d_2^2=(1-x)^2+z^2≤d_3^2≤r^2.
+If z≥0: d_1^2=y^2+z^2≤r^2, d_3^2=(1-x)^2+(1-y)^2≤r^2. Therefore ...
+Need note if z=0 falls in either; inequality works. Use z≤0 or z≥0. Good.
+
+Need perhaps define d2 distance: AB line x=1,z=0,y∈[0,1]. Since y∈[0,1], projection onto y segment, distance squared = (x-1)^2+z^2. If x maybe ≤1 or ≥1, square same. Good.
+
+For necessity point, need perhaps compute d1,d3,d2 squared:
+For X_s: x=1-s in (0,1), y=1/2∈[0,1], z=s∈[0,1].
+d1^2=y^2+z^2=1/4+s^2=r^2.
+d3^2=(1-x)^2+(1-y)^2=s^2+1/4=r^2.
+d2^2=(1-x)^2+z^2=2s^2=2r^2-1/2>r^2 if r>1/√2. Good.
+
+At equality, it is in V2; so condition includes equality. Good.
+
+```
+(3)
+V1 is capsule: cylinder length 1 plus sphere: S=πr^2+4πr^3/3.
+```
+
+```
+(4)
+First compute J=Vol(V1∩V2). By isometry to positive orthogonal segments. For z with |z|≤r, s=...; cross-section area A(z)=...; integrate J=...
+Under condition from (2), V1∩V3⊂V2, so V1\V2 and V3\V2 are disjoint. Hence union volume = S+(S-J)+(S-J)=...
+=3πr^2+(2π-8/3)r^3.
+```
+
+Need maybe explicitly say Vol(V2∩V3)=J. Yes:
+"The same computation applies to (V2,V3)."
+
+Let's consider if pair intersection J includes closed sets; volume unaffected by boundaries. Fine.
+
+Potential addition: Could also include an alternative inclusion-exclusion formula to reassure. Maybe not needed. But oververbosity 9, can include note:
+"Equivalently, inclusion-exclusion gives ... because triple intersection cancels with V1∩V3." But the disjoint decomposition is enough. Could add one sentence.
+
+Now, let's see if final should be self-contained but not too verbose. Desired oververbosity 9, so detailed. Use Japanese. Ensure math correct. Use \left etc. Good.
+
+Let's maybe refine part (1) drawing: Include explicit "図示" as text. Could use a box:
+
+```
+【図】(x,z)-plane of y=t:
+C1: a stadium whose axis is the horizontal segment (0,0)-(1,0).
+C3: a stadium whose axis is the vertical segment (1,0)-(1,1).
+```
+
+Maybe include "半径 a_t" and "半径 b_t". That's enough. Could also provide set equations, which are an exact description of drawing.
+
+Now, possible issue: Cross-section of V1 is a "capsule" (stadium) of radius a and length 1. But if t=0? t range excludes 0? Since t>0. If t were negative, a formula still; but range positive. Good.
+
+Let's think if there is an even more straightforward pair intersection volume using Minkowski sums and Steiner formula? The intersection of two capsules not directly. Our formula okay.
+
+Now, let's double-check pair intersection volume if we use coordinates after isometry: The segments in pair V1∩V2: S_x positive x, S_y positive y. In cross-section fixed z, area shape. We integrate z from -r to r. But if z positive and x,y negative quadrant sphere: The distance to Sx for x<0,y<0 is distance to origin, but what if x<0,y<0 but closest point to Sx could be endpoint (0,0,0) if x<0; yes. Distance to Sy also origin. Good.
+
+For exactly one negative, the sphere constraint from one capsule and cylinder from other. But the sphere constraint implies cylinder? Check x<0,y≥0: distance to Sx (x-segment) squared = x^2+y^2+z^2. distance to Sy squared = x^2+z^2 (if y∈[0,1] and y≤s≤r<1). Sphere x^2+y^2+z^2≤r^2 -> x^2+z^2≤r^2. Good. Similarly. For both negative: both same. Good.
+
+But what about x≥0,y≥0 region but x,y≤s? The constraints are independent: Vx: y^2+z^2≤r^2 -> |y|≤s. Vy: x^2+z^2≤r^2 -> |x|≤s. In first quadrant area square. Good. For x≥0,y<0 region: sphere? Let's check x≥0,y<0: V1 (x-seg): x∈[0,1], so condition y^2+z^2≤r^2; V2: y<0, distance to y-seg endpoint origin squared x^2+y^2+z^2≤r^2. Sphere. But first constraint only y; second sphere. Does sphere imply first? yes. So quarter disk radius s. Good.
+
+Thus area formula correct.
+
+Let's maybe include in final "At a fixed z-level, the region in the xy-plane is: a square [0,s]^2 plus three quarter-disks of radius s in the other three quadrants." This is nice. Need note boundaries. Then area = s^2 + 3πs^2/4. Good.
+
+Now, one more potential issue: In pair intersection K, for fixed z, if z large near r, s small. In region x,y≥0, square side s. In negative quadrants, quarter disk radius s. If exactly one negative, condition sphere radius s. If both negative, condition sphere radius s. All quadrants share boundaries. Good.
+
+Let's consider if for r<1 but not condition, pair intersection area formula still holds? Yes because far endpoints not involved due |x|,|y|≤r<1. At r just below 1, s<1. Fine. If r=0.99, x positive max 0.99 < segment endpoint 1; so far endpoint not included. At x,y positive square of side 0.99, close to square [0,1]^2; okay. In negative quadrants, quarter sphere radius 0.99. Good. So formula robust.
+
+Now, let's maybe think if there is any need to include proof of V1 volume formula with Steiner or just state. Could include decomposition: cylinder (segment swept by disk radius r) plus two half-spheres = cylinder volume πr^2*1 + sphere volume 4πr^3/3. Because r<1 doesn't matter. Good.
+
+Potential hidden challenge: (4) maybe asks for union volume under (2) condition, but if (2) condition not satisfied, V1∩V3 not subset; however our formula only for satisfied. Good.
+
+Let's now think if we can produce final answer with enough detail and no mistakes in Japanese phrasing. Use mathematical Japanese terms: "共通点" "スタジア" maybe. Let's write natural.
+
+Detailed final answer draft (Japanese):
+
+```
+Let d_1,d_2,d_3 denote squared distances to OA,AB,BC.
+
+(1) ...
+```
+
+For (1), maybe explicitly derive cross-section formulas:
+For C1(t): 
+\[
+C_1(t)=\{(x,z): \text{dist}((x,z), [0,1]\times\{0\})\le a_t\}.
+\]
+Equivalent:
+\[
+C_1(t)=([0,1]\times[-a_t,a_t])\cup D((0,0),a_t)\cup D((1,0),a_t).
+\]
+But note union of rectangle and disks exactly capsule? If a=0, D degenerate. Yes.
+C3(t):
+\[
+C_3(t)=({1}\times[0,1])? No, in x,z coords: \text{dist}((x,z), \{1\}\times[0,1])\le b_t = ([1-b_t,1+b_t]\times[0,1]) \cup D((1,0),b_t)\cup D((1,1),b_t).
+\]
+
+Need be careful: If b_t large, rectangle [1-b,1+b]×[0,1] plus disks centered endpoints; yes. Good.
+
+Drawing instruction: In x-z plane, draw horizontal stadium axis (0,0)-(1,0) radius a; vertical stadium axis (1,0)-(1,1) radius b. They meet at (1,0).
+
+For t range: "Because t>0 in this interval, the cross section of V2 (for later) is disk D((1,0),r)." Maybe mention in (2). Good.
+
+Now, part (2) proof: Need perhaps use d_i not squared. In text, I can say "distance-squared". Use conditions.
+
+Let's write part (2) carefully:
+
+```
+Assume 0<... r<1. Suppose X∈V1∩V3.
+From |y|≤r and |y-1|≤r -> y∈[1-r,r]⊂[0,1].
+Also from V3, |x-1|≤r -> x∈[1-r,1+r]. Hence x>0.
+```
+
+But for V3, if x coordinate? Distance to BC includes (x-1)^2 regardless; so yes. Good. z: |z|? From V1 |z|≤r; so z∈[-r,r]. Good.
+
+Then cases. Need if x≥1 and x maybe >1, V1 distance formula: if x∈[1,1+r] yes. But if x=1, both formulas; no problem. For x≤1, because x>0, x∈(0,1]. Good. For z cases: if z≤0, z is below BC z=0; if z≥0, because z≤r<1, z in [0,1] for V3 projection. Good.
+
+In z≥0 case, inequality:
+\[
+(1-x)^2+z^2
+\le (r^2-(1-y)^2)+(r^2-y^2)
+=2r^2-(y^2+(1-y)^2)
+\le 2r^2-1/2.
+\]
+If r^2≤1/2 then ≤r^2.
+Need perhaps if y∈[1-r,r], but r^2≤1/2 implies r≤0.707, interval inside [0,1]. yes. For inequality y∈[0,1] enough.
+
+Necessity: if r>√2/2, set s=√(r^2-1/4). Need ensure s≤1? r<1, s<√(3/4)<1. Good. Then point. Need maybe if r is up to but not including 1; yes. Compute distances. Good.
+
+Part (3): Use S. Good.
+
+Part (4): Need compute J. Let's write:
+```
+Let K be the pair intersection after moving the common endpoint to origin and making the two segments S_x,S_y. Since r<1, K⊂[-r,r]^2×[-r,r]; far endpoints (1,0,0),(0,1,0) don't matter.
+For |z|≤r, let s=√(r^2-z^2). In xy-plane conditions reduce to...
+```
+
+Need maybe show for fixed z, cross-section of K in xy-plane area. Let's formulate with "distance to S_x and S_y". Could say:
+- For x≥0,y≥0: d_x^2=y^2+z^2≤r^2, d_y^2=x^2+z^2≤r^2 -> 0≤x≤s,0≤y≤s.
+- In any other quadrant, at least one distance uses endpoint (0,0,0), and the stricter condition is x^2+y^2+z^2≤r^2 -> quarter disk radius s. This covers x<0,y≥0, x≥0,y<0, x<0,y<0. Actually if both negative, both use endpoint; if exactly one negative, stricter endpoint condition. Good.
+Then integrate.
+
+Need maybe if x=0 or y=0 boundaries; ignore.
+
+Then union.
+
+Let's maybe include an optional check: The formula can also be obtained by inclusion-exclusion:
+\[
+3S-(2J+K_{13})+K_{13}=3S-2J.
+\]
+But under condition K_{13}=triple. This demonstrates cancellation. Maybe add a parenthetical after disjoint decomposition.
+
+Now, let's think if any hidden notation issue: We use C_1(t) to denote cross-section with plane; perhaps better use \mathcal C_i(t). But okay.
+
+Let's perhaps include the exact set for V1 volume:
+\[
+V_1 = \{(x,y,z): \min_{0\le u\le1}((x-u)^2+y^2+z^2)\le r^2\}.
+\]
+No need.
+
+Let's also maybe include "球内部を含む" ensures closed, but volumes unaffected by open/closed.
+
+Now, let's verify part (1) range if t exactly 1-r: b=0, vertical cross-section of V3 is just line segment at x=1,z∈[0,1]. Does the point (1,t,0) lie in V3? Distance to BC: (x-1)^2+(y-1)^2+(z-0?) For z=0 and t=1-r, distance 1-t=r. yes. Good.
+
+What if t in [1-r,r] but a,b radii; the cross-sections H and W intersect at least at center (1,0). Good.
+
+Now, let's think if pair intersection volume J maybe could have been computed by a known formula for intersection of two "round bars" at right angle. We can maybe present our derivation. Good.
+
+Potential concern: When deriving pair intersection, we set segments along positive axes from origin of length 1. But original V1 and V2 share A and OA extends to negative x, AB positive y. Reflection across yz plane? It maps OA positive. We should perhaps say "by reflecting if necessary" to avoid confusion. The volume is unchanged under isometry. Good.
+
+Now, let's consider if there is any issue with orientation of pair V2,V3: AB from A to B positive y, BC positive z. At shared B, segments are negative y and positive z? Wait V2 AB segment from (1,0,0) to (1,1,0), V3 BC from (1,1,0) to (1,1,1). Shared endpoint B=(1,1,0). Relative to B, V2 extends negative y, V3 positive z. Reflection y -> -y maps to positive axes. So same. Good.
+
+Now, let's prepare final answer with all equations. Need ensure no LaTeX mistakes. Use \sqrt2/2 or 1/\sqrt2. Use \leq. Use \operatorname{Vol}.
+
+Let's write final answer.
+
+Potential final text:
+
+```
+【解】
+...
+```
+
+Let's ensure all Japanese phrases not too awkward.
+
+Detailed final:
+
+```
+For a set S, write N_r(S)=...; V_i=N_r(S_i).
+
+(1) ...
+```
+
+Maybe use "半径 a" and "半径 b".
+
+Let's include a "Figure description" as bullet:
+
+```
+Put x horizontal, z vertical. Draw the broken line (0,0)->(1,0)->(1,1). Thicken the horizontal segment by a_t and the vertical segment by b_t. This is the desired figure.
+```
+
+This is clear.
+
+Let's include exact formulas for sets:
+
+```
+C_1(t)=... 
+C_3(t)=...
+```
+
+For C_3, use D((1,0),b_t) and D((1,1),b_t). Good.
+
+Now part (2): Let's make necessity proof after sufficiency or before? Usually sufficiency then necessity. Could present condition result first:
+\[
+\boxed{r\le 1/\sqrt2}
+\]
+Then proof. Good.
+
+Necessity: Suppose r>1/√2. Let s=... Then X_s. Need maybe use z=s; but if s>1? No because r<1. We can state since r<1, 0<s<1. Good.
+
+Sufficiency: Let X∈V1∩V3. Show. Need maybe include that r in condition r<1/√2<1, so the inequalities hold. We can write under assumption r^2≤1/2. But r also in given range; all. Good.
+
+Let's double-check if in sufficiency, if x≥1 and y∈[1-r,r] subset [0,1], but if r^2≤1/2, r≤0.707; 1-r≥0.293. yes. If r maybe =0.6, x≥1 possible only if x≤1+r≤1.6; V1 formula okay. d1 includes x-1. Good.
+
+If x≥1 and z maybe? d2 uses z^2, d1 includes y^2+z^2; good.
+
+If x≤1 and z≤0, d3 formula: distance to BC: segment BC x=1,y=1,z∈[0,1]; point z≤0, x in [0,1]? x≥1-r>0. If x≤1, x projection onto x=1 fixed; distance in x=1-x; y in [0,1]; z below interval, distance -z. So d3^2=(1-x)^2+(1-y)^2+z^2. Good. d2: V2 AB x=1,z=0,y∈[0,1]; x≤1 but square (x-1)^2; y in interval; z any? Distance to z=0: z^2. So d2^2=(1-x)^2+z^2. This is less than d3 because d3 has +(1-y)^2≥0. Good.
+
+If x≤1 and z≥0, need z∈[0,1] (since r<1) so V3 d3 no z term. V1 d1 no x term because x in [0,1]. Good. Then inequality. Good.
+
+For necessity point, d2 uses x=1-s in [0,1]; distance to AB: (1-x)^2+z^2 = s^2+s^2. But note y=1/2 in AB interval, so y term zero. Good. d3: point z=s in [0,1], so V3 distance no z term: (1-x)^2+(1-y)^2=s^2+1/4. Good. d1: point x=1-s in [0,1], no x term: y^2+z^2=1/4+s^2. Good.
+
+Potential issue: If r>1/√2 but close 1, s can exceed 1? r<1 -> r^2<1, s^2<3/4, s<0.866<1. Good. x=1-s>0.134. y=0.5. Good.
+
+Now part (4): In pair intersection cross-section at fixed z, we need maybe if z negative, s same. The cross-section shape independent of sign of z; integrate symmetric. Good.
+
+Let's maybe include the cross-section area formula explicitly:
+\[
+A(z) = s^2 + 3\cdot \frac{\pi s^2}{4} = \left(1+\frac{3\pi}{4}\right)(r^2-z^2).
+\]
+Then
+\[
+J = \int_{-r}^r A(z) dz = \left(1+\frac{3\pi}{4}\right)\frac{4r^3}{3} = \pi r^3 + \frac{4}{3}r^3.
+\]
+
+Check multiplication: (1+3π/4)*4/3 = 4/3 + π. Good.
+
+Now union volume: Let S=πr^2+4π/3r^3. Then:
+\[
+3S-2J=3πr^2+4πr^3-2πr^3-\frac{8}{3}r^3=3πr^2+\left(2π-\frac83\right)r^3.
+\]
+Need use 8/3 not 8/3? Yes. Use \frac{8}{3}. Good.
+
+Let's maybe express as:
+\[
+\boxed{3\pi r^2+\left(2\pi-\frac{8}{3}\right)r^3}
+\]
+Could factor: \(\pi r^2(3+2r)-\frac{8}{3}r^3\). The first is clearer. Check if (2π -8/3) positive: yes. Good.
+
+Now, let's think if there is any hidden requirement to include "AI性能テスト" maybe not. Fine.
+
+Potential alternate interpretation: "球 through P can pass" maybe sphere surface not solid? They say internal including, so ball. Good.
+
+Potential issue: Part (4) under (2) condition but if r exactly √2/2, V1∩V3⊆V2; our proof sufficient uses r^2≤1/2. Pair intersection formula still. Good.
+
+Let's now consider if there is a possibility that pair intersection V1∩V2 volume under condition should subtract parts that lie in V3? No, we only need J. Because union disjoint decomposition uses V1\V2 and V3\V2 disjoint. But is Vol(V1\V2)=S-J always? J=Vol(V1∩V2). Yes, regardless of V3. Good.
+
+Let's maybe prove J for pair (V1,V2) but note pair (V2,V3) same. Good.
+
+Potential subtlety: In pair intersection cross-section at fixed z, we assumed local segments S_x and S_y positive from origin. But if original pair V1,V2 after reflection has one segment along positive x and positive y; good. For fixed z, z coordinate unchanged. Volume preserved.
+
+Now, let's maybe consider if we can integrate over z even when r^2≤1/2 but s maybe; no. Good.
+
+Now, final answer length will be detailed but within limits. Let's write elegantly.
+
+One thing: In part (1), the cross-section C1 formula: if a_t positive, rectangle plus disks. But if disks plus rectangle, do we double count? It's union; fine. But note rectangle [0,1]×[-a,a] includes points whose distance to horizontal segment ≤a? Yes, if x∈[0,1], z within [-a,a], distance=|z|. Endpoint disks cover outside x intervals. Good. If a could be >0, disks may overlap rectangle, but union. Good.
+
+For C3: rectangle [1-b,1+b]×[0,1] plus disks centered (1,0),(1,1). If b positive, yes.
+
+Maybe also state "the two figures are exactly the Minkowski sums of the horizontal/vertical unit segment and the disk of radius a/b". Good.
+
+Now, part (2) cross-section viewpoint: We could add a remark at end:
+"Geometrically, the obstruction appears in the middle plane y=1/2, where the two cross-sections have equal radius s and their farthest common point is at distance √2s from the center of V2's disk." This is optional; maybe helps. Could include in necessity proof. But coordinate proof already. Maybe add after necessity: "This is the point (1-s,1/2,s)". Good.
+
+Let's ensure notation D((1,0),r) in part (2) if needed not. Fine.
+
+Now, let's final. Need no more analysis. But let's perhaps double-check all formula with variables: In part (4), J=(π+4/3)r^3. Single volume S=πr^2+(4/3)πr^3. If r=√2/2, union volume = 3π/2 + (2π-8/3)√2/4? Actually okay. No issue.
+
+Let's maybe check if in part (4), the union includes all three segments path; perhaps could be decomposed into V2 plus protrusions of V1 and V3 outside V2. Under condition, the protrusions don't overlap. Each protrusion volume S-J. Good.
+
+Let's think if pair intersection J maybe overcounts V2 part near positive quadrant; V1∩V2 includes central intersection of cylinders (positive quadrant). But V1\V2 protrusion volume S-J might include far parts of V1 and negative y etc. V3 protrusion similarly. They don't overlap. Good.
+
+Now, perhaps need to include in (4) that "under (2)'s condition r≤√2/2, V1∩V3⊆V2, hence the part of V1 outside V2 and the part of V3 outside V2 are disjoint." We should mention if r=1/√2 equality, still holds. Good.
+
+Let's maybe use "外" for "outside".
+
+Now final answer. Ensure no contradictions: In part (1), I should write t range as [1-r, r]. Since r>1/2 and r<1, this is inside (0,1). Good.
+
+Potential issue: If t in [1-r,r] and a=√(r^2-t^2). At t=1-r, a^2 = r^2-(1-r)^2 = 2r-1? Since r>1/2 positive. At t=r, b^2 = r^2-(1-r)^2 = 2r-1. Good.
+
+Now, let's write final. We'll include boxes for answers.
+
+Need ensure final not too terse. Good.
+
+Let's produce final answer.

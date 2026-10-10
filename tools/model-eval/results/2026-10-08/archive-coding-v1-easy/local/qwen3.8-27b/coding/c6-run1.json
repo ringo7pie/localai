@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C6: 辞書順で決まる位相ソート\n\n関数 `topo_sort(graph: dict[str, list[str]]) -> list[str]` を書いてください。\n\n- `graph[u]` のリストに `v` が入っているとき、「`u` は `v` より前に来る」という制約を表す。\n- 頂点は、`graph` のキーと、どれかの値のリストに出てくる文字列の全部。\n- 制約をすべて満たすように、全部の頂点を 1 回ずつ並べたリストを返す。\n- 並べ方が何通りもあるときは、毎回「その時点で、自分より前に来るべき頂点がもう残っていない頂点」のうち、文字列として最も小さいもの（Python の `<` での比較）を次に置く。これで答えは 1 通りに決まる。\n- 制約が循環しているとき（自分自身への制約を含む）は `ValueError` を送出する。\n- 同じ制約が重ねて書かれていてもよい。`graph` を書き換えてはいけない。\n- 頂点の数は最大 10,000。\n\n例:\n- `topo_sort({\"b\": [\"a\"], \"c\": []})` → `[\"b\", \"a\", \"c\"]`\n- `topo_sort({\"x\": [\"y\"], \"y\": [\"x\"]})` → `ValueError` を送出",
+  "prompt_chars": 828,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:37:25+09:00",
+  "finished_at": "2026-10-08T12:38:09+09:00",
+  "content": "```python\nimport heapq\n\n\ndef topo_sort(graph: dict[str, list[str]]) -> list[str]:\n    vertices: set[str] = set(graph.keys())\n    for neighbors in graph.values():\n        for v in neighbors:\n            vertices.add(v)\n\n    in_degree: dict[str, int] = {v: 0 for v in vertices}\n    for u, neighbors in graph.items():\n        for v in neighbors:\n            in_degree[v] += 1\n\n    heap: list[str] = [v for v in vertices if in_degree[v] == 0]\n    heapq.heapify(heap)\n\n    result: list[str] = []\n    while heap:\n        u = heapq.heappop(heap)\n        result.append(u)\n        for v in graph.get(u, []):\n            in_degree[v] -= 1\n            if in_degree[v] == 0:\n                heapq.heappush(heap, v)\n\n    if len(result) != len(vertices):\n        raise ValueError(\"cycle detected\")\n\n    return result\n```",
+  "thinking": "Let me analyze the problem:\n\n1. I need to write a `topo_sort` function that performs topological sort in lexicographic order.\n2. `graph[u]` containing `v` means `u` comes before `v`.\n3. Vertices are all keys in `graph` plus all strings in all value lists.\n4. When multiple valid choices exist, pick the lexicographically smallest one (using Python `<` comparison).\n5. Raise `ValueError` for cycles (including self-loops).\n6. Duplicate constraints are fine.\n7. Don't modify `graph`.\n8. Up to 10,000 vertices.\n\nThe greedy approach: at each step, pick the vertex with no remaining incoming edges (i.e., no other vertex that should come before it still hasn't been placed).\n\nLet me think about the data structures:\n\n- `in_degree[v]` = number of predecessors of `v` (how many vertices should come before `v`)\n- At each step, among all vertices with `in_degree == 0`, pick the lexicographically smallest one.\n- After picking `u`, for each `v` in `graph[u]`, decrement `in_degree[v]`.\n\nWait, let me re-read the constraint. `graph[u]` containing `v` means `u` comes before `v`. So the edge is `u -> v`, meaning `u` is a predecessor of `v`.\n\nSo:\n- For each `v`, `in_degree[v]` = number of `u` such that `v in graph[u]`.\n- We maintain a set of available vertices (those with in_degree 0).\n- At each step, pick the smallest from available.\n- When we pick `u`, for each `v in graph[u]`, decrement `in_degree[v]`. If it becomes 0, add to available.\n\nFor efficiency with up to 10,000 vertices, I should use a heap (min-heap) for the available set.\n\nWait, but I need to be careful: a vertex becomes available when its in_degree drops to 0. I should add it to the heap at that point.\n\nLet me think about the algorithm:\n\n1. Compute all vertices: keys of `graph` + all elements in all value lists.\n2. Compute in_degree for each vertex.\n3. Initialize a min-heap with all vertices that have in_degree 0.\n4. Repeatedly pop the smallest from the heap, append to result, and for each of its outgoing neighbors, decrement in_degree. If in_degree becomes 0, push to heap.\n5. If the result doesn't contain all vertices, there's a cycle → raise ValueError.\n\nWait, I need to be careful about the heap. When I decrement in_degree and it becomes 0, I push to heap. But what if a vertex was already in the heap? No, a vertex can only be pushed when its in_degree goes from 1 to 0, and it starts at some value. Once it's 0, it stays 0 (we only decrement). So each vertex is pushed exactly once. Good.\n\nActually wait - what about vertices with in_degree 0 from the start? They're pushed initially. And vertices that become 0 later are pushed when they reach 0. Each vertex is pushed at most once. Good.\n\nLet me also handle the case where a vertex appears as a key but not in any value list, or appears in a value list but not as a key.\n\nLet me also handle: `graph` might have keys with empty lists (like `\"c\": []`).\n\nLet me code this:\n\n```python\nimport heapq\n\ndef topo_sort(graph: dict[str, list[str]]) -> list[str]:\n    # Collect all vertices\n    vertices = set(graph.keys())\n    for neighbors in graph.values():\n        for v in neighbors:\n            vertices.add(v)\n    \n    # Compute in_degree\n    in_degree = {v: 0 for v in vertices}\n    # Build adjacency (for each u, list of v where u comes before v)\n    # graph[u] already gives us the neighbors that come after u\n    for u, neighbors in graph.items():\n        for v in neighbors:\n            in_degree[v] += 1\n    \n    # Initialize heap with vertices having in_degree 0\n    heap = [v for v in vertices if in_degree[v] == 0]\n    heapq.heapify(heap)\n    \n    result = []\n    while heap:\n        u = heapq.heappop(heap)\n        result.append(u)\n        for v in graph.get(u, []):\n            in_degree[v] -= 1\n            if in_degree[v] == 0:\n                heapq.heappush(heap, v)\n    \n    if len(result) != len(vertices):\n        raise ValueError(\"Cycle detected\")\n    \n    return result\n```\n\nWait, let me verify with the examples:\n\nExample 1: `topo_sort({\"b\": [\"a\"], \"c\": []})`\n- vertices = {\"b\", \"a\", \"c\"}\n- in_degree: a has 1 (from b), b has 0, c has 0\n- heap initially: [\"b\", \"c\"] → heapified: [\"b\", \"c\"] (b < c)\n- Pop \"b\", result = [\"b\"]. For v in [\"a\"]: in_degree[\"a\"] becomes 0, push \"a\". heap = [\"a\", \"c\"]\n- Pop \"a\", result = [\"b\", \"a\"]. No neighbors. heap = [\"c\"]\n- Pop \"c\", result = [\"b\", \"a\", \"c\"]. No neighbors. heap = []\n- len(result) = 3 = len(vertices) ✓\n- Return [\"b\", \"a\", \"c\"] ✓\n\nExample 2: `topo_sort({\"x\": [\"y\"], \"y\": [\"x\"]})`\n- vertices = {\"x\", \"y\"}\n- in_degree: x has 1 (from y), y has 1 (from x)\n- heap initially: [] (no vertex has in_degree 0)\n- while loop doesn't execute\n- len(result) = 0 != 2 → raise ValueError ✓\n\nLooks correct. Let me also think about edge cases:\n- Self-loop: `graph = {\"a\": [\"a\"]}` → in_degree[\"a\"] = 1, heap is empty, result is empty, 0 != 1 → ValueError ✓\n- Duplicate constraints: `graph = {\"a\": [\"b\", \"b\"]}` → in_degree[\"b\"] = 2, in_degree[\"a\"] = 0. Pop \"a\", decrement in_degree[\"b\"] twice: 2→1→0, push \"b\" once (only when it hits 0). Wait, no - we decrement twice: first 2→1 (not 0), then 1→0 (push). So \"b\" is pushed once. That's correct.\n\nActually wait, I need to double-check: when we have duplicate edges, we decrement in_degree for each duplicate. So if `graph[\"a\"] = [\"b\", \"b\"]`, in_degree[\"b\"] starts at 2. When we process \"a\", we iterate over `[\"b\", \"b\"]`, decrementing in_degree[\"b\"] twice: 2→1, then 1→0. We push \"b\" only when it hits 0. So it's pushed once. Correct.\n\nThis looks good. Let me also make sure I'm not modifying `graph`. I only read from it, never write. ✓\n\nThe solution uses only `heapq` from the standard library. ✓\n\nLet me write the final answer.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 457,
+  "completion_tokens": 1891,
+  "ttft_s": 1.271,
+  "t_first_content_s": 40.641,
+  "wall_s": 44.613,
+  "load_s": 0.001,
+  "server_decode_tok_s": 43.63,
+  "server_prefill_tok_s": 523.24,
+  "server_timings": {
+    "total_duration": 44611876777,
+    "load_duration": 1120951,
+    "prompt_eval_count": 457,
+    "prompt_eval_duration": 873398000,
+    "eval_count": 1891,
+    "eval_duration": 43340734000
+  },
+  "delta_chunks": 1673,
+  "wall_decode_tok_s": 43.69,
+  "thinking_chars": 5652,
+  "content_chars": 806,
+  "thinking_tokens_est": 1655,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 44.612,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 12,
+    "total": 12,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_node_only_in_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_sorted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_smallest_available",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_case_sensitive_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_self_loop",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_cycle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicate_edges",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_input_unchanged",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_long_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_dag",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.07,
+    "stderr_tail": ""
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "target": "strata-official:IQ3_XXS",
+  "label": "strata-official:IQ3_XXS",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-official:IQ3_XXS",
+  "slug": "strata-official-IQ3_XXS",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "prompt": "新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。\n\n次の条件をすべて守って書いてください。\n1. 1 行目には「注意点は次のとおりです。」とだけ書く。\n2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\n3. 「定期的」という語を、どこかで 1 回以上使う。\n4. 数字（0〜9。全角も含む）を使わない。\n5. 最後の行には「以上」の 2 文字だけを書く。",
+  "prompt_chars": 221,
+  "request": {
+    "model": "strata-official:IQ3_XXS",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-08T18:50:50+09:00",
+  "finished_at": "2026-10-08T18:51:03+09:00",
+  "content": "注意点は次のとおりです。\n- パスワードは他人に知られないよう、口頭やメモで共有しない。\n- 他人と共用しにくい文字や記号を組み合わせた、推測されにくいものを選ぶ。\n- 定期に見直し、長期間同じパスワードを使い続けない。\n- 画面が他人に見られる場所では入力を控え、端末を離れるときは必ずロックする。\n以上",
+  "thinking": "We need answer in Japanese. User asks: write password security notes for new employees. Must satisfy:\n1 line1 exactly \"注意点は次のとおりです。\" only.\n2 line2 onward, each line starts with \"- \" (halfwidth hyphen halfwidth space) and exactly 4 bullet points consecutively.\n3 use \"定期\" at least once? specifically \"定期\" maybe \"定期\" at least once.\n4 no numbers digits 0-9 including fullwidth. So avoid any digits or fullwidth digits. Avoid maybe \"一つ\"? Chinese character contains? Digits only numeric chars. Words like \"一つ\" contains 一 not digit? okay. But avoid 0-9 and ０-９. Avoid halfwidth fullwidth numbers.\n5 last line exactly \"以上\" 2 characters only.\nNeed output exactly lines:\n注意点は次のとおりです。\n- ...\n- ...\n- ...\n- ...\n以上\n\nNeed ensure bullet lines start exactly \"- \". Exactly four bullets. Use定期 in one. Avoid numbers. Need likely no other constraints.\n\nNeed think if \"全角のハイフン\"? Condition says half-width hyphen and half-width space. Use ASCII hyphen and space.\n\nNeed no digits anywhere. Also ensure no fullwidth digits. Japanese punctuation okay. Need avoid \"一つ\"? It includes 一 not digit, but maybe could be considered number? Condition specifically digits 0-9 full/half width. Not kanji numbers. But to be safe avoid kanji numbers? Maybe unnecessary, but no digits characters. Could use \"各自\" etc.\n\nNeed four bullet points. Let's draft:\n- パスワードは他人に知られないよう、口頭やメモで共有しない。\n- 他人と共用しにくい文字や記号を組み合わせた、推測されにくいものを選ぶ。\n- 定期に見直し、長期間同じパスワードを使い続けない。\n- 画面が他人に見られる場所では入力を控え、端末を離れるときは必ずロックする。\n\nCheck no digits. Contains none. Contains 定期 once. Exactly 4 bullets. Last line 以上. Line 1 exact. Good.\n\nNeed ensure no hidden numbers? \"文字や記号\" okay. \"長期間\" okay. \"他人\" okay. \"端末\" okay. No halfwidth digits. Good.\n\nPotential issue: bullet content begins after \"- \". Good. Need final no trailing maybe. Just final answer.\n\nDouble-check: line 1 \"注意点は次のとおりです。\" exact. Then four bullet lines starting with \"- \". Last \"以上\". That's six lines. Exactly 4 bullets. Could there be issue with \"次の\" no.\n\nNeed output only. final. Ensure no extra spaces? It says start row head with \"- \" for bullets. Good. Line 1 only. Last only. final.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 195,
+  "completion_tokens": 687,
+  "ttft_s": 1.197,
+  "t_first_content_s": 11.261,
+  "wall_s": 12.527,
+  "load_s": null,
+  "server_decode_tok_s": 60.5,
+  "server_prefill_tok_s": 166.7,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 195,
+    "prompt_ms": 1169.9,
+    "prompt_per_token_ms": 5.999,
+    "prompt_per_second": 166.7,
+    "predicted_n": 687,
+    "predicted_ms": 11350.0,
+    "predicted_per_token_ms": 16.521,
+    "predicted_per_second": 60.5,
+    "draft_n": 506,
+    "draft_n_accepted": 343
+  },
+  "delta_chunks": 679,
+  "wall_decode_tok_s": 60.55,
+  "thinking_chars": 2077,
+  "content_chars": 153,
+  "thinking_tokens_est": 640,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 12.527,
+  "grade": {
+    "kind": "inst",
+    "score": 0.8,
+    "passed": 4,
+    "total": 5,
+    "all_passed": false,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": false
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  }
+}

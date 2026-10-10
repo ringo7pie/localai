@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C3: 区間の併合\n\n関数 `merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]` を書いてください。\n\n- `intervals` の各要素は整数の組 `(start, end)` で、`start` 以上 `end` 以下の閉区間を表す。\n- 重なる区間と、端が接する区間（一方の `end` と他方の `start` が等しい）を 1 つにまとめ、`start` の昇順に並べた「タプルのリスト」を返す。\n- 入力は並んでいるとは限らない。入力のリストを書き換えてはいけない。\n- 空のリストには空のリストを返す。\n- `start > end` の要素が 1 つでもあれば `ValueError` を送出する。\n- 要素数は最大 100,000。\n\n例:\n- `merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)])` → `[(1, 6), (8, 10), (15, 18)]`\n- `merge_intervals([(1, 4), (4, 5)])` → `[(1, 5)]`",
+  "prompt_chars": 790,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:29:02+09:00",
+  "finished_at": "2026-10-08T12:29:23+09:00",
+  "content": "```python\ndef merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:\n    # 1. バリデーション\n    for start, end in intervals:\n        if start > end:\n            raise ValueError(\"Interval start must be less than or equal to end.\")\n\n    # 2. エッジケース: 空リスト\n    if not intervals:\n        return []\n\n    # 3. ソート: 開始点の昇順でソートする\n    # タプルはデフォルトで第一要素から順に比較されるため、そのままソートで十分。\n    sorted_intervals = sorted(intervals)\n\n    # 4. 併合ロジック\n    merged = []\n    \n    # 初期値を最初の要素に設定\n    current_start, current_end = sorted_intervals[0]\n    \n    for next_start, next_end in sorted_intervals[1:]:\n        # 重なりまたは接合判定: next_start <= current_end\n        if next_start <= current_end:\n            # 併合する。新しい終了点は最大値。\n            current_end = max(current_end, next_end)\n        else:\n            # 分離した。現在の区間を確定し、結果に追加。\n            merged.append((current_start, current_end))\n            # 新しい併合区間を開始\n            current_start = next_start\n            current_end = next_end\n            \n    # ループ終了後、最後に処理された区間を追加する\n    merged.append((current_start, current_end))\n    \n    return merged\n```",
+  "thinking": "ユーザーはPython 3.12で、与えられた区間（整数のタプルのリスト）を併合する関数`merge_intervals`の実装を求めている。\n\n制約事項の確認:\n1. 標準ライブラリのみ使用。外部パッケージ禁止。\n2. ファイルI/O、ネットワーク、サブプロセス、標準入力からの読み込みは禁止。\n3. 関数名、クラス名、引数名は指定通りに使う。\n4. 回答はコードブロック1つだけ（必要な定義、import、補助関数のみ）。テストコード、使用例、print文は含めない。\n5. エラー処理: `start > end`の要素がある場合、`ValueError`を送出する。\n6. 特殊ケース: 空リストの場合、空リストを返す。\n7. 入力順序は保証されないので、ソートが必要。\n8. 出力は昇順に並べたタプルのリスト。\n\nアルゴリズムの設計:\n1. **空チェックとバリデーション**:\n   - 入力が空なら、空リストを返す。\n   - 全ての区間 `(start, end)` について、`start <= end` であるかチェックし、そうでなければ`ValueError`を送出する。\n2. **ソート**:\n   - 区間のリストを、開始点（`start`）の昇順にソートする。もし開始点が同じなら、終了点（`end`）でソートしても良いが、開始点で十分。\n3. **併合 (Merging)**:\n   - ソートされたリストを走査する。\n   - 現在の併合中の区間 `(current_start, current_end)` を保持する。\n   - 次の区間 `(next_start, next_end)` を見ていく。\n   - **重なり判定/接合判定**: `next_start` が `current_end` 以下である場合（つまり、重なっているか接している場合）、併合する。新しい終了点は `max(current_end, next_end)` とする。\n   - **分離判定**: `next_start` が `current_end` より大きい場合、併合が完了したため、現在の併合区間を結果リストに追加し、新しい併合区間を `(next_start, next_end)` で開始する。\n4. **結果の返却**:\n   - ループが終了した後、最後に処理された併合区間を結果リストに追加するのを忘れないようにする。\n\n詳細な実装ステップ:\n\n1. **バリデーション**:\n   - `for start, end in intervals:`\n   - `if start > end: raise ValueError(...)`\n\n2. **ソート**:\n   - Pythonのリストの`sort()`または`sorted()`を使う。デフォルトでタプルは最初の要素でソートされるので、`(start, end)`のリストをそのままソートすれば良い。\n\n3. **メインロジック**:\n   - 結果を格納する空のリスト `merged` を初期化する。\n   - リストが空なら処理終了。\n   - 最初の要素を初期の併合区間として設定する。\n   - ループを開始し、残りの要素に対して処理を行う。\n\n例: `[(1, 3), (2, 6), (8, 10), (15, 18)]`\n1. バリデーションOK。\n2. ソート後: `[(1, 3), (2, 6), (8, 10), (15, 18)]` (既にソートされているが、念のため処理)\n3. `merged = []`\n4. `current_start, current_end = 1, 3`\n5. `next_interval = (2, 6)`\n   - 2 <= 3 (接合/重なり) -> `current_end = max(3, 6) = 6`. 現在の区間は `(1, 6)`。\n6. `next_interval = (8, 10)`\n   - 8 > 6 (分離) -> `merged.append((1, 6))`.\n   - 新しい併合区間: `current_start, current_end = 8, 10`。\n7. `next_interval = (15, 18)`\n   - 15 > 10 (分離) -> `merged.append((8, 10))`.\n   - 新しい併合区間: `current_start, current_end = 15, 18`。\n8. ループ終了。最後の区間 `(15, 18)` を追加 -> `merged.append((15, 18))`.\n9. 結果: `[(1, 6), (8, 10), (15, 18)]`\n\nこれは標準的なアルゴリズムであり、実装しやすい。\n\n---\nコード構造の調整:\nバリデーションはソートの前に行うのが効率的。\n\n```python\ndef merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:\n    # 1. バリデーション\n    for start, end in intervals:\n        if start > end:\n            raise ValueError(\"Interval start must be less than or equal to end.\")\n\n    # 2. エッジケース: 空リスト\n    if not intervals:\n        return []\n\n    # 3. ソート\n    # タプルは第一要素で自然にソートされる\n    sorted_intervals = sorted(intervals)\n\n    # 4. 併合ロジック\n    merged = []\n    \n    # 初期値を最初の要素に設定\n    current_start, current_end = sorted_intervals[0]\n    \n    for next_start, next_end in sorted_intervals[1:]:\n        # 重なりまたは接合判定: next_start <= current_end\n        if next_start <= current_end:\n            # 併合する。新しい終了点は最大値。\n            current_end = max(current_end, next_end)\n        else:\n            # 分離した。現在の区間を確定し、結果に追加。\n            merged.append((current_start, current_end))\n            # 新しい併合区間を開始\n            current_start = next_start\n            current_end = next_end\n            \n    # 最後に処理された区間を追加するのを忘れない\n    merged.append((current_start, current_end))\n    \n    return merged\n```\n\nこのロジックで問題なさそう。制約事項を再確認:\n- 標準ライブラリのみ: OK\n- I/Oなし: OK\n- 関数名/型定義: OK\n- 出力形式: コードブロック1つのみ。\n\nこれで回答を生成する。",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 436,
+  "completion_tokens": 1883,
+  "ttft_s": 0.241,
+  "t_first_content_s": 16.828,
+  "wall_s": 20.806,
+  "load_s": 0.001,
+  "server_decode_tok_s": 91.4,
+  "server_prefill_tok_s": 2800.18,
+  "server_timings": {
+    "total_duration": 20804917511,
+    "load_duration": 924008,
+    "prompt_eval_count": 436,
+    "prompt_eval_duration": 155704000,
+    "eval_count": 1883,
+    "eval_duration": 20601375000
+  },
+  "delta_chunks": 1689,
+  "wall_decode_tok_s": 91.57,
+  "thinking_chars": 3227,
+  "content_chars": 1082,
+  "thinking_tokens_est": 1410,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 20.805,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 11,
+    "total": 11,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_point",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsorted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_not_touching",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_input_unchanged",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_returns_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_error",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_random",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.19,
+    "stderr_tail": ""
+  }
+}

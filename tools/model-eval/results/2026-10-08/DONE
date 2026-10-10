@@ -1,0 +1,7 @@
+status=finished
+started_at=2026-10-09T09:45:12+09:00
+finished_at=2026-10-09T10:28:43+09:00
+results_dir=/home/mt/Proj/localai/tools/model-eval/results/2026-10-08
+log=/home/mt/Proj/localai/tools/model-eval/work/run_local-2026-10-08.log
+vram_after=16 MiB, 24576 MiB
+outcome strata-flash-coder:IQ1_M run_exit=0

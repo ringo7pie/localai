@@ -1,0 +1,99 @@
+{
+  "target": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "sessions": [
+    {
+      "started_at": "2026-10-08T12:31:35+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "qwen3.8:27b",
+        "--suite",
+        "all",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-08"
+      ],
+      "items": [
+        "coding/c1",
+        "coding/c2",
+        "coding/c3",
+        "coding/c4",
+        "coding/c5",
+        "coding/c6",
+        "extra/inst1",
+        "extra/inst2",
+        "extra/inst3",
+        "extra/needle1",
+        "extra/needle2",
+        "extra/needle3",
+        "extra/json1",
+        "extra/json2",
+        "extra/json3"
+      ],
+      "checked_at": "2026-10-08T12:31:35+09:00",
+      "gpu_before": {
+        "memory_used_mib": 16,
+        "memory_total_mib": 24576,
+        "utilization_pct": 8
+      },
+      "ollama_version": "0.34.2",
+      "preload_s": 16.96,
+      "preload_load_duration_s": null,
+      "ollama_ps": {
+        "name": "qwen3.8:27b",
+        "size": 17536049478,
+        "size_vram": 17536049478,
+        "gpu_ratio": 1.0,
+        "context_length": 65536,
+        "expires_at": "2026-10-08T12:46:52.8203631+09:00"
+      },
+      "gpu_after_preload": {
+        "memory_used_mib": 22184,
+        "memory_total_mib": 24576,
+        "utilization_pct": 5
+      }
+    },
+    {
+      "started_at": "2026-10-08T13:41:06+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "qwen3.8:27b",
+        "--suite",
+        "all",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-08"
+      ],
+      "items": [
+        "coding/c1",
+        "coding/c2",
+        "coding/c3",
+        "coding/c4",
+        "coding/c5",
+        "coding/c6"
+      ],
+      "checked_at": "2026-10-08T13:41:06+09:00",
+      "gpu_before": {
+        "memory_used_mib": 16,
+        "memory_total_mib": 24576,
+        "utilization_pct": 7
+      },
+      "ollama_version": "0.34.2",
+      "preload_s": 5.14,
+      "preload_load_duration_s": null,
+      "ollama_ps": {
+        "name": "qwen3.8:27b",
+        "size": 17536049478,
+        "size_vram": 17536049478,
+        "gpu_ratio": 1.0,
+        "context_length": 65536,
+        "expires_at": "2026-10-08T13:56:12.024304069+09:00"
+      },
+      "gpu_after_preload": {
+        "memory_used_mib": 22184,
+        "memory_total_mib": 24576,
+        "utilization_pct": 2
+      }
+    }
+  ]
+}

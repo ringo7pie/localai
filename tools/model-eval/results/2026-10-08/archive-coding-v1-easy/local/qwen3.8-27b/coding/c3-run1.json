@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C3: 区間の併合\n\n関数 `merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]` を書いてください。\n\n- `intervals` の各要素は整数の組 `(start, end)` で、`start` 以上 `end` 以下の閉区間を表す。\n- 重なる区間と、端が接する区間（一方の `end` と他方の `start` が等しい）を 1 つにまとめ、`start` の昇順に並べた「タプルのリスト」を返す。\n- 入力は並んでいるとは限らない。入力のリストを書き換えてはいけない。\n- 空のリストには空のリストを返す。\n- `start > end` の要素が 1 つでもあれば `ValueError` を送出する。\n- 要素数は最大 100,000。\n\n例:\n- `merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)])` → `[(1, 6), (8, 10), (15, 18)]`\n- `merge_intervals([(1, 4), (4, 5)])` → `[(1, 5)]`",
+  "prompt_chars": 790,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:35:19+09:00",
+  "finished_at": "2026-10-08T12:35:36+09:00",
+  "content": "```python\ndef merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:\n    for start, end in intervals:\n        if start > end:\n            raise ValueError(f\"invalid interval: start ({start}) > end ({end})\")\n    if not intervals:\n        return []\n    sorted_intervals = sorted(intervals)\n    merged: list[list[int]] = [list(sorted_intervals[0])]\n    for start, end in sorted_intervals[1:]:\n        if start <= merged[-1][1]:\n            if end > merged[-1][1]:\n                merged[-1][1] = end\n        else:\n            merged.append([start, end])\n    return [(s, e) for s, e in merged]\n```",
+  "thinking": "The user wants a Python function `merge_intervals` that merges overlapping and touching intervals.\n\nRequirements:\n- Use only standard library\n- No file I/O, network, subprocess, or stdin\n- Use exact function names, class names, parameter names as specified\n- Return a list of tuples sorted by start\n- Merge overlapping intervals and touching intervals (one's end equals another's start)\n- Don't mutate the input list\n- Empty list → empty list\n- If any element has start > end, raise ValueError\n- Up to 100,000 elements\n\nAlgorithm:\n1. Validate all intervals: if start > end, raise ValueError\n2. Sort by start (then by end for stability)\n3. Iterate and merge:\n   - Start with the first interval\n   - For each subsequent interval, if its start <= current end (touching or overlapping), extend current end\n   - Otherwise, close current interval and start new one\n\nLet me write this:\n\n```python\ndef merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:\n    for start, end in intervals:\n        if start > end:\n            raise ValueError(\"start > end\")\n    \n    if not intervals:\n        return []\n    \n    sorted_intervals = sorted(intervals)\n    \n    result = [list(sorted_intervals[0])]\n    for start, end in sorted_intervals[1:]:\n        if start <= result[-1][1]:\n            result[-1][1] = max(result[-1][1], end)\n        else:\n            result.append([start, end])\n    \n    return [(s, e) for s, e in result]\n```\n\nThis should work. Let me verify with the examples:\n- `[(1, 3), (2, 6), (8, 10), (15, 18)]` → sorted: same → merge (1,3) and (2,6) → (1,6), then (8,10), then (15,18) → `[(1,6), (8,10), (15,18)]` ✓\n- `[(1, 4), (4, 5)]` → sorted: same → (1,4) and (4,5): 4 <= 4 so merge → (1,5) → `[(1,5)]` ✓\n\nThe input list is not mutated because I create a new sorted list and a new result list.\n\nLet me make sure the code block is the only thing in the response.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 437,
+  "completion_tokens": 730,
+  "ttft_s": 1.272,
+  "t_first_content_s": 13.47,
+  "wall_s": 16.617,
+  "load_s": 0.001,
+  "server_decode_tok_s": 47.57,
+  "server_prefill_tok_s": 490.48,
+  "server_timings": {
+    "total_duration": 16616469113,
+    "load_duration": 1028698,
+    "prompt_eval_count": 437,
+    "prompt_eval_duration": 890969000,
+    "eval_count": 730,
+    "eval_duration": 15345495000
+  },
+  "delta_chunks": 628,
+  "wall_decode_tok_s": 47.51,
+  "thinking_chars": 1887,
+  "content_chars": 614,
+  "thinking_tokens_est": 551,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 16.616,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 11,
+    "total": 11,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_point",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsorted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_not_touching",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_input_unchanged",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_returns_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_error",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_random",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.2,
+    "stderr_tail": ""
+  }
+}

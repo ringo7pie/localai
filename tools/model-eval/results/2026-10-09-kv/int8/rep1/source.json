@@ -1,0 +1,48 @@
+{
+  "note": "既存の記録の写し。RVN と公式は 2026-10-08、Coder は 2026-10-09 に計測",
+  "source_dir": "tools/model-eval/results/2026-10-08",
+  "files": [
+    {
+      "slug": "strata-coder-IQ1_M",
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-kv/int8/rep1/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "copied_at": "2026-10-09T12:03:07+09:00"
+    },
+    {
+      "slug": "strata-coder-IQ1_M",
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-kv/int8/rep1/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "copied_at": "2026-10-09T12:03:07+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-kv/int8/rep1/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "copied_at": "2026-10-09T12:03:07+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-kv/int8/rep1/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "copied_at": "2026-10-09T12:03:07+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-kv/int8/rep1/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "copied_at": "2026-10-09T12:03:07+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-kv/int8/rep1/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "copied_at": "2026-10-09T12:03:07+09:00"
+    }
+  ]
+}

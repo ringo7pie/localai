@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "prompt": "新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。\n\n次の条件をすべて守って書いてください。\n1. 1 行目には「注意点は次のとおりです。」とだけ書く。\n2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\n3. 「定期的」という語を、どこかで 1 回以上使う。\n4. 数字（0〜9。全角も含む）を使わない。\n5. 最後の行には「以上」の 2 文字だけを書く。",
+  "prompt_chars": 221,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:36:10+09:00",
+  "finished_at": "2026-10-08T14:37:04+09:00",
+  "content": "注意点は次のとおりです。\n- 複雑な文字列を使いましょう。\n- 定期的な変更を行ってください。\n- 他の人に教えないでください。\n- 安全な場所に保管してください。\n以上",
+  "thinking": "*   Target audience: New employees.\n    *   Topic: Precautions for handling passwords safely.\n    *   Constraint 1: Line 1 must be exactly \"注意点は次のとおりです。\"\n    *   Constraint 2: Lines 2-5 must be bullet points starting with \"- \" (half-width hyphen and space), exactly 4 bullet points.\n    *   Constraint 3: Use the word \"定期的\" (regularly) at least once.\n    *   Constraint 4: No numbers (0-9, full-width or half-width) allowed in the entire text.\n    *   Constraint 5: The last line must be exactly \"以上\".\n\n    *   Line 1: 注意点は次のとおりです。 (OK)\n    *   Bullet points (4 items):\n        *   Item 1: Use complex passwords. (Avoid numbers) -> 複雑な文字を組み合わせてください。\n        *   Item 2: Change passwords regularly. (Must use 定期的) -> 定期的に変更してください。\n        *   Item 3: Do not share passwords. -> 他の人に教えないでください。\n        *   Item 4: Use a password manager or secure storage. -> 安全な場所に保管してください。\n    *   Last line: 以上 (OK)\n\n    *   Line 1: 注意点は次のとおりです。 (Contains no numbers)\n    *   Line 2: - 複雑な文字列を作成してください。 (Contains no numbers)\n    *   Line 3: - 定期的に更新してください。 (Contains no numbers, uses 定期的)\n    *   Line 4: - 第三者に教えないでください。 (Contains no numbers)\n    *   Line 5: - メモなどに書き残さないでください。 (Contains no numbers)\n    *   Line 6: 以上 (Contains no numbers)\n\n    *   1st line: 「注意点は次のとおりです。」 (Check)\n    *   2nd-5th lines: Start with \"- \" and be bullet points, exactly 4. (Check)\n    *   \"定期的\" used? Yes. (Check)\n    *   No numbers (0-9)?\n        *   注意点は次のとおりです。 (No)\n        *   - 複雑な文字列を作成してください。 (No)\n        *   - 定期的に更新してください。 (No)\n        *   - 第三者に教えないでください。 (No)\n        *   - メモなどに書き残さないでください。 (No)\n        *   以上 (No)\n    *   Last line: 「以上」 (Check)\n\n    *Wait, I need to double check \"第三者\". \"三\" is a kanji for 3, not a digit (0-9). The constraint says \"数字（0〜9。全角も含む）\". Usually, this refers to Arabic numerals (0, 1, 2... and ０, １, ２...). Kanji numbers (一, 二, 三) are typically treated as kanji, not \"numbers (0-9)\". However, to be extremely safe, I might avoid kanji numbers too, though the prompt specifically specifies (0-9).*\n\n    Let's refine the bullet points to be absolutely safe:\n    - 複雑な文字列を使いましょう。\n    - 定期的に変更してください。\n    - 他の人に教えないでください。\n    - 安全な場所に保管してください。\n\n    1. 注意点は次のとおりです。\n    2. - 複雑な文字列を使いましょう。\n    3. - 定期的に変更してください。\n    4. - 他の人に教えないでください。\n    5. - 安全な場所に保管してください。\n    6. 以上\n\n    Wait, let me re-read: \"数字（0〜9。全角も含む）を使わない。\"\n    Arabic numerals are clearly banned. Kanji numbers are usually not in the set (0-9). I will avoid Arabic numerals entirely.\n\n    Double check counts:\n    Line 1: 注意点は次のとおりです。\n    Line 2: - 複雑な文字列を使いましょう。\n    Line 3: - 定期的に変更してください。\n    Line 4: - 他の人に教えないでください。\n    Line 5: - 安全な場所に保管してください。\n    Line 6: 以上\n\n    - Line 1 is \"注意点は次のとおりです。\" -> Yes.\n    - Lines 2-5 start with \"- \" and there are exactly 4 -> Yes.\n    - \"定期的\" used? -> Yes (\"定期的に\").\n    - Numbers 0-9 used? -> No.\n    - Last line is \"以上\" -> Yes.\n\n    Wait, is \"定期的\" required as a standalone word or can it be \"定期的に\"? Usually, in these prompts, \"定期的\" as a stem is fine, but just in case, let me see if I can use \"定期的\" as a noun phrase.\n    \"- 定期的な変更を行ってください。\" (Perform regular changes).\n\n    Revised set:\n    注意点は次のとおりです。\n    - 複雑な文字列を使いましょう。\n    - 定期的な変更を行ってください。\n    - 他の人に教えないでください。\n    - 安全な場所に保管してください。\n    以上\n\n    Checking numbers again:\n    - 注意点は次のとおりです。\n    - 複雑な文字列を使いましょう。\n    - 定期的な変更を行ってください。\n    - 他の人に教えないでください。\n    - 安全な場所に保管してください。\n    - 以上\n    No 0,1,2,3,4,5,6,7,8,9.\n\n    Final verification of constraints:\n    1. 1行目: 「注意点は次のとおりです。」 (Perfect)\n    2. 2-5行目: 「- 」開始の箇条書き4個 (Perfect)\n    3. 「定期的」を1回以上使用 (Perfect)\n    4. 数字（0-9）を使わない (Perfect)\n    5. 最終行: 「以上」 (Perfect)\n\n    One last check on \"定期的\".\n    - 定期的な変更を行ってください。\n    \"定期的\" is contained within.\n\n    Let's verify if I used any numbers accidentally.\n    注意点は次のとおりです。\n    - 複雑な文字列を使いましょう。\n    - 定期的な変更を行ってください。\n    - 他の人に教えないでください。\n    - 安全な場所に保管してください。\n    以上\n\n    Wait, I should check for full-width numbers too. None.\n\n    One more check on bullet points.\n    - item1\n    - item2\n    - item3\n    - item4\n    This is \"ちょうど 4 個\".\n\n    Ready.\n\n    注意点は次のとおりです。\n    - 複雑な文字列を使いましょう。\n    - 定期的な変更を行ってください。\n    - 他の人に教えないでください。\n    - 安全な場所に保管してください。\n    以上",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 159,
+  "completion_tokens": 1587,
+  "ttft_s": 0.915,
+  "t_first_content_s": 52.833,
+  "wall_s": 54.38,
+  "load_s": 0.001,
+  "server_decode_tok_s": 29.63,
+  "server_prefill_tok_s": 465.52,
+  "server_timings": {
+    "total_duration": 54379314472,
+    "load_duration": 1132695,
+    "prompt_eval_count": 159,
+    "prompt_eval_duration": 341552000,
+    "eval_count": 1587,
+    "eval_duration": 53567031000
+  },
+  "delta_chunks": 1294,
+  "wall_decode_tok_s": 29.68,
+  "thinking_chars": 4119,
+  "content_chars": 85,
+  "thinking_tokens_est": 1555,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 54.379,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": true
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  }
+}

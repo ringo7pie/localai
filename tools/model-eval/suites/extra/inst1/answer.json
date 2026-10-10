@@ -1,0 +1,10 @@
+{
+  "kind": "inst",
+  "checks": [
+    {"id": "bullet_count", "label": "「- 」の箇条書きがちょうど 5 個", "type": "bullet_count", "count": 5},
+    {"id": "max_line_chars", "label": "どの行も 25 文字以内", "type": "max_line_chars", "limit": 25},
+    {"id": "bullet_endings", "label": "箇条書きの末尾が「です。」「ます。」", "type": "bullet_endings", "endings": ["です。", "ます。"]},
+    {"id": "last_line", "label": "最後の行が「以上」だけ", "type": "last_line_equals", "text": "以上"},
+    {"id": "no_latin", "label": "アルファベットを使わない", "type": "no_latin"}
+  ]
+}

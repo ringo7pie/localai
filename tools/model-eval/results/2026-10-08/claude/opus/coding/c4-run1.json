@@ -1,0 +1,151 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c4",
+  "run": 1,
+  "content": "```python\nimport re\nimport sys\n\n_WS_MATCH = re.compile(r'[ \\t\\n\\r]*').match\n_NUMBER_MATCH = re.compile(r'-?(?:0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?').match\n_SIMPLE_STRING_MATCH = re.compile(r'\"([^\"\\\\\\x00-\\x1f]*)\"').match\n_STRING_CHUNK_MATCH = re.compile(r'[^\"\\\\\\x00-\\x1f]*').match\n_HEX4_MATCH = re.compile(r'[0-9a-fA-F]{4}').match\n\n_ESCAPES = {\n    '\"': '\"',\n    '\\\\': '\\\\',\n    '/': '/',\n    'b': '\\b',\n    'f': '\\f',\n    'n': '\\n',\n    'r': '\\r',\n    't': '\\t',\n}\n\n_INT_CHUNK = 600  # sys.int_max_str_digits の最小値 640 より小さい\n\n\ndef _digits_to_int(digits):\n    cache = {}\n\n    def convert(start, end):\n        length = end - start\n        if length <= _INT_CHUNK:\n            return int(digits[start:end])\n        half = length // 2\n        mid = end - half\n        power = cache.get(half)\n        if power is None:\n            power = 10 ** half\n            cache[half] = power\n        return convert(start, mid) * power + convert(mid, end)\n\n    return convert(0, len(digits))\n\n\ndef _to_int(number_text):\n    if len(number_text) <= _INT_CHUNK:\n        return int(number_text)\n    limit = sys.get_int_max_str_digits() if hasattr(sys, 'get_int_max_str_digits') else 0\n    if limit == 0 or len(number_text) <= limit:\n        return int(number_text)\n    negative = number_text[0] == '-'\n    digits = number_text[1:] if negative else number_text\n    result = _digits_to_int(digits)\n    return -result if negative else result\n\n\ndef _hex4(text, pos):\n    match = _HEX4_MATCH(text, pos)\n    if match is None:\n        raise ValueError(f'invalid \\\\u escape at position {pos}')\n    return int(match.group(), 16)\n\n\ndef _parse_string(text, pos, length):\n    # text[pos] == '\"'\n    simple = _SIMPLE_STRING_MATCH(text, pos)\n    if simple is not None:\n        return simple.group(1), simple.end()\n    parts = []\n    pos += 1\n    while True:\n        chunk = _STRING_CHUNK_MATCH(text, pos)\n        end = chunk.end()\n        if end > pos:\n            parts.append(text[pos:end])\n        pos = end\n        if pos >= length:\n            raise ValueError('unterminated string')\n        current = text[pos]\n        if current == '\"':\n            return ''.join(parts), pos + 1\n        if current != '\\\\':\n            raise ValueError(f'unescaped control character at position {pos}')\n        if pos + 1 >= length:\n            raise ValueError('unterminated escape sequence')\n        escape = text[pos + 1]\n        if escape == 'u':\n            code = _hex4(text, pos + 2)\n            pos += 6\n            if 0xD800 <= code <= 0xDBFF:\n                if not text.startswith('\\\\u', pos):\n                    raise ValueError(f'lone high surrogate at position {pos}')\n                low = _hex4(text, pos + 2)\n                if not (0xDC00 <= low <= 0xDFFF):\n                    raise ValueError(f'invalid low surrogate at position {pos}')\n                code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00)\n                pos += 6\n            elif 0xDC00 <= code <= 0xDFFF:\n                raise ValueError(f'lone low surrogate at position {pos}')\n            parts.append(chr(code))\n        else:\n            replacement = _ESCAPES.get(escape)\n            if replacement is None:\n                raise ValueError(f'invalid escape at position {pos}')\n            parts.append(replacement)\n            pos += 2\n\n\ndef _read_key(text, pos, length, obj):\n    if pos >= length or text[pos] != '\"':\n        raise ValueError(f'expected string key at position {pos}')\n    key, pos = _parse_string(text, pos, length)\n    if key in obj:\n        raise ValueError(f'duplicate key {key!r}')\n    pos = _WS_MATCH(text, pos).end()\n    if pos >= length or text[pos] != ':':\n        raise ValueError(f'expected \":\" at position {pos}')\n    return key, _WS_MATCH(text, pos + 1).end()\n\n\ndef parse_json(text: str) -> object:\n    if not isinstance(text, str):\n        raise TypeError('text must be str')\n    length = len(text)\n    ws = _WS_MATCH\n    pos = ws(text, 0).end()\n    stack = []  # 各要素は [container, key]（list のときの key は未使用）\n    while True:\n        # ---- 値を 1 つ読む ----\n        if pos >= length:\n            raise ValueError('unexpected end of input')\n        current = text[pos]\n        if current == '\"':\n            value, pos = _parse_string(text, pos, length)\n        elif current == '{':\n            pos = ws(text, pos + 1).end()\n            if pos < length and text[pos] == '}':\n                value = {}\n                pos += 1\n            else:\n                obj = {}\n                key, pos = _read_key(text, pos, length, obj)\n                stack.append([obj, key])\n                continue\n        elif current == '[':\n            pos = ws(text, pos + 1).end()\n            if pos < length and text[pos] == ']':\n                value = []\n                pos += 1\n            else:\n                stack.append([[], None])\n                continue\n        elif current == 't':\n            if not text.startswith('true', pos):\n                raise ValueError(f'invalid literal at position {pos}')\n            value = True\n            pos += 4\n        elif current == 'f':\n            if not text.startswith('false', pos):\n                raise ValueError(f'invalid literal at position {pos}')\n            value = False\n            pos += 5\n        elif current == 'n':\n            if not text.startswith('null', pos):\n                raise ValueError(f'invalid literal at position {pos}')\n            value = None\n            pos += 4\n        else:\n            match = _NUMBER_MATCH(text, pos)\n            if match is None:\n                raise ValueError(f'unexpected character at position {pos}')\n            number_text = match.group()\n            pos = match.end()\n            if match.group(1) is None and match.group(2) is None:\n                value = _to_int(number_text)\n            else:\n                value = float(number_text)\n\n        # ---- 親へ付け、閉じられる入れ物を閉じる ----\n        while True:\n            if not stack:\n                pos = ws(text, pos).end()\n                if pos != length:\n                    raise ValueError(f'extra data at position {pos}')\n                return value\n            frame = stack[-1]\n            container = frame[0]\n            if type(container) is list:\n                container.append(value)\n                closer = ']'\n            else:\n                container[frame[1]] = value\n                closer = '}'\n            pos = ws(text, pos).end()\n            if pos >= length:\n                raise ValueError('unexpected end of input')\n            current = text[pos]\n            if current == ',':\n                pos = ws(text, pos + 1).end()\n                if closer == '}':\n                    frame[1], pos = _read_key(text, pos, length, container)\n                break\n            if current == closer:\n                pos += 1\n                stack.pop()\n                value = container\n                continue\n            raise ValueError(f'unexpected character at position {pos}')\n```",
+  "wall_s": 99.713,
+  "usage": {
+    "subagent_tokens": 39851
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 23,
+    "total": 23,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_literals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_and_types",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_zero_and_extreme_exponents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_simple_strings",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_string_escapes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_surrogate_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lone_surrogates_are_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_escapes_and_control_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_containers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested_document",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_whitespace_rules",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_and_trailing_input",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_literals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_numbers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_container_syntax",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicate_keys_are_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_values_adjacent_to_literals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_top_level_scalars_with_whitespace",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_small_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_long_string_with_escapes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_random_document",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_nesting",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.6,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:17+09:00"
+}

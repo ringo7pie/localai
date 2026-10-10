@@ -1,0 +1,10 @@
+{
+  "kind": "inst",
+  "checks": [
+    {"id": "first_line", "label": "1 行目が「注意点は次のとおりです。」だけ", "type": "first_line_equals", "text": "注意点は次のとおりです。"},
+    {"id": "bullet_block", "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く", "type": "bullet_block", "start_line": 2, "count": 4},
+    {"id": "keyword", "label": "「定期的」を 1 回以上使う", "type": "must_include", "words": ["定期的"]},
+    {"id": "no_digits", "label": "数字を使わない", "type": "no_digits"},
+    {"id": "last_line", "label": "最後の行が「以上」だけ", "type": "last_line_equals", "text": "以上"}
+  ]
+}

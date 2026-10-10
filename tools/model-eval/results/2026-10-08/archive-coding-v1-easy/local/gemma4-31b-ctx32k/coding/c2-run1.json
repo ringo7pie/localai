@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C2: 時間の文字列を秒に直す\n\n関数 `parse_duration(text: str) -> int` を書いてください。\n\n- `text` は 1 個以上の「成分」からなる。成分は、0 以上の整数（半角数字 1 桁以上）のすぐ後ろに単位の文字が 1 つ付いたもの。\n- 単位は `d`（日 = 86400 秒）、`h`（時 = 3600 秒）、`m`（分 = 60 秒）、`s`（秒）の 4 つで、小文字だけ。\n- 成分は `d`、`h`、`m`、`s` の順に並び、同じ単位は 1 回まで。使わない単位は省いてよい。\n- 成分と成分のあいだには半角スペースが 0 個以上入ってよい。文字列の先頭と末尾の半角スペースも許す。数と単位のあいだにはスペースを入れられない。\n- 合計の秒数を `int` で返す。数の大きさに上限はない（`\"90m\"` は `5400`）。\n- この形に合わない入力（空の文字列、スペースだけ、知らない単位、単位の無い数、順番の誤り、単位の重複、小数、負の数、大文字、区切りの記号など）には `ValueError` を送出する。\n\n例:\n- `parse_duration(\"1h 30m\")` → `5400`\n- `parse_duration(\"2d3s\")` → `172803`",
+  "prompt_chars": 833,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:41:00+09:00",
+  "finished_at": "2026-10-08T12:43:00+09:00",
+  "content": "```python\nimport re\n\ndef parse_duration(text: str) -> int:\n    # Regular expression to match the duration components in the specified order.\n    # Components are optional, but at least one must be present.\n    # \\s* allows any number of spaces between components and at the boundaries.\n    # (\\d+[dhms]) matches one or more digits followed immediately by the unit character.\n    pattern = r'^\\s*(\\d+d)?\\s*(\\d+h)?\\s*(\\d+m)?\\s*(\\d+s)?\\s*$'\n    match = re.fullmatch(pattern, text)\n    \n    if not match:\n        raise ValueError(\"Invalid duration format\")\n\n    groups = match.groups()\n    # Ensure that the string is not empty or just whitespace (at least one component must exist).\n    if all(g is None for g in groups):\n        raise ValueError(\"At least one duration component is required\")\n\n    multipliers = {\n        'd': 86400,\n        'h': 3600,\n        'm': 60,\n        's': 1\n    }\n    \n    total_seconds = 0\n    for g in groups:\n        if g:\n            # Extract the numeric part and the unit character.\n            # g is of the form '123d', '45h', etc.\n            value = int(g[:-1])\n            unit = g[-1]\n            total_seconds += value * multipliers[unit]\n            \n    return total_seconds\n```",
+  "thinking": "*   Function name: `parse_duration(text: str) -> int`\n    *   Input: `text` (string)\n    *   Output: Total duration in seconds (`int`)\n    *   Components: `[integer][unit]`, where unit is `d`, `h`, `m`, or `s`.\n    *   Units:\n        *   `d`: 86400s\n        *   `h`: 3600s\n        *   `m`: 60s\n        *   `s`: 1s\n    *   Order: Must be `d` -> `h` -> `m` -> `s`.\n    *   Constraints:\n        *   Each unit appears at most once.\n        *   Spaces allowed between components, at start, and at end.\n        *   No spaces between number and unit.\n        *   Integers must be 0 or positive (1+ digits).\n    *   Invalid Inputs (raise `ValueError`):\n        *   Empty string or string with only spaces.\n        *   Unknown units.\n        *   Number without unit.\n        *   Wrong order of units.\n        *   Duplicate units.\n        *   Decimals.\n        *   Negative numbers.\n        *   Uppercase letters.\n        *   Other separators/symbols.\n\n    *   Trim leading/trailing whitespace.\n    *   Check if empty.\n    *   The components are separated by zero or more spaces.\n    *   Regular expression is useful here, but the requirements say standard library only. `re` is a standard library.\n    *   Pattern for a single component: `(\\d+)([dhms])`\n    *   Let's try a regex-based approach:\n        1.  Strip the string: `text = text.strip()`\n        2.  If `not text`, raise `ValueError`.\n        3.  Split by spaces? No, because spaces can be 0 or more.\n        4.  Instead, we can use a regex to find all occurrences of `(\\d+)([dhms])` and check if they cover the whole string (ignoring spaces).\n        5.  Wait, a better way:\n            *   Valid pattern for the whole string: `^(\\s*(\\d+d))?(\\s*(\\d+h))?(\\s*(\\d+m))?(\\s*(\\d+s))?\\s*$`\n            *   But wait, the prompt says \"1 or more components\". So we must ensure at least one exists.\n            *   Also, it must be strict. No other characters allowed.\n\n    *   Pattern: `^\\s*(\\d+d)?\\s*(\\d+h)?\\s*(\\d+m)?\\s*(\\d+s)?\\s*$`\n    *   Problem: `re.match` with optional groups will match an empty string (or just spaces) as valid.\n    *   We need to check if at least one group matched.\n    *   We need to ensure there are no characters other than `\\d`, `d`, `h`, `m`, `s`, and ` `.\n\n    Actually, the regex approach is clean, but I need to be careful about invalid chars.\n    If I use `re.fullmatch(r'\\s*(\\d+d)?\\s*(\\d+h)?\\s*(\\d+m)?\\s*(\\d+s)?\\s*', text)`, it will match `\"\"` or `\"  \"`.\n    Also, if someone enters `\"1h 1h\"`, it won't match because of the order and optional groups.\n    But what if they enter `\"1x\"`? The regex won't match.\n\n    Let's refine the regex approach:\n    ```python\n    import re\n    pattern = r'^\\s*(\\d+d)?\\s*(\\d+h)?\\s*(\\d+m)?\\s*(\\d+s)?\\s*$'\n    match = re.fullmatch(pattern, text)\n    if not match:\n        raise ValueError\n    groups = match.groups() # contains (\\d+d), (\\d+h), ...\n    # Note: groups are actually (\\d+d), (\\d+h), etc.\n    # Wait, if I use capturing groups for the whole component:\n    # (\\d+d)? captures \"123d\"\n    ```\n\n    Wait, there's a catch: if the string is `\"  \"`, `fullmatch` succeeds and all groups are `None`. The problem says \"1 or more components\". So we must check if at least one group is not None.\n\n    Example: `\"1h 30m\"`\n    `match.groups()` -> `(None, '1h', '30m', None)` -> Correct.\n    Example: `\"2d3s\"`\n    `match.groups()` -> `('2d', None, None, '3s')` -> Correct.\n    Example: `\"1h 1h\"`\n    `fullmatch` -> `None` -> Correct.\n    Example: `\"1h 10\"`\n    `fullmatch` -> `None` -> Correct.\n    Example: `\"10x\"`\n    `fullmatch` -> `None` -> Correct.\n    Example: `\" 10s \"`\n    `match.groups()` -> `(None, None, None, '10s')` -> Correct.\n    Example: `\" \"`\n    `match.groups()` -> `(None, None, None, None)` -> Invalid (should raise ValueError).\n\n    *   `d`: 86400\n    *   `h`: 3600\n    *   `m`: 60\n    *   `s`: 1\n\n    ```python\n    import re\n\n    def parse_duration(text: str) -> int:\n        pattern = r'^\\s*(\\d+d)?\\s*(\\d+h)?\\s*(\\d+m)?\\s*(\\d+s)?\\s*$'\n        match = re.fullmatch(pattern, text)\n        if not match:\n            raise ValueError(\"Invalid format\")\n\n        groups = match.groups()\n        if all(g is None for g in groups):\n            raise ValueError(\"At least one component is required\")\n\n        total_seconds = 0\n        multipliers = {'d': 86400, 'h': 3600, 'm': 60, 's': 1}\n        \n        # Since the groups are ordered (d, h, m, s), we can just iterate\n        # But wait, the groups are like '123d'. I need to extract the number.\n        for g in groups:\n            if g:\n                # g is '123d', '45h', etc.\n                val = int(g[:-1])\n                unit = g[-1]\n                total_seconds += val * multipliers[unit]\n        \n        return total_seconds\n    ```\n\n    Wait, let me double check the \"no decimals\" and \"no negative numbers\" rule.\n    `\\d+` only matches digits, so it excludes `-` and `.`. Correct.\n    The rule \"1 or more components\" is handled by `all(g is None for g in groups)`.\n    The order is handled by the regex structure.\n    Duplicate units are handled by the regex structure.\n    Unknown units/chars are handled by `fullmatch`.\n\n    Let's dry run `\"1h 30m\"`:\n    1. `re.fullmatch(..., \"1h 30m\")` -> Match.\n    2. `groups` -> `(None, '1h', '30m', None)`\n    3. `all(g is None)` -> False.\n    4. `g='1h'`: `val=1`, `unit='h'`, `total=0 + 1*3600 = 3600`\n    5. `g='30m'`: `val=30`, `unit='m'`, `total=3600 + 30*60 = 3600 + 1800 = 5400`\n    6. Result: `5400`. Correct.\n\n    Dry run `\"2d3s\"`:\n    1. `re.fullmatch(..., \"2d3s\")` -> Match.\n    2. `groups` -> `('2d', None, None, '3s')`\n    3. `all(g is None)` -> False.\n    4. `g='2d'`: `val=2`, `unit='d'`, `total=0 + 2*86400 = 172800`\n    5. `g='3s'`: `val=3`, `unit='s'`, `total=172800 + 3*1 = 172803`\n    6. Result: `172803`. Correct.\n\n    Dry run `\"1h 1h\"`:\n    1. `re.fullmatch(..., \"1h 1h\")` -> `None`. (The pattern `(\\d+h)?` only matches one instance).\n    2. `if not match` -> `ValueError`. Correct.\n\n    Dry run `\"  \"`:\n    1. `re.fullmatch(..., \"  \")` -> Match.\n    2. `groups` -> `(None, None, None, None)`\n    3. `all(g is None)` -> True -> `ValueError`. Correct.\n\n    Dry run `\"10\"`:\n    1. `re.fullmatch(..., \"10\")` -> `None`. (Must have a unit). Correct.\n\n    Wait, one detail: `\"0s\"` should be valid.\n    `parse_duration(\"0s\")` -> `val=0`, `unit='s'`, `total=0`. Correct.\n\n    *   Standard library only? Yes (`re`).\n    *   No file/net/subprocess/stdin? Yes.\n    *   Correct names? `parse_duration(text: str) -> int`. Yes.\n    *   Only one code block? Yes.\n    *   No test/print? Yes.\n\n    One more check on the regex. `\\s*` at the end? Yes.\n    Is `\\d+` sufficient for \"0 or more integers\"? The prompt says \"0 以上の整数（半角数字 1 桁以上）\". `\\d+` matches 1 or more digits, and `int()` converts them to a non-negative integer. Correct.\n\n    What about `\" 1d 2h 3m 4s \"`?\n    `re.fullmatch` will match:\n    `\\s*` matches `\" \"`\n    `(\\d+d)?` matches `\"1d\"`\n    `\\s*` matches `\" \"`\n    `(\\d+h)?` matches `\"2h\"`\n    `\\s*` matches `\" \"`\n    `(\\d+m)?` matches `\"3m\"`\n    `\\s*` matches `\" \"`\n    `(\\d+s)?` matches `\"4s\"`\n    `\\s*` matches `\" \"`\n    Everything matches.\n\n    Wait, what if there are spaces *between* the number and the unit?\n    Prompt says: \"数と単位のあいだにはスペースを入れられない。\"\n    My regex `(\\d+d)?` requires the unit to be immediately after the digits.\n    If the input is `\"1 d\"`, it will not match `(\\d+d)?`.\n    Will it be caught?\n    `\"1 d\"`\n    `\\s*` -> `\" \"`\n    `(\\d+d)?` -> doesn't match `\"1 \"`\n    `\\s*` -> matches `\" \"`\n    `(\\d+h)?` -> doesn't match `\"1 d\"`\n    ...\n    Basically, `fullmatch` will fail because the `1` is not followed by `d, h, m, s` immediately, and it's not a space (if it's at the start).\n    Wait, let's trace `\"1 d\"` carefully:\n    - `^\\s*` matches `\" \"`\n    - `(\\d+d)?` is optional, so it can be skipped.\n    - `\\s*` matches `\" \"`\n    - `(\\d+h)?` optional, skipped.\n    - `\\s*` matches nothing.\n    - ...\n    - `\\s*$` matches nothing.\n    But the `1` is still there! The regex cannot skip the `1`.\n    The only way the regex matches is if *every* character in the string is accounted for by one of the optional groups or the `\\s*` patterns.\n    The characters `1` and `d` in `\"1 d\"` are separated by a space.\n    `\\s*(\\d+d)?\\s*(\\d+h)?\\s*(\\d+m)?\\s*(\\d+s)?\\s*`\n    If `text` is `\"1 d\"`:\n    `\\s*` matches `\" \"`\n    Then we need to match `1 d`.\n    `(\\d+d)?` does not match `1 `.\n    `\\s*` matches nothing.\n    `(\\d+h)?` does not match `1 d`.\n    ...\n    The `1` cannot be matched by any `\\s*` or `(\\d+unit)?`.\n    So `fullmatch` will return `None`.\n    Correct.\n\n    Final check on the units:\n    `d`: 86400\n    `h`: 3600\n    `m`: 60\n    `s`: 1\n    Summing them up.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 511,
+  "completion_tokens": 3470,
+  "ttft_s": 1.487,
+  "t_first_content_s": 108.007,
+  "wall_s": 120.352,
+  "load_s": 0.001,
+  "server_decode_tok_s": 29.17,
+  "server_prefill_tok_s": 581.34,
+  "server_timings": {
+    "total_duration": 120351339344,
+    "load_duration": 994252,
+    "prompt_eval_count": 511,
+    "prompt_eval_duration": 879010000,
+    "eval_count": 3470,
+    "eval_duration": 118972203000
+  },
+  "delta_chunks": 2981,
+  "wall_decode_tok_s": 29.19,
+  "thinking_chars": 8630,
+  "content_chars": 1218,
+  "thinking_tokens_est": 3041,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 120.351,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 10,
+    "total": 10,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_seconds_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_all_units",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_space",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_value",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_unit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_format",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.02,
+    "stderr_tail": ""
+  }
+}

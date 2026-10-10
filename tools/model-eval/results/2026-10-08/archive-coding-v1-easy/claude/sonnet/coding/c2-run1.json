@@ -1,0 +1,86 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "content": "```python\n_UNIT_SECONDS = (\n    (\"d\", 86400),\n    (\"h\", 3600),\n    (\"m\", 60),\n    (\"s\", 1),\n)\n_UNIT_INDEX = {unit: index for index, (unit, _) in enumerate(_UNIT_SECONDS)}\n_DIGITS = \"0123456789\"\n\n\ndef _digits_to_int(digits: str) -> int:\n    # int() は桁数が多いと ValueError になるため、小分けにして変換する。\n    result = 0\n    chunk_size = 1000\n    for start in range(0, len(digits), chunk_size):\n        chunk = digits[start:start + chunk_size]\n        result = result * (10 ** len(chunk)) + int(chunk)\n    return result\n\n\ndef parse_duration(text: str) -> int:\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a str\")\n\n    length = len(text)\n    position = 0\n    last_unit_index = -1\n    total = 0\n    component_count = 0\n\n    while position < length and text[position] == \" \":\n        position += 1\n\n    while position < length:\n        digits_start = position\n        while position < length and text[position] in _DIGITS:\n            position += 1\n        if position == digits_start:\n            raise ValueError(\"expected digits at position %d\" % position)\n        digits = text[digits_start:position]\n\n        if position >= length:\n            raise ValueError(\"missing unit after number\")\n        unit = text[position]\n        if unit not in _UNIT_INDEX:\n            raise ValueError(\"unknown unit %r\" % unit)\n        unit_index = _UNIT_INDEX[unit]\n        if unit_index <= last_unit_index:\n            raise ValueError(\"unit %r is duplicated or out of order\" % unit)\n        last_unit_index = unit_index\n        position += 1\n\n        total += _digits_to_int(digits) * _UNIT_SECONDS[unit_index][1]\n        component_count += 1\n\n        while position < length and text[position] == \" \":\n            position += 1\n\n    if component_count == 0:\n        raise ValueError(\"no duration components\")\n    return total\n```",
+  "wall_s": 19.949,
+  "usage": {
+    "subagent_tokens": 27098
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 10,
+    "total": 10,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_seconds_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_all_units",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_space",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_value",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_unit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_format",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.02,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:48+09:00"
+}

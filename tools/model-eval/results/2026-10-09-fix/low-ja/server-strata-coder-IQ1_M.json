@@ -1,0 +1,31 @@
+{
+  "condition": "low-ja",
+  "target": "strata-flash-coder:IQ1_M",
+  "unit": "strata-coder",
+  "slug": "strata-coder-IQ1_M",
+  "status": "ok",
+  "reps": [
+    1,
+    2,
+    3
+  ],
+  "start_s": 28.0,
+  "engine_started_line": "[strata] 2026-10-09 21:39:02 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile-coder.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8",
+  "slots": {
+    "filled": 8074,
+    "total": 8074
+  },
+  "cache_hit_lines": [
+    "strata serve: decode expert cache hit rate: 97.1% (19154354 hits / 19729046 lookups); 82474 more read by the GPU over PCIe or from another GPU (0.4% of all 19811520 routed)",
+    "strata serve: decode expert cache hit rate: 97.4% (19945320 hits / 20486625 lookups); 71775 more read by the GPU over PCIe or from another GPU (0.3% of all 20558400 routed)",
+    "strata serve: decode expert cache hit rate: 97.1% (12839410 hits / 13227547 lookups); 56453 more read by the GPU over PCIe or from another GPU (0.4% of all 13284000 routed)",
+    "strata serve: decode expert cache hit rate: 97.8% (19602862 hits / 20046616 lookups); 62024 more read by the GPU over PCIe or from another GPU (0.3% of all 20108640 routed)",
+    "strata serve: decode expert cache hit rate: 97.3% (12079296 hits / 12420738 lookups); 54462 more read by the GPU over PCIe or from another GPU (0.4% of all 12475200 routed)",
+    "strata serve: decode expert cache hit rate: 97.2% (19659417 hits / 20217156 lookups); 79164 more read by the GPU over PCIe or from another GPU (0.4% of all 20296320 routed)"
+  ],
+  "vram_before_mib": 142,
+  "vram_used_mib": 23835,
+  "memory_peak_bytes": 38657486848,
+  "memory_current_bytes": 38647992320,
+  "written_at": "2026-10-09T22:23:10+09:00"
+}

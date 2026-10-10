@@ -1,0 +1,3647 @@
+{
+  "date": "2026-10-08",
+  "generated_at": "2026-10-10T00:25:05+09:00",
+  "results_dir": "/home/mt/Proj/localai/tools/model-eval/results/2026-10-08",
+  "weights": {
+    "ability": 0.7,
+    "speed": 0.3
+  },
+  "formulas": {
+    "ability": "能力 = 回（問）ごとの点数（0〜1）の平均。答えなし・上限・時間切れ・時間の上限で飛ばした問は 0 点",
+    "speed": "速度点 = (ln T_max − ln T) ÷ (ln T_max − ln T_min)。T は時間の中央値。最も遅いモデルが 0、最も速いモデルが 1",
+    "overall": "総合 = 0.7 × 能力 + 0.3 × 速度点"
+  },
+  "limits": {
+    "coding": {
+      "max_tokens": 32768,
+      "reasoning_budget_tokens": 24576,
+      "request_timeout_s": 2400
+    },
+    "extra": {
+      "max_tokens": 8192,
+      "reasoning_budget_tokens": 6144,
+      "request_timeout_s": 1200
+    }
+  },
+  "stall_timeout_s": 300,
+  "model_time_budget_s": 6000,
+  "models": [
+    {
+      "key": "sonnet",
+      "label": "Sonnet5.5-xHigh",
+      "family": "claude",
+      "backend": "claude",
+      "slug": "sonnet",
+      "notes": "Claude Sonnet 5.5・effort xhigh。Agent ツールのサブエージェント（API 経由）"
+    },
+    {
+      "key": "opus",
+      "label": "Opus5.5-xHigh",
+      "family": "claude",
+      "backend": "claude",
+      "slug": "opus",
+      "notes": "Claude Opus 5.5・effort xhigh。Agent ツールのサブエージェント（API 経由）"
+    },
+    {
+      "key": "qwen3.8:27b",
+      "label": "qwen3.8:27b",
+      "family": "ollama",
+      "backend": "ollama",
+      "slug": "qwen3.8-27b",
+      "notes": "Q4_K_M・17 GB。Modelfile の既定 temp 1 / top_p 0.95 / top_k 20"
+    },
+    {
+      "key": "gemma4:e4b",
+      "label": "gemma4:e4b",
+      "family": "ollama",
+      "backend": "ollama",
+      "slug": "gemma4-e4b",
+      "notes": "9.6 GB。Modelfile の既定 temp 1 / top_p 0.95 / top_k 64"
+    },
+    {
+      "key": "gemma4:31b-it-qat",
+      "label": "gemma4:31b-it-qat",
+      "family": "ollama",
+      "backend": "ollama",
+      "slug": "gemma4-31b-it-qat",
+      "notes": "18 GB。num_ctx を送らない（サーバー既定 65536）。ctx32k と同じ重み"
+    },
+    {
+      "key": "gemma4:31b-ctx32k",
+      "label": "gemma4:31b-ctx32k",
+      "family": "ollama",
+      "backend": "ollama",
+      "slug": "gemma4-31b-ctx32k",
+      "notes": "it-qat と同じ重みで Modelfile の num_ctx 32768"
+    },
+    {
+      "key": "qwen3.8-flash-next:IQ4_XS",
+      "label": "qwen3.8-flash-next:IQ4_XS",
+      "family": "ollama",
+      "backend": "ollama",
+      "slug": "qwen3.8-flash-next-IQ4_XS",
+      "notes": "97 GB（非 abliterated）。大半を CPU 側に置く。Modelfile の既定 temp 1 / top_p 0.95 / top_k 20"
+    },
+    {
+      "key": "strata-official:IQ3_XXS",
+      "label": "strata-official:IQ3_XXS",
+      "family": "strata",
+      "backend": "strata",
+      "slug": "strata-official-IQ3_XXS",
+      "notes": "公式 GSQ-RCO IQ3_XXS（非 abliterated）。Strata 8084"
+    },
+    {
+      "key": "strata-flash-coder:IQ1_M",
+      "label": "strata-flash-coder:IQ1_M (Coder)",
+      "family": "strata",
+      "backend": "strata",
+      "slug": "strata-coder-IQ1_M",
+      "notes": "ISTA-DASLab の Coder GSQ-RCO IQ1_M（コード向けに各層 256 エキスパートへ間引いた版）。Strata 8083。2026-10-09 に追加で計測"
+    }
+  ],
+  "excluded": [
+    {
+      "key": "strata-flash-next:IQ3_S",
+      "label": "strata-flash-next:IQ3_S (RVN)",
+      "reason": "2026-10-09 の利用者の指示。成績が低いため"
+    }
+  ],
+  "suites": {
+    "math3d": {
+      "label": "頭の良さ（3D 数学）",
+      "items": [
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+      ],
+      "answer_key": {
+        "q1": "1−r ≤ t ≤ r。断面は (x,z) 平面で、V1 は線分 (0,0)–(1,0) を半径 √(r²−t²) で、V3 は線分 (1,0)–(1,1) を半径 √(r²−(1−t)²) で太らせたスタジアム形",
+        "q2": "1/2 < r ≤ √2/2",
+        "q3": "πr² + (4/3)πr³",
+        "q4": "3πr² + (2π − 8/3)r³（r=0.6 で 4.1741）"
+      },
+      "notes": [
+        "時間はこの md の記録（Open WebUI の会話と Strata の計測）から写した。Open WebUI 経由の回は、ロード時間を含むかどうかを切り分けられない。",
+        "「1 時間 1 分」「1 時間 2 分」は分単位の記録なので、秒は 0 として 3,660 秒・3,720 秒にした。",
+        "tok/s は記録の値。strata RVN の 641 秒の回は 33,492 トークン ÷ 641 秒で計算した値（記録には無い）。",
+        "strata-flash-coder:IQ1_M の 2 回は md からの写しではなく、2026-10-09 の bench_api.py の記録（bench.jsonl）の値。"
+      ],
+      "models": {
+        "sonnet": {
+          "runs": [
+            {
+              "label": "run1",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 67.055,
+              "tokens": null,
+              "tok_s": null,
+              "used": true,
+              "note": "",
+              "source": "claude"
+            },
+            {
+              "label": "run2",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 57.24,
+              "tokens": null,
+              "tok_s": null,
+              "used": true,
+              "note": "",
+              "source": "claude"
+            },
+            {
+              "label": "run3",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 83.156,
+              "tokens": null,
+              "tok_s": null,
+              "used": true,
+              "note": "",
+              "source": "claude"
+            }
+          ],
+          "n_runs": 3,
+          "ability": 1.0,
+          "time_s": 67.055,
+          "tok_s": null,
+          "note": "",
+          "speed": 0.9816251080966844,
+          "overall": 0.9944875324290052,
+          "rank": 2
+        },
+        "opus": {
+          "runs": [
+            {
+              "label": "run1",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 57.685,
+              "tokens": null,
+              "tok_s": null,
+              "used": true,
+              "note": "",
+              "source": "claude"
+            },
+            {
+              "label": "run2",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 62.199,
+              "tokens": null,
+              "tok_s": null,
+              "used": true,
+              "note": "",
+              "source": "claude"
+            },
+            {
+              "label": "run3",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 68.984,
+              "tokens": null,
+              "tok_s": null,
+              "used": true,
+              "note": "",
+              "source": "claude"
+            }
+          ],
+          "n_runs": 3,
+          "ability": 1.0,
+          "time_s": 62.199,
+          "tok_s": null,
+          "note": "",
+          "speed": 1.0,
+          "overall": 1.0,
+          "rank": 1
+        },
+        "qwen3.8:27b": {
+          "runs": [
+            {
+              "label": "09-20",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 717,
+              "tokens": 18597,
+              "tok_s": 26.4,
+              "used": true,
+              "note": "全問正解",
+              "env": "Ollama / Open WebUI",
+              "source": "local-md"
+            },
+            {
+              "label": "09-28",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": false
+              },
+              "score": 0.75,
+              "wall_s": 1029,
+              "tokens": 25723,
+              "tok_s": 25.1,
+              "used": true,
+              "note": "(4) は正しい式を出したあと書き換えで誤った",
+              "env": "Ollama / Open WebUI",
+              "source": "local-md"
+            }
+          ],
+          "n_runs": 2,
+          "ability": 0.875,
+          "time_s": 873.0,
+          "tok_s": 25.75,
+          "note": "",
+          "speed": 0.3543128278751003,
+          "overall": 0.71879384836253,
+          "rank": 7
+        },
+        "gemma4:e4b": {
+          "runs": [
+            {
+              "label": "09-27（参考）",
+              "grade": {
+                "q1": true,
+                "q2": false,
+                "q3": null,
+                "q4": null
+              },
+              "score": 0.25,
+              "wall_s": 72,
+              "tokens": 5606,
+              "tok_s": 80.0,
+              "used": false,
+              "note": "参考（thinking の設定が 10-08 と違う）",
+              "env": "Ollama / Open WebUI",
+              "source": "local-md"
+            },
+            {
+              "label": "10-08",
+              "grade": {
+                "q1": true,
+                "q2": false,
+                "q3": true,
+                "q4": false
+              },
+              "score": 0.5,
+              "wall_s": 108,
+              "tokens": 9091,
+              "tok_s": 90.0,
+              "used": true,
+              "note": "",
+              "env": "Ollama API（thinking あり）run1",
+              "source": "local-md"
+            },
+            {
+              "label": "10-08",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": false
+              },
+              "score": 0.75,
+              "wall_s": 142,
+              "tokens": 12760,
+              "tok_s": 90.1,
+              "used": true,
+              "note": "",
+              "env": "Ollama API（thinking あり）run2",
+              "source": "local-md"
+            },
+            {
+              "label": "10-08",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": false
+              },
+              "score": 0.75,
+              "wall_s": 115,
+              "tokens": 10372,
+              "tok_s": 90.4,
+              "used": true,
+              "note": "",
+              "env": "Ollama API（thinking あり）run3",
+              "source": "local-md"
+            }
+          ],
+          "n_runs": 3,
+          "ability": 0.6666666666666666,
+          "time_s": 115,
+          "tok_s": 90.1,
+          "note": "能力には 10-08 の Ollama API（thinking あり）の 3 回を使う。09-27 の Open WebUI の 1 回（○/×/—/—）は参考。",
+          "speed": 0.8497745855216587,
+          "overall": 0.7215990423231642,
+          "rank": 6
+        },
+        "gemma4:31b-it-qat": {
+          "runs": [
+            {
+              "label": "09-27",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 3660,
+              "tokens": 19118,
+              "tok_s": 5.2,
+              "used": true,
+              "note": "1 時間 1 分（分単位の記録）",
+              "env": "Ollama / Open WebUI",
+              "source": "local-md"
+            }
+          ],
+          "n_runs": 1,
+          "ability": 1.0,
+          "time_s": 3660,
+          "tok_s": 5.2,
+          "note": "09-27 の記録は GPU 90%・5.2 tok/s。Ollama の既定 65536 で文脈が CPU に溢れていた疑いがある。",
+          "speed": 0.003974569624389456,
+          "overall": 0.7011923708873168,
+          "rank": 8
+        },
+        "gemma4:31b-ctx32k": {
+          "runs": [
+            {
+              "label": "09-28",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 441,
+              "tokens": 11421,
+              "tok_s": 27.6,
+              "used": true,
+              "note": "最短で全問正解",
+              "env": "Ollama / Open WebUI",
+              "source": "local-md"
+            }
+          ],
+          "n_runs": 1,
+          "ability": 1.0,
+          "time_s": 441,
+          "tok_s": 27.6,
+          "note": "",
+          "speed": 0.5212322381738262,
+          "overall": 0.8563696714521478,
+          "rank": 3
+        },
+        "qwen3.8-flash-next:IQ4_XS": {
+          "runs": [
+            {
+              "label": "09-28",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 3720,
+              "tokens": 48204,
+              "tok_s": 13.6,
+              "used": true,
+              "note": "1 時間 2 分（分単位の記録）",
+              "env": "Ollama / Open WebUI",
+              "source": "local-md"
+            }
+          ],
+          "n_runs": 1,
+          "ability": 1.0,
+          "time_s": 3720,
+          "tok_s": 13.6,
+          "note": "",
+          "speed": 0.0,
+          "overall": 0.7,
+          "rank": 9
+        },
+        "strata-official:IQ3_XXS": {
+          "runs": [
+            {
+              "label": "10-07",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 904,
+              "tokens": 53975,
+              "tok_s": 59.8,
+              "used": true,
+              "note": "(1) の退化の説明に小さな誤り",
+              "env": "Strata 8084・md 版・temperature 1.0（O1）",
+              "source": "local-md"
+            },
+            {
+              "label": "10-07",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 774,
+              "tokens": 49161,
+              "tok_s": 63.7,
+              "used": true,
+              "note": "",
+              "env": "Strata 8084・md 版・temperature 0.6（O2）",
+              "source": "local-md"
+            }
+          ],
+          "n_runs": 2,
+          "ability": 1.0,
+          "time_s": 839.0,
+          "tok_s": 61.75,
+          "note": "予算なしで 2 回とも収束して全問正解。",
+          "speed": 0.36402279847776314,
+          "overall": 0.809206839543329,
+          "rank": 5
+        },
+        "strata-flash-coder:IQ1_M": {
+          "runs": [
+            {
+              "label": "10-09",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 743.73,
+              "tokens": 50895,
+              "tok_s": 68.5,
+              "used": true,
+              "note": "答えは英語。(1) の途中の式に書き誤り（−t ≤ t ≤ r）があるが結論は正しい",
+              "env": "Strata 8083・md 版・effort high・予算なし（要求で 0）・max_tokens 65,536・temperature 1.0 / top_p 0.95 / top_k 20（run1）",
+              "source": "local-md"
+            },
+            {
+              "label": "10-09",
+              "grade": {
+                "q1": true,
+                "q2": true,
+                "q3": true,
+                "q4": true
+              },
+              "score": 1.0,
+              "wall_s": 711.28,
+              "tokens": 48497,
+              "tok_s": 68.3,
+              "used": true,
+              "note": "答えは英語と日本語の混在。(2) は必要性の反例 (1−s, 1/2, s) まで示した",
+              "env": "Strata 8083・md 版・effort high・予算なし（要求で 0）・max_tokens 65,536・temperature 1.0 / top_p 0.95 / top_k 20（run2）",
+              "source": "local-md"
+            }
+          ],
+          "n_runs": 2,
+          "ability": 1.0,
+          "time_s": 727.505,
+          "tok_s": 68.4,
+          "note": "2026-10-09 に追加で流した 2 回（tools/strata/scripts/bench_api.py、記録は results/2026-10-08/local/strata-coder-IQ1_M/math3d/）。公式版の O1 と同じ条件（予算なし）で 2 回とも収束して全問正解。Documents の md には載っていない。",
+          "speed": 0.3988761238901966,
+          "overall": 0.8196628371670589,
+          "rank": 4
+        }
+      },
+      "time_range_s": [
+        62.199,
+        3720
+      ]
+    },
+    "coding": {
+      "label": "コーディング 6 問",
+      "items": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "c6"
+      ],
+      "models": {
+        "sonnet": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 16.362,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 44.434,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 22.199,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 69.104,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 60.858,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 48.162,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            }
+          },
+          "ability": 1.0,
+          "time_s": 46.298,
+          "total_time_s": 261.11899999999997,
+          "tok_s": null,
+          "n_answered": 6,
+          "n_all_passed": 6,
+          "tokens_total": null,
+          "thinking_tokens_est_total": null,
+          "n_budget_cut": 0,
+          "speed": 1.0,
+          "overall": 1.0,
+          "rank": 1
+        },
+        "opus": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 21.708,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 59.463,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 42.192,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 99.713,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 124.339,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 58.405,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            }
+          },
+          "ability": 1.0,
+          "time_s": 58.934,
+          "total_time_s": 405.82,
+          "tok_s": null,
+          "n_answered": 6,
+          "n_all_passed": 6,
+          "tokens_total": null,
+          "thinking_tokens_est_total": null,
+          "n_budget_cut": 0,
+          "speed": 0.9111177496957114,
+          "overall": 0.9733353249087133,
+          "rank": 2
+        },
+        "qwen3.8:27b": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 123.216,
+              "tokens": 5437,
+              "thinking_tokens_est": 4721,
+              "tok_s": 44.73,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 16283,
+                "question_per_10k": 12.896886323159123,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 11.538461538461538
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 362.68,
+              "tokens": 16684,
+              "thinking_tokens_est": 15220,
+              "tok_s": 46.32,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 48414,
+                "question_per_10k": 6.196554715578138,
+                "maybe_per_10k": 0.41310364770520924,
+                "repeated_line_pct": 15.170278637770899
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 58.788,
+              "tokens": 2638,
+              "thinking_tokens_est": 2350,
+              "tok_s": 46.71,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 7055,
+                "question_per_10k": 5.669737774627923,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 1.0416666666666665
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c4": {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "ok",
+              "reason": "本文が無い",
+              "time_s": 413.442,
+              "tokens": 18635,
+              "thinking_tokens_est": 18635,
+              "tok_s": 45.35,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 72099,
+                "question_per_10k": 3.3287562934298673,
+                "maybe_per_10k": 0.13869817889291114,
+                "repeated_line_pct": 31.72866520787746
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 0.9583,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 519.124,
+              "tokens": 23230,
+              "thinking_tokens_est": 20802,
+              "tok_s": 44.98,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 72579,
+                "question_per_10k": 7.991292247068712,
+                "maybe_per_10k": 0.275561801623059,
+                "repeated_line_pct": 22.577319587628867
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 100.923,
+              "tokens": 4437,
+              "thinking_tokens_est": 3739,
+              "tok_s": 44.98,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 13908,
+                "question_per_10k": 1.438021282714984,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 20.118343195266274
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.8263833333333334,
+          "time_s": 242.948,
+          "total_time_s": 1578.173,
+          "tok_s": 45.165,
+          "n_answered": 5,
+          "n_all_passed": 4,
+          "tokens_total": 71061,
+          "thinking_tokens_est_total": 65467,
+          "n_budget_cut": 0,
+          "speed": 0.3894215482122177,
+          "overall": 0.6952947977969987,
+          "rank": 3
+        },
+        "gemma4:e4b": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 0.68,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 37.125,
+              "tokens": 3354,
+              "thinking_tokens_est": 1404,
+              "tok_s": 91.25,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 3454,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 0.1538,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 60.916,
+              "tokens": 5429,
+              "thinking_tokens_est": 1278,
+              "tok_s": 89.76,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 3313,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 42.846,
+              "tokens": 3852,
+              "thinking_tokens_est": 3044,
+              "tok_s": 90.7,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 6160,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 0.5217,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 52.827,
+              "tokens": 4724,
+              "thinking_tokens_est": 898,
+              "tok_s": 90.22,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 3276,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "ok",
+              "reason": "禁止の import / 呼び出しがあるため実行せず 0 点",
+              "time_s": 81.498,
+              "tokens": 7309,
+              "thinking_tokens_est": 660,
+              "tok_s": 90.14,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2177,
+                "question_per_10k": 9.186954524575103,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 1
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 0.75,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 33.558,
+              "tokens": 3012,
+              "thinking_tokens_est": 1042,
+              "tok_s": 90.59,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2657,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.5175833333333334,
+          "time_s": 47.8365,
+          "total_time_s": 308.77,
+          "tok_s": 90.405,
+          "n_answered": 6,
+          "n_all_passed": 1,
+          "tokens_total": 27680,
+          "thinking_tokens_est_total": 8326,
+          "n_budget_cut": 0,
+          "speed": 0.9879596216041827,
+          "overall": 0.6586962198145881,
+          "rank": 5
+        },
+        "gemma4:31b-it-qat": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 635.86,
+              "tokens": 7986,
+              "thinking_tokens_est": 7000,
+              "tok_s": 12.6,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 20563,
+                "question_per_10k": 3.4041725429168896,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 20.86092715231788
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 800.221,
+              "tokens": 9500,
+              "thinking_tokens_est": 7750,
+              "tok_s": 11.93,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 23090,
+                "question_per_10k": 8.228670420095279,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 9.580838323353294
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 359.89,
+              "tokens": 4786,
+              "thinking_tokens_est": 4196,
+              "tok_s": 13.42,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 12022,
+                "question_per_10k": 2.4954250540675424,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 4.45859872611465
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 0.5652,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 762.831,
+              "tokens": 9210,
+              "thinking_tokens_est": 6713,
+              "tok_s": 12.13,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 23966,
+                "question_per_10k": 7.927897855295001,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 21.428571428571427
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 0.9583,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1036.87,
+              "tokens": 11880,
+              "thinking_tokens_est": 8970,
+              "tok_s": 11.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 32791,
+                "question_per_10k": 7.319081455277363,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 12.471655328798185
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 529.909,
+              "tokens": 6908,
+              "thinking_tokens_est": 6026,
+              "tok_s": 13.11,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 21015,
+                "question_per_10k": 1.9034023316678563,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 29.924242424242426
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.9205833333333334,
+          "time_s": 699.3455,
+          "total_time_s": 4125.581,
+          "tok_s": 12.365,
+          "n_answered": 6,
+          "n_all_passed": 4,
+          "tokens_total": 50270,
+          "thinking_tokens_est_total": 40655,
+          "n_budget_cut": 0,
+          "speed": 0.0,
+          "overall": 0.6444083333333334,
+          "rank": 6
+        },
+        "gemma4:31b-ctx32k": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 0.88,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 177.811,
+              "tokens": 5108,
+              "thinking_tokens_est": 4331,
+              "tok_s": 29.0,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 14651,
+                "question_per_10k": 6.142925397583783,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 9.5
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 271.97,
+              "tokens": 7753,
+              "thinking_tokens_est": 6112,
+              "tok_s": 28.83,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 19444,
+                "question_per_10k": 3.600082287595145,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 8.540925266903916
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 265.215,
+              "tokens": 7576,
+              "thinking_tokens_est": 6761,
+              "tok_s": 28.87,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 19914,
+                "question_per_10k": 10.043185698503565,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 15.018315018315018
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 235.399,
+              "tokens": 6695,
+              "thinking_tokens_est": 4083,
+              "tok_s": 28.85,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 14258,
+                "question_per_10k": 10.52040959461355,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 7.222222222222221
+              },
+              "syntax_error": true,
+              "violations": 0
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 0.875,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 407.576,
+              "tokens": 11595,
+              "thinking_tokens_est": 9376,
+              "tok_s": 28.68,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 32024,
+                "question_per_10k": 5.308518611041719,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 10.087719298245613
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 266.432,
+              "tokens": 7613,
+              "thinking_tokens_est": 6844,
+              "tok_s": 28.87,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 22868,
+                "question_per_10k": 1.3118768584922162,
+                "maybe_per_10k": 0.43729228616407206,
+                "repeated_line_pct": 35.59870550161812
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.7925,
+          "time_s": 265.82349999999997,
+          "total_time_s": 1624.403,
+          "tok_s": 28.86,
+          "n_answered": 6,
+          "n_all_passed": 3,
+          "tokens_total": 46340,
+          "thinking_tokens_est_total": 37507,
+          "n_budget_cut": 0,
+          "speed": 0.35627841855732484,
+          "overall": 0.6616335255671975,
+          "rank": 4
+        },
+        "qwen3.8-flash-next:IQ4_XS": {
+          "items": {
+            "c1": {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "error",
+              "reason": "error",
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "finish": null,
+              "error": "HTTP 500: {\"error\":\"an error was encountered while running the model: CUDA error: an illegal memory access was encountered\\nCUDA error\"}",
+              "budget_cut": false,
+              "thinking_stats": null,
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 536.494,
+              "tokens": 11079,
+              "thinking_tokens_est": 9544,
+              "tok_s": 21.56,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 30724,
+                "question_per_10k": 14.32105194636115,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 9.248554913294797
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 183.093,
+              "tokens": 3982,
+              "thinking_tokens_est": 3650,
+              "tok_s": 22.94,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 11616,
+                "question_per_10k": 3.443526170798898,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 6.870229007633588
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 695.713,
+              "tokens": 15272,
+              "thinking_tokens_est": 12351,
+              "tok_s": 22.35,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 43929,
+                "question_per_10k": 5.235721277515991,
+                "maybe_per_10k": 0.22764005554417358,
+                "repeated_line_pct": 20.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c5": {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1531.208,
+              "tokens": 32768,
+              "thinking_tokens_est": 32768,
+              "tok_s": 21.55,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 109176,
+                "question_per_10k": 14.380449915732395,
+                "maybe_per_10k": 0.09159522239319998,
+                "repeated_line_pct": 10.302197802197801
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 0.4,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 275.422,
+              "tokens": 6179,
+              "thinking_tokens_est": 5190,
+              "tok_s": 23.11,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 19983,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 19.9203187250996
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.5666666666666667,
+          "time_s": 536.494,
+          "total_time_s": 3221.9300000000003,
+          "tok_s": 22.35,
+          "n_answered": 4,
+          "n_all_passed": 3,
+          "tokens_total": 69280,
+          "thinking_tokens_est_total": 63503,
+          "n_budget_cut": 0,
+          "speed": 0.09763720620564229,
+          "overall": 0.4259578285283593,
+          "rank": 9
+        },
+        "strata-official:IQ3_XXS": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 0.64,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 439.444,
+              "tokens": 25078,
+              "thinking_tokens_est": 24568,
+              "tok_s": 82.6,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 102606,
+                "question_per_10k": 71.04847669726917,
+                "maybe_per_10k": 5.945071438317448,
+                "repeated_line_pct": 4.387990762124711
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 460.908,
+              "tokens": 26560,
+              "thinking_tokens_est": 24360,
+              "tok_s": 73.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 82361,
+                "question_per_10k": 58.037177790459076,
+                "maybe_per_10k": 10.441835334685106,
+                "repeated_line_pct": 2.5522041763341066
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 467.155,
+              "tokens": 24855,
+              "thinking_tokens_est": 24626,
+              "tok_s": 57.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 98050,
+                "question_per_10k": 44.467108618052016,
+                "maybe_per_10k": 16.216216216216214,
+                "repeated_line_pct": 8.450704225352112
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 0.5652,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 468.982,
+              "tokens": 27245,
+              "thinking_tokens_est": 24570,
+              "tok_s": 83.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 96471,
+                "question_per_10k": 46.646142364026495,
+                "maybe_per_10k": 14.09750080335023,
+                "repeated_line_pct": 2.742230347349177
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 0.8333,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 483.531,
+              "tokens": 27135,
+              "thinking_tokens_est": 24800,
+              "tok_s": 75.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 96649,
+                "question_per_10k": 63.735786195408124,
+                "maybe_per_10k": 11.277923206655009,
+                "repeated_line_pct": 1.2658227848101267
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 455.06,
+              "tokens": 26549,
+              "thinking_tokens_est": 24900,
+              "tok_s": 73.4,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 107356,
+                "question_per_10k": 49.275308319982116,
+                "maybe_per_10k": 14.251648720146056,
+                "repeated_line_pct": 0.7518796992481203
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.83975,
+          "time_s": 464.0315,
+          "total_time_s": 2775.08,
+          "tok_s": 74.65,
+          "n_answered": 6,
+          "n_all_passed": 3,
+          "tokens_total": 157422,
+          "thinking_tokens_est_total": 147824,
+          "n_budget_cut": 6,
+          "speed": 0.15108121171936298,
+          "overall": 0.6331493635158089,
+          "rank": 7
+        },
+        "strata-flash-coder:IQ1_M": {
+          "items": {
+            "c1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 401.037,
+              "tokens": 25202,
+              "thinking_tokens_est": 24562,
+              "tok_s": 97.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 101873,
+                "question_per_10k": 49.767848203154905,
+                "maybe_per_10k": 2.5521973437515335,
+                "repeated_line_pct": 2.586206896551724
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c2": {
+              "cell": "scored",
+              "score": 0.4615,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 407.56,
+              "tokens": 26043,
+              "thinking_tokens_est": 24542,
+              "tok_s": 90.9,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 85790,
+                "question_per_10k": 47.324863037650076,
+                "maybe_per_10k": 8.858841356801491,
+                "repeated_line_pct": 3.6927621861152145
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 203.022,
+              "tokens": 12375,
+              "thinking_tokens_est": 12174,
+              "tok_s": 61.4,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 48395,
+                "question_per_10k": 44.426077074077895,
+                "maybe_per_10k": 13.431139580535179,
+                "repeated_line_pct": 2.690582959641256
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c4": {
+              "cell": "scored",
+              "score": 0.6522,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 404.343,
+              "tokens": 27249,
+              "thinking_tokens_est": 24706,
+              "tok_s": 96.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 91642,
+                "question_per_10k": 47.467318478426925,
+                "maybe_per_10k": 10.148185329870584,
+                "repeated_line_pct": 7.107438016528926
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c5": {
+              "cell": "scored",
+              "score": 0.0417,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 426.894,
+              "tokens": 27002,
+              "thinking_tokens_est": 24513,
+              "tok_s": 94.2,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 95670,
+                "question_per_10k": 51.32225358001463,
+                "maybe_per_10k": 8.989233824605416,
+                "repeated_line_pct": 1.5384615384615385
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "c6": {
+              "cell": "scored",
+              "score": 0.4,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 431.378,
+              "tokens": 26492,
+              "thinking_tokens_est": 24942,
+              "tok_s": 92.6,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 99494,
+                "question_per_10k": 41.20851508633687,
+                "maybe_per_10k": 10.352383058274869,
+                "repeated_line_pct": 1.278772378516624
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.5925666666666667,
+          "time_s": 405.9515,
+          "total_time_s": 2274.234,
+          "tok_s": 93.4,
+          "n_answered": 6,
+          "n_all_passed": 2,
+          "tokens_total": 144363,
+          "thinking_tokens_est_total": 135439,
+          "n_budget_cut": 5,
+          "speed": 0.20033221406454482,
+          "overall": 0.4748963308860301,
+          "rank": 8
+        }
+      },
+      "time_range_s": [
+        46.298,
+        699.3455
+      ]
+    },
+    "extra": {
+      "label": "追加の 3 試験",
+      "items": [
+        "inst1",
+        "inst2",
+        "inst3",
+        "needle1",
+        "needle2",
+        "needle3",
+        "json1",
+        "json2",
+        "json3"
+      ],
+      "models": {
+        "sonnet": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 3.6133333333333333,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 3.6133333333333333,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 3.6133333333333333,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1.837,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1.837,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1.837,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1.506,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1.506,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1.506,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            }
+          },
+          "ability": 1.0,
+          "time_s": 1.837,
+          "total_time_s": 20.869,
+          "tok_s": null,
+          "n_answered": 9,
+          "n_all_passed": 9,
+          "tokens_total": null,
+          "thinking_tokens_est_total": null,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 1.0,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 1.0,
+          "overall": 1.0,
+          "rank": 1
+        },
+        "opus": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 5.626666666666666,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 5.626666666666666,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 5.626666666666666,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 2.8053333333333335,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 2.8053333333333335,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 2.8053333333333335,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 2.8023333333333333,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 2.8023333333333333,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 2.8023333333333333,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "runs": 1
+            }
+          },
+          "ability": 1.0,
+          "time_s": 2.8053333333333335,
+          "total_time_s": 33.702999999999996,
+          "tok_s": null,
+          "n_answered": 9,
+          "n_all_passed": 9,
+          "tokens_total": null,
+          "thinking_tokens_est_total": null,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 1.0,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.8732079944316262,
+          "overall": 0.9619623983294878,
+          "rank": 2
+        },
+        "qwen3.8:27b": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 34.048,
+              "tokens": 1598,
+              "thinking_tokens_est": 1563,
+              "tok_s": 48.14,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 3561,
+                "question_per_10k": 2.808199943836001,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 14.035087719298245
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 13.631,
+              "tokens": 609,
+              "thinking_tokens_est": 561,
+              "tok_s": 47.17,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1521,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 15.115,
+              "tokens": 733,
+              "thinking_tokens_est": 709,
+              "tok_s": 50.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1616,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 12.661,
+              "tokens": 118,
+              "thinking_tokens_est": 116,
+              "tok_s": 42.92,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 330,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 12.854,
+              "tokens": 120,
+              "thinking_tokens_est": 118,
+              "tok_s": 45.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 343,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 12.522,
+              "tokens": 110,
+              "thinking_tokens_est": 108,
+              "tok_s": 47.24,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 312,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.322,
+              "tokens": 163,
+              "thinking_tokens_est": 118,
+              "tok_s": 52.05,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 314,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.749,
+              "tokens": 207,
+              "thinking_tokens_est": 155,
+              "tok_s": 53.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 369,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.42,
+              "tokens": 178,
+              "thinking_tokens_est": 132,
+              "tok_s": 50.31,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 323,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 1.0,
+          "time_s": 12.661,
+          "total_time_s": 114.322,
+          "tok_s": 48.14,
+          "n_answered": 9,
+          "n_all_passed": 9,
+          "tokens_total": 3836,
+          "thinking_tokens_est_total": 3580,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 1.0,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.421906089793062,
+          "overall": 0.8265718269379185,
+          "rank": 5
+        },
+        "gemma4:e4b": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 7.793,
+              "tokens": 707,
+              "thinking_tokens_est": 668,
+              "tok_s": 92.22,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1785,
+                "question_per_10k": 33.61344537815126,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1.245,
+              "tokens": 107,
+              "thinking_tokens_est": 0,
+              "tok_s": 93.05,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": null,
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 0.6,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 0.726,
+              "tokens": 61,
+              "thinking_tokens_est": 0,
+              "tok_s": 94.03,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": null,
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.798,
+              "tokens": 273,
+              "thinking_tokens_est": 270,
+              "tok_s": 89.77,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 418,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.632,
+              "tokens": 254,
+              "thinking_tokens_est": 250,
+              "tok_s": 89.17,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 412,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 6.582,
+              "tokens": 428,
+              "thinking_tokens_est": 426,
+              "tok_s": 89.12,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1470,
+                "question_per_10k": 27.210884353741495,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 8.157,
+              "tokens": 734,
+              "thinking_tokens_est": 681,
+              "tok_s": 92.27,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2033,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 7.23,
+              "tokens": 656,
+              "thinking_tokens_est": 594,
+              "tok_s": 92.74,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1542,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 6.487,
+              "tokens": 588,
+              "thinking_tokens_est": 536,
+              "tok_s": 92.81,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1522,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.9555555555555555,
+          "time_s": 6.487,
+          "total_time_s": 47.65,
+          "tok_s": 92.27,
+          "n_answered": 9,
+          "n_all_passed": 8,
+          "tokens_total": 3808,
+          "thinking_tokens_est_total": 3425,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 0.8666666666666667,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.6221692698943494,
+          "overall": 0.8555396698571935,
+          "rank": 3
+        },
+        "gemma4:31b-it-qat": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 73.29,
+              "tokens": 1068,
+              "thinking_tokens_est": 1047,
+              "tok_s": 14.9,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2671,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 79.137,
+              "tokens": 1140,
+              "thinking_tokens_est": 1106,
+              "tok_s": 14.6,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2910,
+                "question_per_10k": 3.436426116838488,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 63.366,
+              "tokens": 930,
+              "thinking_tokens_est": 910,
+              "tok_s": 14.91,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2480,
+                "question_per_10k": 48.38709677419355,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 55.487,
+              "tokens": 503,
+              "thinking_tokens_est": 501,
+              "tok_s": 12.04,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1515,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 34.331,
+              "tokens": 234,
+              "thinking_tokens_est": 231,
+              "tok_s": 11.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 625,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 45.053,
+              "tokens": 365,
+              "thinking_tokens_est": 363,
+              "tok_s": 11.99,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1047,
+                "question_per_10k": 28.653295128939828,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 39.923,
+              "tokens": 568,
+              "thinking_tokens_est": 509,
+              "tok_s": 15.01,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1370,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 44.722,
+              "tokens": 656,
+              "thinking_tokens_est": 591,
+              "tok_s": 15.09,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1462,
+                "question_per_10k": 61.55950752393981,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 38.824,
+              "tokens": 572,
+              "thinking_tokens_est": 517,
+              "tok_s": 15.2,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1385,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 1.0,
+          "time_s": 45.053,
+          "total_time_s": 474.13300000000004,
+          "tok_s": 14.9,
+          "n_answered": 9,
+          "n_all_passed": 9,
+          "tokens_total": 6036,
+          "thinking_tokens_est_total": 5775,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 1.0,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.041785374313719655,
+          "overall": 0.7125356122941159,
+          "rank": 7
+        },
+        "gemma4:31b-ctx32k": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 80.828,
+              "tokens": 2338,
+              "thinking_tokens_est": 2319,
+              "tok_s": 29.42,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 6327,
+                "question_per_10k": 20.54686265212581,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 54.379,
+              "tokens": 1587,
+              "thinking_tokens_est": 1555,
+              "tok_s": 29.63,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 4119,
+                "question_per_10k": 12.138868657441126,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 56.736,
+              "tokens": 1656,
+              "thinking_tokens_est": 1635,
+              "tok_s": 29.59,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 4209,
+                "question_per_10k": 83.1551437396056,
+                "maybe_per_10k": 2.3758612497030174,
+                "repeated_line_pct": 13.750000000000002
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 32.362,
+              "tokens": 613,
+              "thinking_tokens_est": 611,
+              "tok_s": 28.71,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1710,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 50.897,
+              "tokens": 1120,
+              "thinking_tokens_est": 1117,
+              "tok_s": 28.65,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 3069,
+                "question_per_10k": 16.291951775822742,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 67.564,
+              "tokens": 1597,
+              "thinking_tokens_est": 1595,
+              "tok_s": 28.62,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 4503,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 21.499,
+              "tokens": 587,
+              "thinking_tokens_est": 525,
+              "tok_s": 29.94,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1333,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 22.152,
+              "tokens": 633,
+              "thinking_tokens_est": 566,
+              "tok_s": 29.9,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1350,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 16.992,
+              "tokens": 482,
+              "thinking_tokens_est": 428,
+              "tok_s": 30.02,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1163,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 1.0,
+          "time_s": 50.897,
+          "total_time_s": 403.409,
+          "tok_s": 29.59,
+          "n_answered": 9,
+          "n_all_passed": 9,
+          "tokens_total": 10613,
+          "thinking_tokens_est_total": 10351,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 1.0,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.005260741042806469,
+          "overall": 0.701578222312842,
+          "rank": 8
+        },
+        "qwen3.8-flash-next:IQ4_XS": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 77.311,
+              "tokens": 1765,
+              "thinking_tokens_est": 1718,
+              "tok_s": 23.73,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 3379,
+                "question_per_10k": 5.9189109203906485,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 25.648,
+              "tokens": 531,
+              "thinking_tokens_est": 453,
+              "tok_s": 23.28,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1178,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 55.609,
+              "tokens": 1270,
+              "thinking_tokens_est": 1225,
+              "tok_s": 23.92,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2165,
+                "question_per_10k": 4.618937644341801,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 11.11111111111111
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 59.445,
+              "tokens": 250,
+              "thinking_tokens_est": 249,
+              "tok_s": 22.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1010,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 54.356,
+              "tokens": 138,
+              "thinking_tokens_est": 136,
+              "tok_s": 22.79,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 395,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 51.799,
+              "tokens": 112,
+              "thinking_tokens_est": 110,
+              "tok_s": 22.69,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 325,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 15.386,
+              "tokens": 269,
+              "thinking_tokens_est": 223,
+              "tok_s": 23.56,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 588,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 14.161,
+              "tokens": 240,
+              "thinking_tokens_est": 197,
+              "tok_s": 22.9,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 571,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 12.463,
+              "tokens": 211,
+              "thinking_tokens_est": 165,
+              "tok_s": 23.85,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 486,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 1.0,
+          "time_s": 51.799,
+          "total_time_s": 366.178,
+          "tok_s": 23.28,
+          "n_answered": 9,
+          "n_all_passed": 9,
+          "tokens_total": 4786,
+          "thinking_tokens_est_total": 4476,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 1.0,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.0,
+          "overall": 0.7,
+          "rank": 9
+        },
+        "strata-official:IQ3_XXS": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 20.633,
+              "tokens": 1193,
+              "thinking_tokens_est": 1157,
+              "tok_s": 62.3,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2473,
+                "question_per_10k": 52.567731500202186,
+                "maybe_per_10k": 12.13101496158512,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 0.8,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 12.527,
+              "tokens": 687,
+              "thinking_tokens_est": 640,
+              "tok_s": 60.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2077,
+                "question_per_10k": 48.146364949446316,
+                "maybe_per_10k": 24.073182474723158,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 15.33,
+              "tokens": 988,
+              "thinking_tokens_est": 964,
+              "tok_s": 69.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2145,
+                "question_per_10k": 65.26806526806527,
+                "maybe_per_10k": 9.324009324009324,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 7.2,
+              "tokens": 158,
+              "thinking_tokens_est": 157,
+              "tok_s": 52.3,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 591,
+                "question_per_10k": 50.76142131979695,
+                "maybe_per_10k": 16.920473773265652,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 5.706,
+              "tokens": 109,
+              "thinking_tokens_est": 107,
+              "tok_s": 67.6,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 338,
+                "question_per_10k": 29.585798816568047,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 7.935,
+              "tokens": 235,
+              "thinking_tokens_est": 233,
+              "tok_s": 61.4,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 779,
+                "question_per_10k": 51.34788189987162,
+                "maybe_per_10k": 12.836970474967906,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.707,
+              "tokens": 191,
+              "thinking_tokens_est": 139,
+              "tok_s": 58.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 394,
+                "question_per_10k": 25.380710659898476,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 10.717,
+              "tokens": 570,
+              "thinking_tokens_est": 505,
+              "tok_s": 61.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1147,
+                "question_per_10k": 95.90235396687011,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.66,
+              "tokens": 189,
+              "thinking_tokens_est": 142,
+              "tok_s": 59.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 411,
+                "question_per_10k": 24.330900243309003,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.9777777777777779,
+          "time_s": 7.935,
+          "total_time_s": 89.41499999999999,
+          "tok_s": 61.4,
+          "n_answered": 9,
+          "n_all_passed": 8,
+          "tokens_total": 4320,
+          "thinking_tokens_est_total": 4044,
+          "n_budget_cut": 0,
+          "kind_scores": {
+            "inst": 0.9333333333333332,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.561831181443288,
+          "overall": 0.8529937988774308,
+          "rank": 4
+        },
+        "strata-flash-coder:IQ1_M": {
+          "items": {
+            "inst1": {
+              "cell": "scored",
+              "score": 0.8,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 64.702,
+              "tokens": 4224,
+              "thinking_tokens_est": 4209,
+              "tok_s": 66.2,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 11408,
+                "question_per_10k": 213.00841514726508,
+                "maybe_per_10k": 27.17391304347826,
+                "repeated_line_pct": 3.225806451612903
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 106.059,
+              "tokens": 6243,
+              "thinking_tokens_est": 6209,
+              "tok_s": 44.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 18298,
+                "question_per_10k": 150.28964914198272,
+                "maybe_per_10k": 30.6044376434583,
+                "repeated_line_pct": 0.8403361344537815
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "inst3": {
+              "cell": "scored",
+              "score": 0.2,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 95.931,
+              "tokens": 6192,
+              "thinking_tokens_est": 6145,
+              "tok_s": 73.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 18855,
+                "question_per_10k": 154.33571996817818,
+                "maybe_per_10k": 15.380535666931847,
+                "repeated_line_pct": 6.666666666666667
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 13.239,
+              "tokens": 636,
+              "thinking_tokens_est": 634,
+              "tok_s": 65.9,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 2004,
+                "question_per_10k": 49.9001996007984,
+                "maybe_per_10k": 14.970059880239521,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 5.777,
+              "tokens": 179,
+              "thinking_tokens_est": 176,
+              "tok_s": 79.7,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 470,
+                "question_per_10k": 0.0,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "needle3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 6.219,
+              "tokens": 172,
+              "thinking_tokens_est": 170,
+              "tok_s": 63.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 551,
+                "question_per_10k": 18.148820326678766,
+                "maybe_per_10k": 18.148820326678766,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json1": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 4.289,
+              "tokens": 259,
+              "thinking_tokens_est": 208,
+              "tok_s": 75.9,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 594,
+                "question_per_10k": 33.67003367003367,
+                "maybe_per_10k": 50.50505050505051,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json2": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 7.392,
+              "tokens": 471,
+              "thinking_tokens_est": 421,
+              "tok_s": 72.3,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 1251,
+                "question_per_10k": 47.961630695443645,
+                "maybe_per_10k": 7.993605115907274,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            },
+            "json3": {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 5.989,
+              "tokens": 369,
+              "thinking_tokens_est": 321,
+              "tok_s": 72.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 920,
+                "question_per_10k": 54.34782608695652,
+                "maybe_per_10k": 10.869565217391305,
+                "repeated_line_pct": 0.0
+              },
+              "syntax_error": false,
+              "violations": 0
+            }
+          },
+          "ability": 0.8888888888888888,
+          "time_s": 7.392,
+          "total_time_s": 309.597,
+          "tok_s": 72.1,
+          "n_answered": 9,
+          "n_all_passed": 7,
+          "tokens_total": 18745,
+          "thinking_tokens_est_total": 18493,
+          "n_budget_cut": 2,
+          "kind_scores": {
+            "inst": 0.6666666666666666,
+            "needle": 1.0,
+            "json": 1.0
+          },
+          "speed": 0.5830590903446344,
+          "overall": 0.7971399493256124,
+          "rank": 6
+        }
+      },
+      "kinds": {
+        "inst": [
+          "inst1",
+          "inst2",
+          "inst3"
+        ],
+        "needle": [
+          "needle1",
+          "needle2",
+          "needle3"
+        ],
+        "json": [
+          "json1",
+          "json2",
+          "json3"
+        ]
+      },
+      "kind_labels": {
+        "inst": "日本語の指示に従う",
+        "needle": "長い資料からの検索",
+        "json": "JSON の構造化出力"
+      },
+      "time_range_s": [
+        1.837,
+        51.799
+      ]
+    }
+  },
+  "claude_invalid_runs": [],
+  "missing": [],
+  "archives": [
+    {
+      "name": "archive-coding-v1-easy",
+      "path": "tools/model-eval/results/2026-10-08/archive-coding-v1-easy/",
+      "suites": {
+        "coding": {
+          "sonnet": {
+            "n_items": 6,
+            "n_all_passed": 6,
+            "ability": 1.0
+          },
+          "opus": {
+            "n_items": 6,
+            "n_all_passed": 6,
+            "ability": 1.0
+          },
+          "qwen3.8:27b": {
+            "n_items": 6,
+            "n_all_passed": 6,
+            "ability": 1.0
+          },
+          "gemma4:e4b": {
+            "n_items": 6,
+            "n_all_passed": 3,
+            "ability": 0.7782
+          },
+          "gemma4:31b-ctx32k": {
+            "n_items": 4,
+            "n_all_passed": 4,
+            "ability": 1.0
+          }
+        }
+      }
+    }
+  ]
+}

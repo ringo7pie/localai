@@ -1,0 +1,203 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C2: cron 式の次回実行時刻\n\n関数 `next_run(expression: str, after: datetime) -> datetime | None` を書いてください（`datetime` は標準ライブラリ `datetime` モジュールの `datetime` 型。`after` と戻り値は tzinfo の無い naive な値）。\n\n### 式の形\n\n- 式は 5 つのフィールドを 1 個以上の半角スペースかタブで区切ったもの。先頭と末尾の空白は許す。順に「分」「時」「日」「月」「曜日」。\n- 各フィールドの値の範囲: 分 0〜59、時 0〜23、日 1〜31、月 1〜12、曜日 0〜7（0 と 7 はどちらも日曜、1 が月曜、…、6 が土曜）。\n- フィールドは「項目」をコンマ `,` でつないだもの（項目 1 個以上。空の項目は不可）。項目は次のいずれか。\n  - `*`: その範囲の全部の値。\n  - `*/n`: 範囲の最小値から `n` おき（分なら 0, n, 2n, …）。\n  - `a`: 1 つの値。\n  - `a-b`: `a` 以上 `b` 以下の全部の値（`a <= b` が必要）。\n  - `a-b/n`: `a` から `n` おきで `b` 以下の値（`a`, `a+n`, `a+2n`, …）。\n  - `n` は 1 以上の整数。`a/n` の形（範囲を書かずに刻みを付ける形）は不可。\n- 値は 1 桁以上の 10 進の数字（先頭の 0 は許す）。月のフィールドでは `JAN`〜`DEC`、曜日のフィールドでは `SUN`〜`SAT` の英語 3 文字の名前も値として使える（大文字と小文字は区別しない。範囲の端にも使える）。名前が使えるのはこの 2 つのフィールドだけ。\n- 曜日の `7` は `0`（日曜）と同じ。`5-7` は {5, 6, 0}。\n- 上の形に合わないもの（フィールドの数の過不足、範囲外の値、`a > b` の範囲、`n` が 0、知らない名前、`?`、`L`、`@daily` などの拡張、負の数、小数、空の項目）には `ValueError` を送出する。\n\n### 日の決め方（日と曜日の関係）\n\n- 「日」のフィールドと「曜日」のフィールドは、フィールド全体がちょうど `*`（刻みも項目も無い `*` 1 文字）のとき「無指定」とみなす。`*/2` や `*,5` は無指定ではない。\n- 両方とも無指定なら毎日。片方だけ無指定なら、もう片方のフィールドに合う日だけ。両方とも指定があるときは、「日」に合う **か** 「曜日」に合う日（どちらか一方でよい）。\n- もちろん「月」のフィールドにも合う必要がある。存在しない日（4 月 31 日など）は決して合わない。\n\n### 戻り値\n\n- `after` より後（`after` と同じ分は含まない）で、秒とマイクロ秒が 0 の時刻のうち、式に合う最も早いものを返す。`after` の秒・マイクロ秒は、この「より後」の判定にだけ関わる。\n- その時刻の年が `after.year + 10` より大きくなるなら `None` を返す（例: 2 月 30 日の指定は決して合わないので `None`）。\n- 入力の大きさに対して十分速く動くこと。答えが数年先のときや `None` のときも、1 分ずつ全部を調べる作りでは遅すぎる。\n\n例（`from datetime import datetime` とする）:\n- `next_run(\"*/15 9-17 * * MON-FRI\", datetime(2026, 10, 9, 17, 50))` → `datetime(2026, 10, 12, 9, 0)`（10 月 9 日は金曜。次は月曜の 9:00）\n- `next_run(\"0 0 1 * 1\", datetime(2026, 10, 8))` → `datetime(2026, 10, 12, 0, 0)`（毎月 1 日 **または** 毎週月曜。10 月 8 日は木曜）\n- `next_run(\"30 4 30 2 *\", datetime(2026, 1, 1))` → `None`",
+  "prompt_chars": 2065,
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:52:16+09:00",
+  "finished_at": "2026-10-08T15:05:36+09:00",
+  "content": "```python\nimport datetime\n\ndef next_run(expression: str, after: datetime.datetime) -> datetime.datetime | None:\n    MONTH_MAP = {\n        'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,\n        'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12\n    }\n    WEEKDAY_MAP = {\n        'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6\n    }\n\n    def parse_field(field_str, min_val, max_val, name_map=None):\n        allowed = set()\n        parts = field_str.split(',')\n        for part in parts:\n            if not part:\n                raise ValueError(\"Empty item\")\n            \n            def to_val(v):\n                if name_map and v.upper() in name_map:\n                    return name_map[v.upper()]\n                if v.isdigit():\n                    return int(v)\n                raise ValueError(\"Invalid value\")\n\n            if part == '*':\n                for i in range(min_val, max_val + 1):\n                    allowed.add(i)\n            elif part.startswith('*/'):\n                step_str = part[2:]\n                if not step_str.isdigit():\n                    raise ValueError(\"Invalid step\")\n                step = int(step_str)\n                if step <= 0:\n                    raise ValueError(\"Step must be positive\")\n                for i in range(min_val, max_val + 1, step):\n                    allowed.add(i)\n            elif '/' in part:\n                range_part, step_str = part.split('/')\n                if not step_str.isdigit():\n                    raise ValueError(\"Invalid step\")\n                step = int(step_str)\n                if step <= 0:\n                    raise ValueError(\"Step must be positive\")\n                if '-' in range_part:\n                    start_str, end_str = range_part.split('-')\n                    start, end = to_val(start_str), to_val(end_str)\n                    if start > end or start < min_val or end > max_val:\n                        raise ValueError(\"Invalid range\")\n                    for i in range(start, end + 1, step):\n                        allowed.add(i)\n                else:\n                    raise ValueError(\"Range required before /\")\n            elif '-' in part:\n                start_str, end_str = part.split('-')\n                start, end = to_val(start_str), to_val(end_str)\n                if start > end or start < min_val or end > max_val:\n                    raise ValueError(\"Invalid range\")\n                for i in range(start, end + 1):\n                    allowed.add(i)\n            else:\n                val = to_val(part)\n                if val < min_val or val > max_val:\n                    raise ValueError(\"Value out of range\")\n                allowed.add(val)\n        return allowed\n\n    fields = expression.split()\n    if len(fields) != 5:\n        raise ValueError(\"Must have 5 fields\")\n\n    min_set = parse_field(fields[0], 0, 59)\n    hour_set = parse_field(fields[1], 0, 23)\n    dom_field = fields[2]\n    dom_set = parse_field(dom_field, 1, 31)\n    month_set = parse_field(fields[3], 1, 12, MONTH_MAP)\n    dow_field = fields[4]\n    # Normalize DOW 0-7 to 0-6 (7 becomes 0)\n    dow_set_raw = parse_field(dow_field, 0, 7, WEEKDAY_MAP)\n    dow_set = {d % 7 for d in dow_set_raw}\n\n    def get_days_in_month(y, m):\n        if m in {1, 3, 5, 7, 8, 10, 12}: return 31\n        if m in {4, 6, 9, 11}: return 30\n        if m == 2:\n            return 29 if (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0) else 28\n        return 0\n\n    dom_specified = (dom_field != '*')\n    dow_specified = (dow_field != '*')\n\n    for y in range(after.year, after.year + 11):\n        start_m = after.month if y == after.year else 1\n        for m in range(start_m, 13):\n            if m not in month_set:\n                continue\n            \n            days_in_m = get_days_in_month(y, m)\n            for d in range(1, days_in_m + 1):\n                if y == after.year and m == after.month and d < after.day:\n                    continue\n                \n                dt_temp = datetime.datetime(y, m, d)\n                # Python: Mon=0...Sun=6; Cron: Sun=0...Sat=6\n                dow_cron = (dt_temp.weekday() + 1) % 7\n                \n                if not dom_specified and not dow_specified:\n                    match = True\n                elif not dom_specified:\n                    match = (dow_cron in dow_set)\n                elif not dow_specified:\n                    match = (d in dom_set)\n                else:\n                    match = (d in dom_set or dow_cron in dow_set)\n                \n                if not match:\n                    continue\n                \n                start_h = after.hour if (y == after.year and m == after.month and d == after.day) else 0\n                for h in range(start_h, 24):\n                    if h not in hour_set:\n                        continue\n                    \n                    start_min = after.minute + 1 if (y == after.year and m == after.month and d == after.day and h == after.hour) else 0\n                    for mn in range(start_min, 60):\n                        if mn in min_set:\n                            return datetime.datetime(y, m, d, h, mn)\n                            \n    return None\n```",
+  "thinking": "*   Input: `expression` (cron string), `after` (datetime object).\n    *   Output: `datetime` or `None`.\n    *   Cron fields: Minute (0-59), Hour (0-23), Day of Month (1-31), Month (1-12), Day of Week (0-7, 0=7=Sun).\n    *   Field patterns: `*`, `*/n`, `a`, `a-b`, `a-b/n`.\n    *   Month names: JAN-DEC. Day of Week names: SUN-SAT.\n    *   Special Day/Weekday rule:\n        *   Both `*`: Daily.\n        *   One `*`: Match the non-`*` field.\n        *   Both non-`*`: Match either \"Day of Month\" OR \"Day of Week\".\n    *   Constraints:\n        *   Naive datetimes.\n        *   Return first match after `after` (exclusive of `after` if seconds/micros are 0, but basically `t > after`).\n        *   Max search year: `after.year + 10`.\n        *   Efficiency: Don't iterate minute by minute.\n        *   Error handling: `ValueError` for invalid expressions.\n\n    *   Minute: 0-59\n    *   Hour: 0-23\n    *   Day of Month: 1-31\n    *   Month: 1-12\n    *   Day of Week: 0-7 (0 and 7 are Sunday)\n\n    *   Parse the 5 fields.\n    *   Split by comma.\n    *   Handle range `a-b/n`, `a-b`, `*/n`, `*`, `a`.\n    *   Handle JAN-DEC, SUN-SAT.\n    *   Store each field as a set of allowed values.\n\n    *   Start from `after`.\n    *   Increment time logically. Since the max limit is 10 years, we can iterate through years, then months, then days, then hours, then minutes.\n    *   But it's better to find the next valid date, then find the next valid hour/minute within that date.\n\n    *   *Wait*, the most efficient way is to find candidates.\n    *   1. Start at the beginning of the minute after `after`.\n    *   2. Check the year/month/day logic.\n    *   3. Check the hour/minute logic.\n\n    *   *Optimization*:\n        1. Start at `t = after`.\n        2. Move to the next minute (set sec/micro to 0).\n        3. Iterate through years (from `after.year` to `after.year + 10`).\n        4. Iterate through months (from `after.month` to 12).\n        5. Iterate through days in that month.\n        6. For each candidate date (year, month, day):\n            - Check if it matches the \"Day of Month\" and \"Day of Week\" logic given the Month.\n            - If the date matches:\n                - Iterate through hours.\n                - Iterate through minutes.\n                - Find the first (hour, minute) that comes after `after` (if year/month/day is the same) and matches the expression.\n\n    *   Wait, the \"Day of Month\" and \"Day of Week\" rule is tricky:\n        - Let `dom_specified = (dom_field != '*')`\n        - Let `dow_specified = (dow_field != '*')`\n        - If not `dom_specified` and not `dow_specified`: match all days.\n        - If not `dom_specified` and `dow_specified`: match if day of week is in `dow_set`.\n        - If `dom_specified` and not `dow_specified`: match if day of month is in `dom_set`.\n        - If `dom_specified` and `dow_specified`: match if day of month is in `dom_set` OR day of week is in `dow_set`.\n\n    *   Month names: `{'JAN': 1, 'FEB': 2, ..., 'DEC': 12}`.\n    *   Weekday names: `{'SUN': 0, 'MON': 1, ..., 'SAT': 6}`.\n    *   Handle `0-7` for weekdays where `7` is `0`.\n\n    *   `a-b/n`:\n        - `a`, `b` are numbers or names.\n        - `n` is positive integer.\n        - range is `[a, b]`, step is `n`.\n        - Example: `5-7` for weekday: `5, 6, 0`? No, the specification says \"a-b: a以上b以下の全部の値 (a <= b が必要)\". So `5-7` would be `5, 6, 7`. Since `7` is `0`, the set is `{5, 6, 0}`.\n\n    *   `datetime(after.year, after.month, after.day, after.hour, after.minute)`\n    *   If this is `after`, we need to look at `after`'s seconds/microseconds.\n    *   Wait, the rule is: \"after より後（after と同じ分は含まない）で、秒とマイクロ秒が 0 の時刻\".\n    *   So, if `after` is `2026-10-09 17:50:30`, the first potential candidate is `2026-10-09 17:51:00`.\n    *   If `after` is `2026-10-09 17:50:00`, the first potential candidate is `2026-10-09 17:51:00`.\n    *   Basically, let `start_t = after.replace(second=0, microsecond=0)`. If `start_t <= after`, we start searching from `start_t + timedelta(minutes=1)`.\n\n    *   `year_limit = after.year + 10`\n    *   For `y` from `after.year` to `year_limit`:\n        - For `m` from (1 if `y > after.year` else `after.month`) to 12:\n            - If `m` not in `month_set`, continue.\n            - For `d` from 1 to `days_in_month(y, m)`:\n                - If `y == after.year` and `m == after.month` and `d < after.day`, continue.\n                - Check if `(y, m, d)` matches the DOM/DOW rule.\n                - If it matches:\n                    - For `h` from (0 if `(y,m,d) > (after.year,after.month,after.day)` else `after.hour`) to 23:\n                        - If `h` not in `hour_set`, continue.\n                        - For `min` from (0 if `h > after.hour` or `(y,m,d) > (after.year,after.month,after.day)` else `after.minute + 1`) to 59:\n                            - If `min` not in `minute_set`, continue.\n                            - Return `datetime(y, m, d, h, min)`.\n    *   Wait, the minute loop needs careful boundary:\n        If `(y, m, d, h)` is exactly `(after.year, after.month, after.day, after.hour)`, then `min` must be `> after.minute`.\n        If `(y, m, d, h)` is after `(after.year, after.month, after.day, after.hour)`, then `min` can be `0`.\n\n    *   Fields: 5 fields.\n    *   Splitting: `expression.split()`.\n    *   Field parsing:\n        - Split by `,`.\n        - For each part:\n            - If `*`: all in range.\n            - If `*/n`: `range(min, max+1, n)`.\n            - If `a-b/n`: `range(a, b+1, n)`.\n            - If `a-b`: `range(a, b+1)`.\n            - If `a`: `[a]`.\n    *   Names:\n        - `MONTH_MAP = {'JAN': 1, 'FEB': 2, ...}`\n        - `WEEKDAY_MAP = {'SUN': 0, 'MON': 1, ..., 'SAT': 6}`\n        - For `a-b` where `a` or `b` are names, convert them to numbers first.\n    *   Day of Week `7`: Always treat `7` as `0` in the set.\n\n    - \"曜日の 7 は 0（日曜）と同じ。5-7 は {5, 6, 0}。\"\n    - This means when parsing the DOW field, any `7` encountered should be converted to `0`.\n    - Range `5-7` becomes `range(5, 8)`, which is `5, 6, 7`. Converting `7` to `0` gives `{5, 6, 0}`. Correct.\n\n    ```python\n    def parse_field(field_str, min_val, max_val, name_map=None):\n        allowed = set()\n        for part in field_str.split(','):\n            if not part: raise ValueError(\"Empty item\")\n            \n            # Handle name mapping for specific fields\n            def to_val(v):\n                if name_map and v.upper() in name_map:\n                    return name_map[v.upper()]\n                try:\n                    return int(v)\n                except ValueError:\n                    raise ValueError(\"Invalid value\")\n\n            if part == '*':\n                for i in range(min_val, max_val + 1):\n                    allowed.add(i)\n            elif part.startswith('*/'):\n                try:\n                    step = int(part[2:])\n                    if step <= 0: raise ValueError()\n                    for i in range(min_val, max_val + 1, step):\n                        allowed.add(i)\n                except ValueError:\n                    raise ValueError(\"Invalid step\")\n            elif '/' in part:\n                # a-b/n\n                range_part, step_str = part.split('/')\n                try:\n                    step = int(step_str)\n                    if step <= 0: raise ValueError()\n                except ValueError:\n                    raise ValueError(\"Invalid step\")\n                \n                if '-' in range_part:\n                    start_str, end_str = range_part.split('-')\n                    start, end = to_val(start_str), to_val(end_str)\n                    if start > end or start < min_val or end > max_val:\n                        raise ValueError(\"Invalid range\")\n                    for i in range(start, end + 1, step):\n                        allowed.add(i)\n                else:\n                    raise ValueError(\"a/n is not allowed\")\n            elif '-' in part:\n                # a-b\n                start_str, end_str = part.split('-')\n                start, end = to_val(start_str), to_val(end_str)\n                if start > end or start < min_val or end > max_val:\n                    raise ValueError(\"Invalid range\")\n                for i in range(start, end + 1):\n                    allowed.add(i)\n            else:\n                # a\n                val = to_val(part)\n                if val < min_val or val > max_val:\n                    raise ValueError(\"Value out of range\")\n                allowed.add(val)\n        return allowed\n    ```\n    Wait, if `max_val` for DOW is 7, and `to_val` converts `SUN` to 0, then `SUN-SUN` would be `range(0, 1)` which is `0`. If the input is `0-7`, `range(0, 8)` is `0,1,2,3,4,5,6,7`. Then we map `7` to `0`.\n    Wait, the DOW field's range is `0-7`. Let's use `min_val=0, max_val=7` and then normalize all `7`s to `0`s.\n\n    Wait, `a-b/n` for DOW: if `a=5, b=7, n=1`, then `range(5, 8)` is `5, 6, 7`, which becomes `{5, 6, 0}`. Correct.\n\n    Wait, `a-b/n` where `a` and `b` can be names:\n    `MON-WED` is `1-3`. `MON-WED/2` is `1, 3`.\n\n    - `dom_field` (the original string) is `*` and `dow_field` is `*` $\\rightarrow$ any day.\n    - `dom_field` is `*` $\\rightarrow$ match `dow_set`.\n    - `dow_field` is `*` $\\rightarrow$ match `dom_set`.\n    - Both specified $\\rightarrow$ match `dom_set` OR `dow_set`.\n\n    *Wait*, the specification says: \"「日」のフィールドと「曜日」のフィールドは、フィールド全体がちょうど `*`...のとき「無指定」とみなす。`*/2` や `*,5` は無指定ではない。\"\n    So:\n    ```python\n    dom_specified = (dom_field != '*')\n    dow_specified = (dow_field != '*')\n    \n    if not dom_specified and not dow_specified:\n        # Daily\n        is_match = True\n    elif not dom_specified:\n        # Only DOW specified\n        is_match = (day_of_week in dow_set)\n    elif not dow_specified:\n        # Only DOM specified\n        is_match = (day_of_month in dom_set)\n    else:\n        # Both specified: DOM or DOW\n        is_match = (day_of_month in dom_set or day_of_week in dow_set)\n    ```\n\n    The search for the next valid date:\n    ```python\n    import datetime\n    from datetime import timedelta\n\n    # ... parsing ...\n\n    current_date = after.replace(second=0, microsecond=0)\n    # We need t > after. If current_date is after, we need the next minute.\n    # But the simplest is:\n    search_date = current_date\n    \n    # Year loop: after.year to after.year + 10\n    for y in range(after.year, after.year + 11):\n        # Month loop: after.month to 12\n        start_m = after.month if y == after.year else 1\n        for m in range(start_m, 13):\n            if m not in month_set:\n                continue\n            \n            # Day loop: 1 to days_in_month\n            # Use calendar.monthrange or a helper\n            _, last_day = get_days_in_month(y, m)\n            for d in range(1, last_day + 1):\n                if y == after.year and m == after.month and d < after.day:\n                    continue\n                \n                # Check DOM/DOW match\n                dt_obj = datetime.datetime(y, m, d)\n                dow = dt_obj.weekday() # Monday=0, Sunday=6\n                # Convert to 0=Sunday, 1=Monday, ..., 6=Saturday\n                dow_cron = (dow + 1) % 7\n                \n                if not matches_dom_dow(d, dow_cron, dom_field, dow_field, dom_set, dow_set):\n                    continue\n                \n                # Hour loop\n                start_h = after.hour if (y == after.year and m == after.month and d == after.day) else 0\n                for h in range(start_h, 24):\n                    if h not in hour_set:\n                        continue\n                    \n                    # Minute loop\n                    start_min = after.minute + 1 if (y == after.year and m == after.month and d == after.day and h == after.hour) else 0\n                    for mn in range(start_min, 60):\n                        if mn not in minute_set:\n                            continue\n                        return datetime.datetime(y, m, d, h, mn)\n    return None\n    ```\n\n    Wait, if `after` is `2026-10-09 17:50:30`, and the first match is `2026-10-09 17:51:00`.\n    In my logic:\n    `y=2026, m=10, d=9`:\n    - `matches_dom_dow` is True.\n    - `start_h = 17`\n    - `h = 17`:\n        - `start_min = 50 + 1 = 51`\n        - `mn` from 51 to 59...\n    This looks correct.\n\n    What if `after` is `2026-10-09 17:50:00`?\n    - `y=2026, m=10, d=9`\n    - `h=17`\n    - `start_min = 50 + 1 = 51`\n    - `mn` from 51 to 59...\n    Still correct. The condition `after` and same minute is excluded.\n\n    Wait, what if `after` is `2026-10-09 17:50:59`?\n    - `start_min` will still be `51`. Correct.\n\n    Wait, one more check on `start_min`. If `(y, m, d, h)` is *after* `(after.year, after.month, after.day, after.hour)`, then `start_min` should be `0`.\n    Example: `after` is `2026-10-09 17:50:00`.\n    Candidate `(2026, 10, 9, 18)`.\n    `h` is 18. `h > after.hour` is True. `start_min = 0`.\n    Correct.\n\n    Wait, the loop `for h in range(start_h, 24)` will check `h = 17` then `h = 18`.\n    If `h = 17`, `start_min = 51`.\n    If `h = 18`, `start_min = 0`.\n    Perfect.\n\n    ```python\n    def get_days_in_month(y, m):\n        if m in {1, 3, 5, 7, 8, 10, 12}:\n            return m, 31\n        if m in {4, 6, 9, 11}:\n            return m, 30\n        if m == 2:\n            if (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0):\n                return m, 29\n            return m, 28\n        raise ValueError(\"Invalid month\")\n    ```\n\n    - `a > b` in range: `ValueError`.\n    - `n <= 0` in step: `ValueError`.\n    - Invalid name: `ValueError`.\n    - Out of range value (e.g., min 61): `ValueError`.\n    - Not 5 fields: `ValueError`.\n    - Empty item in comma-separated list: `ValueError`.\n    - `a/n` without range: `ValueError`.\n\n    ```python\n    def parse_field(field_str, min_val, max_val, name_map=None):\n        allowed = set()\n        # The field_str is one of the 5 fields, e.g., \"*/15\", \"1-5,10\", \"MON-FRI\"\n        parts = field_str.split(',')\n        for part in parts:\n            if not part:\n                raise ValueError(\"Empty item\")\n            \n            # Handle name mapping\n            def to_val(v):\n                if name_map and v.upper() in name_map:\n                    return name_map[v.upper()]\n                try:\n                    # Check if it's a digit to avoid floats/negatives\n                    if not v.isdigit():\n                        raise ValueError()\n                    return int(v)\n                except ValueError:\n                    raise ValueError(\"Invalid numeric value\")\n\n            if part == '*':\n                for i in range(min_val, max_val + 1):\n                    allowed.add(i)\n            elif part.startswith('*/'):\n                try:\n                    step_str = part[2:]\n                    if not step_str.isdigit(): raise ValueError()\n                    step = int(step_str)\n                    if step <= 0: raise ValueError()\n                    for i in range(min_val, max_val + 1, step):\n                        allowed.add(i)\n                except ValueError:\n                    raise ValueError(\"Invalid step\")\n            elif '/' in part:\n                # a-b/n\n                range_part, step_str = part.split('/')\n                if not step_str.isdigit():\n                    raise ValueError(\"Invalid step\")\n                step = int(step_str)\n                if step <= 0:\n                    raise ValueError(\"Step must be positive\")\n                \n                if '-' in range_part:\n                    start_str, end_str = range_part.split('-')\n                    start = to_val(start_str)\n                    end = to_val(end_str)\n                    if start > end or start < min_val or end > max_val:\n                        raise ValueError(\"Invalid range\")\n                    for i in range(start, end + 1, step):\n                        allowed.add(i)\n                else:\n                    raise ValueError(\"Range required before /\")\n            elif '-' in part:\n                # a-b\n                start_str, end_str = part.split('-')\n                start = to_val(start_str)\n                end = to_val(end_str)\n                if start > end or start < min_val or end > max_val:\n                    raise ValueError(\"Invalid range\")\n                for i in range(start, end + 1):\n                    allowed.add(i)\n            else:\n                # a\n                val = to_val(part)\n                if val < min_val or val > max_val:\n                    raise ValueError(\"Value out of range\")\n                allowed.add(val)\n        return allowed\n    ```\n    Wait, for DOW, `min_val=0, max_val=7` is needed. And then any `7` in `allowed` is converted to `0`.\n    Actually, it's simpler to just use `allowed.add(val % 7)` if we're doing DOW.\n    No, let's just do `allowed.add(val if val != 7 else 0)`.\n\n    Let's re-check: \"曜日の 7 は 0（日曜）と同じ。5-7 は {5, 6, 0}。\"\n    If we use `range(5, 8)`, we get `5, 6, 7`. If we then map `7` to `0`, we get `{5, 6, 0}`. Perfect.\n\n    `datetime.datetime.weekday()`: Monday=0, Sunday=6.\n    Cron: Sunday=0, Monday=1, ..., Saturday=6.\n    So `cron_dow = (datetime_obj.weekday() + 1) % 7`.\n    Example:\n    - Monday: `weekday()`=0 $\\rightarrow$ `(0+1)%7` = 1. (Correct)\n    - Sunday: `weekday()`=6 $\\rightarrow$ `(6+1)%7` = 0. (Correct)\n\n    - Expression: `\"*/15 9-17 * * MON-FRI\"`\n    - After: `datetime(2026, 10, 9, 17, 50)`\n    -- `minute_set`: {0, 15, 30, 45}\n    -- `hour_set`: {9, 10, ..., 17}\n    -- `dom_field`: `*`, `dom_set`: {1, ..., 31}\n    -- `month_set`: {1, ..., 12}\n    -- `dow_field`: `MON-FRI`, `dow_set`: {1, 2, 3, 4, 5}\n    -- Search:\n        - `y=2026, m=10, d=9`: (Fri)\n            - `dom_field` is `*`, `dow_field` is `MON-FRI`.\n            - `dow_cron` for Fri is 5. `5` in `{1,2,3,4,5}`? Yes.\n            - `h` starts at 17. `h=17` is in `hour_set`.\n            - `mn` starts at 51. `mn` in `{0, 15, 30, 45}`? No.\n            - `h=18` is not in `hour_set`.\n        - `y=2026, m=10, d=10`: (Sat)\n            - `dow_cron` is 6. `6` in `{1,2,3,4,5}`? No.\n        - `y=2026, m=10, d=11`: (Sun)\n            - `dow_cron` is 0. `0` in `{1,2,3,4,5}`? No.\n        - `y=2026, m=10, d=12`: (Mon)\n            - `dow_cron` is 1. `1` in `{1,2,3,4,5}`? Yes.\n            - `h` starts at 0. `h=9` is the first in `hour_set`.\n            - `mn` starts at 0. `0` in `{0, 15, 30, 45}`? Yes.\n            - Return `datetime(2026, 10, 12, 9, 0)`.\n    - Correct.\n\n    The limit is `after.year + 10`. This is plenty for most cron expressions.\n    The only way it would be `None` is if the expression describes a date that never happens (like Feb 30) or it's simply beyond 10 years.\n\n    - Range `a-b` where `a > b`: `ValueError` (Required).\n    - `n=0`: `ValueError` (Required).\n    -- `a/n` form: `ValueError` (Required).\n    -- `?`, `L`, `@daily`: `ValueError` (Required).\n    -- Negative/Float: `ValueError` (Required).\n\n    My `to_val` function uses `v.isdigit()`, which handles negatives and floats.\n    My range check `start > end` handles `a > b`.\n    My `step <= 0` check handles `n=0`.\n    The `a/n` check: `if '-' in range_part` handles `a/n`.\n\n    Wait, one detail: \"月のフィールドでは JAN〜DEC、曜日のフィールドでは SUN〜SAT...名前が使えるのはこの 2 つのフィールドだけ。\"\n    My `parse_field` takes `name_map`. I should only pass `MONTH_MAP` for the month field and `WEEKDAY_MAP` for the DOW field.\n\n    Wait, another detail: \"曜日の 7 は 0（日曜）と同じ。5-7 は {5, 6, 0}。\"\n    In my `parse_field`, if `name_map` is `WEEKDAY_MAP`, and the field is `5-7`, `to_val('5')` is 5, `to_val('7')` is 7.\n    `range(5, 8)` gives `5, 6, 7`.\n    I need to make sure all results in `dow_set` are normalized to `0-6`.\n    So, inside `parse_field`, I can't just do `allowed.add(i)`.\n    I should do `allowed.add(i % 7)`?\n    Let's check:\n    - `0` $\\rightarrow$ `0 % 7 = 0`\n    - `6` $\\rightarrow$ `6 % 7 = 6`\n    - `7` $\\rightarrow$ `7 % 7 = 0`\n    Yes, `i % 7` works perfectly for the DOW field.\n\n    *Correction*: The problem says `0` and `7` are both Sunday. So `allowed.add(i % 7)` is the way to go for the `dow_set`.\n\n    Wait, let me double check: `5-7` should be `{5, 6, 0}`.\n    `range(5, 8)` $\\rightarrow$ `5, 6, 7`.\n    `5 % 7 = 5`\n    `6 % 7 = 6`\n    `7 % 7 = 0`\n    Perfect.\n\n    *Wait*! One more thing. For the DOW field, what if the user provides `0-7`?\n    `range(0, 8)` $\\rightarrow$ `0, 1, 2, 3, 4, 5, 6, 7`.\n    `i % 7` $\\rightarrow$ `0, 1, 2, 3, 4, 5, 6, 0`.\n    The set will be `{0, 1, 2, 3, 4, 5, 6}`. Correct.\n\n    And the `name_map` for DOW: `SUN: 0, MON: 1, ..., SAT: 6`.\n    If the user provides `SUN-SUN`, `to_val` gives `0, 0`. `range(0, 1)` gives `0`. `0 % 7 = 0`. Correct.\n    If the user provides `SAT-SUN`, that's `6-0`. `6 > 0`, so it raises `ValueError`. Correct, because the spec says `a <= b` is required.\n\n    Wait, can the user use `SUN` for `a` and `SAT` for `b`? Yes.\n    `SUN-SAT` $\\rightarrow$ `0-6`. Correct.\n\n    ```python\n    MONTH_MAP = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,\n                 'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}\n    WEEKDAY_MAP = {'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6}\n    ```\n\n    - Naive datetimes: Use `datetime.datetime`.\n    - Time search limit: `after.year + 10`.\n    - Complexity: Iterating through years, months, days is very fast. Max 11 years * 12 months * 31 days = ~4000 iterations.\n\n    \"日\" is `*` and \"曜日\" is `*` $\\rightarrow$ `dom_specified = False, dow_specified = False`.\n    Match: `True`.\n    \"日\" is `*` and \"曜日\" is `1` $\\rightarrow$ `dom_specified = False, dow_specified = True`.\n    Match: `dow_cron in {1}`.\n    \"日\" is `1` and \"曜日\" is `*` $\\rightarrow$ `dom_specified = True, dow_specified = False`.\n    Match: `day_of_month in {1}`.\n    \"日\" is `1` and \"曜日\" is `1` $\\rightarrow$ `dom_specified = True, dow_specified = True`.\n    Match: `day_of_month in {1} or dow_cron in {1}`.\n    All cases match the rules.\n\n    Wait, one final check on `a/n` without range:\n    `if '/' in part:`\n    `    range_part, step_str = part.split('/')`\n    `    if '-' in range_part:`\n    `        ...`\n    `    else:`\n    `        raise ValueError(\"a/n is not allowed\")`\n    What about `*/n`?\n    `elif part.startswith('*/'):`\n    This is handled *before* the `if '/' in part:` block. So `*/n` is allowed, but `5/2` is not. Correct.\n\n    What about `a-b/n`?\n    `if '-' in range_part:`\n    This is handled. Correct.\n\n    What if `a` or `b` are not numbers in `a-b/n`?\n    `to_val(start_str)` and `to_val(end_str)` will handle them using the `name_map`. Correct.\n\n    One last check on `ValueError`:\n    - \"フィールドの数の過不足\": `if len(fields) != 5: raise ValueError()`\n    - \"範囲外の値\": `if val < min_val or val > max_val: raise ValueError()`\n    - \"a > b の範囲\": `if start > end: raise ValueError()`\n    - \"n が 0\": `if step <= 0: raise ValueError()`\n    - \"知らない名前\": `if v.upper() not in name_map: raise ValueError()` (inside `to_val`)\n    - \"`?`, `L`, `@daily`\": These will not match any of the patterns and will be caught by `to_val`'s `isdigit()` or the logic. For example, `?` will go to the `else` (single value) and `to_val('?')` will raise `ValueError`.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 1240,
+  "completion_tokens": 9500,
+  "ttft_s": 3.986,
+  "t_first_content_s": 643.312,
+  "wall_s": 800.222,
+  "load_s": 0.001,
+  "server_decode_tok_s": 11.93,
+  "server_prefill_tok_s": 445.02,
+  "server_timings": {
+    "total_duration": 800221073964,
+    "load_duration": 1026188,
+    "prompt_eval_count": 1240,
+    "prompt_eval_duration": 2786386000,
+    "eval_count": 9500,
+    "eval_duration": 796457808000
+  },
+  "delta_chunks": 8219,
+  "wall_decode_tok_s": 11.93,
+  "thinking_chars": 23090,
+  "content_chars": 5214,
+  "thinking_tokens_est": 7750,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 800.221,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 26,
+    "total": 26,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_every_minute",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_same_minute_is_excluded",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fixed_minute_wraps_hour",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hour_range_wraps_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_from_minimum",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_range_with_step",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists_and_duplicates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_month_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sunday_as_seven",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_day_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_both_restricted_means_or",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_in_day_field_is_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leap_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_impossible_dates_return_none",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_year_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leading_zeros_tabs_and_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_match_time_boundaries",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_field_count",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_syntax",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_names_and_extensions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_naive_datetime",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_far_answers_are_fast",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_none_is_fast",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  }
+}

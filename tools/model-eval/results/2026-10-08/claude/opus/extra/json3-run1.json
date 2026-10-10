@@ -1,0 +1,53 @@
+{
+  "model": "opus",
+  "suite": "extra",
+  "item": "json3",
+  "run": 1,
+  "content": "{\"department\": \"経理部\", \"reporter\": \"田中\", \"system\": \"経費精算システム\", \"error_code\": \"E-503\", \"affected_users\": 5, \"priority\": \"高\"}",
+  "wall_s": 8.407,
+  "usage": {
+    "subagent_tokens": 25981
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "department": {
+        "ok": true,
+        "got": "経理部"
+      },
+      "reporter": {
+        "ok": true,
+        "got": "田中"
+      },
+      "system": {
+        "ok": true,
+        "got": "経費精算システム"
+      },
+      "error_code": {
+        "ok": true,
+        "got": "E-503"
+      },
+      "affected_users": {
+        "ok": true,
+        "got": 5
+      },
+      "priority": {
+        "ok": true,
+        "got": "高"
+      }
+    },
+    "extra_keys": []
+  },
+  "batch_size": 3,
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:17+09:00"
+}

@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "prompt": "新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。\n\n次の条件をすべて守って書いてください。\n1. 1 行目には「注意点は次のとおりです。」とだけ書く。\n2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\n3. 「定期的」という語を、どこかで 1 回以上使う。\n4. 数字（0〜9。全角も含む）を使わない。\n5. 最後の行には「以上」の 2 文字だけを書く。",
+  "prompt_chars": 221,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:30:55+09:00",
+  "finished_at": "2026-10-08T12:30:56+09:00",
+  "content": "注意点は次のとおりです。\n- 使い回しを避け、サービスごとに異なるパスワードを設定してください。\n- 推測されにくい、文字や記号を組み合わせた複雑なパスワードを作成し、定期的 に変更することが推奨されます。\n- パスワードをメモなどに書き残さず、信頼できるパスワードマネージャーなどの仕組みを利用してください。\n- 公衆の場など、第三者に覗き見される可能性がある場所では、パスワードの入力や会話を控えてください。\n以上",
+  "thinking": "",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 159,
+  "completion_tokens": 107,
+  "ttft_s": 0.096,
+  "t_first_content_s": 0.096,
+  "wall_s": 1.246,
+  "load_s": 0.001,
+  "server_decode_tok_s": 93.05,
+  "server_prefill_tok_s": 2091.55,
+  "server_timings": {
+    "total_duration": 1245679637,
+    "load_duration": 851780,
+    "prompt_eval_count": 159,
+    "prompt_eval_duration": 76020000,
+    "eval_count": 107,
+    "eval_duration": 1149960000
+  },
+  "delta_chunks": 106,
+  "wall_decode_tok_s": 93.06,
+  "thinking_chars": 0,
+  "content_chars": 209,
+  "thinking_tokens_est": 0,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 1.245,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": true
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  }
+}

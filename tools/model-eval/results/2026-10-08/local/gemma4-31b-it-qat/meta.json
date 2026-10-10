@@ -1,0 +1,57 @@
+{
+  "target": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "sessions": [
+    {
+      "started_at": "2026-10-08T14:41:33+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "gemma4:31b-it-qat",
+        "--suite",
+        "all",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-08"
+      ],
+      "items": [
+        "coding/c1",
+        "coding/c2",
+        "coding/c3",
+        "coding/c4",
+        "coding/c5",
+        "coding/c6",
+        "extra/inst1",
+        "extra/inst2",
+        "extra/inst3",
+        "extra/needle1",
+        "extra/needle2",
+        "extra/needle3",
+        "extra/json1",
+        "extra/json2",
+        "extra/json3"
+      ],
+      "checked_at": "2026-10-08T14:41:33+09:00",
+      "gpu_before": {
+        "memory_used_mib": 16,
+        "memory_total_mib": 24576,
+        "utilization_pct": 0
+      },
+      "ollama_version": "0.34.2",
+      "preload_s": 7.19,
+      "preload_load_duration_s": null,
+      "ollama_ps": {
+        "name": "gemma4:31b-it-qat",
+        "size": 19881761008,
+        "size_vram": 17987629218,
+        "gpu_ratio": 0.905,
+        "context_length": 65536,
+        "expires_at": "2026-10-08T14:56:40.767453228+09:00"
+      },
+      "gpu_after_preload": {
+        "memory_used_mib": 23200,
+        "memory_total_mib": 24576,
+        "utilization_pct": 25
+      }
+    }
+  ]
+}

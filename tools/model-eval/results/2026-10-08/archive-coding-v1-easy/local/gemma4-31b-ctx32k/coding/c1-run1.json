@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "coding",
+  "item": "c1",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C1: 括弧の対応\n\n関数 `is_balanced(text: str) -> bool` を書いてください。\n\n- 文字列 `text` の中の 3 種類の括弧 `()`、`[]`、`{}` が正しく対応していれば `True`、そうでなければ `False` を返す。\n- 正しく対応しているとは、どの閉じ括弧にも、それより前にある同じ種類の開き括弧が 1 つずつ対応し、対応する組どうしが交差せず、最後に閉じられていない開き括弧が残らないこと。\n- 括弧以外の文字（`<` と `>` も含む）は無視する。\n- 空の文字列は `True`。\n- `text` は最大 100,000 文字。\n\n例:\n- `is_balanced(\"a(b[c]{d}e)f\")` → `True`\n- `is_balanced(\"([)]\")` → `False`",
+  "prompt_chars": 647,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:40:23+09:00",
+  "finished_at": "2026-10-08T12:41:00+09:00",
+  "content": "```python\ndef is_balanced(text: str) -> bool:\n    stack = []\n    bracket_map = {')': '(', ']': '[', '}': '{'}\n    opening = {'(', '[', '{'}\n\n    for char in text:\n        if char in opening:\n            stack.append(char)\n        elif char in bracket_map:\n            if not stack or stack.pop() != bracket_map[char]:\n                return False\n    \n    return not stack\n```",
+  "thinking": "*   Language: Python 3.12.\n    *   Goal: Implement `is_balanced(text: str) -> bool`.\n    *   Requirements:\n        *   Standard library only.\n        *   No file I/O, network, subprocesses, or `stdin`.\n        *   Use specific function names and argument names.\n        *   Only one code block starting with ```python.\n        *   No tests, usage examples, or print statements.\n        *   No explanations outside the block.\n    *   Logic:\n        *   Balanced brackets: `()`, `[]`, `{}`.\n        *   Ignore other characters.\n        *   Nested brackets must be closed in correct order (LIFO - Last In First Out).\n        *   No unclosed brackets at the end.\n        *   Empty string is `True`.\n        *   Max input size: 100,000 characters.\n\n    *   Use a stack to keep track of opening brackets.\n    *   Mapping: `)` -> `(`, `]` -> `[`, `}` -> `{`.\n    *   Iterate through each character in `text`.\n    *   If character is an opening bracket (`(`, `[`, `{`), push it onto the stack.\n    *   If character is a closing bracket (`)`, `]`, `}`):\n        *   If the stack is empty, it's unbalanced (no matching open bracket).\n        *   If the top of the stack is not the corresponding opening bracket, it's unbalanced.\n        *   Otherwise, pop the stack.\n    *   After iterating, if the stack is not empty, it's unbalanced (unclosed brackets).\n    *   Otherwise, it's balanced.\n\n    *   `(` $\\rightarrow$ `stack.append('(')`\n    *   `[` $\\rightarrow$ `stack.append('[')`\n    *   `{` $\\rightarrow$ `stack.append('{')`\n    *   `)` $\\rightarrow$ `if not stack or stack.pop() != '(': return False`\n    *   `]` $\\rightarrow$ `if not stack or stack.pop() != '[': return False`\n    *   `}` $\\rightarrow$ `if not stack or stack.pop() != '{': return False`\n\n    ```python\n    def is_balanced(text: str) -> bool:\n        stack = []\n        bracket_map = {')': '(', ']': '[', '}': '{'}\n        opening = {'(', '[', '{'}\n\n        for char in text:\n            if char in opening:\n                stack.append(char)\n            elif char in bracket_map:\n                if not stack or stack.pop() != bracket_map[char]:\n                    return False\n        return not stack\n    ```\n\n    *   `is_balanced(\"a(b[c]{d}e)f\")`:\n        *   `(`: stack=['(']\n        *   `[`: stack=['(', '[']\n        *   `]`: pop '[' == '[', stack=['(']\n        *   `{`: stack=['(', '{']\n        *   `}`: pop '{' == '{', stack=['(']\n        *   `)`: pop '(' == '(', stack=[]\n        *   End: stack empty -> `True`. Correct.\n    *   `is_balanced(\"([)]\")`:\n        *   `(`: stack=['(']\n        *   `[`: stack=['(', '[']\n        *   `)`: pop '[' != '(', return `False`. Correct.\n    *   `is_balanced(\"\")`:\n        *   Loop doesn't run, stack empty -> `True`. Correct.\n    *   `is_balanced(\")\")`:\n        *   `)`: stack empty -> return `False`. Correct.\n    *   `is_balanced(\"(\")`:\n        *   `(`: stack=['(']\n        *   End: stack not empty -> return `False`. Correct.\n\n    *   Python 3.12? Yes.\n    *   Standard library only? Yes.\n    *   No file/network/subproc/stdin? Yes.\n    *   Specific names? `is_balanced(text: str) -> bool`. Yes.\n    *   One code block? Yes.\n    *   No tests/print/explanations? Yes.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 359,
+  "completion_tokens": 1076,
+  "ttft_s": 0.913,
+  "t_first_content_s": 33.164,
+  "wall_s": 36.922,
+  "load_s": 0.001,
+  "server_decode_tok_s": 29.79,
+  "server_prefill_tok_s": 450.62,
+  "server_timings": {
+    "total_duration": 36921405585,
+    "load_duration": 1028197,
+    "prompt_eval_count": 359,
+    "prompt_eval_duration": 796680000,
+    "eval_count": 1076,
+    "eval_duration": 36120663000
+  },
+  "delta_chunks": 873,
+  "wall_decode_tok_s": 29.88,
+  "thinking_chars": 3177,
+  "content_chars": 376,
+  "thinking_tokens_est": 962,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 36.921,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 12,
+    "total": 12,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_open",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_close",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unclosed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested_ok",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_brackets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_wrong_kind",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_crossing",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_close_before_open",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_angle_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_ok",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_bad",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  }
+}

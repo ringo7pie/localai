@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "extra",
+  "item": "inst1",
+  "run": 1,
+  "prompt": "雨の日に家の中で楽しめる過ごし方を紹介してください。\n\n次の条件をすべて守って書いてください。\n1. 行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 5 個書く。\n2. どの行も「- 」を含めて 25 文字以内にする。\n3. 各箇条書きの末尾は「です。」か「ます。」にする。\n4. 最後の行には「以上」の 2 文字だけを書く。\n5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。",
+  "prompt_chars": 209,
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T15:50:31+09:00",
+  "finished_at": "2026-10-08T15:51:44+09:00",
+  "content": "- 本を読みます。\n- 映画を見ます。\n- 料理を作ります。\n- 掃除をします。\n- お昼寝をします。\n以上",
+  "thinking": "*   Topic: Things to do indoors on a rainy day.\n    *   Constraint 1: Use a bulleted list starting with \"- \" (half-width hyphen and half-width space), exactly 5 items.\n    *   Constraint 2: Each line must be 25 characters or less (including \"- \").\n    *   Constraint 3: Each bullet point must end with \"です。\" or \"ます。\".\n    *   Constraint 4: The last line (which would be the 6th line if we count the 5 bullet points) must be exactly \"以上\".\n    *   Constraint 5: No alphabets (A-Z, a-z, full-width or half-width).\n\n    *   Idea 1: Read a book. -> 本を読みます。 (6 chars)\n    *   Idea 2: Watch a movie. -> 映画を見ます。 (6 chars)\n    *   Idea 3: Cook. -> 料理を作ります。 (7 chars)\n    *   Idea 4: Clean the room. -> 掃除をします。 (6 chars)\n    *   Idea 5: Take a nap. -> お昼寝をします。 (7 chars)\n\n    *   - 本を読みます。 (8 chars) - OK\n    *   - 映画を見ます。 (8 chars) - OK\n    *   - 料理を作ります。 (9 chars) - OK\n    *   - 掃除をします。 (8 chars) - OK\n    *   - お昼寝をします。 (9 chars) - OK\n\n    *   - 本を読みます。\n    *   - 映画を見ます。\n    *   - 料理を作ります。\n    *   - 掃除をします。\n    *   - お昼寝をします。\n    *   以上\n\n    1.  Bullet list starting with \"- \" (exactly 5 items):\n        - 本を読みます。\n        - 映画を見ます。\n        - 料理を作ります。\n        - 掃除をします。\n        - お昼寝をします。\n        (Check: 5 items. All start with \"- \".)\n\n    2.  Each line ≤ 25 characters:\n        - 本を読みます。 (8)\n        - 映画を見ます。 (8)\n        - 料理を作ります。 (9)\n        - 掃除をします。 (8)\n        - お昼寝をします。 (9)\n        以上 (2)\n        (Check: All are within 25 characters.)\n\n    3.  Bullet points end with \"です。\" or \"ます。\":\n        - 本を読みます。 (ます。)\n        - 映画を見ます。 (ます。)\n        - 料理を作ります。 (ます。)\n        - 掃除をします。 (ます。)\n        - お昼寝をします。 (ます。)\n        (Check: All end with \"ます。\")\n\n    4.  Last line \"以上\" (2 characters only):\n        以上\n        (Check: Exactly \"以上\".)\n\n    5.  No alphabets:\n        - 本を読みます。\n        - 映画を見ます。\n        - 料理を作ります。\n        - 掃除をします。\n        - お昼寝をします。\n        以上\n        (Check: No alphabets used.)\n\n    Wait, I need to make sure I don't accidentally use any Latin characters. The constraints are strict.\n\n    Wait, constraint 1 says \"exactly 5\" bullet points.\n    Constraint 4 says \"The last line\" should be \"以上\".\n    So total lines: 5 (bullets) + 1 (last line) = 6 lines.\n\n    Let's double check \"alphabets\" constraint.\n    - (half-width hyphen) and (half-width space) are not alphabets.\n     Japanese characters are not alphabets.\n\n    Double check length again:\n    \"- 本を読みます。\" -> 1+1+6 = 8 chars.\n    \"- 映画を見ます。\" -> 1+1+6 = 8 chars.\n    \"- 料理を作ります。\" -> 1+1+7 = 9 chars.\n    \"- 掃除をします。\" -> 1+1+6 = 8 chars.\n    \"- お昼寝をします。\" -> 1+1+7 = 9 chars.\n    \"以上\" -> 2 chars.\n\n    All constraints met.\n\n    - 本を読みます。\n    - 映画を見ます。\n    - 料理を作ります。\n    - 掃除をします。\n    - お昼寝をします。\n    以上",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 153,
+  "completion_tokens": 1068,
+  "ttft_s": 1.791,
+  "t_first_content_s": 70.739,
+  "wall_s": 73.291,
+  "load_s": 0.001,
+  "server_decode_tok_s": 14.9,
+  "server_prefill_tok_s": 246.98,
+  "server_timings": {
+    "total_duration": 73290541438,
+    "load_duration": 951785,
+    "prompt_eval_count": 153,
+    "prompt_eval_duration": 619484000,
+    "eval_count": 1068,
+    "eval_duration": 71699104000
+  },
+  "delta_chunks": 824,
+  "wall_decode_tok_s": 14.94,
+  "thinking_chars": 2671,
+  "content_chars": 54,
+  "thinking_tokens_est": 1047,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 73.29,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "bullet_count",
+        "label": "「- 」の箇条書きがちょうど 5 個",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 25 文字以内",
+        "ok": true
+      },
+      {
+        "id": "bullet_endings",
+        "label": "箇条書きの末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  }
+}

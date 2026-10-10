@@ -1,0 +1,203 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C2: cron 式の次回実行時刻\n\n関数 `next_run(expression: str, after: datetime) -> datetime | None` を書いてください（`datetime` は標準ライブラリ `datetime` モジュールの `datetime` 型。`after` と戻り値は tzinfo の無い naive な値）。\n\n### 式の形\n\n- 式は 5 つのフィールドを 1 個以上の半角スペースかタブで区切ったもの。先頭と末尾の空白は許す。順に「分」「時」「日」「月」「曜日」。\n- 各フィールドの値の範囲: 分 0〜59、時 0〜23、日 1〜31、月 1〜12、曜日 0〜7（0 と 7 はどちらも日曜、1 が月曜、…、6 が土曜）。\n- フィールドは「項目」をコンマ `,` でつないだもの（項目 1 個以上。空の項目は不可）。項目は次のいずれか。\n  - `*`: その範囲の全部の値。\n  - `*/n`: 範囲の最小値から `n` おき（分なら 0, n, 2n, …）。\n  - `a`: 1 つの値。\n  - `a-b`: `a` 以上 `b` 以下の全部の値（`a <= b` が必要）。\n  - `a-b/n`: `a` から `n` おきで `b` 以下の値（`a`, `a+n`, `a+2n`, …）。\n  - `n` は 1 以上の整数。`a/n` の形（範囲を書かずに刻みを付ける形）は不可。\n- 値は 1 桁以上の 10 進の数字（先頭の 0 は許す）。月のフィールドでは `JAN`〜`DEC`、曜日のフィールドでは `SUN`〜`SAT` の英語 3 文字の名前も値として使える（大文字と小文字は区別しない。範囲の端にも使える）。名前が使えるのはこの 2 つのフィールドだけ。\n- 曜日の `7` は `0`（日曜）と同じ。`5-7` は {5, 6, 0}。\n- 上の形に合わないもの（フィールドの数の過不足、範囲外の値、`a > b` の範囲、`n` が 0、知らない名前、`?`、`L`、`@daily` などの拡張、負の数、小数、空の項目）には `ValueError` を送出する。\n\n### 日の決め方（日と曜日の関係）\n\n- 「日」のフィールドと「曜日」のフィールドは、フィールド全体がちょうど `*`（刻みも項目も無い `*` 1 文字）のとき「無指定」とみなす。`*/2` や `*,5` は無指定ではない。\n- 両方とも無指定なら毎日。片方だけ無指定なら、もう片方のフィールドに合う日だけ。両方とも指定があるときは、「日」に合う **か** 「曜日」に合う日（どちらか一方でよい）。\n- もちろん「月」のフィールドにも合う必要がある。存在しない日（4 月 31 日など）は決して合わない。\n\n### 戻り値\n\n- `after` より後（`after` と同じ分は含まない）で、秒とマイクロ秒が 0 の時刻のうち、式に合う最も早いものを返す。`after` の秒・マイクロ秒は、この「より後」の判定にだけ関わる。\n- その時刻の年が `after.year + 10` より大きくなるなら `None` を返す（例: 2 月 30 日の指定は決して合わないので `None`）。\n- 入力の大きさに対して十分速く動くこと。答えが数年先のときや `None` のときも、1 分ずつ全部を調べる作りでは遅すぎる。\n\n例（`from datetime import datetime` とする）:\n- `next_run(\"*/15 9-17 * * MON-FRI\", datetime(2026, 10, 9, 17, 50))` → `datetime(2026, 10, 12, 9, 0)`（10 月 9 日は金曜。次は月曜の 9:00）\n- `next_run(\"0 0 1 * 1\", datetime(2026, 10, 8))` → `datetime(2026, 10, 12, 0, 0)`（毎月 1 日 **または** 毎週月曜。10 月 8 日は木曜）\n- `next_run(\"30 4 30 2 *\", datetime(2026, 1, 1))` → `None`",
+  "prompt_chars": 2065,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T13:36:23+09:00",
+  "finished_at": "2026-10-08T13:37:24+09:00",
+  "content": "```python\nfrom datetime import datetime, timedelta\nimport re\nfrom typing import Set, Optional, List, Tuple\n\n# --- Helper Functions for Field Parsing ---\n\ndef _get_date_name(value: str) -> Optional[str]:\n    \"\"\"月または曜日の英字名を対応する数値に変換する。\"\"\"\n    v = value.upper()\n    if v in (\"JAN\", \"1\"): return 1\n    if v in (\"FEB\", \"2\"): return 2\n    if v in (\"MAR\", \"3\"): return 3\n    if v in (\"APR\", \"4\"): return 4\n    if v in (\"MAY\", \"5\"): return 5\n    if v in (\"JUN\", \"6\"): return 6\n    if v in (\"JUL\", \"7\"): return 7\n    if v in (\"AUG\", \"8\"): return 8\n    if v in (\"SEP\", \"9\"): return 9\n    if v in (\"OCT\", \"10\"): return 10\n    if v in (\"NOV\", \"11\"): return 11\n    if v in (\"DEC\", \"12\"): return 12\n    \n    # 曜日名: 0=SUN, 1=MON, ..., 6=SAT\n    if v in (\"SUN\", \"0\"): return 0\n    if v in (\"MON\", \"1\"): return 1\n    if v in (\"TUE\", \"2\"): return 2\n    if v in (\"WED\", \"3\"): return 3\n    if v in (\"THU\", \"4\"): return 4\n    if v in (\"FRI\", \"5\"): return 5\n    if v in (\"SAT\", \"6\"): return 6\n    if v in (\"SAT\", \"7\"): return 0 # 曜日の7は0 (日曜)と同じ\n    \n    return None\n\ndef _parse_item(item: str, field_type: str, max_value: int) -> Set[int]:\n    \"\"\"単一の項目文字列 (e.g., '*/15', '1-3', '5-7/2') をパースし、値の集合を返す。\"\"\"\n    \n    if item == '*':\n        return set(range(max_value + 1))\n    \n    if '-' in item:\n        parts = item.split('-')\n        \n        if len(parts) == 1:\n            # 単一値 (a)\n            try:\n                val = int(parts[0])\n                if val < 0 or val > max_value:\n                    raise ValueError\n                return {val}\n            except ValueError:\n                raise ValueError(f\"Invalid single value in {item}\")\n\n        elif len(parts) == 2:\n            start_range = parts[0]\n            end_range = parts[1]\n\n            # a-b: 範囲\n            if '/' not in end_range:\n                try:\n                    start = int(start_range)\n                    end = int(end_range)\n                    if start < 0 or end < 0 or start > max_value or end > max_value:\n                        raise ValueError\n                    if start > end:\n                        raise ValueError(\"Start value must be less than or equal to end value.\")\n                    return set(range(start, end + 1))\n                except ValueError:\n                    raise ValueError(f\"Invalid range format {item}\")\n\n            # a-b/n: 範囲から刻み\n            try:\n                start = int(start_range)\n                end_part, step_str = end_range.split('/')\n                end = int(end_part)\n                step = int(step_str)\n\n                if start < 0 or end < 0 or start > max_value or end > max_value:\n                    raise ValueError\n                if step < 1:\n                    raise ValueError(\"Step must be positive.\")\n                if start > end:\n                    raise ValueError(\"Start value must be less than or equal to end value.\")\n                \n                results = set()\n                for i in range(start, end + 1, step):\n                    results.add(i)\n                return results\n            except Exception:\n                raise ValueError(f\"Invalid complex range format {item}\")\n\n    elif '/' in item:\n        # a/n: 範囲なし、刻み指定 (これは仕様上、a-b/nに含まれるはずだが、単独で記述された場合も考慮)\n        # ただし、仕様上「a/n の形（範囲を書かずに刻みを付ける形）は不可」とあるため、これはValueError\n        if item.count('/') == 1:\n             raise ValueError(\"Range must be specified (a-b/n). Standalone step notation (a/n) is invalid.\")\n        \n    raise ValueError(f\"Unknown item format: {item}\")\n\ndef _parse_field(field_str: str, field_name: str, max_value: int) -> Set[int]:\n    \"\"\"1つのフィールド文字列 (e.g., '*/15 9-17 *') をパースし、すべての有効な値の集合を返す。\"\"\"\n    \n    # 空白またはタブで区切られた項目を抽出\n    items = field_str.split()\n    if not items:\n        # クロン式におけるフィールド値は空であってはならない\n        raise ValueError(f\"Missing values for {field_name} field.\")\n    \n    results: Set[int] = set()\n    for item in items:\n        # 項目はカンマ区切り (e.g., \"1,3,5\")\n        sub_items = item.split(',')\n        if not sub_items:\n            raise ValueError(f\"Cannot parse empty sub-item in {field_name}.\")\n        \n        for sub_item in sub_items:\n            if not sub_item:\n                 # 空の項目は不可\n                raise ValueError(f\"Cannot parse empty sub-item in {field_name}.\")\n                \n            values = _parse_item(sub_item.strip(), field_name, max_value)\n            results.update(values)\n            \n    return results\n\n# --- Main Function ---\n\ndef next_run(expression: str, after: datetime) -> datetime | None:\n    \"\"\"\n    与えられたcron式に基づいて、afterより後で実行される最も早い時刻を計算する。\n    \"\"\"\n    \n    try:\n        # 1. 式の分割と値のパース\n        fields_str = expression.split()\n        if len(fields_str) != 5:\n            raise ValueError(\"Cron expression must contain exactly 5 fields (Min, Hour, Day, Month, DayOfWeek).\")\n\n        # 各フィールドに対応する型、最大値、パーサーを定義\n        field_spec = [\n            (lambda val: 0 <= val <= 59, 59, \"Minute\"),\n            (lambda val: 0 <= val <= 23, 23, \"Hour\"),\n            (lambda val: 1 <= val <= 31, 31, \"Day\"),\n            (lambda val: 1 <= val <= 12, 12, \"Month\"),\n            (lambda val: 0 <= val <= 7, 7, \"DayOfWeek\"),\n        ]\n\n        parsed_fields: List[Set[int]] = []\n        \n        # (分, 時, 日, 月, 曜日) の順\n        \n        # 曜日の特殊処理: 7 は 0 と同じ\n        raw_fields = []\n        for i, field_str in enumerate(fields_str):\n            field_name = [\"Minute\", \"Hour\", \"Day\", \"Month\", \"DayOfWeek\"][i]\n            if i == 4: # 曜日フィールド\n                # 7 は 0 と同じ意味として扱うが、パース自体は最大値7まで行う\n                pass\n            \n            # 曜日フィールドの場合、-1 (予備) を渡す\n            max_val = field_spec[i][1]\n            \n            try:\n                parsed_set = _parse_field(field_str, field_name, max_val)\n                parsed_fields.append(parsed_set)\n            except ValueError as e:\n                # パースエラーをキャッチして再送出\n                raise e\n                \n        # 2. 検索開始点の設定\n        \n        # afterより後、秒/マイクロ秒を0にする最小の候補時刻からスタート\n        # next_search_timeは、比較の基準となるdatetimeオブジェクト。\n        next_search_time = after + timedelta(minutes=1)\n        \n        # 年の最大制約\n        max_year = after.year + 10\n\n    except ValueError as e:\n        # 初期パース段階でのエラーはそのまま送出\n        raise e\n\n    # 3. メイン検索ループ\n    \n    # T は現在の候補時刻\n    T = next_search_time\n\n    while T.year <= max_year:\n        \n        # 3.1. 終了条件チェック (年)\n        if T.year > max_year:\n            return None\n        \n        # 3.2. 日付の取得 (年, 月, 日, 時, 分, 曜日)\n        Y, M, D = T.year, T.month, T.day\n        H, Min = T.hour, T.minute\n        W = T.weekday() # 0=月, ..., 6=日\n        \n        # 曜日フィールドの論理値変換 (0=SUN, 1=MON, ..., 6=SAT)\n        # T.weekday() は月曜=0, 日曜=6 なので、日曜日を特別に処理する\n        current_day_of_week = (W + 1) % 7 # 0=SUN, 1=MON, ..., 6=SAT\n        \n        # 曜日フィールドの論理値変換 (仕様の曜日は0=SUN, ..., 6=SAT)\n        # 曜日計算の複雑さを避けるため、今回は一般的なdatetimeのメソッドに頼りつつ、\n        # 最後に指定された曜日のリストでフィルタリングを行う。\n        \n        # 3.3. フィールドチェック (分, 時, 日, 月, 曜日)\n        \n        is_match = True\n        \n        # A. 分 (Min) のチェック\n        if Min not in parsed_fields[0]:\n            is_match = False\n        \n        # B. 時 (Hour) のチェック\n        if is_match and H not in parsed_fields[1]:\n            is_match = False\n\n        # C. 日 (Day) のチェック\n        # Day field は 1〜31\n        if is_match and D not in parsed_fields[2]:\n            is_match = False\n\n        # D. 月 (Month) のチェック\n        # Month field は 1〜12\n        if is_match and M not in parsed_fields[3]:\n            is_match = False\n            \n        # E. 曜日 (DayOfWeek) のチェック\n        # current_day_of_week は 0=SUN, ..., 6=SAT\n        # 曜日フィールドの値は 0=SUN, ..., 6=SAT (仕様通り)\n        if is_match and current_day_of_week not in parsed_fields[4]:\n            is_match = False\n            \n        # 3.4. 結果判定とジャンプ\n        \n        if is_match:\n            # すべての条件を満たした -> 最小の時刻が見つかった\n            return T\n        \n        # 次の候補時刻を計算する\n        \n        # 最も大きな変更が必要なフィールド（かつ、次の候補が容易に計算できるもの）からジャンプする。\n        \n        next_T = T + timedelta(minutes=1)\n        \n        # 次の候補時刻を計算する際、次の満点時 (0分) までジャンプする方が効率的\n        \n        # ------------------------------------------------------------\n        # 効率的なジャンプ戦略: \n        # 1. 分が原因の場合 -> 次の候補分までジャンプ\n        # 2. 時が原因の場合 -> 次の候補時までジャンプ\n        # 3. 日/月/曜日が原因の場合 -> 次の候補日/月/年までジャンプ\n        # ------------------------------------------------------------\n        \n        # Minチェック失敗: 次に有効な分を探す\n        if Min not in parsed_fields[0]:\n            min_vals = sorted(list(parsed_fields[0]))\n            \n            next_minute = -1\n            \n            # 現在の分から見て、次に発生する有効な分を探す\n            # Tから次の最小の候補分を求め、次の時刻 T' = T.replace(minute=next_minute)\n            \n            next_time_found = False\n            current_min = Min\n            for i in range(1, 60):\n                test_min = current_min + i\n                test_min = test_min % 60\n                if test_min in min_vals:\n                    next_T = T.replace(minute=test_min)\n                    next_time_found = True\n                    break\n            \n            if not next_time_found:\n                # 次の日に必ず到達する（これは極めて稀だが、循環構造を考慮）\n                # 最小値が0の場合、次の日は必ず0分から始まる。\n                next_T = T + timedelta(days=1)\n                # 一旦次の日へジャンプさせ、メインループで再チェック\n                T = next_T\n                continue # ループの先頭に戻り、完全な再検証を行う\n            \n            # 分の制約が原因で次の候補時刻が特定できた場合、ここから始める\n            T = next_T\n            continue\n\n        # 時チェック失敗: 次の候補時 (0分) になるまでジャンプ\n        if H not in parsed_fields[1]:\n            hours = sorted(list(parsed_fields[1]))\n            \n            next_hour = -1\n            \n            # 現在の時より大きい、または一周した最初の有効な時を探す\n            for i in range(1, 25):\n                test_hour = (H + i) % 24\n                if test_hour in hours:\n                    next_hour = test_hour\n                    break\n            \n            if next_hour == -1:\n                # サイクルが一周して何も見つからない（発生しないはず）\n                next_T = T + timedelta(days=1)\n            else:\n                # 日付は維持し、時のみ変更 (分は0にリセット)\n                next_T = T.replace(hour=next_hour, minute=0, second=0, microsecond=0)\n                \n            T = next_T\n            continue\n\n        # 日/月/曜日のチェックが失敗した場合、最も緩い制約（日）の次の候補日にジャンプする。\n        \n        # Date/Month/DayOfWeekが原因でis_match=Falseとなった場合\n        if not is_match:\n            \n            # 次の候補日を計算するロジックは複雑すぎるため、\n            # 最も安全かつ簡単な方法は、Tを次の日（または少なくとも1週間先）にジャンプさせ、\n            # ループの最初に到達したときの次の候補時刻 T' を再計算することである。\n            # ただし、効率を考慮し、少なくとも日単位での進展が必要。\n            \n            # 一旦、次の日へジャンプ\n            T += timedelta(days=1)\n            \n            # 年が超えていないか確認\n            if T.year > max_year:\n                return None\n            \n            # 次のTから再検証を行うために、ループの先頭に戻る\n            continue\n\n    # 最後のフォールバック (ループを抜けるはずがないが念のため)\n    return None\n```",
+  "thinking": "ユーザーは、特定の仕様を持つ cron 式の次回実行時刻を計算する Python 関数 `next_run` の実装を求めている。\n\n制約事項が多いので、一つずつ確認しながら設計を進める。\n\n**制約の確認:**\n1. **標準ライブラリのみ使用。**\n2. **I/O、ネットワーク、サブプロセス、標準入力からの読み込み禁止。**\n3. **関数名、クラス名、引数名、インターフェースを維持する。**\n4. **出力形式は指定されたコードブロックのみ。**\n\n**仕様の確認:**\n1. **関数シグネチャ:** `next_run(expression: str, after: datetime) -> datetime | None`\n2. **日付/時間型:** `datetime` は標準ライブラリのもの。`after` と戻り値は naive なもの。\n3. **Cron 式の形:** 「分」「時」「日」「月」「曜日」の5フィールド。スペースまたはタブ区切り。\n4. **フィールドの構造:** 項目は `,` で区切られる。項目は以下のいずれか:\n    * `*`: 全て。\n    * `*/n`: n 刻み。\n    * `a`: 単一値。\n    * `a-b`: 範囲。\n    * `a-b/n`: 範囲からn刻み。\n    * `n`: 1以上の整数。\n5. **値の範囲:**\n    * 分: 0〜59\n    * 時: 0〜23\n    * 日: 1〜31\n    * 月: 1〜12 (JAN〜DECも可)\n    * 曜日: 0〜7 (SUN〜SATも可)\n6. **エラー処理:** 仕様に合わない形式（過不足、範囲外、`a > b`、`n=0`、不明な名前、拡張、負数、小数、空項目）には `ValueError` を送出する。\n7. **日と曜日の関係:**\n    * 両方 `*` の場合「無指定」。\n    * 片方だけ `*` の場合、もう片方に合う日のみ。\n    * 両方指定がある場合、どちらか一方に合う日（かつ月に合う）。\n    * 存在しない日（4月31日）は不可。\n8. **戻り値:**\n    * `after` より後（同分は不可）の、秒/マイクロ秒が 0 の最小の時刻。\n    * 年が `after.year + 10` より大きい場合 `None`。\n    * 計算効率が求められる。\n\n---\n\n### 実装戦略\n\nこの問題は、Cron 式のパース（解析）と、指定された制約を満たす日付検索アルゴリズムの組み合わせが必要である。\n\n#### ステップ 0: 依存関係の取り扱い\n`datetime` が必要。標準ライブラリであるため、どこかでインポートが必要だが、指定された出力形式（テストコードなし、定義とimportのみ）を考慮すると、必要なインポートを冒頭に含める必要がある。\n\n#### ステップ 1: Cron 式のパース（フィールド単位）\n与えられた文字列 `expression` を5つのフィールドに分割し、それぞれのフィールド文字列を、具体的な有効な値のリスト（集合または配列）に展開する関数群が必要。\n\n**1.1. フィールドの解析ロジック:**\n各フィールド文字列（例: `\"*/15 9-17 *\"`）を、個々の「項目」（例: `\"*/15\"`, `\"9-17\"`, `\"*\"`）に分割する。\n\n**1.2. 項目の解析ロジック:**\n項目は、`*`, `a`, `a-b`, `a-b/n` の形をしている。\n* `*`: 全範囲。\n* `a`: 単一値。\n* `a-b`: 範囲。\n* `a-b/n`: 範囲から刻み。\n\nこれらを個別の数値（または名前）のリストに変換する。\n\n**1.3. 特殊なフィールドの処理:**\n* **月 (Month):** 数字に加え、JAN〜DECの3文字英語名もサポート。\n* **曜日 (DayOfWeek):** 数字に加え、SUN〜SATの3文字英語名もサポート。\n* **曜日 $7$ と $0$:** どちらも日曜。\n\n**1.4. エラーチェック:**\nパース中に範囲外、不正な形式、不正な名前、フィールド数の過不足などをチェックし、`ValueError` を送出する。\n\n#### ステップ 2: 検索アルゴリズム（時間検索）\n単に今日からループするのではなく、効率的に次の実行時刻を見つける必要がある。\n\n1. `after` からスタートし、秒/マイクロ秒を無視して、最も早い候補時刻 $T$ を探す。\n2. 探索範囲の制約: $T$ の年が $after.year + 10$ を超えてはいけない。\n3. **検索方法:**\n    * $after$ から始めて、最も厳しい制約（例えば、現在の分や時）を満たす最小の増分を計算する。\n    * 1分単位で進めると遅すぎるため、まずは次の候補日を予測し、その日の時間をチェックする方が効率的。\n\n**効率的な検索のための工夫:**\n\n*   **時間部品 (分, 時):** これらの制約は比較的単純。次の満点時 (X:00) にジャンプできる。\n*   **日付部品 (日, 月, 曜日):** これらが最も複雑で、カレンダー的な考慮が必要。\n\n1. **初期化:** 検索開始時刻 $T$ を `after` の次の分（秒/マイクロ秒をクリア）に設定する。\n2. **ループ:**\n    * $T$ が最大許容年を超えたら `None` を返す。\n    * $T$ が指定されたすべてのフィールド（分、時、日、月、曜日）の制約を満たすかチェックする。\n    * 満たさない場合、$T$ を次の候補時刻へジャンプさせる。\n    * 満たす場合、これが答え。\n\n**ジャンプの最適化:**\n\nもし $T$ が分（Min）の制約を満たさない場合、Min の次の候補時刻（例えば、次の満点時）へジャンプする。\nもし $T$ が日（Day）の制約を満たさない場合、Day の次の候補日へジャンプする。\nもし $T$ が月（Month）の制約を満たさない場合、Month の次の候補月へジャンプする。\n\nこの問題を解決する一般的な手法として、制約の最も厳しいフィールドから、次の候補時刻を計算し、それを適用していく必要がある。\n\n---\n*(自己修正/設計の洗練)*\nCron式解析は複雑なので、内部ヘルパー関数を多く使う構造にする。\n\n### 実装計画詳細\n\n1.  `_parse_field`: 1つのフィールド文字列（例: `\"*/15 1-3 *\"`）を受け取り、すべての有効な値の集合を返す。\n2.  `_parse_item`: 1つの項目（例: `\"*/15\"` または `\"1-3\"`）を受け取り、有効な値の集合を返す。\n3.  `_to_int_or_name`: 月や曜日の名前を数値に変換するヘルパー。\n\n**日付チェック関数 `is_valid(datetime_obj, parsed_fields)`:**\n指定された `datetime` オブジェクトが、パースされたすべてのフィールドの条件を満たすかチェックする。\n\n**メインループ `next_run`:**\n1. `after` の値を初期の検索開始点とする。\n2. ループ内で、候補時刻 $T$ を検証し、失敗した場合は最小単位（分または日）でスキップする。\n\n年次制約の処理: `T.year > after.year + 10`\n\n---\n(Pythonコード生成)\n大量のロジックが必要なため、コードを記述する。標準ライブラリの `datetime` と、時間計算のための `timedelta` が必須となる。\n\n---\n(実装開始。これは非常に長いコードになるため、構造化を意識する。)\n---",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 1240,
+  "completion_tokens": 5429,
+  "ttft_s": 0.471,
+  "t_first_content_s": 20.618,
+  "wall_s": 60.917,
+  "load_s": 0.001,
+  "server_decode_tok_s": 89.76,
+  "server_prefill_tok_s": 3225.04,
+  "server_timings": {
+    "total_duration": 60916558459,
+    "load_duration": 820201,
+    "prompt_eval_count": 1240,
+    "prompt_eval_duration": 384491000,
+    "eval_count": 5429,
+    "eval_duration": 60481523000
+  },
+  "delta_chunks": 5260,
+  "wall_decode_tok_s": 89.82,
+  "thinking_chars": 3313,
+  "content_chars": 10761,
+  "thinking_tokens_est": 1278,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 60.916,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.1538,
+    "all_passed": false,
+    "passed": 4,
+    "total": 26,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_every_minute",
+        "ok": false,
+        "error": "AssertionError: expected datetime.datetime(2026, 10, 8, 12, 31), got datetime.datetime(2026, 10, 8, 12, 31, 15)"
+      },
+      {
+        "name": "case_same_minute_is_excluded",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 30"
+      },
+      {
+        "name": "case_fixed_minute_wraps_hour",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 5"
+      },
+      {
+        "name": "case_hour_range_wraps_day",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_step_from_minimum",
+        "ok": false,
+        "error": "ValueError: Range must be specified (a-b/n). Standalone step notation (a/n) is invalid."
+      },
+      {
+        "name": "case_range_with_step",
+        "ok": false,
+        "error": "AssertionError: expected datetime.datetime(2026, 10, 8, 13, 10), got datetime.datetime(2026, 10, 8, 12, 10)"
+      },
+      {
+        "name": "case_lists_and_duplicates",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 1"
+      },
+      {
+        "name": "case_month_names",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_weekday_names",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_sunday_as_seven",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_day_only_restricted",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_weekday_only_restricted",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 30"
+      },
+      {
+        "name": "case_both_restricted_means_or",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_step_in_day_field_is_restricted",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_leap_day",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_impossible_dates_return_none",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 30"
+      },
+      {
+        "name": "case_year_boundary",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_leading_zeros_tabs_and_outer_spaces",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 05"
+      },
+      {
+        "name": "case_exact_match_time_boundaries",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_invalid_field_count",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_syntax",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_names_and_extensions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_naive_datetime",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_far_answers_are_fast",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      },
+      {
+        "name": "case_none_is_fast",
+        "ok": false,
+        "error": "ValueError: Unknown item format: 0"
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.04,
+    "stderr_tail": ""
+  }
+}

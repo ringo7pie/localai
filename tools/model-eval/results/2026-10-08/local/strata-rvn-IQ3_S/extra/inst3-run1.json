@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "target": "strata-flash-next:IQ3_S",
+  "label": "strata-flash-next:IQ3_S (RVN)",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-flash-next:IQ3_S",
+  "slug": "strata-rvn-IQ3_S",
+  "suite": "extra",
+  "item": "inst3",
+  "run": 1,
+  "prompt": "朝ごはんを食べることの利点を説明してください。\n\n次の条件をすべて守って書いてください。\n1. 全体をちょうど 3 行にする（空の行は数えない）。行頭に箇条書きの記号や番号を付けない。\n2. どの行も 40 文字以内にする。\n3. どの行も末尾を「です。」か「ます。」にする。\n4. どの行にも「朝ごはん」という語を入れる。\n5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。",
+  "prompt_chars": 194,
+  "request": {
+    "model": "strata-flash-next:IQ3_S",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-08T18:02:12+09:00",
+  "finished_at": "2026-10-08T18:02:35+09:00",
+  "content": "朝ごはんを食べると体が元気になります。\n朝ごはんを食べると頭がはたらきます。\n朝ごはんを食べると気持ちもすっきりします。",
+  "thinking": "We need answer user's request. Need produce final exactly 3 lines, no blank lines counted? It says 全体をちょうど 3 行にする（空の行は数えない）. We should output exactly 3 non-empty lines. No bullets/numbers at line start. Each line <=40 chars. Each line ends with です。 or ます。. Each line must include the word 朝ごはん. No alphabets A-Z a-z including fullwidth? It says アルファベット（A〜Z、a〜z。全角も含む）を使わない. So avoid ASCII and fullwidth Latin? Full-width Latin letters maybe Ａ-Ｚ ａ-ｚ? Also avoid periods? Japanese period okay. Need count characters carefully. Each line includes 朝ごはん exactly? The condition: どの行にも「朝ごはん」という語を入れる. So each line contains that word. Need 3 lines. Each ends with です。 or ます。. Need no alphabet anywhere. Need 3 lines only, no extra newline? final should have 3 lines separated by newline; no trailing period extra? Each line ends with either. Need line lengths: Japanese characters count? 40文字以内 likely characters. Let's ensure <=40. Need avoid bullets. Could do:\n朝ごはんを食べると体が元気になります。 (count? 朝1 ご2 は3 ん4 を5 た6 べ7 る8 と9 体10 が11 元12 気13 に14 な15 り16 ま17 す18 。19) good.\n朝ごはんを食べると頭がはたらきます。 (count 18)\n朝ごはんを食べると気持ちもすっきりします。 (count? 朝1 ご2 は3 ん4 を5 た6 べ7 る8 と9 気10 持11 ち12 も13 す14 っ15 き16 り17 し18 ま19 す20 。21) good.\nAll end with ます。 (first? 元気に なります is ます; second はたらきます is ます; third すっきりします is ます). Need all end with です。か ます。. Okay.\nNo alphabets. Check fullwidth Latin? none. Could there be fullwidth colon? none.\nNeed exactly 3 lines no leading spaces? Good.\nNeed ensure not more than 40 chars each line. Good.\nPotential issue: \"朝ごはん\" appears in each line yes. Need no line starts with bullet/number. Good.\n\nNeed maybe answer in Japanese only. final exactly:\n朝ごはんを食べると体が元気になります。\n朝ごはんを食べると頭がはたらきます。\n朝ごはんを食べると気持ちもすっきりします。\n\nLet's count line3: 朝 (1) ご2 は3 ん4 を5 た6 べ7 る8 と9 気10 持11 ち12 も13 す14 っ15 き16 り17 し18 ま19 す20 。21. okay.\nLine1 朝1 ご2 は3 ん4 を5 た6 べ7 る8 と9 体10 が11 元12 気13 に14 な15 り16 ま17 す18 。19\nLine2 朝1 ご2 は3 ん4 を5 た6 べ7 る8 と9 頭10 が11 は12 た13 ら14 き15 ま16 す17 。18\n\nNeed maybe \"はたらきます\" can be considered okay, not alphabet. Good.\n\nDouble-check if \"空の行は数えない\" could allow blank lines? We should avoid blank lines entirely. Final output no blank line? Usually final has newline at end maybe okay. We can present three lines with newline after each? If final message includes trailing newline maybe not issue. Need avoid extra final newline? Usually okay. But to be safe, no leading newline. Final: line1 newline line2 newline line3. If final includes trailing newline after line3, system may count? It says 3 lines; trailing newline may be ignored. But okay.\n\nNeed ensure no alphabetic letters in the final string. There is no letters.\n\nPotential hidden issue: The phrase 「朝ごはん」 is quoted? It says no alphabet; Japanese quote brackets okay? We can not use quote. Our lines don't have brackets. Good.\n\nCould there be full-width apostrophe? no.\n\nNeed maybe all three lines must end with either です。 or ます。 Our lines are ます。 all okay. It does not require each line exactly one sentence? Fine.\n\nLet's final.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 177,
+  "completion_tokens": 1062,
+  "ttft_s": 1.52,
+  "t_first_content_s": 22.41,
+  "wall_s": 23.012,
+  "load_s": null,
+  "server_decode_tok_s": 49.4,
+  "server_prefill_tok_s": 118.6,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 177,
+    "prompt_ms": 1492.1,
+    "prompt_per_token_ms": 8.43,
+    "prompt_per_second": 118.6,
+    "predicted_n": 1062,
+    "predicted_ms": 21514.4,
+    "predicted_per_token_ms": 20.258,
+    "predicted_per_second": 49.4,
+    "draft_n": 809,
+    "draft_n_accepted": 561
+  },
+  "delta_chunks": 1055,
+  "wall_decode_tok_s": 49.37,
+  "thinking_chars": 2987,
+  "content_chars": 60,
+  "thinking_tokens_est": 1041,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 23.012,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "line_count",
+        "label": "ちょうど 3 行で、行頭に記号や番号が無い",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 40 文字以内",
+        "ok": true
+      },
+      {
+        "id": "line_endings",
+        "label": "どの行も末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "each_line_word",
+        "label": "どの行にも「朝ごはん」",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  }
+}

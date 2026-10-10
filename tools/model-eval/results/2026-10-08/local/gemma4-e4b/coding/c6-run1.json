@@ -1,0 +1,173 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C6: 数独を解く（解の一意性の判定つき）\n\n関数 `solve_sudoku(grid: str) -> str` を書いてください。\n\n- `grid` は 81 文字の文字列。9×9 の盤面を行ごとに左から右、上から下の順に並べたもので、各文字は `1`〜`9`（確定しているマス）か `.`（空のマス）。\n- 普通の数独の規則で解く: 各行・各列・太線で区切られた 3×3 のブロック 9 つのそれぞれに、`1`〜`9` がちょうど 1 回ずつ入る。\n- 解がちょうど 1 つに決まるとき、その解を同じ形式（81 文字、`.` を含まない）で返す。\n- 次の場合は `ValueError` を送出する。\n  - `grid` の長さが 81 でない、または `1`〜`9` と `.` 以外の文字（`0`、空白、全角の数字など）を含む。\n  - 確定しているマスどうしが、既に規則に反している（同じ行・列・ブロックに同じ数字がある）。\n  - 解が存在しない（確定しているマスどうしに矛盾は無いが、どう埋めても規則を満たせない）。\n  - 解が 2 つ以上ある（空の盤面など）。\n- 性能: ヒントが 17 個しかない難問、「最難」と呼ばれる種類の問題、確定マスに矛盾は無いが解が存在しない盤面、解が多数ある盤面のいずれも、1 問につき 1 秒程度で答えること。マスを左上から順に試すだけの素朴なバックトラックでは間に合わない（候補の少ないマスから埋める、候補が 1 つのマスを先に確定する、などの工夫が要る）。解が 2 つ以上あることの判定は、2 つ目の解が見つかった時点で打ち切ってよい。\n\n例:\n- `solve_sudoku(\"53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79\")` → `\"534678912672195348198342567859761423426853791713924856961537284287419635345286179\"`\n- `solve_sudoku(\".\" * 81)` → `ValueError` を送出（解が多数ある）\n- `solve_sudoku(\"11\" + \".\" * 79)` → `ValueError` を送出（同じ行に 1 が 2 つ）",
+  "prompt_chars": 1285,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T13:40:22+09:00",
+  "finished_at": "2026-10-08T13:40:56+09:00",
+  "content": "```python\ndef solve_sudoku(grid: str) -> str:\n    \"\"\"\n    数独を解き、解の一意性を判定する。\n    解が唯一の場合、盤面を文字列で返す。それ以外の場合、ValueErrorを送出する。\n    \"\"\"\n    if len(grid) != 81:\n        raise ValueError(\"入力グリッドの長さは81文字である必要があります。\")\n    \n    # 1. 文字種と初期バリデーション\n    for char in grid:\n        if char not in '123456789.':\n            raise ValueError(\"グリッドには '1'-'9' または '.' の文字のみを含める必要があります。\")\n\n    board = [list(grid[i:i+9]) for i in range(0, 81, 9)]\n\n    def is_safe(r, c, num, current_board):\n        # 行チェック\n        for col in range(9):\n            if current_board[r][col] == num and col != c:\n                return False\n        \n        # 列チェック\n        for row in range(9):\n            if current_board[row][c] == num and row != r:\n                return False\n        \n        # 3x3ブロックチェック\n        start_row = (r // 3) * 3\n        start_col = (c // 3) * 3\n        for i in range(3):\n            for j in range(3):\n                curr_r = start_row + i\n                curr_c = start_col + j\n                if current_board[curr_r][curr_c] == num and (curr_r != r or curr_c != c):\n                    return False\n        return True\n\n    # 初期矛盾チェック\n    for r in range(9):\n        for c in range(9):\n            if board[r][c] != '.':\n                num = board[r][c]\n                # 仮にマスが空であるとして、その初期値が他のマスと衝突していないかチェックする\n                if not is_safe(r, c, num, board):\n                    raise ValueError(\"初期の配置に矛盾があります。\")\n\n    # ----------------------------------------------------------------------\n    # バックトラッキングによる解の探索とカウント\n    # ----------------------------------------------------------------------\n    \n    # 探索中に例外を発生させて強制終了する仕組みを使用する\n    class UniqueSolutionFound(Exception):\n        pass\n\n    class MultipleSolutionsFound(Exception):\n        pass\n\n    # グローバルな状態を管理する変数（解の候補と結果の格納）\n    solution_count = 0\n    unique_solution_board = None\n\n    def solve_recursive(current_board):\n        nonlocal solution_count, unique_solution_board\n\n        if solution_count >= 2:\n            raise MultipleSolutionsFound()\n\n        # 空きマスを探す (最優先で候補が少ないマスを選ぶMRV戦略的な探索)\n        empty_cells = []\n        for r in range(9):\n            for c in range(9):\n                if current_board[r][c] == '.':\n                    empty_cells.append((r, c))\n        \n        if not empty_cells:\n            # 全て埋まった -> 1つの解が見つかった\n            if solution_count == 0:\n                solution_count = 1\n                # 結果を保持するために、盤面をコピーして保存する\n                unique_solution_board = [\"\".join(row) for row in current_board]\n            elif solution_count == 1:\n                solution_count = 2\n            return\n\n        # MRV (Minimum Remaining Values) 戦略を擬似的に行う:\n        # 候補数が最も少ないマスを次に試行する。\n        best_cell = None\n        min_candidates = 10\n        \n        # 各空きマスについて、現在の制約下での候補数を数える\n        candidates_by_cell = {}\n        for r, c in empty_cells:\n            candidates = set()\n            for num in \"123456789\":\n                if num not in current_board[r] and num not in [current_board[i][c] for i in range(9)] and num not in get_block_values(r, c, current_board):\n                    candidates.add(num)\n            candidates_by_cell[(r, c)] = candidates\n            \n            if len(candidates) < min_candidates:\n                min_candidates = len(candidates)\n                best_cell = (r, c)\n\n        if best_cell is None:\n             # 予期せぬ状態（空きマスがあるのに候補が見つからない場合）\n            if solution_count == 0:\n                 # 矛盾がある可能性が高い。ただし、初期チェックを通過しているので、\n                 # これは解が存在しないケース（バックトラックの限界）として扱う。\n                 pass\n            return\n\n\n        r, c = best_cell\n\n        # 候補を試す (MCV/LVCの恩恵を最大化するため、候補の昇順で試すことが多いが、ここでは単純に反復する)\n        candidates = candidates_by_cell[(r, c)]\n        sorted_candidates = sorted(list(candidates))\n        \n        # 盤面の状態を深さ優先で管理するため、コピーを作成する\n        for num in sorted_candidates:\n            # 試行\n            current_board[r][c] = num\n            \n            solve_recursive(current_board)\n            \n            # 後退（Backtrack）\n            current_board[r][c] = '.'\n            \n            if solution_count >= 2:\n                # 既に2つ以上の解が見つかったため、即座に停止\n                raise MultipleSolutionsFound()\n            \n    def get_block_values(r, c, board):\n        start_row = (r // 3) * 3\n        start_col = (c // 3) * 3\n        values = set()\n        for i in range(3):\n            for j in range(3):\n                values.add(board[start_row + i][start_col + j])\n        return values\n\n    # メインの実行ブロック\n    try:\n        solve_recursive(board)\n    except MultipleSolutionsFound:\n        # 解が2つ以上ある場合\n        raise ValueError(\"解が複数存在します。\")\n    except Exception:\n        # 例外がキャッチされず終了した場合（通常は到達しないはず）\n        pass\n\n    # 判定と返却\n    if solution_count == 0:\n        # 解が存在しない場合（矛盾は初期チェックで処理済みだが、解が埋められない場合）\n        raise ValueError(\"解が存在しません。\")\n    elif solution_count == 1:\n        # 解が唯一の場合\n        return \"\".join(unique_solution_board)\n    else: # solution_count == 2 の場合、MultipleSolutionsFoundで処理済み\n        # ここには来ないが、念のため\n        raise ValueError(\"解が複数存在します。\")\n\n```",
+  "thinking": "ユーザーは、指定された仕様（Python 3.12、標準ライブラリのみ、特定I/O禁止、関数シグネチャ固定）に基づいて、数独を解き、解のユニーク性を判定する関数 `solve_sudoku(grid: str) -> str` を実装することを求めている。\n\n### 仕様の確認\n1. **関数名・引数名**: `solve_sudoku(grid: str)`\n2. **入力**: 81文字の文字列 `grid` (`1`-`9`または`.`)。\n3. **出力**: 解が唯一の場合、81文字の文字列（`.`を含まない）。\n4. **例外（`ValueError`）を送出する場合**:\n    a. `grid` の長さが 81 でない、または `1`-`9` と `.` 以外の文字を含む。\n    b. 確定しているマスどうしが、既に規則に反している。\n    c. 解が存在しない（矛盾はあるが、埋められない）。\n    d. 解が 2 つ以上ある。\n5. **性能**: 1問あたり1秒程度。バックトラック法だが、工夫（MSV/MACなど）が必要。\n\n### 実装計画\n\n#### ステップ 0: 初期検証 (Pre-checks)\n1. **長さチェック**: `len(grid) == 81` であること。\n2. **文字種チェック**: すべての文字が `1`-`9` または `.` であること。\n3. **初期矛盾チェック**: 与えられた確定盤面（`1`-`9`を含むマス）が既に数独の規則に反していないか（同じ行、同じ列、同じブロックに同じ数字があるか）。\n\n#### ステップ 1: 盤面の表現\nグローバルな盤面（9x9のリストや配列）として扱うのが便利。文字列をこれに変換する。\n\n#### ステップ 2: バックトラッキング関数の設計\n単に解を求めるだけでなく、「解の数」を数える必要がある。\n* 1つ目の解が見つかったら、それを返す（成功）。\n* 2つ目の解が見つかったら、直ちに終了し、2以上であるとして `ValueError` を送出する。\n* 探索が完了し、解が一つも見つからなかったら、`ValueError` を送出する（解なし）。\n\n#### ステップ 3: 性能改善のための探索戦略\n標準的なバックトラックでは遅いとのこと。以下の工夫が必要。\n1. **Minimum Remaining Values (MRV)**: 候補が最も少ないマスから先に埋める。\n2. **Most Constraining Value (MCV) / Forward Checking**: あるマスに数字を入れると、それが他の候補に与える影響をチェックする。\n\nこれらの技術を組み合わせた、制約充足問題ソルバ（CSP）のアプローチを採用する。\n\n### 詳細な実装ステップ\n\n#### 1. データ構造の準備\n`grid` を 9x9 の文字リストに変換する。\n\n#### 2. 初期バリデーションの実装\n* **長さ/文字種**: 確認する。\n* **初期矛盾**: すべての行、列、3x3ブロックについて、重複がないかチェックするヘルパー関数 `is_safe(board, r, c, num)` を利用して、最初から矛盾がないかチェックする。\n\n#### 3. バックトラック関数の実装 (`solve` / `count_solutions`)\nこの関数は、盤面が解決可能かどうか、そして解がいくつあるかを効率的に数える役割を果たす。\n\n**A. 候補の選択 (MRV)**:\n空のマス (`.`) の中で、現在最も候補数が少ないマス $(r, c)$ を選択する。候補数が多いマスを優先する（迷路のように詰まりやすい場所を先に埋める）。\n\n**B. 試行と再帰**:\n1. 選択されたマス $(r, c)$ の空き候補をすべて試す。\n2. 候補の数字 $d$ をマス $(r, c)$ に仮置きする。\n3. 盤面の整合性をチェック（Forward Checking）。\n4. 再帰的に `solve` を呼び出す。\n5. 戻り値に応じて、解のカウントを更新する。\n\n**C. 停止条件**:\n* 1つ目の解が見つかったら、その盤面を返す（そして関数全体を終了させる）。\n* 2つ目の解が見つかったら、即座に `ValueError` を送出し、計算を停止させる。\n* 候補がないのに再帰が続行できない場合、解なしとして終了する。\n\n#### 4. エラーハンドリングの統合\n* 初期チェックの失敗 $\\rightarrow$ `ValueError`\n* 最終的に解が見つからなかった場合 (バックトラックが尽きた場合) $\\rightarrow$ `ValueError`\n* 2つ目の解が見つかった場合 $\\rightarrow$ `ValueError`\n\n### コード構造化（思考プロセスに基づいた調整）\n\n1. ヘルパー関数として、現在の盤面がどのマスが空か、どのマスの候補が絞り込まれるかを効率的に管理する機構が必要。\n2. 盤面全体を引数として渡すのではなく、可変引数またはクラスの状態として管理すると効率的だが、純粋関数として定義する。\n\n今回は、解が1つかどうかの判定が目的なので、単に「解を探索する」というロジック内で、カウントと結果返却を同時に行う設計が良い。\n\n---\n*(自己修正)* 候補の絞り込み（バックトラッキング）を最初から実装すると非常に複雑になるため、まずは基本的なバックトラックを実装しつつ、候補絞り込み（MRV）を組み込むことを目指す。\n\n---\n（実装開始）\n\n1. 初期バリデーションの実装。\n2. バックトラック関数を定義。この関数は、単に真偽値（解を見つけたか）を返すだけでなく、深さ優先探索を行いながら、解を特定し、同時にカウントを管理する必要がある。\n\nこれを実現するため、グローバルな状態や、例外を使った即時停止機構を利用する。Pythonの例外処理で「探索停止」をシミュレートするのが最もクリーンである。\n\n---\n最終確認: `solve_sudoku` は `str` を返し、すべてのエラーケースで `ValueError` を送出する。\n\n---\n(上記のロジックに基づき、コードを記述する。)",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 791,
+  "completion_tokens": 3012,
+  "ttft_s": 0.347,
+  "t_first_content_s": 15.761,
+  "wall_s": 33.559,
+  "load_s": 0.001,
+  "server_decode_tok_s": 90.59,
+  "server_prefill_tok_s": 3440.03,
+  "server_timings": {
+    "total_duration": 33558702953,
+    "load_duration": 1287899,
+    "prompt_eval_count": 791,
+    "prompt_eval_duration": 229940000,
+    "eval_count": 3012,
+    "eval_duration": 33249372000
+  },
+  "delta_chunks": 2899,
+  "wall_decode_tok_s": 90.69,
+  "thinking_chars": 2657,
+  "content_chars": 5026,
+  "thinking_tokens_est": 1042,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 33.558,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.75,
+    "all_passed": false,
+    "passed": 15,
+    "total": 20,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_bad_length",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflicting_givens",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflict_inside_an_otherwise_full_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_already_solved",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_blank",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_puzzle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_generated_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_cell_without_candidates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_and_nearly_empty_have_many_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exactly_two_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_underdetermined_hard_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsolvable_without_direct_conflict",
+        "ok": false,
+        "error": "timeout: 3.0 秒を超えた"
+      },
+      {
+        "name": "case_hard_inkala_2012",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2010_and_escargot",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_easter_monster",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_a",
+        "ok": false,
+        "error": "not run: wall_timeout"
+      },
+      {
+        "name": "case_seventeen_clues_b",
+        "ok": false,
+        "error": "not run: wall_timeout"
+      },
+      {
+        "name": "case_seventeen_clues_royle",
+        "ok": false,
+        "error": "not run: wall_timeout"
+      },
+      {
+        "name": "case_hard_puzzles_in_sequence",
+        "ok": false,
+        "error": "not run: wall_timeout"
+      }
+    ],
+    "import_error": null,
+    "finished": false,
+    "killed_reason": "wall_timeout",
+    "returncode": null,
+    "seconds": 10.01,
+    "stderr_tail": ""
+  }
+}

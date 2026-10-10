@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "target": "qwen3.8-flash-next:IQ4_XS",
+  "label": "qwen3.8-flash-next:IQ4_XS",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8-flash-next:IQ4_XS",
+  "slug": "qwen3.8-flash-next-IQ4_XS",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C3: 時刻表つきの最早到着（乗り換え時間と回数の上限）\n\n関数 `earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int` を書いてください。\n\n- 駅は `0` から `n-1` の整数。`connections` の各要素は `(u, v, depart, arrive)` で、「駅 `u` を時刻 `depart` に出て、駅 `v` に時刻 `arrive` に着く便」を表す。時刻は 0 以上の整数（単位は問わない）で、どの便も `depart < arrive`。`u == v` の便や、全く同じ便の重複があってもよい。便どうしは独立で、「同じ列車に乗り続ける」という概念はない。\n- 時刻 `start` に駅 `source` にいる。どの駅でも好きなだけ待てる。\n- 便 `(u, v, depart, arrive)` に乗れるのは、その時点で駅 `u` にいて、次の条件を満たすとき。\n  - 最初の便（出発地 `source` から乗る最初の 1 本）: `start <= depart`。\n  - 2 本目以降の便: 直前の便の `arrive` を `a` として `a + change <= depart`（`change` は 0 以上の整数の乗り換え時間。途中で `source` に戻ってきて乗り直す場合も、この条件が要る）。\n- 乗った便の本数を `k` として、乗り換えの回数は `k - 1`。乗り換えの回数は `max_transfers`（0 以上の整数）以下でなければならない。`max_transfers == 0` なら直通の便 1 本だけで着く必要がある。\n- `target` に着ける最も早い時刻を返す。`source == target` なら、便に乗らずに着いているので `start` を返す（`connections` が空でも同じ）。どうやっても着けないなら `-1` を返す。\n- `n` は最大 100,000、`connections` の長さは最大 200,000、`max_transfers` は最大 10、時刻は最大 10^9。この大きさで十分速く動くこと（たとえば「全部の便を、変化が無くなるまで何度も緩和する」作りでは間に合わない）。入力は上の条件を満たしていると仮定してよい（検査は不要）。\n\n例:\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)], 0, 2, 0, 5, 1)` → `30`（20 + 5 <= 25 なので 25 発に乗れる。22 発には乗れない）\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)], 0, 2, 0, 0, 0)` → `100`（乗り換え 0 回なので直通だけ）\n- `earliest_arrival(2, [(0, 1, 5, 9)], 0, 1, 6, 0, 3)` → `-1`（5 発には間に合わない）",
+  "prompt_chars": 1711,
+  "request": {
+    "model": "qwen3.8-flash-next:IQ4_XS",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T16:08:54+09:00",
+  "finished_at": "2026-10-08T16:11:57+09:00",
+  "content": "```python\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n\n    INF = float('inf')\n    max_k = max_transfers + 1\n\n    # dist[k][u] = 最早时刻: 恰好用 k 本便で駅 u にいる\n    dist = [[INF] * n for _ in range(max_k + 1)]\n    dist[0][source] = start\n\n    for k in range(max_k):\n        for u, v, depart, arrive in connections:\n            cur = dist[k][u]\n            if cur == INF:\n                continue\n            if k == 0:\n                # 最初の 1 本: start <= depart で十分（乗り換え時間不要）\n                if cur <= depart:\n                    if arrive < dist[k + 1][v]:\n                        dist[k + 1][v] = arrive\n            else:\n                # 2 本目以降: 到着時刻 + change <= depart\n                if cur + change <= depart:\n                    if arrive < dist[k + 1][v]:\n                        dist[k + 1][v] = arrive\n\n    ans = min(dist[k][target] for k in range(max_k + 1))\n    return ans if ans != INF else -1\n```",
+  "thinking": "Let me analyze this problem carefully.\n\nWe need to find the earliest arrival time at `target` from `source` starting at time `start`, with constraints on:\n- `change`: transfer time needed between connections (a + change <= depart for 2nd and subsequent connections)\n- `max_transfers`: maximum number of transfers (so max number of connections is max_transfers + 1)\n\nKey observations:\n- n up to 100,000\n- connections up to 200,000\n- max_transfers up to 10\n- times up to 10^9\n\nSince max_transfers is at most 10, the maximum number of connections is at most 11. This suggests we can do a BFS/layered approach where each layer represents using one more connection.\n\nApproach: Layered Dijkstra or BFS with relaxation.\n\nState: (station, number_of_connections_used)\n- At layer 0: we're at source at time start, haven't taken any connection yet.\n- Taking a connection moves us to the next layer.\n- We need max_transfers + 1 connections max.\n\nActually, let me think more carefully. The state is (station, transfers_used) where transfers_used = connections_used - 1 (for connections_used >= 1), or 0 connections taken yet.\n\nWait, let me re-read: \"乗った便の本数を k として、乗り換えの回数は k - 1\". So if we take k connections, we have k-1 transfers. max_transfers constrains k-1 <= max_transfers, so k <= max_transfers + 1.\n\nStates: (station, k) where k is the number of connections taken so far (0 <= k <= max_transfers + 1).\n- k=0: we're at source at time start (or any station we've reached with 0 connections - but only source has 0 connections).\n- Actually with k=0, we can only be at source.\n\nTransitions from state (u, k):\n- For each connection (u, v, depart, arrive):\n  - If k == 0 (first connection): need start <= depart (we're at source at time start)\n  - If k >= 1: need arrive_prev + change <= depart (we arrived at u at time arrive_prev, and need change time to transfer)\n  - Move to state (v, k+1) with time = arrive.\n\nWait, the time at state (u, k) is the earliest time we can be at u having taken k connections. For k=0, it's start at source. For k>=1, it's the arrival time of the k-th connection.\n\nFor a connection (u, v, depart, arrive):\n- From state (u, 0): need start <= depart → arrive at v with 1 connection\n- From state (u, k) for k >= 1: need time_at(u, k) + change <= depart → arrive at v with k+1 connections\n\nThis is a layered BFS/relaxation. Since max_transfers <= 10, we have at most 11 layers.\n\nFor each layer, we process all connections. The total work is O(max_transfers * connections) = 11 * 200,000 = 2,200,000 which is fine.\n\nAlgorithm:\n1. Initialize dist[u][k] = infinity for all u, k.\n2. dist[source][0] = start.\n3. For each layer k from 0 to max_transfers:\n   - Process all connections. For each connection (u, v, depart, arrive):\n     - If dist[u][k] is finite:\n       - If k == 0: if dist[u][k] <= depart, then dist[v][k+1] = min(dist[v][k+1], arrive)\n       - If k >= 1: if dist[u][k] + change <= depart, then dist[v][k+1] = min(dist[v][k+1], arrive)\n4. Answer: min(dist[target][k]) for k in 0..max_transfers+1.\n\nWait, but this is a \"relaxation\" approach. The issue is: within a single layer k, do we need to process connections in a specific order?\n\nLet me think... In layer k, we have dist[u][k] = earliest time at u having taken exactly k connections. For k=0, only source has a value. For k=1, we compute from k=0. For k=2, we compute from k=1. Etc.\n\nWithin a single layer transition (from k to k+1), we look at all connections from u. For each connection, if the condition is met, we update dist[v][k+1]. Since we're just taking the minimum arrival time, and we process all connections in one pass, this should work.\n\nActually wait - is it possible that within a single \"layer\", we need to do multiple passes? No, because within layer k→k+1, each connection is considered independently. The dist[u][k] values are already finalized before we start processing layer k.\n\nLet me verify: dist[u][0] = start for u=source, infinity otherwise. This is finalized.\nFor k=0→1: process all connections. For each (u, v, depart, arrive) where u==source (since only source has dist[u][0] finite), if start <= depart, update dist[v][1] = min(dist[v][1], arrive). This is correct - we're looking at all direct connections from source.\n\nFor k=1→2: process all connections. For each (u, v, depart, arrive), if dist[u][1] is finite and dist[u][1] + change <= depart, update dist[v][2] = min(dist[v][2], arrive). This is correct.\n\nYes, this works because each \"layer\" transition is independent - we use finalized values from layer k to produce values for layer k+1.\n\nBut wait - for k >= 1, the condition is dist[u][k] + change <= depart. For k = 0, the condition is dist[source][0] <= depart (i.e., start <= depart). The difference is the `change` time.\n\nActually, re-reading the problem: \"最初の便（出発地 source から乗る最初の 1 本）: start <= depart\". So for the first connection from source, we need start <= depart (no change time needed).\n\n\"2 本目以降の便: 直前の便の arrive を a として a + change <= depart\". So for subsequent connections, we need arrival + change <= depart.\n\nSo for k=0 (first connection): condition is start <= depart (no change).\nFor k>=1 (subsequent connections): condition is dist[u][k] + change <= depart.\n\nThis is what I had. Good.\n\nNow, the answer is min(dist[target][k]) for k = 0, 1, ..., max_transfers + 1. But k=0 only applies to source, so dist[target][0] is only relevant if target == source (which we handle separately).\n\nLet me also handle the special case: source == target → return start.\n\nLet me also consider: can we \"wait\" at a station? Yes - \"どの駅でも好きなだけ待てる\". But this is already handled because we check depart >= some time, and we can wait longer than necessary.\n\nActually, the \"waiting\" is implicit. If we arrive at station u at time 10, and there's a departure at time 15, we can wait and catch it. The condition just says we need to be there by the departure time (plus change for transfers).\n\nLet me code this up:\n\n```python\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n    \n    INF = float('inf')\n    max_k = max_transfers + 1  # max number of connections\n    \n    # dist[u][k] = earliest time to be at station u having taken exactly k connections\n    # We only need two layers at a time (current and next)\n    # But since max_k is at most 11, we can store all layers\n    \n    dist = [[INF] * (max_k + 1) for _ in range(n)]\n    dist[source][0] = start\n    \n    for k in range(max_k):\n        for u, v, depart, arrive in connections:\n            if dist[u][k] == INF:\n                continue\n            if k == 0:\n                # First connection from source\n                if start <= depart:\n                    if arrive < dist[v][k + 1]:\n                        dist[v][k + 1] = arrive\n            else:\n                # Subsequent connection\n                if dist[u][k] + change <= depart:\n                    if arrive < dist[v][k + 1]:\n                        dist[v][k + 1] = arrive\n    \n    ans = min(dist[target][k] for k in range(max_k + 1))\n    return ans if ans != INF else -1\n```\n\nWait, for k=0, dist[u][0] is only finite for u=source. So the condition start <= depart is equivalent to dist[source][0] <= depart. That's fine.\n\nFor k >= 1, the condition is dist[u][k] + change <= depart. This is correct.\n\nLet me verify with the examples:\n\nExample 1: earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)], 0, 2, 0, 5, 1)\n- source=0, target=2, start=0, change=5, max_transfers=1\n- max_k = 2\n- dist[0][0] = 0\n- k=0: \n  - (0,1,10,20): dist[0][0]=0, k=0, 0<=10 ✓ → dist[1][1] = 20\n  - (1,2,25,30): dist[1][0]=INF, skip\n  - (1,2,22,40): dist[1][0]=INF, skip\n- k=1:\n  - (0,1,10,20): dist[0][1]=INF, skip\n  - (1,2,25,30): dist[1][1]=20, k=1, 20+5=25<=25 ✓ → dist[2][2] = 30\n  - (1,2,22,40): dist[1][1]=20, k=1, 20+5=25<=22 ✗\n- Answer: min(dist[2][0], dist[2][1], dist[2][2]) = min(INF, INF, 30) = 30 ✓\n\nExample 2: earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)], 0, 2, 0, 0, 0)\n- max_k = 1\n- dist[0][0] = 0\n- k=0:\n  - (0,1,10,20): 0<=10 ✓ → dist[1][1] = 20\n  - (1,2,25,30): skip\n  - (0,2,0,100): 0<=0 ✓ → dist[2][1] = 100\n- Answer: min(dist[2][0], dist[2][1]) = min(INF, 100) = 100 ✓\n\nExample 3: earliest_arrival(2, [(0, 1, 5, 9)], 0, 1, 6, 0, 3)\n- max_k = 4\n- dist[0][0] = 6\n- k=0:\n  - (0,1,5,9): 6<=5 ✗\n- k=1:\n  - (0,1,5,9): dist[0][1]=INF, skip\n- Answer: min(dist[1][0..4]) = INF → -1 ✓\n\nGreat, all examples pass.\n\nNow let me think about efficiency:\n- Outer loop: max_k iterations, at most 11.\n- Inner loop: |connections| iterations, at most 200,000.\n- Total: at most 2,200,000 operations. Very fast.\n\nMemory: dist is n * (max_k + 1) = 100,000 * 12 = 1,200,000 entries. Fine.\n\nActually, I can optimize memory by only keeping two layers, but with max_k <= 11, it's not necessary.\n\nOne thing to be careful about: for k=0, I use `start <= depart`. But what if source != u? Then dist[u][0] is INF and we skip. So the condition start <= depart is only checked when u == source, which is correct.\n\nActually, let me re-examine: for k=0, I'm checking `start <= depart` instead of `dist[u][k] <= depart`. Since dist[u][0] is only finite for u=source (where it equals start), these are equivalent. But using `dist[u][k] <= depart` would be more general and cleaner. Let me adjust:\n\nActually no - the first connection doesn't need change time, but subsequent ones do. So:\n- k=0: dist[u][0] <= depart (no change needed for first ride)\n- k>=1: dist[u][k] + change <= depart\n\nThis is correct. Let me just use `dist[u][k] <= depart` for k=0 since dist[source][0] = start.\n\nLet me write the final version:\n\n```python\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n    \n    INF = float('inf')\n    max_k = max_transfers + 1\n    \n    # dist[k][u] = earliest time at station u after taking exactly k connections\n    dist = [[INF] * n for _ in range(max_k + 1)]\n    dist[0][source] = start\n    \n    for k in range(max_k):\n        for u, v, depart, arrive in connections:\n            cur = dist[k][u]\n            if cur == INF:\n                continue\n            if k == 0:\n                if cur <= depart:\n                    if arrive < dist[k + 1][v]:\n                        dist[k + 1][v] = arrive\n            else:\n                if cur + change <= depart:\n                    if arrive < dist[k + 1][v]:\n                        dist[k + 1][v] = arrive\n    \n    ans = min(dist[k][target] for k in range(max_k + 1))\n    return ans if ans != INF else -1\n```\n\nThis looks correct and efficient. Let me double-check the logic once more.\n\nThe key insight is: within a single \"layer\" (going from k connections to k+1 connections), we're just taking the minimum arrival time. Since each connection is independent (no \"staying on the same train\"), and we process all connections, taking the minimum for each (v, k+1) state, this gives the correct answer.\n\nThere's no need for iterative relaxation within a layer because:\n- All dist[k][*] values are finalized before we process layer k.\n- We're only updating dist[k+1][*] values, and taking the minimum across all connections into v.\n- There's no cyclic dependency within a single layer.\n\nThis is essentially a BFS on a DAG (where edges go from layer k to layer k+1), processed layer by layer.\n\nI'm satisfied this is correct. Let me also make sure I'm not using any external libraries or prohibited operations.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 949,
+  "completion_tokens": 3982,
+  "ttft_s": 9.497,
+  "t_first_content_s": 168.879,
+  "wall_s": 183.096,
+  "load_s": 0.003,
+  "server_decode_tok_s": 22.94,
+  "server_prefill_tok_s": 103.23,
+  "server_timings": {
+    "total_duration": 183095060169,
+    "load_duration": 3330192,
+    "prompt_eval_count": 949,
+    "prompt_eval_duration": 9192670000,
+    "eval_count": 3982,
+    "eval_duration": 173600071000
+  },
+  "delta_chunks": 3542,
+  "wall_decode_tok_s": 22.94,
+  "thinking_chars": 11616,
+  "content_chars": 1057,
+  "thinking_tokens_est": 3650,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 183.093,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_source_is_target",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_departure_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_minimizes_arrival_not_departure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tight_transfer_with_zero_change",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_change_time_selects_later_connection",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_zero_means_direct_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_makes_it_impossible",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_departure_is_a_trap",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_waiting_at_intermediate_station",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_departure_times_cannot_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_and_self_loops",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_transfers_arrive_earlier",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_arrival_at_a_station_may_use_too_many_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fast_and_slow_stages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_connections_before_start_are_useless",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_time_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_chain_at_the_transfer_limit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_stations_few_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_instances",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_wide_random_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_max_connections_few_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_many_transfer_layers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_stages_with_many_decoys",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.84,
+    "stderr_tail": ""
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "kind": "json",
+  "expected": {
+    "department": "経理部",
+    "reporter": "田中",
+    "system": "経費精算システム",
+    "error_code": "E-503",
+    "affected_users": 5,
+    "priority": "高"
+  }
+}

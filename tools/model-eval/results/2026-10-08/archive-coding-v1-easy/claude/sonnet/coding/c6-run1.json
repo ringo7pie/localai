@@ -1,0 +1,96 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "content": "```python\nimport heapq\n\n\ndef topo_sort(graph: dict[str, list[str]]) -> list[str]:\n    successors: dict[str, set[str]] = {}\n    for source, targets in graph.items():\n        successors.setdefault(source, set()).update(targets)\n        for target in targets:\n            successors.setdefault(target, set())\n\n    indegree: dict[str, int] = {vertex: 0 for vertex in successors}\n    for targets in successors.values():\n        for target in targets:\n            indegree[target] += 1\n\n    heap = [vertex for vertex, degree in indegree.items() if degree == 0]\n    heapq.heapify(heap)\n\n    result: list[str] = []\n    while heap:\n        vertex = heapq.heappop(heap)\n        result.append(vertex)\n        for target in successors[vertex]:\n            indegree[target] -= 1\n            if indegree[target] == 0:\n                heapq.heappush(heap, target)\n\n    if len(result) != len(successors):\n        raise ValueError(\"graph contains a cycle\")\n    return result\n```",
+  "wall_s": 7.932,
+  "usage": {
+    "subagent_tokens": 25645
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 12,
+    "total": 12,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_node_only_in_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_sorted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_smallest_available",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_case_sensitive_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_self_loop",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_cycle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicate_edges",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_input_unchanged",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_long_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_dag",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.06,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:48+09:00"
+}

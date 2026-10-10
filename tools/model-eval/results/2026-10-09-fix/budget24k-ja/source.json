@@ -1,0 +1,157 @@
+{
+  "note": "既存の記録の写し。思考の上限 24,576・生成 32,768・日本語（この調査のために流したものではない）",
+  "arm": "budget24k-ja",
+  "limits": {
+    "reasoning_budget_tokens": 24576,
+    "max_tokens": 32768,
+    "prompt_lang": "ja"
+  },
+  "rep1_source": "tools/model-eval/results/2026-10-08",
+  "reps_source": "tools/model-eval/results/2026-10-09-kv/int8",
+  "files": [
+    {
+      "slug": "strata-coder-IQ1_M",
+      "rep": 1,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-coder-IQ1_M",
+      "rep": 1,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "rep": 1,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "rep": 1,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "rep": 1,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "rep": 1,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-08/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-coder-IQ1_M",
+      "rep": 2,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-coder-IQ1_M",
+      "rep": 2,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "rep": 2,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "rep": 2,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "rep": 2,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "rep": 2,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-coder-IQ1_M",
+      "rep": 3,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-coder-IQ1_M/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-coder-IQ1_M",
+      "rep": 3,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-coder-IQ1_M/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "rep": 3,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-official-IQ3_XXS",
+      "rep": 3,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "rep": 3,
+      "item": "c4",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    },
+    {
+      "slug": "strata-rvn-IQ3_S",
+      "rep": 3,
+      "item": "c5",
+      "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+      "copied_at": "2026-10-09T16:09:26+09:00"
+    }
+  ]
+}

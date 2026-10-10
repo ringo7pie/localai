@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C3: 時刻表つきの最早到着（乗り換え時間と回数の上限）\n\n関数 `earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int` を書いてください。\n\n- 駅は `0` から `n-1` の整数。`connections` の各要素は `(u, v, depart, arrive)` で、「駅 `u` を時刻 `depart` に出て、駅 `v` に時刻 `arrive` に着く便」を表す。時刻は 0 以上の整数（単位は問わない）で、どの便も `depart < arrive`。`u == v` の便や、全く同じ便の重複があってもよい。便どうしは独立で、「同じ列車に乗り続ける」という概念はない。\n- 時刻 `start` に駅 `source` にいる。どの駅でも好きなだけ待てる。\n- 便 `(u, v, depart, arrive)` に乗れるのは、その時点で駅 `u` にいて、次の条件を満たすとき。\n  - 最初の便（出発地 `source` から乗る最初の 1 本）: `start <= depart`。\n  - 2 本目以降の便: 直前の便の `arrive` を `a` として `a + change <= depart`（`change` は 0 以上の整数の乗り換え時間。途中で `source` に戻ってきて乗り直す場合も、この条件が要る）。\n- 乗った便の本数を `k` として、乗り換えの回数は `k - 1`。乗り換えの回数は `max_transfers`（0 以上の整数）以下でなければならない。`max_transfers == 0` なら直通の便 1 本だけで着く必要がある。\n- `target` に着ける最も早い時刻を返す。`source == target` なら、便に乗らずに着いているので `start` を返す（`connections` が空でも同じ）。どうやっても着けないなら `-1` を返す。\n- `n` は最大 100,000、`connections` の長さは最大 200,000、`max_transfers` は最大 10、時刻は最大 10^9。この大きさで十分速く動くこと（たとえば「全部の便を、変化が無くなるまで何度も緩和する」作りでは間に合わない）。入力は上の条件を満たしていると仮定してよい（検査は不要）。\n\n例:\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)], 0, 2, 0, 5, 1)` → `30`（20 + 5 <= 25 なので 25 発に乗れる。22 発には乗れない）\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)], 0, 2, 0, 0, 0)` → `100`（乗り換え 0 回なので直通だけ）\n- `earliest_arrival(2, [(0, 1, 5, 9)], 0, 1, 6, 0, 3)` → `-1`（5 発には間に合わない）",
+  "prompt_chars": 1711,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T13:37:24+09:00",
+  "finished_at": "2026-10-08T13:38:07+09:00",
+  "content": "```python\nimport math\n\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n\n    INF = 10**18  # 時刻は最大 10^9 なので、十分大きな値を使用\n\n    # 1. 接続情報の構造化 (adj[u] = リスト of (v, depart, arrive))\n    adj = [[] for _ in range(n)]\n    for u, v, depart, arrive in connections:\n        # u から v への便情報を格納\n        adj[u].append((v, depart, arrive))\n\n    # dp[k][u]: k 回乗り換え後に駅 u に到達する最小到着時刻\n    # k は 0 から max_transfers まで\n    dp = [[INF] * n for _ in range(max_transfers + 1)]\n\n    # 2. ベースケース k=0 (乗車本数 1, 乗り換え 0回)\n    # 初期待機時刻 start から source から出る最初の便に乗る\n    T_start = start\n    \n    for v, depart, arrive in adj[source]:\n        if T_start <= depart:\n            dp[0][v] = min(dp[0][v], arrive)\n\n    # 3. DP遷移 k=1 から max_transfers\n    for k in range(1, max_transfers + 1):\n        # k-1 回の乗り換え後の到達時刻 dp[k-1][v] を利用する\n        for v in range(n):\n            T_v = dp[k-1][v]\n            \n            # v に到達できていない場合はスキップ\n            if T_v == INF:\n                continue\n            \n            # v から出る全ての便 (u, depart, arrive) を考える\n            for u, depart, arrive in adj[v]:\n                # 乗り換え条件: T_v + change <= depart\n                if T_v + change <= depart:\n                    new_arrival_time = arrive\n                    dp[k][u] = min(dp[k][u], new_arrival_time)\n\n    # 4. 結果の抽出\n    min_arrival = INF\n    for k in range(max_transfers + 1):\n        min_arrival = min(min_arrival, dp[k][target])\n        \n    if min_arrival == INF:\n        return -1\n    else:\n        return min_arrival\n```",
+  "thinking": "ユーザーは特定の仕様を持つ Python 関数 `earliest_arrival` の実装を求めている。\nこの関数は、時刻表と制約（乗り換え時間、最大乗り換え回数）のもとで、出発地点から目的地への最も早い到着時刻を計算する問題である。\n\n制約条件を再確認する。\n1. 標準ライブラリのみ使用。\n2. ファイルI/O、ネットワーク、サブプロセス、標準入力からの読み込みは行わない。\n3. 関数名、クラス名、引数名は仕様通りに使う。\n4. 出力はコードブロックのみ（テストコード、説明文は不要）。\n5. パフォーマンス要件が厳しい（$N$ は最大 $10^5$, $|Connections|$ は最大 $2 \\times 10^5$, $max\\_transfers$ は最大 10, 時刻は最大 $10^9$）。動的計画法や緩和処理の繰り返しはできない。\n\n問題の性質：\nこれは最短経路問題の一種である。通常の最短経路問題（ダイクストラなど）は、状態を (ノード, 距離) で定義するが、ここでは状態が複雑である。\n\n状態の定義:\n我々が知りたいのは、「特定の駅に、特定の回数で乗り換えた結果、最も早く到着できる時刻」である。\n\n状態 $\\text{dist}[k][u]$:\n$k$ 回の乗り換えを行った時点で、駅 $u$ に到達できる最も早い時刻。\n\n$k$ の範囲は $0$ から $max\\_transfers$ まで。\n$u$ の範囲は $0$ から $n-1$ まで。\n\n$max\\_transfers$ は最大 10と非常に小さい。\n$N$ は最大 $10^5$。\n\nもし $N$ が小さいなら、状態空間は $O(max\\_transfers \\cdot N)$ となり、処理が可能である。しかし $N$ が $10^5$ なので、このアプローチだとメモリや時間的に厳しい可能性がある。\n\nしかし、注目すべきは、接続情報（`connections`）が最大 $2 \\times 10^5$ であり、これは $N$ より小さい、または $O(N)$ のオーダーである。\n\n接続情報に基づいて、グラフの構造を考える。\n\n接続情報 $C = (u, v, \\text{depart}, \\text{arrive})$ は、エッジとして機能する。\n移動の「コスト」は、到着時刻が最小になるようにすることである。\n\n最大乗り換え回数 $M = max\\_transfers$ を制約に組み込む必要がある。\n\nこれは、遷移を考える必要がある。\n$k$ 回目（$k=0$ は初期状態、乗車本数 $k+1$）に、駅 $u$ にいて、時刻 $T$ に出発できる場合、利用可能な便を探す。\n\n初期状態 ($k=0$ 乗り換え回数、乗車本数 1):\n時刻 `start` に駅 `source` にいる。\n便 $(u, v, d, a)$ を利用できる条件: $u = \\text{source}$ かつ $start \\le d$。\nこのとき、新しい到着時刻は $a$。\n\n$k \\to k+1$ の遷移:\n駅 $v$ に到着した時刻 $A$ があったとする（これは $k$ 回の乗り換えの結果）。\n次に $(u', v', d', a')$ という便を利用したい。\nここで、乗り換えの条件が働く。\n$u'$ が現在の駅 $v$ であり、かつ $A + change \\le d'$ が必要。\n\nこの構造は、層別化された最短経路問題として捉え直せる。\n\n状態を $\\text{dist}[k][v]$: $k$ 回乗り換えた時点で、駅 $v$ に到達する最も早い時刻。\n初期化: $\\text{dist}$ を $\\infty$ で埋める。\n\n$k=0$ の初期化:\n$\\text{dist}[0][\\text{source}] = start$. (実際には、これは「到着時刻」ではなく「待機開始時刻」だが、問題文の定義上、どこにいるかの情報と時刻を結合する必要がある。しかし、出発地なので、到着時刻を考えるのは難しい。むしろ、ここから何本目の便に乗るかという角度で考えるべき。)\n\n---\n再考: 状態の定義と探索アルゴリズム\n\nこの問題は、最小の到着時刻を求めるため、ダイクストラ法（またはBFS的な構造）が適している。しかし、状態空間が大きいため、工夫が必要。\n\n重要な観察点:\n1. 目的地に到着する最小時刻が目標。\n2. 遷移は「便に乗る」ことによってのみ発生し、各遷移で乗り換え回数が増える。\n3. 乗り換え回数 $M$ は非常に小さい ($M \\le 10$)。\n\n状態を $(k, u)$ = $k$ 回乗り換え後に駅 $u$ に到達したことによる、最も早い到着時刻 $T$.\n\n$D[k][u]$: $k$ 回乗り換え後に駅 $u$ に到達できる最小到着時刻。\n\n$D[k][u]$ を計算する際、前の状態 $(k-1, v)$ に到達した時刻 $T_{k-1} = D[k-1][v]$ を利用する。\n\n遷移 $(v \\to u)$ を考える。\n1. $v$ に時刻 $T_{k-1}$ に到着している。\n2. 次の便 $(v, u, d, a)$ を探す。\n3. 利用条件: $T_{k-1} + change \\le d$ (ただし $k=0$ の場合は $start \\le d$)。\n4. 到着時刻 $T_k = a$.\n\n初期化: $D[k][u] = \\infty$ 全ての $k, u$ について。\n\n$k=0$ の初期化:\n出発地 $\\text{source}$ から最初の便に乗るケース。\n$D[-1][\\text{source}] = start$. (便宜的に、乗り換え回数 $-1$ の状態として初期待機時刻を設定する)\n\n$k$ は $0$ から $M$ まで考える。\n\n$D[k]$ は、 $k$ 回乗り換え後の到達時刻のマップとする。\n\n**アルゴリズム構造（反復DP / 層別ダイクストラ）**\n\n$D[k][u]$ を $k=0, 1, \\dots, M$ の順に計算していく。\n\n$k=0$ (乗車本数 1, 乗り換え 0回):\n初期待機時刻 $T_{start} = start$.\nソース $\\text{source}$ から出発する全ての便 $(u, v, d, a)$ のうち、$u = \\text{source}$ かつ $T_{start} \\le d$ を満たすものについて、\n$D[0][v] = \\min(D[0][v], a)$.\n\n$k=1, 2, \\dots, M$:\n$k$ 回目の乗り換えは、 $(k-1)$ 回の乗り換え後の到達点 $v$ からの、新たな便への乗り換えを意味する。\n\n$D[k]$ を計算するために、$D[k-1]$ を使う。\n$D[k-1]$ は、全駅 $v$ について、最短到達時刻 $T_{arrive}(v)$ を与えている。\n\n全ての駅 $v$ について、もし $T_{arrive}(v) = D[k-1][v] < \\infty$ ならば、\n$v$ から出発する全ての便 $(v, u, d, a)$ を考える。\n利用条件: $T_{arrive}(v) + change \\le d$.\nもし条件を満たせば、新しい到達時刻 $a$ が得られる。\n$D[k][u] = \\min(D[k][u], a)$.\n\n---\n実装の詳細とデータ構造の最適化\n\n$N$ が $10^5$ であるため、$D$ 配列を $N \\times (M+1)$ で保持するのはメモリ的には問題ないが、ループで全駅を巡回し、その駅から出る全ての便を処理すると、全体で $O(M \\cdot |Connections|)$ の計算量になる。\n$M=10, |Connections|=2 \\times 10^5$ なので、最大 $2 \\times 10^6$ ステップの処理となり、これは十分に速い。\n\nまず、接続情報を駅ごとにグルーピングするのが効率的である。\n\n1. **接続情報の前処理:**\n   `adj[u]` = $u$ から出発する全ての便のリスト。\n   各便は $(v, d, a)$ のタプルとして格納する。\n\n2. **DP配列の初期化:**\n   $D$ を $(M+1)$ 個のマップまたは配列として定義する。\n   $D[k]$: 乗り換え $k$ 回後の到達時刻 $\\text{arrival\\_time}[u]$.\n\n   $D[k]$ のサイズは $N$ の配列（最大時刻は $10^9$ なので、特別な扱いが必要）。$\\infty$ は $10^{18}$ 程度に設定する。\n\nLet's use a dictionary/map for $D[k]$ to store only reachable states, although since $N$ is $10^5$, an array might be safer if indices are sparse. Since $N$ is the station count, an array of size $N$ is fine for the indices.\n\n$N \\le 100,000$. $M+1 \\le 11$. $D$ は $11 \\times 100,000$ の配列のようなもの。\n\n### ステップ 1: 接続情報の構造化\n\n`connections`: `(u, v, depart, arrive)`\n\n`adj`: リストのリスト。`adj[u]` は $u$ から出発する便のリスト。\n便の要素: `(v, depart, arrive)`\n\n```python\nadj = [[] for _ in range(n)]\nfor u, v, depart, arrive in connections:\n    # u から v へ向かう便\n    adj[u].append((v, depart, arrive))\n```\n\n### ステップ 2: DP配列の初期化\n\n$D[k][u]$ を定義する。\n$D[k][u]$: $k$ 回乗り換え後の駅 $u$ の最小到着時刻。\n初期値は $\\infty$.\n\n$\\text{INF} = 10^{18}$ (時刻が $10^9$ なので、十分大きい値)。\n\n`dp = [[INF] * n for _ in range(max_transfers + 1)]`\n\n### ステップ 3: ベースケース ($k=0$)\n\n$k=0$ は、初期待機時刻 $start$ から最初の便に乗る場合。\n$u = \\text{source}$ から出る全ての便 $(v, d, a)$ を考える。\n\n$T_{start} = start$.\nFor $(v, d, a)$ in `adj[source]`:\n    If $T_{start} \\le d$:\n        $dp[0][v] = \\min(dp[0][v], a)$.\n\n### ステップ 4: DP遷移 ($k=1$ to $M$)\n\n$k$ は現在の乗り換え回数。\n$k-1$ の結果を利用する。\n\nFor $k$ in range(1, max_transfers + 1):\n    # k-1 回の乗り換え後の到達時刻が、v の最小到着時刻 $T_{v}$ を考える。\n    for v in range(n):\n        $T_v = dp[k-1][v]$.\n        if $T_v == INF$:\n            continue\n        \n        # v から出る全ての便 (u, d, a) を考える。\n        for u, d, a in adj[v]:\n            # 乗り換え条件: T_v + change <= d\n            if $T_v + change <= d$:\n                # 新しい到達時刻は a\n                $dp[k][u] = \\min(dp[k][u], a)$.\n\n### ステップ 5: 結果の抽出\n\n目的地 $\\text{target}$ に着ける最小時刻は、すべての $k=0$ から $M$ について $dp[k][\\text{target}]$ の最小値である。\n\n$\\text{min\\_arrival} = \\min(dp[k][\\text{target}] \\text{ for } k=0 \\dots M)$.\n\nもし $\\text{min\\_arrival} = \\text{INF}$ ならば、-1 を返す。\n\n### 例外処理の確認\n\n1. `source == target`:\n   「便に乗らずに着いているので `start` を返す」。\n   これは最初に考慮すべきケース。\n\n2. `max_transfers == 0`:\n   $k=0$ の計算のみが有効。直通便のみ考慮。\n\n3. そもそも到達できない場合:\n   すべての $dp[k][\\text{target}]$ が $\\text{INF}$ になるはず。\n\n---\n実装上の調整点:\n\nPythonの型ヒントに合わせて、全てを関数内に記述する。\nINFの値は $10^{18}$ を超えるようにする。時刻は最大 $10^9$ なので、$10^{18}$ で十分。\n\n最終的なコード構造をチェックする。\n\n1. `source == target` の特別処理。\n2. DPの初期化とループ。\n3. $k=0$ の初期遷移処理（$start$ からの移動）。\n4. $k>0$ の遷移処理（$dp[k-1]$ を使用）。\n5. 結果の集約と返却。\n\nこの構造は $O(M \\cdot |Connections|)$ であり、指定された制約（時間制限）を満たすはずである。\n\n---\nコード作成に取り掛かる。\n\n（自己修正：`adj[u]` に格納する情報 $(v, d, a)$ は、便が $u \\to v$ の移動を表すため、正しい。$d$ は出発時刻, $a$ は到着時刻。）\n\n$N$ が最大 $100,000$ なので、配列インデックスへのアクセスが主体となる。Pythonの配列（リスト）の初期化が $O(N \\cdot M)$ で実行されるが、これは許容範囲である。\n\nINF の値は、Pythonの整数オーバーフローを考慮し、$10^{18}$ を使用する。\n\n---\n実装計画完了。コードを記述する。",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 951,
+  "completion_tokens": 3852,
+  "ttft_s": 0.416,
+  "t_first_content_s": 36.32,
+  "wall_s": 42.847,
+  "load_s": 0.001,
+  "server_decode_tok_s": 90.7,
+  "server_prefill_tok_s": 3151.07,
+  "server_timings": {
+    "total_duration": 42846728606,
+    "load_duration": 846922,
+    "prompt_eval_count": 951,
+    "prompt_eval_duration": 301802000,
+    "eval_count": 3852,
+    "eval_duration": 42468680000
+  },
+  "delta_chunks": 3627,
+  "wall_decode_tok_s": 90.78,
+  "thinking_chars": 6160,
+  "content_chars": 1634,
+  "thinking_tokens_est": 3044,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 42.846,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_source_is_target",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_departure_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_minimizes_arrival_not_departure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tight_transfer_with_zero_change",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_change_time_selects_later_connection",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_zero_means_direct_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_makes_it_impossible",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_departure_is_a_trap",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_waiting_at_intermediate_station",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_departure_times_cannot_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_and_self_loops",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_transfers_arrive_earlier",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_arrival_at_a_station_may_use_too_many_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fast_and_slow_stages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_connections_before_start_are_useless",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_time_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_chain_at_the_transfer_limit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_stations_few_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_instances",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_wide_random_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_max_connections_few_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_many_transfer_layers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_stages_with_many_decoys",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 1.0,
+    "stderr_tail": ""
+  }
+}

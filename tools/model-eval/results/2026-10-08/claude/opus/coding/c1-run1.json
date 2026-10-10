@@ -1,0 +1,161 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c1",
+  "run": 1,
+  "content": "```python\ndef split_words(text: str) -> list[str]:\n    words: list[str] = []\n    parts: list[str] = []\n    in_word = False\n    length = len(text)\n    index = 0\n    separators = (\" \", \"\\t\", \"\\n\")\n    dq_escapable = ('\"', \"\\\\\", \"$\", \"`\")\n\n    while index < length:\n        char = text[index]\n        if char in separators:\n            if in_word:\n                words.append(\"\".join(parts))\n                parts = []\n                in_word = False\n            index += 1\n        elif char == \"#\" and not in_word:\n            newline_pos = text.find(\"\\n\", index)\n            if newline_pos == -1:\n                index = length\n            else:\n                index = newline_pos\n        elif char == \"\\\\\":\n            if index + 1 >= length:\n                raise ValueError(\"trailing backslash\")\n            next_char = text[index + 1]\n            if next_char == \"\\n\":\n                index += 2\n            else:\n                parts.append(next_char)\n                in_word = True\n                index += 2\n        elif char == \"'\":\n            close_pos = text.find(\"'\", index + 1)\n            if close_pos == -1:\n                raise ValueError(\"unclosed single quote\")\n            parts.append(text[index + 1:close_pos])\n            in_word = True\n            index = close_pos + 1\n        elif char == '\"':\n            in_word = True\n            index += 1\n            closed = False\n            while index < length:\n                inner = text[index]\n                if inner == '\"':\n                    index += 1\n                    closed = True\n                    break\n                if inner == \"\\\\\":\n                    if index + 1 >= length:\n                        raise ValueError(\"unclosed double quote\")\n                    next_char = text[index + 1]\n                    if next_char in dq_escapable:\n                        parts.append(next_char)\n                        index += 2\n                    elif next_char == \"\\n\":\n                        index += 2\n                    else:\n                        parts.append(\"\\\\\")\n                        index += 1\n                else:\n                    parts.append(inner)\n                    index += 1\n            if not closed:\n                raise ValueError(\"unclosed double quote\")\n        else:\n            parts.append(char)\n            in_word = True\n            index += 1\n\n    if in_word:\n        words.append(\"\".join(parts))\n    return words\n```",
+  "wall_s": 21.708,
+  "usage": {
+    "subagent_tokens": 30731
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty_and_separators_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_plain_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_quotes_keep_everything",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quotes_keep_dollar_and_single_quote",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quote_escapes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quote_non_escapes_keep_backslash",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_outside_backslash_escapes_anything",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_adjacent_parts_join",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_quotes_make_empty_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_comment_at_line_start",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_comment_after_separator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hash_inside_word_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hash_after_empty_quotes_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hash_quoted_or_escaped_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_comment_text_may_contain_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_line_continuation_outside_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_line_continuation_then_comment",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_line_continuation_inside_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_other_whitespace_is_not_separator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unterminated_quotes_raise",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_trailing_backslash_raises",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_errors_are_not_masked_by_comments",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_mixed_long_line",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_input_many_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_single_quoted_words",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.04,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:15+09:00"
+}

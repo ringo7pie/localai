@@ -1,0 +1,11 @@
+{
+  "kind": "json",
+  "expected": {
+    "name": "山田花子",
+    "event_date": "2026-10-24",
+    "participants": 3,
+    "has_allergy": true,
+    "needs_parking": false,
+    "phone": "090-1234-5678"
+  }
+}

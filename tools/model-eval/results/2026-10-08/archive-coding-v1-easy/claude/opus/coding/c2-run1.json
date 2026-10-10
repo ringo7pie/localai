@@ -1,0 +1,86 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "content": "```python\nimport re\n\n_PATTERN = re.compile(\n    r\" *(?:([0-9]+)d)? *(?:([0-9]+)h)? *(?:([0-9]+)m)? *(?:([0-9]+)s)? *\"\n)\n\n_UNIT_SECONDS = (86400, 3600, 60, 1)\n\n\ndef _digits_to_int(digits: str) -> int:\n    # Python 3.12 の int() は既定で 4300 桁を超える文字列を拒否するため、長い数は分割して変換する\n    if len(digits) <= 4000:\n        return int(digits)\n    half = len(digits) // 2\n    high = _digits_to_int(digits[:half])\n    low = _digits_to_int(digits[half:])\n    return high * 10 ** (len(digits) - half) + low\n\n\ndef parse_duration(text: str) -> int:\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a str\")\n    match = _PATTERN.fullmatch(text)\n    if match is None:\n        raise ValueError(f\"invalid duration: {text!r}\")\n    groups = match.groups()\n    if all(group is None for group in groups):\n        raise ValueError(f\"invalid duration: {text!r}\")\n    total = 0\n    for digits, unit_seconds in zip(groups, _UNIT_SECONDS):\n        if digits is not None:\n            total += _digits_to_int(digits) * unit_seconds\n    return total\n```",
+  "wall_s": 14.849,
+  "usage": {
+    "subagent_tokens": 26042
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 10,
+    "total": 10,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_seconds_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_all_units",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_space",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_value",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_unit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_format",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.02,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:56+09:00"
+}

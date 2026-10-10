@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "extra",
+  "item": "inst1",
+  "run": 1,
+  "prompt": "雨の日に家の中で楽しめる過ごし方を紹介してください。\n\n次の条件をすべて守って書いてください。\n1. 行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 5 個書く。\n2. どの行も「- 」を含めて 25 文字以内にする。\n3. 各箇条書きの末尾は「です。」か「ます。」にする。\n4. 最後の行には「以上」の 2 文字だけを書く。\n5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。",
+  "prompt_chars": 209,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:34:49+09:00",
+  "finished_at": "2026-10-08T14:36:10+09:00",
+  "content": "- 本を読みます。\n- 映画を見ます。\n- 料理を作ります。\n- 掃除をします。\n- 昼寝をします。\n以上",
+  "thinking": "*   Topic: Activities to enjoy indoors on a rainy day.\n    *   Constraint 1: Bullet points starting with \"- \" (half-width hyphen and half-width space).\n    *   Constraint 2: Exactly 5 bullet points.\n    *   Constraint 3: Each line (including \"- \") must be within 25 characters.\n    *   Constraint 4: Each bullet point must end with \"です。\" or \"ます。\".\n    *   Constraint 5: The last line (after the 5 bullets) must be exactly \"以上\".\n    *   Constraint 6: No alphabet characters (A-Z, a-z, full-width or half-width).\n\n    *   Idea 1: Read a book. (本を読みます。)\n    *   Idea 2: Watch a movie. (映画を見ます。)\n    *   Idea 3: Cook/Bake. (料理を作ります。)\n    *   Idea 4: Clean the room. (掃除をします。)\n    *   Idea 5: Take a bath. (お風呂に入ります。)\n\n    *   Bullet 1: - 本を読みます。 (Length: 8 characters. Ends with ます。) - OK.\n    *   Bullet 2: - 映画を見ます。 (Length: 8 characters. Ends with ます。) - OK.\n    *   Bullet 3: - 料理を作ります。 (Length: 9 characters. Ends with ます。) - OK.\n    *   Bullet 4: - 掃除をします。 (Length: 8 characters. Ends with ます。) - OK.\n    *   Bullet 5: - お風呂に入ります。 (Length: 10 characters. Ends with ます。) - OK.\n\n    Wait, I need exactly 5 bullet points, then the last line is \"以上\".\n\n    Check if any alphabet is used: No.\n    Check length:\n    \"- 本を読みます。\" (8) <= 25.\n    \"- 映画を見ます。\" (8) <= 25.\n    \"- 料理を作ります。\" (9) <= 25.\n    \"- 掃除をします。\" (8) <= 25.\n    \"- お風呂に入ります。\" (10) <= 25.\n\n    Check endings: All end with \"ます。\".\n\n    Check the last line: \"以上\".\n\n    Check number of bullets: 5.\n\n    1. - 本を読みます。\n    2. - 映画を見ます。\n    3. - 料理を作ります。\n    4. - 掃除をします。\n    5. - お風呂に入ります。\n    以上\n\n    Wait, let me double-check the alphabet constraint.\n    \"アルファベット（A〜Z、a〜z。全角も含む）を使わない。\"\n    My list:\n    - 本を読みます。\n    - 映画を見ます。\n    - 料理を作ります。\n    - 掃除をします。\n    - お風呂に入ります。\n    以上\n    No alphabets.\n\n    Check the count:\n    1, 2, 3, 4, 5. Correct.\n\n    Check the starting string:\n    \"- \" (half-width hyphen and half-width space). Correct.\n\n    Check characters per line:\n    Line 1: 8 chars.\n    Line 2: 8 chars.\n    Line 3: 9 chars.\n    Line 4: 8 chars.\n    Line 5: 10 chars.\n    All <= 25.\n\n    Check ending of bullet points:\n    \"ます。\" \"ます。\" \"ます。\" \"ます。\" \"ます。\" Correct.\n\n    Check the last line:\n    \"以上\" Correct.\n\n    Wait, should I add an introductory sentence?\n    The prompt says: \"次の条件をすべて守って書いてください。\"\n    Condition 1: \"行頭を「- 」...で始める箇条書きを、ちょうど 5 個書く。\"\n    Condition 4: \"最後の行には「以上」の 2 文字だけを書く。\"\n    If I add an intro, the last line won't be the last thing, or I'd need to make sure the intro doesn't break the rules. However, usually, these constraints imply the *entire output* should follow these rules.\n    Actually, if the last line is \"以上\", any intro must be *before* the bullets? But the bullets must be 5 and the last line is \"以上\". If I put an intro, is the intro a bullet point? No. If it's not a bullet point, it doesn't start with \"- \". But the prompt asks for 5 bullets and a final line.\n    If I put an intro like \"おすすめです：\", it's a line. The last line is \"以上\".\n    But if I have:\n    Intro\n    - B1\n    - B2\n    - B3\n    - B4\n    - B5\n    以上\n    Then the total number of lines is 7. The condition \"箇条書きを、ちょうど 5 個書く\" is met. The condition \"最後の行には「以上」の 2 文字だけを書く\" is met.\n    HOWEVER, many prompts of this type want *only* the specified items. To be safe and strictly follow the \"last line\" and \"5 bullets\" logic, I will provide only the 5 bullets and the closing.\n\n    Let's re-read: \"行頭を「- 」...で始める箇条書きを、ちょうど 5 個書く。\"\n    It doesn't say \"only write 5 bullet points\", but adding extra text increases the risk of violating \"last line\" or character limits if not careful. Usually, it's best to be minimal.\n\n    Let's check if \"以上\" can be the last line if I have other text. Yes, it can. But is there any restriction on other lines?\n    Wait, the rules are:\n    1. 5 bullets starting with \"- \".\n    2. Every line (including \"- \") must be <= 25 characters.\n    3. Bullet endings must be \"です。\" or \"ます。\".\n    4. Last line \"以上\".\n    5. No alphabet.\n\n    If I add an intro line, that line must also be <= 25 chars and not contain alphabet. But that line is not a bullet point, so condition 3 (ending in です/ます) doesn't apply to it? Or does it?\n    Condition 3: \"各箇条書きの末尾は...\" -> Only applies to bullets.\n    Condition 2: \"どの行も... 25 文字以内にする。\" -> Applies to ALL lines.\n\n    To be safest, I will output only the 5 bullets and the \"以上\" line.\n\n    Let's double check the characters again.\n    - 本を読みます。 (8)\n    - 映画を見ます。 (8)\n    - 料理を作ります。 (9)\n    - 掃除をします。 (8)\n    - お風呂に入ります。 (10)\n    以上 (2)\n\n    Wait, \"- \" is two characters (hyphen and space).\n    - 本 を 読 み ま す 。\n    1 2 3 4 5 6 7 8\n    Correct.\n\n    Are there any hidden alphabets? No.\n    Are there 5 bullets? Yes.\n    Do they start with \"- \"? Yes.\n    Do they end with \"ます。\"? Yes.\n    Is the last line \"以上\"? Yes.\n    Are all lines <= 25 characters? Yes.\n\n    Final verification:\n    - 本を読みます。 (OK)\n    - 映画を見ます。 (OK)\n    - 料理を作ります。 (OK)\n    - 掃除をします。 (OK)\n    - お風呂に入ります。 (OK)\n    以上 (OK)\n\n    Wait, \"- \" is半角のハイフン (half-width hyphen) and 半角スペース (half-width space).\n    My draft:\n    - 本を読みます。\n    - 映画を見ます。\n    - 料理を作ります。\n    - 掃除をします。\n    - お風呂に入ります。\n    以上\n\n    One last check on alphabet.\n    - (hyphen) is not alphabet.\n    Space is not alphabet.\n    Kanji, Hiragana, Katakana, punctuation are not alphabet.\n    Everything looks good.\n\n    Wait, the prompt says \"どの行も「- 」を含めて 25 文字以内にする\".\n    Does this imply that *every* line must start with \"- \"?\n    No, it says \"Which line *also* including the '- ' [if it has one] is within 25 characters\".\n    Actually, \"どの行も... 25文字以内にする\" simply means all lines must be short.\n    And \"最後の行には「以上」の 2 文字だけを書く\" means the last line cannot start with \"- \".\n    So the pattern is:\n    Bullet 1\n    Bullet 2\n    Bullet 3\n    Bullet 4\n    Bullet 5\n    以上\n\n    This fits all criteria.\n\n    Refining the content to be a bit more \"indoor rainy day\" specific:\n    - 本を読みます。 (Read a book)\n    - 映画を見ます。 (Watch a movie)\n    - 料理を作ります。 (Cook)\n    - 掃除をします。 (Clean)\n    - 昼寝をします。 (Nap)\n\n    Actually, \"お風呂に入ります\" is also good.\n    Let's use:\n    - 本を読みます。\n    - 映画を見ます。\n    - 料理を作ります。\n    - 掃除をします。\n    - 昼寝をします。\n    以上\n\n    Let's check characters again.\n    - 本を読みます。 (8)\n    - 映画を見ます。 (8)\n    - 料理を作ります。 (9)\n    - 掃除をします。 (8)\n    - 昼寝をします。 (8)\n    以上 (2)\n\n    No alphabet.\n    Exactly 5 bullets.\n    Start with \"- \".\n    End with \"ます。\".\n    Last line is \"以上\".\n    All under 25 chars.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 153,
+  "completion_tokens": 2338,
+  "ttft_s": 1.466,
+  "t_first_content_s": 79.559,
+  "wall_s": 80.829,
+  "load_s": 0.001,
+  "server_decode_tok_s": 29.42,
+  "server_prefill_tok_s": 404.78,
+  "server_timings": {
+    "total_duration": 80828762948,
+    "load_duration": 877093,
+    "prompt_eval_count": 153,
+    "prompt_eval_duration": 377981000,
+    "eval_count": 2338,
+    "eval_duration": 79465349000
+  },
+  "delta_chunks": 1866,
+  "wall_decode_tok_s": 29.46,
+  "thinking_chars": 6327,
+  "content_chars": 53,
+  "thinking_tokens_est": 2319,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 80.828,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "bullet_count",
+        "label": "「- 」の箇条書きがちょうど 5 個",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 25 文字以内",
+        "ok": true
+      },
+      {
+        "id": "bullet_endings",
+        "label": "箇条書きの末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  }
+}

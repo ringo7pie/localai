@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "qwen3.8-flash-next:IQ4_XS",
+  "label": "qwen3.8-flash-next:IQ4_XS",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8-flash-next:IQ4_XS",
+  "slug": "qwen3.8-flash-next-IQ4_XS",
+  "suite": "extra",
+  "item": "inst3",
+  "run": 1,
+  "prompt": "朝ごはんを食べることの利点を説明してください。\n\n次の条件をすべて守って書いてください。\n1. 全体をちょうど 3 行にする（空の行は数えない）。行頭に箇条書きの記号や番号を付けない。\n2. どの行も 40 文字以内にする。\n3. どの行も末尾を「です。」か「ます。」にする。\n4. どの行にも「朝ごはん」という語を入れる。\n5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。",
+  "prompt_chars": 194,
+  "request": {
+    "model": "qwen3.8-flash-next:IQ4_XS",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T16:55:30+09:00",
+  "finished_at": "2026-10-08T16:56:25+09:00",
+  "content": "朝ごはんを食べると体温が上がり、頭がすっきりします。\n朝ごはんは栄養を補い、午後の集中力を高めてくれます。\n朝ごはんを摂ると腸が動き、健康的な毎日を過ごせます。",
+  "thinking": "The user wants me to explain the benefits of eating breakfast in Japanese, with specific constraints:\n\n1. Exactly 3 lines (empty lines don't count). No bullet points or numbers at the beginning of lines.\n2. Each line must be 40 characters or fewer.\n3. Each line must end with \"です。\" or \"ます。\"\n4. Each line must contain the word \"朝ごはん\".\n5. No alphabetic characters (A-Z, a-z, including full-width).\n\nLet me draft three lines:\n\nLine 1: 朝ごはんを食べると体温が上がり、頭がすっきりします。\nLet me count: 朝(1)ご(2)は(3)ん(4)を(5)食(6)べ(7)る(8)と(9)体(10)温(11)が(12)上(13)が(14)り(15)、(16)頭(17)が(18)す(19)っ(20)き(21)り(22)し(23)ま(24)す(25)。(26) = 26 characters. Good, under 40. Contains \"朝ごはん\". Ends with \"ます。\". Good.\n\nLine 2: 朝ごはんは栄養を補い、午後の集中力を高めてくれます。\nLet me count: 朝(1)ご(2)は(3)ん(4)は(5)栄(6)養(7)を(8)補(9)い(10)、(11)午(12)後(13)の(14)集(15)中(16)力(17)を(18)高(19)め(20)て(21)く(22)れ(23)ま(24)す(25)。(26) = 26 characters. Good, under 40. Contains \"朝ごはん\". Ends with \"ます。\". Good.\n\nLine 3: 朝ごはんを摂ると腸が動き、健康的な毎日を過ごせます。\nLet me count: 朝(1)ご(2)は(3)ん(4)を(5)摂(6)る(7)と(8)腸(9)が(10)動(11)き(12)、(13)健(14)康(15)的(16)な(17)毎(18)日(19)を(20)過(21)ご(22)せ(23)ま(24)す(25)。(26) = 26 characters. Good, under 40. Contains \"朝ごはん\". Ends with \"ます。\". Good.\n\nLet me verify all constraints:\n1. Exactly 3 lines ✓. No bullet points or numbers ✓.\n2. Each line is 26 characters, under 40 ✓.\n3. Line 1 ends with \"ます。\" ✓. Line 2 ends with \"ます。\" ✓. Line 3 ends with \"ます。\" ✓.\n4. All lines contain \"朝ごはん\" ✓.\n5. No alphabetic characters ✓.\n\nWait, let me reconsider. The comma \"、\" and period \"。\" - are these counted as characters? In Japanese character counting, they typically are. Let me recount more carefully.\n\nLine 1: 朝ごはんを食べると体温が上がり、頭がすっきりします。\n朝(1)ご(2)は(3)ん(4)を(5)食(6)べ(7)る(8)と(9)体(10)温(11)が(12)上(13)が(14)り(15)、(16)頭(17)が(18)す(19)っ(20)き(21)り(22)し(23)ま(24)す(25)。(26) = 26 ✓\n\nLine 2: 朝ごはんは栄養を補い、午後の集中力を高めてくれます。\n朝(1)ご(2)は(3)ん(4)は(5)栄(6)養(7)を(8)補(9)い(10)、(11)午(12)後(13)の(14)集(15)中(16)力(17)を(18)高(19)め(20)て(21)く(22)れ(23)ま(24)す(25)。(26) = 26 ✓\n\nLine 3: 朝ごはんを摂ると腸が動き、健康的な毎日を過ごせます。\n朝(1)ご(2)は(3)ん(4)を(5)摂(6)る(7)と(8)腸(9)が(10)動(11)き(12)、(13)健(14)康(15)的(16)な(17)毎(18)日(19)を(20)過(21)ご(22)せ(23)ま(24)す(25)。(26) = 26 ✓\n\nAll good. No alphabetic characters used. All constraints satisfied.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 135,
+  "completion_tokens": 1270,
+  "ttft_s": 2.509,
+  "t_first_content_s": 53.575,
+  "wall_s": 55.61,
+  "load_s": 0.001,
+  "server_decode_tok_s": 23.92,
+  "server_prefill_tok_s": 56.22,
+  "server_timings": {
+    "total_duration": 55609293944,
+    "load_duration": 984910,
+    "prompt_eval_count": 135,
+    "prompt_eval_duration": 2401241000,
+    "eval_count": 1270,
+    "eval_duration": 53100710000
+  },
+  "delta_chunks": 1206,
+  "wall_decode_tok_s": 23.92,
+  "thinking_chars": 2165,
+  "content_chars": 80,
+  "thinking_tokens_est": 1225,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 55.609,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "line_count",
+        "label": "ちょうど 3 行で、行頭に記号や番号が無い",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 40 文字以内",
+        "ok": true
+      },
+      {
+        "id": "line_endings",
+        "label": "どの行も末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "each_line_word",
+        "label": "どの行にも「朝ごはん」",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  }
+}

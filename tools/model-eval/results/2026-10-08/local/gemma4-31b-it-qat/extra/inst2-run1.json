@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "prompt": "新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。\n\n次の条件をすべて守って書いてください。\n1. 1 行目には「注意点は次のとおりです。」とだけ書く。\n2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\n3. 「定期的」という語を、どこかで 1 回以上使う。\n4. 数字（0〜9。全角も含む）を使わない。\n5. 最後の行には「以上」の 2 文字だけを書く。",
+  "prompt_chars": 221,
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T15:51:44+09:00",
+  "finished_at": "2026-10-08T15:53:03+09:00",
+  "content": "注意点は次のとおりです。\n- 複雑な文字を組み合わせてください。\n- 他の人に教えないでください。\n- 定期的に変更してください。\n- 名前など単純なものは避けてください。\n以上",
+  "thinking": "*   Target audience: New employees.\n    *   Topic: Password safety tips.\n    *   Constraints:\n        1.  Line 1: Must be \"注意点は次のとおりです。\" (and nothing else).\n        2.  Lines 2-5: Bullet points starting with \"- \" (half-width hyphen and space). Exactly 4 points.\n        3.  Include the word \"定期的\" (regularly) at least once.\n        4.  No digits (0-9, full-width or half-width).\n        5.  Last line: Must be \"以上\" (and nothing else).\n\n    *   Line 1: 注意点は次のとおりです。 (OK)\n    *   Bullet point 1: Use complex passwords. (avoid digits) -> 複雑な文字を組み合わせてください。\n    *   Bullet point 2: Do not share passwords. (avoid digits) -> 他の人に教えないでください。\n    *   Bullet point 3: Change passwords regularly. (avoid digits, include \"定期的\") -> 定期的に変更してください。\n    *   Bullet point 4: Don't use simple passwords like names. (avoid digits) -> 名前など単純なものは避けてください。\n    *   Check for digits:\n        *   複雑な文字を組み合わせてください。 (No digits)\n        *   他の人に教えないでください。 (No digits)\n        *   定期的に変更してください。 (No digits)\n        *   名前など単純なものは避けてください。 (No digits)\n    *   Last line: 以上 (OK)\n\n    *   Line 1: 注意点は次のとおりです。\n    *   Line 2: - 複雑な文字を組み合わせてください。\n    *   Line 3: - 他の人に教えないでください。\n    *   Line 4: - 定期的に変更してください。\n    *   Line 5: - 名前など単純なものは避けてください。\n    *   Line 6: 以上\n\n    *   1st line: 「注意点は次のとおりです。」 (Exactly) - Check.\n    *   2nd line onwards: Bullet points starting with \"- \" (Exactly 4) - Check.\n    *   Word 「定期的」 used: Yes (Line 4) - Check.\n    *   No digits (0-9):\n        *   注意点は次のとおりです。 (None)\n        *   - 複雑な文字を組み合わせてください。 (None)\n        *   - 他の人に教えないでください。 (None)\n        *   - 定期的に変更してください。 (None)\n        *   - 名前など単純なものは避けてください。 (None)\n        *   以上 (None)\n        - Check.\n    *   Last line: 「以上」 (Exactly 2 characters) - Check.\n\n    *   Wait, \"4個\" is a digit? No, the prompt says \"数字を使わない\" in the *output*, not the prompt conditions.\n    *   Check for any hidden numbers in the Japanese text.\n    *   \"定期的\" is used once.\n    *   Bullets start with \"- \".\n    *   Exactly 4 bullets.\n    *   Line 1 and Last line are exact.\n\n    注意点は次のとおりです。\n    - 複雑な文字を組み合わせてください。\n    - 他の人に教えないでください。\n    - 定期的に変更してください。\n    - 名前など単純なものは避けてください。\n    以上\n\n    Let's double check the digits again.\n    0, 1, 2, 3, 4, 5, 6, 7, 8, 9.\n     None found.\n\n    Wait, I should make sure there are no digits in the words themselves (like 'one' written as '1').\n    \"複雑な文字を組み合わせてください。\"\n    \"他の人に教えないでください。\"\n    \"定期的に変更してください。\"\n    \"名前など単純なものは避けてください。\"\n    No digits here.\n\n    Double check the bullet count:\n    1. - 複雑な文字を組み合わせてください。\n    2. - 他の人に教えないでください。\n    3. - 定期的に変更してください。\n    4. - 名前など単純なものは避けてください。\n    Exactly 4.\n\n    Line 1: 注意点は次のとおりです。\n    Last line: 以上\n\n    Everything looks correct.\n\n    Wait, just to be safe, let's ensure no full-width digits like 「１」.\n    None.\n\n    Final check:\n    L1: 注意点は次のとおりです。\n    L2: - 複雑な文字を組み合わせてください。\n    L3: - 他の人に教えないでください。\n    L4: - 定期的に変更してください。\n    L5: - 名前など単純なものは避けてください。\n    L6: 以上\n\n    Perfect.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 159,
+  "completion_tokens": 1140,
+  "ttft_s": 1.259,
+  "t_first_content_s": 75.672,
+  "wall_s": 79.138,
+  "load_s": 0.001,
+  "server_decode_tok_s": 14.6,
+  "server_prefill_tok_s": 248.72,
+  "server_timings": {
+    "total_duration": 79137211666,
+    "load_duration": 1135222,
+    "prompt_eval_count": 159,
+    "prompt_eval_duration": 639265000,
+    "eval_count": 1140,
+    "eval_duration": 78075504000
+  },
+  "delta_chunks": 905,
+  "wall_decode_tok_s": 14.64,
+  "thinking_chars": 2910,
+  "content_chars": 89,
+  "thinking_tokens_est": 1106,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 79.137,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": true
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  }
+}

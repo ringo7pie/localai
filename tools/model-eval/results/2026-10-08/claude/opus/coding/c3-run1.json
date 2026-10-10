@@ -1,0 +1,161 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "content": "```python\nfrom bisect import bisect_left\n\n\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n    INF = 1 << 62\n    grouped = {}\n    for u, v, dep, arr_t in connections:\n        lst = grouped.get(u)\n        if lst is None:\n            grouped[u] = [(dep, arr_t, v)]\n        else:\n            lst.append((dep, arr_t, v))\n    deps_of = {}\n    for u, lst in grouped.items():\n        lst.sort()\n        deps_of[u] = [item[0] for item in lst]\n\n    best = [INF] * n\n    frontier = [source]\n    first = True\n    for _level in range(max_transfers + 1):\n        if not frontier:\n            break\n        updates = {}\n        bound = best[target]\n        for u in frontier:\n            lst = grouped.get(u)\n            if lst is None:\n                continue\n            if first:\n                ready = start\n            else:\n                if u == source:\n                    # 出発時の状態（時刻 start・乗車 0 本）が常に優越する\n                    continue\n                ready = best[u] + change\n            idx = bisect_left(deps_of[u], ready)\n            for pos in range(idx, len(lst)):\n                _dep, arr_t, v = lst[pos]\n                if arr_t < best[v] and arr_t < bound:\n                    prev = updates.get(v)\n                    if prev is None or arr_t < prev:\n                        updates[v] = arr_t\n        first = False\n        for v, t in updates.items():\n            best[v] = t\n        frontier = list(updates)\n\n    result = best[target]\n    return result if result < INF else -1\n```",
+  "wall_s": 42.192,
+  "usage": {
+    "subagent_tokens": 32230
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_source_is_target",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_departure_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_minimizes_arrival_not_departure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tight_transfer_with_zero_change",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_change_time_selects_later_connection",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_zero_means_direct_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_makes_it_impossible",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_departure_is_a_trap",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_waiting_at_intermediate_station",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_departure_times_cannot_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_and_self_loops",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_transfers_arrive_earlier",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_arrival_at_a_station_may_use_too_many_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fast_and_slow_stages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_connections_before_start_are_useless",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_time_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_chain_at_the_transfer_limit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_stations_few_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_instances",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_wide_random_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_max_connections_few_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_many_transfer_layers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_stages_with_many_decoys",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 1.17,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:16+09:00"
+}

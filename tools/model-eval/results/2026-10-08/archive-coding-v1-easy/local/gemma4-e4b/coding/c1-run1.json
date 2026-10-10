@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c1",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C1: 括弧の対応\n\n関数 `is_balanced(text: str) -> bool` を書いてください。\n\n- 文字列 `text` の中の 3 種類の括弧 `()`、`[]`、`{}` が正しく対応していれば `True`、そうでなければ `False` を返す。\n- 正しく対応しているとは、どの閉じ括弧にも、それより前にある同じ種類の開き括弧が 1 つずつ対応し、対応する組どうしが交差せず、最後に閉じられていない開き括弧が残らないこと。\n- 括弧以外の文字（`<` と `>` も含む）は無視する。\n- 空の文字列は `True`。\n- `text` は最大 100,000 文字。\n\n例:\n- `is_balanced(\"a(b[c]{d}e)f\")` → `True`\n- `is_balanced(\"([)]\")` → `False`",
+  "prompt_chars": 647,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:28:09+09:00",
+  "finished_at": "2026-10-08T12:28:23+09:00",
+  "content": "```python\nclass Solution:\n    def is_balanced(self, text: str) -> bool:\n        stack = []\n        mapping = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n        openers = set(\"([{\")\n        closers = set(\")]}\")\n\n        for char in text:\n            if char in openers:\n                stack.append(char)\n            elif char in closers:\n                # 1. Check for improper closing (stack empty)\n                if not stack:\n                    return False\n                \n                # 2. Check for mismatch\n                last_open = stack.pop()\n                expected_open = mapping[char]\n                \n                if last_open != expected_open:\n                    return False\n            # If the character is not a bracket, it is ignored\n\n        # After checking all characters, the stack must be empty for the brackets to be balanced\n        return not stack\n```",
+  "thinking": "Let's break down the thought process for solving the `is_balanced` function.\n\n1.  **Understanding the Goal:** The task is to check if a string `text` has balanced parentheses (including `()`, `[]`, `{}`). We must ignore all non-bracket characters.\n\n2.  **Defining \"Balanced\":** A balanced set of brackets must satisfy these conditions:\n    *   Every opening bracket must have a corresponding closing bracket of the same type.\n    *   The brackets must close in the correct order (e.g., `([)]` is invalid because `[` must close before `(` does, or vice versa, depending on the nesting).\n    *   The sequence must never attempt to close a bracket when no open bracket is waiting (e.g., `]`) or close the wrong type (e.g., `(]` ).\n\n3.  **Choosing the Data Structure:** The problem of checking nested dependencies (like matching opening and closing elements) is classic and screams \"Stack.\" When we encounter an opening bracket, we push it onto the stack. When we encounter a closing bracket, we check the top of the stack.\n\n4.  **Developing the Algorithm (The Stack Approach):**\n\n    *   Initialize an empty stack (a list in Python).\n    *   Define the mappings between opening and closing brackets:\n        *   `(` maps to `)`\n        *   `[` maps to `]`\n        *   `{` maps to `}`\n    *   Iterate through the input string `text` character by character.\n    *   **If the character is an opening bracket:** Push it onto the stack.\n    *   **If the character is a closing bracket:**\n        *   **Check 1 (Is the stack empty?):** If the stack is empty, we found a closing bracket without a corresponding opener. This means the sequence is invalid. Return `False`.\n        *   **Check 2 (Does it match the top?):** Pop the top element from the stack. If this popped element (the expected opener) does *not* match the current closing bracket (i.e., `[stack.pop()]` should match the closer, e.g., if we see `]`, the top must be `[`), the sequence is invalid. Return `False`.\n        *   (Self-Correction/Refinement): It's cleaner to define a helper mechanism. When we see a closer `C`, we must check if the stack top `S` is the opener corresponding to `C`.\n\n    *   **If the character is anything else (non-bracket):** Ignore it.\n\n    *   **After iterating through the entire string:** For the sequence to be fully balanced, the stack *must* be empty. If the stack still contains elements, it means some opening brackets were never closed (e.g., `((`). Return `False`. Otherwise, return `True`.\n\n5.  **Implementation Details (Python Code):**\n\n    *   Need mappings:\n        *   Openers: `(`, `[`, `{`\n        *   Closers: `)`, `]`, `}`\n        *   The inverse map (from closer to opener) is useful for quick checks, but mapping from opener to closer is also fine. Let's use a single set of openers and a dictionary for matching.\n\n    *   `mapping = {')': '(', ']': '[', '}': '{'}` (This maps *closer* to *opener*).\n\n    *   *Refining the loop logic:*\n\n        ```python\n        stack = []\n        openers = set(\"([{\")\n        closers = set(\")]}\")\n\n        for char in text:\n            if char in openers:\n                stack.append(char)\n            elif char in closers:\n                # 1. Must have an open bracket to close\n                if not stack:\n                    return False\n                \n                # 2. Check if the popped opener matches the current closer\n                last_open = stack.pop()\n                # Does the current character (closer) match the expected close for last_open?\n                if mapping[char] != last_open: \n                    return False\n            # else: ignore other characters\n        \n        # After loop:\n        return not stack\n        ```\n\n6.  **Final Review and Constraint Check:**\n    *   Uses only standard library? Yes (lists, sets, strings).\n    *   No file I/O, network, subprocess, stdin? Yes.\n    *   Function signature/names used? Yes (`is_balanced(text: str) -> bool`).\n    *   Output format: Single code block, definitions only, no test code.\n\nThis refined plan leads directly to the final provided solution. (The implementation below uses the dictionary mapping structure for clarity and efficiency).",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 359,
+  "completion_tokens": 1245,
+  "ttft_s": 0.39,
+  "t_first_content_s": 11.738,
+  "wall_s": 13.983,
+  "load_s": 0.001,
+  "server_decode_tok_s": 91.33,
+  "server_prefill_tok_s": 1037.7,
+  "server_timings": {
+    "total_duration": 13982060501,
+    "load_duration": 1006307,
+    "prompt_eval_count": 359,
+    "prompt_eval_duration": 345957000,
+    "eval_count": 1245,
+    "eval_duration": 13632076000
+  },
+  "delta_chunks": 1100,
+  "wall_decode_tok_s": 91.6,
+  "thinking_chars": 4180,
+  "content_chars": 880,
+  "thinking_tokens_est": 1028,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 13.982,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.0,
+    "all_passed": false,
+    "passed": 0,
+    "total": 12,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_single_open",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_single_close",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_unclosed",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_nested_ok",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_no_brackets",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_wrong_kind",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_crossing",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_close_before_open",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_angle_ignored",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_deep_ok",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      },
+      {
+        "name": "case_deep_bad",
+        "ok": false,
+        "error": "AttributeError: module 'solution' has no attribute 'is_balanced'"
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  }
+}

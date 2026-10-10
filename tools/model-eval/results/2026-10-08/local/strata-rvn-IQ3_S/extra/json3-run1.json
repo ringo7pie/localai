@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "target": "strata-flash-next:IQ3_S",
+  "label": "strata-flash-next:IQ3_S (RVN)",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-flash-next:IQ3_S",
+  "slug": "strata-rvn-IQ3_S",
+  "suite": "extra",
+  "item": "json3",
+  "run": 1,
+  "prompt": "次の社内の問い合わせから情報を取り出し、JSON で答えてください。\n\n問い合わせ:\n\"\"\"\nお疲れさまです。経理部の田中です。\n今朝 9 時ごろから、経費精算システムにログインできなくなりました。\n画面には「エラーコード E-503」と表示されます。\n同じ部署のほかの 4 人も同じ症状で、全員が作業を止めています。\n月末の締めが明後日なので、至急対応をお願いします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"department\": 問い合わせた人の部署（文字列）\n  - \"reporter\": 問い合わせた人の姓（文字列）\n  - \"system\": 不具合が起きているシステムの名前（文字列）\n  - \"error_code\": 表示されたエラーコード（文字列。例 \"X-100\"）\n  - \"affected_users\": 症状が出ている人数。問い合わせた本人も含める（整数）\n  - \"priority\": 緊急度。\"高\"、\"中\"、\"低\" のどれか（文字列）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 492,
+  "request": {
+    "model": "strata-flash-next:IQ3_S",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-08T18:03:11+09:00",
+  "finished_at": "2026-10-08T18:03:25+09:00",
+  "content": "{\n  \"department\": \"経理部\",\n  \"reporter\": \"田中\",\n  \"system\": \"経費精算システム\",\n  \"error_code\": \"E-503\",\n  \"affected_users\": 5,\n  \"priority\": \"高\"\n}",
+  "thinking": "We need answer user's request. Need produce final only JSON object. Need infer values.\n\nUser Japanese:\n\"次の社内の問い合わせから情報を取り出し、JSON で答えてください。\n\n問い合わせ:\n\"\"\"\nお疲れさまです。経理部の田中です。\n今朝 9 時ごろから、経費精算システムにログインできなくなりました。\n画面には「エラーコード E-503」と表示されます。\n同じ部署のほかの 4 人も同じ症状で、全員が作業を止めています。\n月末の締めが明後日なので、至急対応をお願いします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"department\": 問い合わせた人の部署（文字列）\n  - \"reporter\": 問い合わせた人の姓（文字列）\n  - \"system\": 不具合が起きているシステムの名前（文字列）\n  - \"error_code\": 表示されたエラーコード（文字列。例 \"X-100\"）\n  - \"affected_users\": 症状が出ている人数。問い合わせた本人も含める（整数）\n  - \"priority\": 緊急度。\"高\"、\"中\"、\"低\" のどれか（文字列）\n- JSON のほかには何も書かない。\"\n\nNeed extract:\ndepartment: 経理部\nreporter: 田中 (surname)\nsystem: 経費精算システム\nerror_code: E-503\naffected_users: inquiry says same department other 4 people, including self => 5\npriority: 高 due urgent month-end deadline, many users down.\nOutput exactly JSON no markdown? User says JSON only. Need ensure valid JSON. Probably keys double quotes, no trailing commas. Need final.\n\nPotential ambiguity: \"system\" name maybe \"経費精算システム\". priority: \"高\". affected_users integer 5.\n\nNeed maybe ASCII? Japanese in JSON can be UTF-8. Fine.\n\nFinal should be:\n{\n  \"department\": \"経理部\",\n  \"reporter\": \"田中\",\n  \"system\": \"経費精算システム\",\n  \"error_code\": \"E-503\",\n  \"affected_users\": 5,\n  \"priority\": \"高\"\n}\n\nEnsure no additional text.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 316,
+  "completion_tokens": 579,
+  "ttft_s": 2.079,
+  "t_first_content_s": 12.133,
+  "wall_s": 13.368,
+  "load_s": null,
+  "server_decode_tok_s": 51.2,
+  "server_prefill_tok_s": 153.9,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 316,
+    "prompt_ms": 2053.7,
+    "prompt_per_token_ms": 6.499,
+    "prompt_per_second": 153.9,
+    "predicted_n": 579,
+    "predicted_ms": 11306.2,
+    "predicted_per_token_ms": 19.527,
+    "predicted_per_second": 51.2,
+    "draft_n": 464,
+    "draft_n_accepted": 399
+  },
+  "delta_chunks": 569,
+  "wall_decode_tok_s": 51.2,
+  "thinking_chars": 1301,
+  "content_chars": 136,
+  "thinking_tokens_est": 524,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 13.368,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "department": {
+        "ok": true,
+        "got": "経理部"
+      },
+      "reporter": {
+        "ok": true,
+        "got": "田中"
+      },
+      "system": {
+        "ok": true,
+        "got": "経費精算システム"
+      },
+      "error_code": {
+        "ok": true,
+        "got": "E-503"
+      },
+      "affected_users": {
+        "ok": true,
+        "got": 5
+      },
+      "priority": {
+        "ok": true,
+        "got": "高"
+      }
+    },
+    "extra_keys": []
+  }
+}

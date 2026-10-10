@@ -1,0 +1,173 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C6: 数独を解く（解の一意性の判定つき）\n\n関数 `solve_sudoku(grid: str) -> str` を書いてください。\n\n- `grid` は 81 文字の文字列。9×9 の盤面を行ごとに左から右、上から下の順に並べたもので、各文字は `1`〜`9`（確定しているマス）か `.`（空のマス）。\n- 普通の数独の規則で解く: 各行・各列・太線で区切られた 3×3 のブロック 9 つのそれぞれに、`1`〜`9` がちょうど 1 回ずつ入る。\n- 解がちょうど 1 つに決まるとき、その解を同じ形式（81 文字、`.` を含まない）で返す。\n- 次の場合は `ValueError` を送出する。\n  - `grid` の長さが 81 でない、または `1`〜`9` と `.` 以外の文字（`0`、空白、全角の数字など）を含む。\n  - 確定しているマスどうしが、既に規則に反している（同じ行・列・ブロックに同じ数字がある）。\n  - 解が存在しない（確定しているマスどうしに矛盾は無いが、どう埋めても規則を満たせない）。\n  - 解が 2 つ以上ある（空の盤面など）。\n- 性能: ヒントが 17 個しかない難問、「最難」と呼ばれる種類の問題、確定マスに矛盾は無いが解が存在しない盤面、解が多数ある盤面のいずれも、1 問につき 1 秒程度で答えること。マスを左上から順に試すだけの素朴なバックトラックでは間に合わない（候補の少ないマスから埋める、候補が 1 つのマスを先に確定する、などの工夫が要る）。解が 2 つ以上あることの判定は、2 つ目の解が見つかった時点で打ち切ってよい。\n\n例:\n- `solve_sudoku(\"53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79\")` → `\"534678912672195348198342567859761423426853791713924856961537284287419635345286179\"`\n- `solve_sudoku(\".\" * 81)` → `ValueError` を送出（解が多数ある）\n- `solve_sudoku(\"11\" + \".\" * 79)` → `ValueError` を送出（同じ行に 1 が 2 つ）",
+  "prompt_chars": 1285,
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T15:41:38+09:00",
+  "finished_at": "2026-10-08T15:50:27+09:00",
+  "content": "```python\ndef solve_sudoku(grid: str) -> str:\n    if len(grid) != 81:\n        raise ValueError(\"Grid must be 81 characters long\")\n    \n    board = [0] * 81\n    rows = [0] * 9\n    cols = [0] * 9\n    blocks = [0] * 9\n    \n    for i, char in enumerate(grid):\n        if char == '.':\n            continue\n        if not '1' <= char <= '9':\n            raise ValueError(\"Invalid character in grid\")\n        \n        val = int(char)\n        mask = 1 << (val - 1)\n        r, c = divmod(i, 9)\n        b = (r // 3) * 3 + (c // 3)\n        \n        if (rows[r] & mask) or (cols[c] & mask) or (blocks[b] & mask):\n            raise ValueError(\"Initial conflict in grid\")\n        \n        board[i] = val\n        rows[r] |= mask\n        cols[c] |= mask\n        blocks[b] |= mask\n        \n    empty_cells = [i for i in range(81) if board[i] == 0]\n    solutions_count = 0\n    first_solution = \"\"\n    \n    def backtrack():\n        nonlocal solutions_count, first_solution\n        \n        # Minimum Remaining Values (MRV) heuristic\n        best_cell_idx = -1\n        min_candidates = 10\n        best_mask = 0\n        \n        for i in range(len(empty_cells)):\n            cell = empty_cells[i]\n            r, c = divmod(cell, 9)\n            b = (r // 3) * 3 + (c // 3)\n            # Candidates are those not used in the row, column, or 3x3 block\n            mask = 0x1FF & ~(rows[r] | cols[c] | blocks[b])\n            count = mask.bit_count()\n            \n            if count == 0:\n                return # Prune: no possible value for this cell\n            if count < min_candidates:\n                min_candidates = count\n                best_cell_idx = i\n                best_mask = mask\n                if count == 1:\n                    break # Naked single found, use it immediately\n        \n        if best_cell_idx == -1:\n            # All cells filled, solution found\n            solutions_count += 1\n            if solutions_count == 1:\n                first_solution = \"\".join(map(str, board))\n            return\n        \n        cell = empty_cells.pop(best_cell_idx)\n        r, c = divmod(cell, 9)\n        b = (r // 3) * 3 + (c // 3)\n        \n        # Try candidates from the best_mask\n        for val in range(1, 10):\n            mask = 1 << (val - 1)\n            if best_mask & mask:\n                board[cell] = val\n                rows[r] |= mask\n                cols[c] |= mask\n                blocks[b] |= mask\n                \n                backtrack()\n                \n                # Stop if more than one solution is found\n                if solutions_count >= 2:\n                    empty_cells.insert(best_cell_idx, cell)\n                    return\n                \n                board[cell] = 0\n                rows[r] &= ~mask\n                cols[c] &= ~mask\n                blocks[b] &= ~mask\n        \n        empty_cells.insert(best_cell_idx, cell)\n\n    backtrack()\n    \n    if solutions_count == 0:\n        raise ValueError(\"No solution exists\")\n    if solutions_count > 1:\n        raise ValueError(\"Multiple solutions exist\")\n    return first_solution\n```",
+  "thinking": "*   Input: `grid` (string of 81 characters, '1'-'9' or '.').\n    *   Output: `str` (81 characters, solution) or `ValueError`.\n    *   Sudoku rules: Each row, column, and 3x3 block must contain numbers 1-9 exactly once.\n    *   Specific error conditions for `ValueError`:\n        1.  Incorrect length or invalid characters.\n        2.  Initial conflicts (duplicate numbers in row, col, or block).\n        3.  No solution exists.\n        4.  More than one solution exists.\n    *   Performance: Must solve hard puzzles (17 hints), unsolvable ones, and multiple-solution ones within ~1 second. Simple backtracking isn't enough.\n    *   Optimization strategies suggested: Minimum Remaining Values (MRV) heuristic, constraint propagation (naked singles).\n\n    *   Convert the 81-character string to a 2D list (or a flat list of 81 integers, 0 for '.').\n    *   Represent constraints using bitmasks (binary representations of sets of numbers 1-9). This allows fast checking and updating of candidates.\n    *   `row_masks[9]`, `col_masks[9]`, `block_masks[9]`.\n    *   A bitmask `m` where the $i$-th bit is set means number $i+1$ is already used.\n    *   Candidates for a cell (r, c) = `~(row_masks[r] | col_masks[c] | block_masks[block(r, c)]) & 0x1FF`.\n\n    *   Need a way to find the cell with the minimum number of candidates (MRV).\n    *   If a cell has 0 candidates and is empty, no solution.\n    *   If a cell has 1 candidate, it's a \"naked single\" (should be filled immediately).\n    *   To check for uniqueness, the backtracking search should not stop at the first solution but continue searching to see if a second one exists.\n\n    *   Check input validity (length 81, characters '1'-'9' or '.').\n    *   Initial check for duplicates in rows, columns, and blocks.\n    *   Convert string to internal representation.\n\n    *   `solve()`:\n        *   Identify the cell with the fewest candidates.\n        *   If no empty cells are left, a solution is found. Return it.\n        *   If a cell has 0 candidates, backtrack.\n        *   Try each candidate for the chosen cell.\n        *   Recursively call `solve()`.\n        *   If two solutions are found, stop and raise `ValueError`.\n\n    *   `row_masks`, `col_masks`, `block_masks` for fast updates.\n    *   Keep track of empty cells.\n    *   `get_candidates(r, c)`: returns a bitmask of available numbers.\n    *   `count_set_bits(n)`: returns the number of 1s in the bitmask.\n\n    *   Use `bin(n).count('1')` for bit counting.\n    *   `block_idx = (r // 3) * 3 + (c // 3)`.\n\n    *   Instead of just MRV, we can iteratively fill all naked singles before picking the next MRV cell. This is effectively a form of constraint propagation.\n    *   To handle the \"more than one solution\" requirement, the search function should return a list of solutions or a count.\n\n    *   If the puzzle has very few hints, the number of possibilities can be huge.\n    *   The MRV heuristic is crucial.\n    *   Need to be careful about the time limit (1s). Python might be slow, so efficient bit manipulation is key.\n\n    *   The function should return the final grid string if exactly one solution is found.\n    *   It should raise `ValueError` if:\n        - Input is invalid.\n        - Initial grid is invalid.\n        - No solution.\n        - Multiple solutions.\n\n    *   If the initial grid is empty (`\".\" * 81`), it will have many solutions. The search should find the first solution, then continue to find a second one and immediately raise `ValueError`.\n\n    *   `ValueError` for invalid grid: `if len(grid) != 81 or any(c not in '123456789.' for c in grid): raise ValueError`.\n    *   Initial conflicts: When filling the initial grid, if a number is already present in the row/col/block, raise `ValueError`.\n\n    ```python\n    def solve_sudoku(grid: str) -> str:\n        if len(grid) != 81 or any(c not in '123456789.' for c in grid):\n            raise ValueError(\"Invalid input\")\n\n        rows = [0] * 9\n        cols = [0] * 9\n        blocks = [0] * 9\n        board = [0] * 81\n\n        for i, char in enumerate(grid):\n            if char == '.':\n                continue\n            val = int(char)\n            mask = 1 << (val - 1)\n            r, c = divmod(i, 9)\n            b = (r // 3) * 3 + (c // 3)\n            if (rows[r] & mask) or (cols[c] & mask) or (blocks[b] & mask):\n                raise ValueError(\"Initial conflict\")\n            rows[r] |= mask\n            cols[c] |= mask\n            blocks[b] |= mask\n            board[i] = val\n\n        solutions = []\n\n        def get_candidates(r, c):\n            b = (r // 3) * 3 + (c // 3)\n            return 0x1FF & ~(rows[r] | cols[c] | blocks[b])\n\n        def backtrack():\n            # MRV: Find the cell with the minimum number of candidates\n            best_cell = -1\n            min_candidates = 10\n            best_mask = 0\n\n            for i in range(81):\n                if board[i] == 0:\n                    r, c = divmod(i, 9)\n                    mask = get_candidates(r, c)\n                    count = bin(mask).count('1')\n                    if count == 0:\n                        return # Prune\n                    if count < min_candidates:\n                        min_candidates = count\n                        best_cell = i\n                        best_mask = mask\n                        if count == 1:\n                            break\n\n            if best_cell == -1:\n                # Found a solution\n                solutions.append(\"\".join(map(str, board)))\n                return\n\n            r, c = divmod(best_cell, 9)\n            b = (r // 3) * 3 + (c // 3)\n            \n            # Try candidates\n            for val in range(1, 10):\n                if best_mask & (1 << (val - 1)):\n                    mask = 1 << (val - 1)\n                    board[best_cell] = val\n                    rows[r] |= mask\n                    cols[c] |= mask\n                    blocks[b] |= mask\n                    \n                    backtrack()\n                    \n                    if len(solutions) >= 2:\n                        return\n                    \n                    board[best_cell] = 0\n                    rows[r] &= ~mask\n                    cols[c] &= ~mask\n                    blocks[b] &= ~mask\n\n        backtrack()\n\n        if len(solutions) == 0:\n            raise ValueError(\"No solution\")\n        if len(solutions) > 1:\n            raise ValueError(\"Multiple solutions\")\n        return solutions[0]\n    ```\n\n    *   `bin(mask).count('1')` is slightly slow. Let's precompute it or use a faster method if needed. In Python 3.10+, `int.bit_count()` is available and much faster.\n    *   The `solutions` list is okay, but just keeping a count and the first solution would be more memory-efficient.\n\n    *   The search for the best cell happens every time. For a 9x9 board, this is okay, but could be slow.\n    *   Wait, the problem says \"17 hints...最難... 1 second\". Let's ensure the MRV is efficient.\n    *   Instead of iterating 0-81 every time, we could keep a list of empty cells.\n\n    *   Python 3.12 is specified. `int.bit_count()` is available.\n\n    *   Initialize `rows`, `cols`, `blocks` and `board` as before.\n    *   Collect `empty_cells` as a list.\n    *   In `backtrack()`:\n        - Find the empty cell with the fewest candidates.\n        - Use `bit_count()`.\n        - If found, try the candidates and recurse.\n        - To handle \"Multiple solutions\", check `len(solutions) >= 2` and exit immediately.\n\n    *   Is `int.bit_count()` enough? For very hard puzzles, sometimes \"Naked Pairs\" or \"Hidden Singles\" are needed. But MRV is usually very strong for 9x9 Sudoku. Let's refine the `backtrack` a bit.\n\n    ```python\n    def backtrack():\n        nonlocal solutions_count, first_solution\n        \n        best_cell_idx = -1\n        min_candidates = 10\n        best_mask = 0\n        \n        # MRV\n        for i in range(len(empty_cells)):\n            cell = empty_cells[i]\n            r, c = cell // 9, cell % 9\n            b = (r // 3) * 3 + (c // 3)\n            mask = 0x1FF & ~(rows[r] | cols[c] | blocks[b])\n            count = mask.bit_count()\n            \n            if count == 0: return # Dead end\n            if count < min_candidates:\n                min_candidates = count\n                best_cell_idx = i\n                best_mask = mask\n                if count == 1: break\n        \n        if best_cell_idx == -1:\n            solutions_count += 1\n            if solutions_count == 1:\n                first_solution = \"\".join(str(x) for x in board)\n            return\n\n        cell = empty_cells.pop(best_cell_idx)\n        r, c = cell // 9, cell % 9\n        b = (r // 3) * 3 + (c // 3)\n        \n        for val in range(1, 10):\n            if best_mask & (1 << (val - 1)):\n                mask = 1 << (val - 1)\n                board[cell] = val\n                rows[r] |= mask\n                cols[c] |= mask\n                blocks[b] |= mask\n                \n                backtrack()\n                if solutions_count >= 2: return\n                \n                board[cell] = 0\n                rows[r] &= ~mask\n                cols[c] &= ~mask\n                blocks[b] &= ~mask\n        \n        empty_cells.insert(best_cell_idx, cell)\n    ```\n\n    *   The `empty_cells.pop(best_cell_idx)` and `empty_cells.insert(best_cell_idx, cell)` might be slightly inefficient. Let's use a simple list and a `filled` boolean array or just iterate through `range(81)` and check `board[i] == 0`. Actually, iterating `range(81)` 81 times per node in the search tree is $81^2 \\times \\text{nodes}$, which is fine for 9x9. Let's try to keep it simple.\n\n    *   What if the problem is very open (like `.` * 81)?\n    *   The `backtrack` will find the first solution, and then it will look for the second.\n    *   With an empty board, there are *many* solutions.\n    *   The MRV will pick (0,0), try 1, then (0,1), try 2... and quickly find the first solution.\n    *   Then it will backtrack from the last cell and find the second solution.\n    *   This should be very fast.\n\n    *   Input: `grid` string.\n    *   Check: `len(grid) == 81` and all characters are in `123456789.`.\n    *   Check initial duplicates.\n    *   Backtracking search with MRV.\n    *   Count solutions.\n    *   Handle `ValueError` for no solution, multiple solutions, or initial conflicts.\n    *   Return the first solution if exactly one.\n\n    *   Use `board = [0] * 81` to store the state.\n    *   `rows`, `cols`, `blocks` are bitmasks of used numbers.\n    *   `get_candidates(r, c)` returns a bitmask of available numbers.\n\n    Wait, I should make sure the bitmasking is correct.\n    If `val` is 1, `mask = 1 << 0`.\n    If `val` is 9, `mask = 1 << 8`.\n    `0x1FF` is `(1 << 9) - 1`, which is 511 (binary `111111111`).\n\n    Let's double check the \"more than one solution\" case for an empty board:\n    1. MRV picks cell 0, mask is 1-9. Try 1.\n    2. MRV picks cell 1, mask is 2-9. Try 2.\n    ...\n    81. Last cell picks the only remaining number.\n    Solution 1 found.\n    82. Backtrack to cell 80, try the next possible number.\n    Solution 2 found.\n    `solutions_count` becomes 2, return.\n    This will be extremely fast.\n\n    What about \"no solution\" with a nearly-full board that is inconsistent?\n    MRV will quickly hit a cell with 0 candidates.\n\n    What about \"no solution\" with a tricky puzzle?\n    MRV + backtracking is the standard way to solve these.\n\n    Wait, one detail: `best_cell_idx` and `empty_cells.pop`. To be faster, I can just keep the `empty_cells` list and when a cell is filled, I can swap it with the last element and `pop()`. But that changes the order, which doesn't matter for MRV. Let's just iterate over `range(81)` for simplicity; it's only 81 cells.\n\n    Wait, one more optimization: Instead of `range(81)`, only iterate over `empty_cells` and use a loop.\n\n    ```python\n    empty_cells = [i for i in range(81) if board[i] == 0]\n    \n    def backtrack():\n        nonlocal solutions_count, first_solution\n        \n        # MRV\n        best_cell_idx = -1\n        min_candidates = 10\n        best_mask = 0\n        \n        for i in range(len(empty_cells)):\n            cell = empty_cells[i]\n            r, c = cell // 9, cell % 9\n            b = (r // 3) * 3 + (c // 3)\n            mask = 0x1FF & ~(rows[r] | cols[c] | blocks[b])\n            count = mask.bit_count()\n            if count == 0:\n                return # Dead end\n            if count < min_candidates:\n                min_candidates = count\n                best_cell_idx = i\n                best_mask = mask\n                if count == 1:\n                    break\n        \n        if best_cell_idx == -1:\n            solutions_count += 1\n            if solutions_count == 1:\n                first_solution = \"\".join(map(str, board))\n            return\n\n        cell = empty_cells.pop(best_cell_idx)\n        r, c = cell // 9, cell % 9\n        b = (r // 3) * 3 + (c // 3)\n        \n        # Try candidates\n        # To iterate through bits of best_mask\n        m = best_mask\n        while m:\n            # Get the lowest set bit\n            bit = m & -m\n            val = bit.bit_length() # 1 << 0 has bit_length 1, 1 << 1 has 2...\n            \n            board[cell] = val\n            rows[r] |= bit\n            cols[c] |= bit\n            blocks[b] |= bit\n            \n            backtrack()\n            if solutions_count >= 2:\n                # To avoid unnecessary cleanup, but we must cleanup if we're not returning immediately\n                # But we can just return and let the top-level handle it.\n                # Actually, the pop/insert must be balanced.\n                empty_cells.insert(best_cell_idx, cell)\n                return\n            \n            board[cell] = 0\n            rows[r] &= ~bit\n            cols[c] &= ~bit\n            blocks[b] &= ~bit\n            \n            m &= ~bit # remove the lowest set bit\n            \n        empty_cells.insert(best_cell_idx, cell)\n    ```\n\n    Actually, using `range(1, 10)` is simpler and probably not much slower than `while m: bit = m & -m`.\n\n    Let's refine the `ValueError` logic:\n    - Length != 81: `ValueError`\n    - Invalid characters: `ValueError`\n    - Initial conflicts: `ValueError`\n    - No solution: `ValueError`\n    - More than one solution: `ValueError`\n\n    One last thing: the problem asks for `solve_sudoku(\".\" * 81)` to raise `ValueError`. My code will find two solutions and raise `ValueError`. That's correct.\n\n    Example check:\n    `solve_sudoku(\"11\" + \".\" * 79)`\n    - `rows[0]` will have `1 << 0` set.\n    - When processing the second '1', `rows[0] & (1 << 0)` will be non-zero.\n    - `ValueError(\"Initial conflict\")` will be raised. Correct.\n\n    Example check:\n    - `solve_sudoku(\"53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79\")`\n    - Should return the solution. Correct.\n\n    Final check on performance:\n    - Python 3.12's `int.bit_count()` is very fast.\n    - MRV (Minimum Remaining Values) is very effective.\n    - Sudoku is small (9x9), so this approach should be well within 1 second.\n\n    One small detail: `first_solution = \"\".join(map(str, board))` is only called when `solutions_count == 1`.\n\n    ```python\n    def solve_sudoku(grid: str) -> str:\n        if len(grid) != 81:\n            raise ValueError(\"Grid length must be 81\")\n        \n        board = [0] * 81\n        rows = [0] * 9\n        cols = [0] * 9\n        blocks = [0] * 9\n        \n        for i, char in enumerate(grid):\n            if char == '.':\n                continue\n            if not '1' <= char <= '9':\n                raise ValueError(\"Invalid character\")\n            \n            val = int(char)\n            mask = 1 << (val - 1)\n            r, c = divmod(i, 9)\n            b = (r // 3) * 3 + (c // 3)\n            \n            if (rows[r] & mask) or (cols[c] & mask) or (blocks[b] & mask):\n                raise ValueError(\"Initial conflict\")\n            \n            board[i] = val\n            rows[r] |= mask\n            cols[c] |= mask\n            blocks[b] |= mask\n            \n        empty_cells = [i for i in range(81) if board[i] == 0]\n        solutions_count = 0\n        first_solution = \"\"\n        \n        def backtrack():\n            nonlocal solutions_count, first_solution\n            \n            best_cell_idx = -1\n            min_candidates = 10\n            best_mask = 0\n            \n            for i in range(len(empty_cells)):\n                cell = empty_cells[i]\n                r, c = divmod(cell, 9)\n                b = (r // 3) * 3 + (c // 3)\n                mask = 0x1FF & ~(rows[r] | cols[c] | blocks[b])\n                count = mask.bit_count()\n                \n                if count == 0:\n                    return\n                if count < min_candidates:\n                    min_candidates = count\n                    best_cell_idx = i\n                    best_mask = mask\n                    if count == 1:\n                        break\n            \n            if best_cell_idx == -1:\n                solutions_count += 1\n                if solutions_count == 1:\n                    first_solution = \"\".join(map(str, board))\n                return\n            \n            cell = empty_cells.pop(best_cell_idx)\n            r, c = divmod(cell, 9)\n            b = (r // 3) * 3 + (c // 3)\n            \n            for val in range(1, 10):\n                mask = 1 << (val - 1)\n                if best_mask & mask:\n                    board[cell] = val\n                    rows[r] |= mask\n                    cols[c] |= mask\n                    blocks[b] |= mask\n                    \n                    backtrack()\n                    \n                    if solutions_count >= 2:\n                        # To keep empty_cells consistent when returning early\n                        empty_cells.insert(best_cell_idx, cell)\n                        return\n                    \n                    board[cell] = 0\n                    rows[r] &= ~mask\n                    cols[c] &= ~mask\n                    blocks[b] &= ~mask\n            \n            empty_cells.insert(best_cell_idx, cell)\n\n        backtrack()\n        \n        if solutions_count == 0:\n            raise ValueError(\"No solution\")\n        if solutions_count > 1:\n            raise ValueError(\"Multiple solutions\")\n        return first_solution\n\n    ```\n    One more check: The problem says \"1 second per puzzle\". With the `empty_cells.pop` and `empty_cells.insert`, it might be a bit slow. Let's consider if there's a better way to manage `empty_cells`.\n    Actually, `empty_cells.pop(i)` and `empty_cells.insert(i, cell)` are both $O(N)$ where $N \\le 81$. $81 \\times 81$ is very small. The overhead will be negligible compared to the search tree size.\n\n    Wait, the problem says: \"确定マスに矛盾は無いが解が存在しない盤面、解が多数ある盤面のいずれも、1 問につき 1 秒程度で答えること。\" (Even for puzzles with no solution or many solutions, it should respond in about 1 second.)\n    My code:\n    - No solution: The MRV will quickly find the contradiction and prune the search.\n    - Many solutions: It will find two and stop.\n\n    Wait, `first_solution = \"\".join(map(str, board))`\n    `board` contains integers, so `\"\".join(map(str, board))` is correct.\n\n    Final polish on `backtrack` to avoid potential issues:\n    ```python\n    def backtrack():\n        nonlocal solutions_count, first_solution\n        \n        # MRV: Find the cell with the fewest candidates\n        best_cell_idx = -1\n        min_candidates = 10\n        best_mask = 0\n        \n        for i in range(len(empty_cells)):\n            cell = empty_cells[i]\n            r, c = divmod(cell, 9)\n            b = (r // 3) * 3 + (c // 3)\n            mask = 0x1FF & ~(rows[r] | cols[c] | blocks[b])\n            count = mask.bit_count()\n            \n            if count == 0:\n                return  # This branch is impossible\n            if count < min_candidates:\n                min_candidates = count\n                best_cell_idx = i\n                best_mask = mask\n                if count == 1:\n                    break\n        \n        if best_cell_idx == -1:\n            solutions_count += 1\n            if solutions_count == 1:\n                first_solution = \"\".join(map(str, board))\n            return\n\n        # Try filling the best cell\n        cell = empty_cells.pop(best_cell_idx)\n        r, c = divmod(cell, 9)\n        b = (r // 3) * 3 + (c // 3)\n        \n        # Iterate over set bits of best_mask\n        for val in range(1, 10):\n            mask = 1 << (val - 1)\n            if best_mask & mask:\n                board[cell] = val\n                rows[r] |= mask\n                cols[c] |= mask\n                blocks[b] |= mask\n                \n                backtrack()\n                if solutions_count >= 2:\n                    empty_cells.insert(best_cell_idx, cell)\n                    return\n                \n                board[cell] = 0\n                rows[r] &= ~mask\n                cols[c] &= ~mask\n                blocks[b] &= ~mask\n        \n        empty_cells.insert(best_cell_idx, cell)\n    ```\n    This looks solid.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 791,
+  "completion_tokens": 6908,
+  "ttft_s": 3.343,
+  "t_first_content_s": 453.823,
+  "wall_s": 529.91,
+  "load_s": 0.001,
+  "server_decode_tok_s": 13.11,
+  "server_prefill_tok_s": 419.34,
+  "server_timings": {
+    "total_duration": 529909549477,
+    "load_duration": 1260217,
+    "prompt_eval_count": 791,
+    "prompt_eval_duration": 1886280000,
+    "eval_count": 6908,
+    "eval_duration": 526773059000
+  },
+  "delta_chunks": 5683,
+  "wall_decode_tok_s": 13.12,
+  "thinking_chars": 21015,
+  "content_chars": 3077,
+  "thinking_tokens_est": 6026,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 529.909,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 20,
+    "total": 20,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_bad_length",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflicting_givens",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflict_inside_an_otherwise_full_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_already_solved",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_blank",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_puzzle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_generated_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_cell_without_candidates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_and_nearly_empty_have_many_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exactly_two_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_underdetermined_hard_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsolvable_without_direct_conflict",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2012",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2010_and_escargot",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_easter_monster",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_a",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_b",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_royle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_puzzles_in_sequence",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 3.51,
+    "stderr_tail": ""
+  }
+}

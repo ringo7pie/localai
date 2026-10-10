@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C6: 辞書順で決まる位相ソート\n\n関数 `topo_sort(graph: dict[str, list[str]]) -> list[str]` を書いてください。\n\n- `graph[u]` のリストに `v` が入っているとき、「`u` は `v` より前に来る」という制約を表す。\n- 頂点は、`graph` のキーと、どれかの値のリストに出てくる文字列の全部。\n- 制約をすべて満たすように、全部の頂点を 1 回ずつ並べたリストを返す。\n- 並べ方が何通りもあるときは、毎回「その時点で、自分より前に来るべき頂点がもう残っていない頂点」のうち、文字列として最も小さいもの（Python の `<` での比較）を次に置く。これで答えは 1 通りに決まる。\n- 制約が循環しているとき（自分自身への制約を含む）は `ValueError` を送出する。\n- 同じ制約が重ねて書かれていてもよい。`graph` を書き換えてはいけない。\n- 頂点の数は最大 10,000。\n\n例:\n- `topo_sort({\"b\": [\"a\"], \"c\": []})` → `[\"b\", \"a\", \"c\"]`\n- `topo_sort({\"x\": [\"y\"], \"y\": [\"x\"]})` → `ValueError` を送出",
+  "prompt_chars": 828,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:30:22+09:00",
+  "finished_at": "2026-10-08T12:30:47+09:00",
+  "content": "```python\nimport heapq\n\ndef topo_sort(graph: dict[str, list[str]]) -> list[str]:\n    \"\"\"\n    与えられた依存関係グラフに従い、辞書順最小の選択を優先する位相ソートを行う。\n    \"\"\"\n    \n    # 1. 全ての頂点 (Nodes) を収集し、初期入次数を計算する\n    all_nodes = set(graph.keys())\n    in_degree = {}\n    \n    # 全ての頂点と初期入次数を網羅的に収集する\n    for u, neighbors in graph.items():\n        # キー（起点）の初期化\n        if u not in all_nodes:\n            all_nodes.add(u)\n        \n        for v in neighbors:\n            all_nodes.add(v)\n\n    # 全ノードを初期化\n    for node in all_nodes:\n        in_degree[node] = 0\n\n    # エッジを走査して入次数を正確に計算する\n    for u, neighbors in graph.items():\n        for v in neighbors:\n            # u -> v のエッジがあるため、v の入次数を増やす\n            in_degree[v] += 1\n\n    # 2. 初期ヒープの構築\n    # 入次数が 0 のノードを全て heapq に入れる\n    candidates = []\n    for node in all_nodes:\n        if in_degree[node] == 0:\n            heapq.heappush(candidates, node)\n\n    result = []\n    \n    # 3. 位相ソートの実行\n    while candidates:\n        # 辞書順最小のノードを取り出す\n        u = heapq.heappop(candidates)\n        result.append(u)\n        \n        # u の隣接ノード（u が指す v）をすべて処理する\n        if u in graph:\n            for v in graph[u]:\n                # v の入次数を減らす\n                in_degree[v] -= 1\n                \n                # v の入次数が 0 になったら、次に候補に追加する\n                if in_degree[v] == 0:\n                    # ヒープにプッシュすることで、常に最小の要素がトップに来るように保証する\n                    heapq.heappush(candidates, v)\n\n    # 4. サイクル検出\n    if len(result) != len(all_nodes):\n        # 処理できるノードの数が全てのノード数に満たない場合、サイクルが存在する\n        raise ValueError(\"Cycle detected in the graph.\")\n\n    return result\n```",
+  "thinking": "ユーザーは、与えられたグラフの依存関係（「$u$ は $v$ より前に来る」）を満たす位相ソートを行う Python 関数 `topo_sort` の実装を求めている。\n\n制約事項を整理する:\n1.  Python 3.12 を使う。\n2.  標準ライブラリのみ使用（外部パッケージ禁止）。\n3.  ファイルのI/O、ネットワーク、サブプロセス、標準入力からの読み込みはしない。\n4.  関数名、クラス名、引数名は指定通りに使う (`topo_sort(graph: dict[str, list[str]]) -> list[str]`)。\n5.  出力はコードブロック1つのみ。テストコードや説明は含めない。\n\n主なロジック:\n1.  位相ソートを行う。\n2.  制約違反（サイクル）がある場合は `ValueError` を送出する。\n3.  並び順が複数可能（自由度がある）場合、常に「その時点で、自分より前に来るべき頂点がもう残っていない頂点」のうち、文字列として最も小さいものを選択する（辞書順最小）。\n\n### 処理手順の計画\n\n#### 1. 頂点と初期入次数（In-degree）の特定\nまず、グラフに含まれる全ての頂点（ノード）を特定する必要がある。これは `graph` のキーと、全てのリストの値に含まれるノードの集合となる。\n同時に、各ノードが持つべき「前に来るべき」ノードの数をカウントし、初期の入次数を計算する。\n\n#### 2. 位相ソートのアルゴリズム（Kahn's Algorithmの改良）\n一般的なKahn's algorithmは、入次数が0のノードをキューに入れるから始まる。この問題では、辞書順最小のルールがあるため、キュー（または優先度付きキュー）を使うのが適切。\n\n1.  **初期状態**: 入次数が0の全ての頂点を見つける。\n2.  **選択**: 現在、入次数が0であり、かつまだ訪問されていない頂点の中で、文字列として最小のものを選択する。\n3.  **処理**:\n    a. 選択した頂点 $u$ を結果リストに追加し、訪問済みとする。\n    b. $u$ の隣接点（$u$ が指すノード $v$）をすべて見る。\n    c. $v$ は $u$ に依存していたため、 $v$ の入次数を 1 減らす。\n    d. もし $v$ の入次数が 0 になったら、 $v$ を候補（入次数0のセット）に追加する。\n4.  **繰り返し**: 候補が空になるか、全ての頂点を処理し終わるまで 2〜3 を繰り返す。\n\n#### 3. サイクル検出\n全ての頂点を処理し終わったとき、結果のリストの長さが全体の頂点数と一致しない場合、サイクルが存在する（これはKahn's algorithmの基本的な性質）。\n\n### 実装詳細（Pythonでのデータ構造）\n\n1.  **全ノードの収集**: `set` を使用してユニークなノードリストを作成する。\n2.  **入次数 (in_degree)**: `dict[str, int]` を使用する。\n3.  **隣接リスト (adjacency)**: `graph` がそのまま使えるが、使用前に全てのノードが対象であることを確認する。\n\n#### ステップ 1: 初期化\n\n*   `in_degree`: 全ノードについて、初期の入次数を 0 で設定し、その後、`graph` のエッジを辿りながらカウントする。\n*   `all_nodes`: 全ての頂点（キーと値の要素すべて）の集合。\n\n```python\nall_nodes = set(graph.keys())\nin_degree = {node: 0 for node in graph} # キーを初期ノードとして扱う\n\n# 値に含まれるノードも初期化し、入次数を計算する\nfor u, neighbors in graph.items():\n    for v in neighbors:\n        if v not in in_degree:\n            # vがまだ入次数辞書にない場合（キーではないが値として存在する）\n            in_degree[v] = 0\n            \n        # u -> v というエッジがある\n        in_degree[v] += 1\n\n# 頂点リストを全て確定させる\n# (上記ロジックで in_degree に含まれる全てのキーが全頂点となる)\n# ただし、グラフにエッジとして存在する全ての頂点が必要。\n# in_degree に含まれるキーが all_nodes であることを確認する。\n```\n待て、初期の `in_degree` の定義が少し複雑になる可能性がある。全ての頂点（ノード）を把握し、そのノードが何らかのエッジの終点（Target）であるかどうかで入次数を計算するのが最も安全。\n\n再設計：\n1.  `all_nodes`: 全ての頂点を収集する。\n2.  `in_degree`: 全ノードについて初期化し、エッジを走査してカウントする。\n3.  `graph`: 順方向の依存関係（$u$ から出るエッジ）を保持する。\n\n#### ステップ 2: 実行（優先度付きキューの使用）\n\n現在入次数が 0 のノードの集合（候補）を維持する。この集合から常に最小のノードを選ぶ必要があるため、最小ヒープ（Pythonの `heapq`）が理想的だが、標準ライブラリのみが許されている。標準ライブラリの `list` をソートするか、または `heapq` を使うことを検討する。もし `heapq` が外部パッケージとみなされないなら使えるが、念のため `heapq` は標準ライブラリであるため使用可能と判断する。\n\nもし `heapq` が使用できない、または使いたくないなら、各ステップで入次数が 0 になったノードをリストに追加し、そのリストをソートして最小要素を取り出すという方法になる。これは $O(k \\log k)$ のオーバーヘッドがあるが、全ての頂点数が最大 10,000 と考慮すると、この方法でも間に合う可能性が高い。\n\nしかし、効率を追求し、標準ライブラリに含まれる `heapq` を使うのが最も自然である。Pythonの標準ライブラリは、`heapq` は完全に含まれる。\n\n**ヒープの初期化:**\n入次数が 0 のノード全てをヒープに入れる。\n\n**ループ処理:**\n1.  `u = heappop(candidates)`: 辞書順最小のノード $u$ を取り出す。\n2.  `result.append(u)`: 結果に追加。\n3.  $u$ の隣接ノード $v$ を走査:\n    a. `in_degree[v] -= 1`\n    b. もし `in_degree[v] == 0` であり、かつ $v$ がまだ結果に含まれていない（これは入次数0になった時点で候補になり得るため、特別なチェックは不要かもしれないが、未訪問であることを保証する）なら、 $v$ をヒープに追加する。\n\n#### サイクル検出のロジック確認\n\n処理が完了した後、`len(result)` が `len(all_nodes)` と等しいかチェックする。もし一致しない場合、サイクルが存在する。\n\n### コードの構造化 (Self-Correction/Refinement)\n\n1.  **全ノードの収集と入次数計算**: 必須。\n2.  **ヒープの実装**: `heapq` を使用する。\n3.  **例外処理**: サイクル検出時に `ValueError` を送出する。\n\n---\n自己評価に基づき、実装に取り掛かる。`heapq` の使用は標準ライブラリなので問題なし。\n\n---\n（実装コード生成）",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 453,
+  "completion_tokens": 2319,
+  "ttft_s": 0.253,
+  "t_first_content_s": 19.119,
+  "wall_s": 25.555,
+  "load_s": 0.001,
+  "server_decode_tok_s": 91.53,
+  "server_prefill_tok_s": 2733.63,
+  "server_timings": {
+    "total_duration": 25554020617,
+    "load_duration": 1220055,
+    "prompt_eval_count": 453,
+    "prompt_eval_duration": 165714000,
+    "eval_count": 2319,
+    "eval_duration": 25336963000
+  },
+  "delta_chunks": 2166,
+  "wall_decode_tok_s": 91.65,
+  "thinking_chars": 3319,
+  "content_chars": 1567,
+  "thinking_tokens_est": 1575,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 25.554,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 12,
+    "total": 12,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_node_only_in_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_sorted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_smallest_available",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_case_sensitive_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_self_loop",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_cycle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicate_edges",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_input_unchanged",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_long_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_dag",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.05,
+    "stderr_tail": ""
+  }
+}

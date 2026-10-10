@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "extra",
+  "item": "json3",
+  "run": 1,
+  "prompt": "次の社内の問い合わせから情報を取り出し、JSON で答えてください。\n\n問い合わせ:\n\"\"\"\nお疲れさまです。経理部の田中です。\n今朝 9 時ごろから、経費精算システムにログインできなくなりました。\n画面には「エラーコード E-503」と表示されます。\n同じ部署のほかの 4 人も同じ症状で、全員が作業を止めています。\n月末の締めが明後日なので、至急対応をお願いします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"department\": 問い合わせた人の部署（文字列）\n  - \"reporter\": 問い合わせた人の姓（文字列）\n  - \"system\": 不具合が起きているシステムの名前（文字列）\n  - \"error_code\": 表示されたエラーコード（文字列。例 \"X-100\"）\n  - \"affected_users\": 症状が出ている人数。問い合わせた本人も含める（整数）\n  - \"priority\": 緊急度。\"高\"、\"中\"、\"低\" のどれか（文字列）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 492,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:39:59+09:00",
+  "finished_at": "2026-10-08T12:40:04+09:00",
+  "content": "{\"department\":\"経理部\",\"reporter\":\"田中\",\"system\":\"経費精算システム\",\"error_code\":\"E-503\",\"affected_users\":5,\"priority\":\"高\"}",
+  "thinking": "Let me analyze the inquiry and extract the required information:\n\n1. \"department\": 経理部の田中です → 経理部\n2. \"reporter\": 田中です → 田中\n3. \"system\": 経費精算システム → 経費精算システム\n4. \"error_code\": エラーコード E-503 → E-503\n5. \"affected_users\": 同じ部署のほかの 4 人も → 本人 + 4人 = 5人\n6. \"priority\": 至急対応をお願いします → 高\n\nLet me format this as JSON with exactly 6 keys.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 274,
+  "completion_tokens": 178,
+  "ttft_s": 0.882,
+  "t_first_content_s": 3.679,
+  "wall_s": 4.421,
+  "load_s": 0.001,
+  "server_decode_tok_s": 50.31,
+  "server_prefill_tok_s": 407.42,
+  "server_timings": {
+    "total_duration": 4420403608,
+    "load_duration": 1300342,
+    "prompt_eval_count": 274,
+    "prompt_eval_duration": 672518000,
+    "eval_count": 178,
+    "eval_duration": 3538258000
+  },
+  "delta_chunks": 153,
+  "wall_decode_tok_s": 50.02,
+  "thinking_chars": 323,
+  "content_chars": 111,
+  "thinking_tokens_est": 132,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 4.42,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "department": {
+        "ok": true,
+        "got": "経理部"
+      },
+      "reporter": {
+        "ok": true,
+        "got": "田中"
+      },
+      "system": {
+        "ok": true,
+        "got": "経費精算システム"
+      },
+      "error_code": {
+        "ok": true,
+        "got": "E-503"
+      },
+      "affected_users": {
+        "ok": true,
+        "got": 5
+      },
+      "priority": {
+        "ok": true,
+        "got": "高"
+      }
+    },
+    "extra_keys": []
+  }
+}

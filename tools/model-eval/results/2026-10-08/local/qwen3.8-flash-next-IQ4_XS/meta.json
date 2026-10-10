@@ -1,0 +1,97 @@
+{
+  "target": "qwen3.8-flash-next:IQ4_XS",
+  "slug": "qwen3.8-flash-next-IQ4_XS",
+  "sessions": [
+    {
+      "started_at": "2026-10-08T15:58:26+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "qwen3.8-flash-next:IQ4_XS",
+        "--suite",
+        "all",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-08"
+      ],
+      "items": [
+        "coding/c1",
+        "coding/c2",
+        "coding/c3",
+        "coding/c4",
+        "coding/c5",
+        "coding/c6",
+        "extra/inst1",
+        "extra/inst2",
+        "extra/inst3",
+        "extra/needle1",
+        "extra/needle2",
+        "extra/needle3",
+        "extra/json1",
+        "extra/json2",
+        "extra/json3"
+      ],
+      "checked_at": "2026-10-08T15:58:26+09:00",
+      "gpu_before": {
+        "memory_used_mib": 16,
+        "memory_total_mib": 24576,
+        "utilization_pct": 0
+      },
+      "ollama_version": "0.34.2",
+      "preload_s": 27.29,
+      "preload_load_duration_s": null,
+      "ollama_ps": {
+        "name": "qwen3.8-flash-next:IQ4_XS",
+        "size": 50794300700,
+        "size_vram": 21875937770,
+        "gpu_ratio": 0.431,
+        "context_length": 65536,
+        "expires_at": "2026-10-08T16:13:53.531984035+09:00"
+      },
+      "gpu_after_preload": {
+        "memory_used_mib": 22730,
+        "memory_total_mib": 24576,
+        "utilization_pct": 1
+      }
+    },
+    {
+      "started_at": "2026-10-08T18:52:49+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "qwen3.8-flash-next:IQ4_XS",
+        "--suite",
+        "coding",
+        "--items",
+        "c1",
+        "--retry-errors",
+        "--time-budget-min",
+        "200"
+      ],
+      "items": [
+        "coding/c1"
+      ],
+      "checked_at": "2026-10-08T18:52:49+09:00",
+      "gpu_before": {
+        "memory_used_mib": 16,
+        "memory_total_mib": 24576,
+        "utilization_pct": 0
+      },
+      "ollama_version": "0.34.2",
+      "preload_s": 26.75,
+      "preload_load_duration_s": null,
+      "ollama_ps": {
+        "name": "qwen3.8-flash-next:IQ4_XS",
+        "size": 50794300700,
+        "size_vram": 21875937770,
+        "gpu_ratio": 0.431,
+        "context_length": 65536,
+        "expires_at": "2026-10-08T19:08:16.516397479+09:00"
+      },
+      "gpu_after_preload": {
+        "memory_used_mib": 22730,
+        "memory_total_mib": 24576,
+        "utilization_pct": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "target": "strata-official:IQ3_XXS",
+  "label": "strata-official:IQ3_XXS",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-official:IQ3_XXS",
+  "slug": "strata-official-IQ3_XXS",
+  "suite": "extra",
+  "item": "inst3",
+  "run": 1,
+  "prompt": "朝ごはんを食べることの利点を説明してください。\n\n次の条件をすべて守って書いてください。\n1. 全体をちょうど 3 行にする（空の行は数えない）。行頭に箇条書きの記号や番号を付けない。\n2. どの行も 40 文字以内にする。\n3. どの行も末尾を「です。」か「ます。」にする。\n4. どの行にも「朝ごはん」という語を入れる。\n5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。",
+  "prompt_chars": 194,
+  "request": {
+    "model": "strata-official:IQ3_XXS",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-08T18:51:03+09:00",
+  "finished_at": "2026-10-08T18:51:18+09:00",
+  "content": "朝ごはんを食べるとエネルギーが得られます。\n朝ごはんは体を目覚めさせます。\n朝ごはんは頭の働きを高めます。",
+  "thinking": "We need answer user in Japanese. Need satisfy constraints: exactly 3 lines, no bullet/number at start. Each line <=40 characters. Each line ends with です。 or ます。 Each line contains \"朝ごはん\". No alphabet letters. Need ensure no alphabetic characters. Need likely no full-width alphabet. Japanese only. Need 3 lines. Let's craft 3 lines:\n\"朝ごはんを食べるとエネルギーが得られます。\" Count? 朝(1)ごはん(3? Actually characters: 朝 ご ば ん =4? Let's count line string: 朝ごはんを食べるとエネルギーが得られます。 Characters: 朝 1, ご 2? Japanese count each char: 朝(1) ご(2?) no, hiragana go is one char? Let's count visible: 朝ごはんを食べるとエネルギーが得られます。\n1 朝\n2 ご\n3 ば\n4 ん\n5 を\n6 食\n7 べ\n8 る\n9 と\n10 エ\n11 ネ\n12 ル\n13 ギ\n14 ー\n15 が\n16 得\n17 ら\n18 れ\n19 ま\n20 す\n21 。\n<=40. Ends ます。 Contains 朝ごはん. No alphabet. Good.\n\nSecond: \"朝ごはんは体を目覚めさせます。\" Count: 朝1 ご2 ば3 ん4 は5 体6 を7 目8 覚9 め10 さ11 せ12 ます13? actually ま13 す14 。15. Ends ます。 contains. No alphabet. <=40.\n\nThird: \"朝ごはんは頭の働きを高めます。\" Count: 朝1 ご2 ば3 ん4 は5 頭6 の7 働8 き9 を10 高11 め12 ます13? wait ま12? Let's count: 朝1 ご2 ば3 ん4 は5 頭6 の7 働8 き9 を10 高11 め12 ます: ま12? Hmm let's do carefully: 朝(1) ご(2) ば(3) ん(4) は(5) 頭(6) の(7) 働(8) き(9) を(10) 高(11) め(12) ま(13) す(14) 。(15). OK. Ends ます。 Contains. No bullet. exactly 3 lines. Need ensure all lines <=40. Good. But line 1 has エネルギー (katakana) allowed no alphabet. Could maybe more simple. Need no full width alphabet. OK.\n\nNeed final only 3 lines, no extra. Ensure no spaces? fine. Each line ends です/ます. All contain 朝ごはん. Need \"朝ごはんを食べることの利点\" maybe all okay. But line 2 \"目覚めさせます\" fine. Line 3 \"働きを高めます\". Need no alphabetic characters. Katakana エネルギー not alphabet. Good.\n\nDouble-check \"どの行も末尾を「です。」か「ます。」にする。\" Each must end with exactly です。 or ます。 yes line1 ends 得られます。 ends ます。 line2 ます。 line3 ます。 Good. \"行頭に箇条書きの記号や番号を付けない。\" none.\n\nPotential issue line 1: \"朝ごはんを食べるとエネルギーが得られます。\" Contains 40? Let's recount using code mentally: characters: 朝(1) ご(2) ば(3) ん(4) を(5) 食(6) べ(7) る(8) と(9) エ(10) ネ(11) ル(12) ギ(13) ー(14) が(15) 得(16) ら(17) れ(18) ま(19) す(20) 。(21). Good. But \"エネルギー\" is 5? エ ネ ル ギ ー. Yes.\n\nCould choose all lines with です? Need only です/ます. OK.\n\nNeed output in final. Ensure no trailing spaces. Exactly three lines. No blank line. final.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 177,
+  "completion_tokens": 988,
+  "ttft_s": 1.057,
+  "t_first_content_s": 14.863,
+  "wall_s": 15.33,
+  "load_s": null,
+  "server_decode_tok_s": 69.1,
+  "server_prefill_tok_s": 171.1,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 177,
+    "prompt_ms": 1034.4,
+    "prompt_per_token_ms": 5.844,
+    "prompt_per_second": 171.1,
+    "predicted_n": 988,
+    "predicted_ms": 14290.0,
+    "predicted_per_token_ms": 14.464,
+    "predicted_per_second": 69.1,
+    "draft_n": 771,
+    "draft_n_accepted": 592
+  },
+  "delta_chunks": 983,
+  "wall_decode_tok_s": 69.21,
+  "thinking_chars": 2145,
+  "content_chars": 53,
+  "thinking_tokens_est": 964,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 15.33,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "line_count",
+        "label": "ちょうど 3 行で、行頭に記号や番号が無い",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 40 文字以内",
+        "ok": true
+      },
+      {
+        "id": "line_endings",
+        "label": "どの行も末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "each_line_word",
+        "label": "どの行にも「朝ごはん」",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+status=finished
+started_at=2026-10-09T23:09:42+09:00
+finished_at=2026-10-10T00:20:48+09:00
+results_root=/home/mt/Proj/localai/tools/model-eval/results/2026-10-09-fix
+log=/home/mt/Proj/localai/tools/model-eval/work/run_fix_compare-2026-10-09-fix.log
+vram_after=142 MiB, 24576 MiB
+environment=STRATA_EXTRA_ARGS なし
+outcome strata-official-IQ3_XXS low-65k-ja rep1 run_exit=0
+outcome strata-official-IQ3_XXS low-65k-ja rep2 run_exit=0
+outcome strata-official-IQ3_XXS low-65k-ja rep3 run_exit=0
+outcome strata-official-IQ3_XXS low-65k-ja status=ok start_s=35

@@ -1,0 +1,53 @@
+{
+  "model": "opus",
+  "suite": "extra",
+  "item": "json1",
+  "run": 1,
+  "content": "{\"company\": \"株式会社みどり商会\", \"contact\": \"佐藤\", \"product_code\": \"KB-204\", \"quantity\": 12, \"delivery_date\": \"2026-11-05\", \"payment\": \"請求書\"}",
+  "wall_s": 8.407,
+  "usage": {
+    "subagent_tokens": 25981
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "company": {
+        "ok": true,
+        "got": "株式会社みどり商会"
+      },
+      "contact": {
+        "ok": true,
+        "got": "佐藤"
+      },
+      "product_code": {
+        "ok": true,
+        "got": "KB-204"
+      },
+      "quantity": {
+        "ok": true,
+        "got": 12
+      },
+      "delivery_date": {
+        "ok": true,
+        "got": "2026-11-05"
+      },
+      "payment": {
+        "ok": true,
+        "got": "請求書"
+      }
+    },
+    "extra_keys": []
+  },
+  "batch_size": 3,
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:17+09:00"
+}

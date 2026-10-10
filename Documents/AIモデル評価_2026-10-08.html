@@ -1,0 +1,1019 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI モデル評価 2026-10-08</title><style>
+.viz-root{color-scheme:light;--surface:#fcfcfb;--surface-2:#f3f3f1;--grid:#e6e5e1;--axis:#bdbcb6;
+--text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#76756f;}
+body{margin:0;background:var(--surface);color:var(--text-primary);
+font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;line-height:1.6}
+main{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+h1{font-size:1.6rem;margin:0 0 4px}h2{font-size:1.3rem;margin:40px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--grid)}
+h3{font-size:1.05rem;margin:24px 0 8px}
+.sub,.caption,.muted{color:var(--text-secondary)}.caption{font-size:.85rem;margin:4px 0 0}.muted{color:var(--text-muted)}
+nav ol{display:flex;flex-wrap:wrap;gap:4px 16px;padding-left:20px;margin:8px 0}
+.tiles{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.tile{flex:1 1 220px;background:var(--surface-2);border-radius:8px;padding:12px 16px}
+.tile-label{font-size:.85rem;color:var(--text-secondary)}.tile-value{font-size:1.25rem;font-weight:600}
+.tile-sub{font-size:.85rem;color:var(--text-muted)}
+.notes li{margin:2px 0}
+table.data{border-collapse:collapse;width:100%;margin:8px 0;font-size:.9rem}
+table.data th,table.data td{border-bottom:1px solid var(--grid);padding:5px 8px;text-align:left;vertical-align:middle}
+table.data thead th{color:var(--text-secondary);font-weight:600;background:var(--surface-2)}
+table.kv th{width:9em;color:var(--text-secondary);font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}td.center{text-align:center}
+td.strong{font-weight:700}td.note{color:var(--text-secondary);font-size:.85rem}
+tr.unused td{color:var(--text-muted);background:var(--surface-2)}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.85rem;color:var(--text-secondary);margin:4px 0 8px}
+.chip{display:inline-block;min-width:22px;border-radius:4px;color:#fff;font-weight:700;text-align:center;line-height:22px}
+.medal{display:inline-block;width:24px;height:24px;border-radius:12px;color:#fff;font-weight:700;text-align:center;line-height:24px}
+.rank{display:inline-block;width:24px;text-align:center}
+svg.chart{display:block;max-width:100%;height:auto;margin:4px 0;font-size:12px}
+svg .grid{stroke:var(--grid);stroke-width:1}svg .axis{stroke:var(--axis);stroke-width:1}
+svg .tick,svg .axis-title{fill:var(--text-secondary)}svg .label{fill:var(--text-primary)}
+svg .value,svg .point-label{fill:var(--text-secondary)}svg .leader{stroke:var(--axis);stroke-width:1}svg .muted{fill:var(--text-muted)}
+svg .cell-text{font-size:11px;font-weight:600;pointer-events:none}
+svg .cell-sub{font-size:9.5px;font-weight:600;pointer-events:none}
+ul.callout{background:var(--surface-2);border-radius:8px;padding:8px 12px 8px 28px}
+svg .hit{fill:transparent}svg .mark{cursor:default;outline:none}
+svg .mark:hover>path,svg .mark:focus>path,svg .mark:hover>rect:not(.hit),svg .mark:focus>rect:not(.hit),
+svg .mark:hover>circle:not(.hit),svg .mark:focus>circle:not(.hit){filter:brightness(1.15)}
+svg .mark:focus>rect:not(.hit),svg .mark:focus>circle:not(.hit){stroke:var(--text-primary);stroke-width:1.5}
+details{margin:6px 0}summary{cursor:pointer;color:var(--text-secondary)}
+pre{white-space:pre-wrap;background:var(--surface-2);padding:10px;border-radius:6px;font-size:.82rem}
+#tip{position:fixed;pointer-events:none;background:#fff;border:1px solid var(--grid);border-radius:6px;padding:6px 10px;
+box-shadow:0 2px 8px rgba(0,0,0,.12);font-size:.82rem;color:var(--text-secondary);max-width:320px;z-index:10}
+#tip .tip-value{color:var(--text-primary);font-weight:700;font-size:.95rem}
+@media print{#tip{display:none}}
+</style></head><body class="viz-root"><main><h1>9 の AI の比較評価（3D 数学・コーディング・追加 3 試験）</h1><p class="sub">評価日 2026-10-08・集計 2026-10-10T00:25:05+09:00・tools/model-eval/build_report.py が summary.json から生成（手で書き換えない）</p><nav aria-label="目次"><ol><li><a href="#s0">0. 概要と注意</a></li><li><a href="#s1">1. 対象と条件</a></li><li><a href="#s2">2. 頭の良さ（3D 数学）</a></li><li><a href="#s3">3. コーディング（6 問・隠しテスト）</a></li><li><a href="#s4">4. 追加の 3 試験（指示追従・長文検索・JSON）</a></li><li><a href="#s5">5. 所見</a></li><li><a href="#s6">6. 付録（式・生データ・問題文）</a></li></ol></nav><section id="s0"><h2>0. 概要と注意</h2><div class="tiles"><div class="tile"><div class="tile-label">頭の良さ（3D 数学）の総合 1 位</div><div class="tile-value">Opus5.5-xHigh</div><div class="tile-sub">総合 1.000</div></div><div class="tile"><div class="tile-label">コーディング 6 問の総合 1 位</div><div class="tile-value">Sonnet5.5-xHigh</div><div class="tile-sub">総合 1.000</div></div><div class="tile"><div class="tile-label">追加の 3 試験の総合 1 位</div><div class="tile-value">Sonnet5.5-xHigh</div><div class="tile-sub">総合 1.000</div></div></div><ul class="notes"><li>strata-flash-next:IQ3_S (RVN) は比較の対象から外した（2026-10-09 の利用者の指示。成績が低いため）。計測の記録は tools/model-eval/results/2026-10-08/ に残してある。</li><li>試行の回数は少ない。3D は 1〜3 回（Claude は 3 回）、コーディングと追加の試験は各問 1 回。サンプリングありなので、同じモデルでも回によって結果が変わりうる。</li><li>ローカルの 3D は既存の記録（Documents/3D問題_実施モデル一覧_2026-10-08.md）を使い、Claude だけ今回 3 回流した。</li><li>strata-flash-coder:IQ1_M (Coder) は 2026-10-09 に追加で計測した。条件はほかの Strata と同じ。3D は公式版と同じ条件（effort high・思考の予算なし・生成の上限 65,536 トークン・temperature 1.0）で 2 回流した。</li><li>Claude の時間は Agent の duration（Agent の所要時間。API の待ちと通信を含む）。機体の中で動くローカルの時間とは意味が違う。Claude の tok/s は不明。</li><li>ローカルの生成の上限: コーディング 32,768・追加 8,192 トークン（Strata の思考予算 24,576 / 6,144）。上限で答えが出なかった問は 0 点。</li><li>1 つのモデルの累計時間が 100 分を超えたら、残りの問を飛ばした（灰色）。</li><li>tok/s は参考の列。順位は能力と時間（対数）だけで決める（下の式）。</li><li>思考のトークン数は推定。どの API も直接は出さないので、出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数) で出した。</li><li>天井効果: Sonnet5.5-xHigh・Opus5.5-xHigh は難しい版（v2）のコーディングでも 6 問すべてで全部合格した（能力 100%）。この 2 つの順位の差は速さだけで、能力の差はこの試験では測れていない。</li><li>strata-official:IQ3_XXS のコーディングの答えは、どの問題も思考が予算 24,576 トークンで打ち切られたあとのもの。コーディングで思考が予算 24,576 トークンで打ち切られたあとの答え: strata-flash-coder:IQ1_M (Coder) の C1・C2・C4・C5・C6。Strata は予算に届くと思考の最後に「I have thought about this long enough; time to give my answer.」を差し込み、答えを書かせる（マスの下段の「打切」）。</li><li>易しい版 v1 のコーディング。天井効果で差が出なかったので、難しい版 v2（いまの 6 問）に替えた。順位には使っていない。記録は tools/model-eval/results/2026-10-08/archive-coding-v1-easy/ に保管してある。</li><li>状態が error（エラー）・length（上限）などの問は、表のマスの下段に文字でも示す（色だけで区別させない）。</li></ul><h3>順位の式</h3><ul class="notes formulas"><li>能力 = 回（問）ごとの点数（0〜1）の平均。答えなし・上限・時間切れ・時間の上限で飛ばした問は 0 点</li><li>速度点 = (ln T_max − ln T) ÷ (ln T_max − ln T_min)。T は時間の中央値。最も遅いモデルが 0、最も速いモデルが 1</li><li>総合 = 0.7 × 能力 + 0.3 × 速度点</li></ul><p class="caption">時間 T: 3D は全問に答えるまでの時間の中央値、コーディングと追加は 1 問あたりの時間の中央値。Ollama はロード時間を除く。Claude は Agent の duration（複数問をまとめて頼んだ回は問の数で割る）。時間の幅が広い（数秒〜1 時間）ので、速度点は対数で比べる。時間の上限で飛ばした問とエラーの問は、時間の中央値に入れない。</p></section><section id="s1"><h2>1. 対象と条件</h2><div class="legend" aria-label="系統の凡例"><span class="legend-item"><span class="swatch" style="background:#1f59bb"></span>Claude（API）</span><span class="legend-item"><span class="swatch" style="background:#086c61"></span>Ollama（この機体）</span><span class="legend-item"><span class="swatch" style="background:#7044bb"></span>Strata（この機体）</span></div><table class="data"><thead><tr><th>モデル</th><th>系統</th><th>注記</th></tr></thead><tbody><tr><td><span class="swatch" style="background:#1f59bb"></span>Sonnet5.5-xHigh</td><td>Claude（API）</td><td>Claude Sonnet 5.5・effort xhigh。Agent ツールのサブエージェント（API 経由）</td></tr><tr><td><span class="swatch" style="background:#1f59bb"></span>Opus5.5-xHigh</td><td>Claude（API）</td><td>Claude Opus 5.5・effort xhigh。Agent ツールのサブエージェント（API 経由）</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td>Ollama（この機体）</td><td>Q4_K_M・17 GB。Modelfile の既定 temp 1 / top_p 0.95 / top_k 20</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td>Ollama（この機体）</td><td>9.6 GB。Modelfile の既定 temp 1 / top_p 0.95 / top_k 64</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-it-qat</td><td>Ollama（この機体）</td><td>18 GB。num_ctx を送らない（サーバー既定 65536）。ctx32k と同じ重み</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td>Ollama（この機体）</td><td>it-qat と同じ重みで Modelfile の num_ctx 32768</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8-flash-next:IQ4_XS</td><td>Ollama（この機体）</td><td>97 GB（非 abliterated）。大半を CPU 側に置く。Modelfile の既定 temp 1 / top_p 0.95 / top_k 20</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-official:IQ3_XXS</td><td>Strata（この機体）</td><td>公式 GSQ-RCO IQ3_XXS（非 abliterated）。Strata 8084</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-flash-coder:IQ1_M (Coder)</td><td>Strata（この機体）</td><td>ISTA-DASLab の Coder GSQ-RCO IQ1_M（コード向けに各層 256 エキスパートへ間引いた版）。Strata 8083。2026-10-09 に追加で計測</td></tr></tbody></table><h3>条件</h3><table class="data kv"><tbody><tr><th>thinking</th><td>すべての試験であり。Ollama は think:true、Strata は reasoning_effort high、Claude は effort xhigh</td></tr><tr><th>サンプリング</th><td>各サーバーの既定（Ollama は各 Modelfile）。Strata だけ temperature 1.0 / top_p 0.95 / top_k 20 を送る</td></tr><tr><th>コーディング</th><td>6 問 × 1 回。上限 32,768 トークン・1 要求 40 分。隠しテストの合格率で採点</td></tr><tr><th>追加の試験</th><td>3 種 × 3 問 × 1 回。上限 8,192 トークン・1 要求 20 分</td></tr><tr><th>打ち切り</th><td>300 秒のあいだ何も届かなければ stall として打ち切り（0 点）</td></tr><tr><th>Claude</th><td>メインが Agent ツールで起動（ツールやコードの実行は使わせない）。採点はローカルと同じ隠しテスト・採点器</td></tr></tbody></table></section><section id="s2"><h2>2. 頭の良さ（3D 数学）</h2><h3>採点（○×—）</h3><table class="data"><thead><tr><th>モデル</th><th>回</th><th>(1)</th><th>(2)</th><th>(3)</th><th>(4)</th><th>正答率</th><th>時間</th><th>出力トークン</th><th>tok/s</th><th>注記</th></tr></thead><tbody><tr><td><span class="swatch" style="background:#1f59bb"></span>Sonnet5.5-xHigh</td><td>run1</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">1 分 7 秒</td><td class="num">—</td><td class="num">不明</td><td class="note"></td></tr><tr><td></td><td>run2</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">57 秒</td><td class="num">—</td><td class="num">不明</td><td class="note"></td></tr><tr><td></td><td>run3</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">1 分 23 秒</td><td class="num">—</td><td class="num">不明</td><td class="note"></td></tr><tr><td><span class="swatch" style="background:#1f59bb"></span>Opus5.5-xHigh</td><td>run1</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">58 秒</td><td class="num">—</td><td class="num">不明</td><td class="note"></td></tr><tr><td></td><td>run2</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">1 分 2 秒</td><td class="num">—</td><td class="num">不明</td><td class="note"></td></tr><tr><td></td><td>run3</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">1 分 9 秒</td><td class="num">—</td><td class="num">不明</td><td class="note"></td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td>09-20</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">11 分 57 秒</td><td class="num">18,597</td><td class="num">26.4</td><td class="note">全問正解</td></tr><tr><td></td><td>09-28</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#c0392b" aria-label="誤り">×</span></td><td class="num">75%</td><td class="num">17 分 9 秒</td><td class="num">25,723</td><td class="num">25.1</td><td class="note">(4) は正しい式を出したあと書き換えで誤った</td></tr><tr class="unused"><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td>09-27（参考）</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#c0392b" aria-label="誤り">×</span></td><td class="center"><span class="chip" style="background:#8a8f98" aria-label="答えなし">—</span></td><td class="center"><span class="chip" style="background:#8a8f98" aria-label="答えなし">—</span></td><td class="num">25%</td><td class="num">1 分 12 秒</td><td class="num">5,606</td><td class="num">80.0</td><td class="note">参考（thinking の設定が 10-08 と違う）</td></tr><tr><td></td><td>10-08</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#c0392b" aria-label="誤り">×</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#c0392b" aria-label="誤り">×</span></td><td class="num">50%</td><td class="num">1 分 48 秒</td><td class="num">9,091</td><td class="num">90.0</td><td class="note">Ollama API（thinking あり）run1</td></tr><tr><td></td><td>10-08</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#c0392b" aria-label="誤り">×</span></td><td class="num">75%</td><td class="num">2 分 22 秒</td><td class="num">12,760</td><td class="num">90.1</td><td class="note">Ollama API（thinking あり）run2</td></tr><tr><td></td><td>10-08</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#c0392b" aria-label="誤り">×</span></td><td class="num">75%</td><td class="num">1 分 55 秒</td><td class="num">10,372</td><td class="num">90.4</td><td class="note">Ollama API（thinking あり）run3</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-it-qat</td><td>09-27</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">1 時間 1 分</td><td class="num">19,118</td><td class="num">5.2</td><td class="note">1 時間 1 分（分単位の記録）</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td>09-28</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">7 分 21 秒</td><td class="num">11,421</td><td class="num">27.6</td><td class="note">最短で全問正解</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8-flash-next:IQ4_XS</td><td>09-28</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">1 時間 2 分</td><td class="num">48,204</td><td class="num">13.6</td><td class="note">1 時間 2 分（分単位の記録）</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-official:IQ3_XXS</td><td>10-07</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">15 分 4 秒</td><td class="num">53,975</td><td class="num">59.8</td><td class="note">(1) の退化の説明に小さな誤り</td></tr><tr><td></td><td>10-07</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">12 分 54 秒</td><td class="num">49,161</td><td class="num">63.7</td><td class="note">Strata 8084・md 版・temperature 0.6（O2）</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-flash-coder:IQ1_M (Coder)</td><td>10-09</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">12 分 24 秒</td><td class="num">50,895</td><td class="num">68.5</td><td class="note">答えは英語。(1) の途中の式に書き誤り（−t ≤ t ≤ r）があるが結論は正しい</td></tr><tr><td></td><td>10-09</td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="center"><span class="chip" style="background:#1a7f37" aria-label="正解">○</span></td><td class="num">100%</td><td class="num">11 分 51 秒</td><td class="num">48,497</td><td class="num">68.3</td><td class="note">答えは英語と日本語の混在。(2) は必要性の反例 (1−s, 1/2, s) まで示した</td></tr></tbody></table><p class="caption">灰色の行（参考）は能力の計算に使っていない回。○ 正解・× 誤り・— 答えなし。</p><ul class="notes"><li>gemma4:e4b: 能力には 10-08 の Ollama API（thinking あり）の 3 回を使う。09-27 の Open WebUI の 1 回（○/×/—/—）は参考。</li><li>gemma4:31b-it-qat: 09-27 の記録は GPU 90%・5.2 tok/s。Ollama の既定 65536 で文脈が CPU に溢れていた疑いがある。</li><li>strata-official:IQ3_XXS: 予算なしで 2 回とも収束して全問正解。</li><li>strata-flash-coder:IQ1_M (Coder): 2026-10-09 に追加で流した 2 回（tools/strata/scripts/bench_api.py、記録は results/2026-10-08/local/strata-coder-IQ1_M/math3d/）。公式版の O1 と同じ条件（予算なし）で 2 回とも収束して全問正解。Documents の md には載っていない。</li></ul><h3>能力（正答率の平均）</h3><div class="legend" aria-label="系統の凡例"><span class="legend-item"><span class="swatch" style="background:#1f59bb"></span>Claude（API）</span><span class="legend-item"><span class="swatch" style="background:#086c61"></span>Ollama（この機体）</span><span class="legend-item"><span class="swatch" style="background:#7044bb"></span>Strata（この機体）</span></div><svg class="chart" viewBox="0 0 770 312" width="770" height="312" role="img" aria-label="3D の能力"><line class="grid" x1="250.0" y1="8" x2="250.0" y2="286"/><text class="tick" x="250.0" y="300" text-anchor="middle">0%</text><line class="grid" x1="357.5" y1="8" x2="357.5" y2="286"/><text class="tick" x="357.5" y="300" text-anchor="middle">25%</text><line class="grid" x1="465.0" y1="8" x2="465.0" y2="286"/><text class="tick" x="465.0" y="300" text-anchor="middle">50%</text><line class="grid" x1="572.5" y1="8" x2="572.5" y2="286"/><text class="tick" x="572.5" y="300" text-anchor="middle">75%</text><line class="grid" x1="680.0" y1="8" x2="680.0" y2="286"/><text class="tick" x="680.0" y="300" text-anchor="middle">100%</text><line class="axis" x1="250" y1="8" x2="250" y2="286"/><text class="label" x="240" y="31.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh
+回数 3"><rect class="hit" x="250" y="14" width="430" height="26"/><path d="M250.0,19.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#1f59bb"/></g><text class="value" x="686.0" y="31.0">100%</text><text class="label" x="240" y="61.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh
+回数 3"><rect class="hit" x="250" y="44" width="430" height="26"/><path d="M250.0,49.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#1f59bb"/></g><text class="value" x="686.0" y="61.0">100%</text><text class="label" x="240" y="91.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="88%
+qwen3.8:27b
+回数 2"><rect class="hit" x="250" y="74" width="430" height="26"/><path d="M250.0,79.0 h372.2 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-372.2 z" fill="#086c61"/></g><text class="value" x="632.2" y="91.0">88%</text><text class="label" x="240" y="121.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="67%
+gemma4:e4b
+回数 3"><rect class="hit" x="250" y="104" width="430" height="26"/><path d="M250.0,109.0 h282.7 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-282.7 z" fill="#086c61"/></g><text class="value" x="542.7" y="121.0">67%</text><text class="label" x="240" y="151.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat
+回数 1"><rect class="hit" x="250" y="134" width="430" height="26"/><path d="M250.0,139.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#086c61"/></g><text class="value" x="686.0" y="151.0">100%</text><text class="label" x="240" y="181.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k
+回数 1"><rect class="hit" x="250" y="164" width="430" height="26"/><path d="M250.0,169.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#086c61"/></g><text class="value" x="686.0" y="181.0">100%</text><text class="label" x="240" y="211.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS
+回数 1"><rect class="hit" x="250" y="194" width="430" height="26"/><path d="M250.0,199.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#086c61"/></g><text class="value" x="686.0" y="211.0">100%</text><text class="label" x="240" y="241.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS
+回数 2"><rect class="hit" x="250" y="224" width="430" height="26"/><path d="M250.0,229.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#7044bb"/></g><text class="value" x="686.0" y="241.0">100%</text><text class="label" x="240" y="271.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder)
+回数 2"><rect class="hit" x="250" y="254" width="430" height="26"/><path d="M250.0,259.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#7044bb"/></g><text class="value" x="686.0" y="271.0">100%</text></svg><h3>全問に答えるまでの時間（中央値・対数の目盛り）</h3><svg class="chart" viewBox="0 0 770 312" width="770" height="312" role="img" aria-label="3D の時間（中央値・対数）"><line class="grid" x1="277.8" y1="8" x2="277.8" y2="286"/><text class="tick" x="277.8" y="300" text-anchor="middle">1 分</text><line class="grid" x1="341.9" y1="8" x2="341.9" y2="286"/><text class="tick" x="341.9" y="300" text-anchor="middle">2 分</text><line class="grid" x1="426.6" y1="8" x2="426.6" y2="286"/><text class="tick" x="426.6" y="300" text-anchor="middle">5 分</text><line class="grid" x1="490.7" y1="8" x2="490.7" y2="286"/><text class="tick" x="490.7" y="300" text-anchor="middle">10 分</text><line class="grid" x1="554.8" y1="8" x2="554.8" y2="286"/><text class="tick" x="554.8" y="300" text-anchor="middle">20 分</text><line class="grid" x1="592.2" y1="8" x2="592.2" y2="286"/><text class="tick" x="592.2" y="300" text-anchor="middle">30 分</text><line class="grid" x1="656.3" y1="8" x2="656.3" y2="286"/><text class="tick" x="656.3" y="300" text-anchor="middle">1 時間</text><line class="axis" x1="250" y1="8" x2="250" y2="286"/><text class="label" x="240" y="31.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="1 分 7 秒
+Sonnet5.5-xHigh"><rect class="hit" x="250" y="14" width="430" height="26"/><path d="M250.0,19.0 h34.1 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-34.1 z" fill="#1f59bb"/></g><text class="value" x="294.1" y="31.0">1 分 7 秒</text><text class="label" x="240" y="61.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="1 分 2 秒
+Opus5.5-xHigh"><rect class="hit" x="250" y="44" width="430" height="26"/><path d="M250.0,49.0 h27.1 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-27.1 z" fill="#1f59bb"/></g><text class="value" x="287.1" y="61.0">1 分 2 秒</text><text class="label" x="240" y="91.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="14 分 33 秒
+qwen3.8:27b"><rect class="hit" x="250" y="74" width="430" height="26"/><path d="M250.0,79.0 h271.3 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-271.3 z" fill="#086c61"/></g><text class="value" x="531.3" y="91.0">14 分 33 秒</text><text class="label" x="240" y="121.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="1 分 55 秒
+gemma4:e4b"><rect class="hit" x="250" y="104" width="430" height="26"/><path d="M250.0,109.0 h83.9 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-83.9 z" fill="#086c61"/></g><text class="value" x="343.9" y="121.0">1 分 55 秒</text><text class="label" x="240" y="151.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="1 時間 1 分
+gemma4:31b-it-qat"><rect class="hit" x="250" y="134" width="430" height="26"/><path d="M250.0,139.0 h403.9 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-403.9 z" fill="#086c61"/></g><text class="value" x="663.9" y="151.0">1 時間 1 分</text><text class="label" x="240" y="181.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="7 分 21 秒
+gemma4:31b-ctx32k"><rect class="hit" x="250" y="164" width="430" height="26"/><path d="M250.0,169.0 h208.2 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-208.2 z" fill="#086c61"/></g><text class="value" x="468.2" y="181.0">7 分 21 秒</text><text class="label" x="240" y="211.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="1 時間 2 分
+qwen3.8-flash-next:IQ4_XS"><rect class="hit" x="250" y="194" width="430" height="26"/><path d="M250.0,199.0 h405.4 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-405.4 z" fill="#086c61"/></g><text class="value" x="665.4" y="211.0">1 時間 2 分</text><text class="label" x="240" y="241.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="13 分 59 秒
+strata-official:IQ3_XXS"><rect class="hit" x="250" y="224" width="430" height="26"/><path d="M250.0,229.0 h267.7 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-267.7 z" fill="#7044bb"/></g><text class="value" x="527.7" y="241.0">13 分 59 秒</text><text class="label" x="240" y="271.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="12 分 8 秒
+strata-flash-coder:IQ1_M (Coder)"><rect class="hit" x="250" y="254" width="430" height="26"/><path d="M250.0,259.0 h254.5 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-254.5 z" fill="#7044bb"/></g><text class="value" x="514.5" y="271.0">12 分 8 秒</text></svg><p class="caption">ローカルの時間は既存の記録の値（Open WebUI 経由の回はロード時間を含む可能性がある）。Claude は Agent の duration。</p><h3>能力 × 時間</h3><svg class="chart" viewBox="0 0 720 410" width="720" height="410" role="img" aria-label="3D の能力と時間"><line class="leader" x1="657.6" y1="46.0" x2="647.6" y2="60.0"/><line class="grid" x1="60" y1="360.0" x2="690" y2="360.0"/><text class="tick" x="52" y="364.0" text-anchor="end">0%</text><line class="grid" x1="60" y1="281.5" x2="690" y2="281.5"/><text class="tick" x="52" y="285.5" text-anchor="end">25%</text><line class="grid" x1="60" y1="203.0" x2="690" y2="203.0"/><text class="tick" x="52" y="207.0" text-anchor="end">50%</text><line class="grid" x1="60" y1="124.5" x2="690" y2="124.5"/><text class="tick" x="52" y="128.5" text-anchor="end">75%</text><line class="grid" x1="60" y1="46.0" x2="690" y2="46.0"/><text class="tick" x="52" y="50.0" text-anchor="end">100%</text><line class="grid" x1="100.7" y1="46" x2="100.7" y2="360"/><text class="tick" x="100.7" y="378" text-anchor="middle">1 分</text><line class="grid" x1="194.6" y1="46" x2="194.6" y2="360"/><text class="tick" x="194.6" y="378" text-anchor="middle">2 分</text><line class="grid" x1="318.7" y1="46" x2="318.7" y2="360"/><text class="tick" x="318.7" y="378" text-anchor="middle">5 分</text><line class="grid" x1="412.6" y1="46" x2="412.6" y2="360"/><text class="tick" x="412.6" y="378" text-anchor="middle">10 分</text><line class="grid" x1="506.5" y1="46" x2="506.5" y2="360"/><text class="tick" x="506.5" y="378" text-anchor="middle">20 分</text><line class="grid" x1="561.4" y1="46" x2="561.4" y2="360"/><text class="tick" x="561.4" y="378" text-anchor="middle">30 分</text><line class="grid" x1="655.3" y1="46" x2="655.3" y2="360"/><text class="tick" x="655.3" y="378" text-anchor="middle">1 時間</text><text class="axis-title" x="375.0" y="402" text-anchor="middle">時間（対数。左ほど速い）</text><text class="axis-title" x="14" y="203.0" text-anchor="middle" transform="rotate(-90 14 203.0)">能力</text><g class="mark" tabindex="0" data-tip="能力 100%・1 分 7 秒
+Sonnet5.5-xHigh"><circle class="hit" cx="115.8" cy="46.0" r="12"/><circle cx="115.8" cy="46.0" r="6" fill="#1f59bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・1 分 2 秒
+Opus5.5-xHigh"><circle class="hit" cx="105.6" cy="46.0" r="12"/><circle cx="105.6" cy="46.0" r="6" fill="#1f59bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 88%・14 分 33 秒
+qwen3.8:27b"><circle class="hit" cx="463.4" cy="85.2" r="12"/><circle cx="463.4" cy="85.2" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 67%・1 分 55 秒
+gemma4:e4b"><circle class="hit" cx="188.8" cy="150.7" r="12"/><circle cx="188.8" cy="150.7" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・1 時間 1 分
+gemma4:31b-it-qat"><circle class="hit" cx="657.6" cy="46.0" r="12"/><circle cx="657.6" cy="46.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・7 分 21 秒
+gemma4:31b-ctx32k"><circle class="hit" cx="370.9" cy="46.0" r="12"/><circle cx="370.9" cy="46.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・1 時間 2 分
+qwen3.8-flash-next:IQ4_XS"><circle class="hit" cx="659.8" cy="46.0" r="12"/><circle cx="659.8" cy="46.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・13 分 59 秒
+strata-official:IQ3_XXS"><circle class="hit" cx="458.0" cy="46.0" r="12"/><circle cx="458.0" cy="46.0" r="6" fill="#7044bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・12 分 8 秒
+strata-flash-coder:IQ1_M (Coder)"><circle class="hit" cx="438.7" cy="46.0" r="12"/><circle cx="438.7" cy="46.0" r="6" fill="#7044bb" stroke="var(--surface)" stroke-width="2"/></g><text class="point-label" x="125.8" y="50.0" text-anchor="start">Sonnet5.5</text><text class="point-label" x="105.6" y="34.0" text-anchor="middle">Opus5.5</text><text class="point-label" x="473.4" y="89.2" text-anchor="start">qwen3.8:27b</text><text class="point-label" x="198.8" y="154.7" text-anchor="start">gemma4:e4b</text><text class="point-label" x="647.6" y="64.0" text-anchor="end">gemma4:31b-it-qat</text><text class="point-label" x="360.9" y="50.0" text-anchor="end">gemma4:31b-ctx32k</text><text class="point-label" x="659.8" y="34.0" text-anchor="middle">IQ4_XS</text><text class="point-label" x="468.0" y="50.0" text-anchor="start">official IQ3_XXS</text><text class="point-label" x="438.7" y="34.0" text-anchor="middle">strata-flash-coder:IQ1_M (Coder)</text></svg><h3>総合順位</h3><table class="data"><thead><tr><th>順位</th><th>モデル</th><th>系統</th><th>能力</th><th>時間 T（中央値）</th><th>速度点</th><th>総合</th><th>tok/s（参考）</th></tr></thead><tbody><tr><td class="num"><span class="medal" style="background:#c9a227" aria-label="1 位">1</span></td><td><span class="swatch" style="background:#1f59bb"></span>Opus5.5-xHigh</td><td>Claude（API）</td><td class="num">100%</td><td class="num">1 分 2 秒</td><td class="num">1.000</td><td class="num strong">1.000</td><td class="num">不明</td></tr><tr><td class="num"><span class="medal" style="background:#9aa1a9" aria-label="2 位">2</span></td><td><span class="swatch" style="background:#1f59bb"></span>Sonnet5.5-xHigh</td><td>Claude（API）</td><td class="num">100%</td><td class="num">1 分 7 秒</td><td class="num">0.982</td><td class="num strong">0.994</td><td class="num">不明</td></tr><tr><td class="num"><span class="medal" style="background:#b0703c" aria-label="3 位">3</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td>Ollama（この機体）</td><td class="num">100%</td><td class="num">7 分 21 秒</td><td class="num">0.521</td><td class="num strong">0.856</td><td class="num">27.6</td></tr><tr><td class="num"><span class="rank">4</span></td><td><span class="swatch" style="background:#7044bb"></span>strata-flash-coder:IQ1_M (Coder)</td><td>Strata（この機体）</td><td class="num">100%</td><td class="num">12 分 8 秒</td><td class="num">0.399</td><td class="num strong">0.820</td><td class="num">68.4</td></tr><tr><td class="num"><span class="rank">5</span></td><td><span class="swatch" style="background:#7044bb"></span>strata-official:IQ3_XXS</td><td>Strata（この機体）</td><td class="num">100%</td><td class="num">13 分 59 秒</td><td class="num">0.364</td><td class="num strong">0.809</td><td class="num">61.8</td></tr><tr><td class="num"><span class="rank">6</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td>Ollama（この機体）</td><td class="num">67%</td><td class="num">1 分 55 秒</td><td class="num">0.850</td><td class="num strong">0.722</td><td class="num">90.1</td></tr><tr><td class="num"><span class="rank">7</span></td><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td>Ollama（この機体）</td><td class="num">88%</td><td class="num">14 分 33 秒</td><td class="num">0.354</td><td class="num strong">0.719</td><td class="num">25.8</td></tr><tr><td class="num"><span class="rank">8</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-it-qat</td><td>Ollama（この機体）</td><td class="num">100%</td><td class="num">1 時間 1 分</td><td class="num">0.004</td><td class="num strong">0.701</td><td class="num">5.2</td></tr><tr><td class="num"><span class="rank">9</span></td><td><span class="swatch" style="background:#086c61"></span>qwen3.8-flash-next:IQ4_XS</td><td>Ollama（この機体）</td><td class="num">100%</td><td class="num">1 時間 2 分</td><td class="num">0.000</td><td class="num strong">0.700</td><td class="num">13.6</td></tr></tbody></table></section><section id="s3"><h2>3. コーディング（6 問・隠しテスト）</h2><ul class="notes callout"><li>天井効果: Sonnet5.5-xHigh・Opus5.5-xHigh は難しい版（v2）のコーディングでも 6 問すべてで全部合格した（能力 100%）。この 2 つの順位の差は速さだけで、能力の差はこの試験では測れていない。</li><li>strata-official:IQ3_XXS のコーディングの答えは、どの問題も思考が予算 24,576 トークンで打ち切られたあとのもの。コーディングで思考が予算 24,576 トークンで打ち切られたあとの答え: strata-flash-coder:IQ1_M (Coder) の C1・C2・C4・C5・C6。Strata は予算に届くと思考の最後に「I have thought about this long enough; time to give my answer.」を差し込み、答えを書かせる（マスの下段の「打切」）。</li><li>易しい版 v1 のコーディング。天井効果で差が出なかったので、難しい版 v2（いまの 6 問）に替えた。順位には使っていない。記録は tools/model-eval/results/2026-10-08/archive-coding-v1-easy/ に保管してある。</li></ul><h3>モデル × 問の点数</h3><div class="legend" aria-label="採点の凡例"><span class="legend-item"><span class="swatch" style="background:#1a7f37"></span>正解・全部合格</span><span class="legend-item"><span class="swatch" style="background:#76b688"></span>部分点（濃いほど高い）</span><span class="legend-item"><span class="swatch" style="background:#c0392b"></span>誤り・0 点</span><span class="legend-item"><span class="swatch" style="background:#8a8f98"></span>答えなし・飛ばし・記録なし</span></div><p class="caption">マスの下段の文字（状態）: 上限 = 生成の上限トークンに届いた、時間切れ = 1 要求の時間上限に届いた、無応答 = 一定時間なにも届かず打ち切った、エラー = サーバーがエラーを返した、思考中停止 = 思考の途中で停止トークンが出て、本文が空のまま終わった（0 点・答えなし）、打切 = 思考が予算に届いて打ち切られたあとの答え（Strata）、本文なし／コードなし = 答えの本文やコードのブロックが無かった、禁止 = 禁止の import・呼び出しがあり実行せず 0 点、文法誤り = 答えのコードが Python として読めない。2 つ当てはまるときは「・」でつなぐ。</p><svg class="chart" viewBox="0 0 656 378" width="656" height="378" role="img" aria-label="コーディング 6 問の点数"><text class="tick" x="282.0" y="20" text-anchor="middle">C1</text><text class="tick" x="348.0" y="20" text-anchor="middle">C2</text><text class="tick" x="414.0" y="20" text-anchor="middle">C3</text><text class="tick" x="480.0" y="20" text-anchor="middle">C4</text><text class="tick" x="546.0" y="20" text-anchor="middle">C5</text><text class="tick" x="612.0" y="20" text-anchor="middle">C6</text><rect x="234" y="43.0" width="10" height="10" rx="2" fill="#1f59bb"/><text class="label" x="228" y="52.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / C1
+時間: 16 秒"><rect x="250" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / C2
+時間: 44 秒"><rect x="316" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / C3
+時間: 22 秒"><rect x="382" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / C4
+時間: 1 分 9 秒"><rect x="448" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / C5
+時間: 1 分 1 秒"><rect x="514" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / C6
+時間: 48 秒"><rect x="580" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="81.0" width="10" height="10" rx="2" fill="#1f59bb"/><text class="label" x="228" y="90.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / C1
+時間: 22 秒"><rect x="250" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / C2
+時間: 59 秒"><rect x="316" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / C3
+時間: 42 秒"><rect x="382" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / C4
+時間: 1 分 40 秒"><rect x="448" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / C5
+時間: 2 分 4 秒"><rect x="514" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / C6
+時間: 58 秒"><rect x="580" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="119.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="128.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / C1
+時間: 2 分 3 秒
+出力: 5,437 トークン
+うち思考（推定）: 4,721 トークン"><rect x="250" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / C2
+時間: 6 分 3 秒
+出力: 16,684 トークン
+うち思考（推定）: 15,220 トークン"><rect x="316" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / C3
+時間: 59 秒
+出力: 2,638 トークン
+うち思考（推定）: 2,350 トークン"><rect x="382" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="答えなし（本文なし）
+qwen3.8:27b / C4
+理由: 本文が無い
+時間: 6 分 53 秒
+出力: 18,635 トークン
+うち思考（推定）: 18,635 トークン"><rect x="448" y="106" width="64" height="36" rx="3" fill="#8a8f98"/><text class="cell-text" x="480.0" y="121" text-anchor="middle" fill="#ffffff">答えなし</text><text class="cell-sub" x="480.0" y="135" text-anchor="middle" fill="#ffffff">本文なし</text></g><g class="mark" tabindex="0" data-tip="96%
+qwen3.8:27b / C5
+時間: 8 分 39 秒
+出力: 23,230 トークン
+うち思考（推定）: 20,802 トークン"><rect x="514" y="106" width="64" height="36" rx="3" fill="#22843e"/><text class="cell-text" x="546.0" y="128.0" text-anchor="middle" fill="#ffffff">96%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / C6
+時間: 1 分 41 秒
+出力: 4,437 トークン
+うち思考（推定）: 3,739 トークン"><rect x="580" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="157.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="166.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="68%
+gemma4:e4b / C1
+時間: 37 秒
+出力: 3,354 トークン
+うち思考（推定）: 1,404 トークン"><rect x="250" y="144" width="64" height="36" rx="3" fill="#55a26b"/><text class="cell-text" x="282.0" y="166.0" text-anchor="middle" fill="#ffffff">68%</text></g><g class="mark" tabindex="0" data-tip="15%
+gemma4:e4b / C2
+時間: 1 分 1 秒
+出力: 5,429 トークン
+うち思考（推定）: 1,278 トークン"><rect x="316" y="144" width="64" height="36" rx="3" fill="#b7dbc0"/><text class="cell-text" x="348.0" y="166.0" text-anchor="middle" fill="#0b0b0b">15%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / C3
+時間: 43 秒
+出力: 3,852 トークン
+うち思考（推定）: 3,044 トークン"><rect x="382" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="52%
+gemma4:e4b / C4
+時間: 53 秒
+出力: 4,724 トークン
+うち思考（推定）: 898 トークン"><rect x="448" y="144" width="64" height="36" rx="3" fill="#72b384"/><text class="cell-text" x="480.0" y="166.0" text-anchor="middle" fill="#ffffff">52%</text></g><g class="mark" tabindex="0" data-tip="0%（禁止）
+gemma4:e4b / C5
+理由: 禁止の import / 呼び出しがあるため実行せず 0 点
+時間: 1 分 21 秒
+出力: 7,309 トークン
+うち思考（推定）: 660 トークン"><rect x="514" y="144" width="64" height="36" rx="3" fill="#c0392b"/><text class="cell-text" x="546.0" y="159" text-anchor="middle" fill="#ffffff">0%</text><text class="cell-sub" x="546.0" y="173" text-anchor="middle" fill="#ffffff">禁止</text></g><g class="mark" tabindex="0" data-tip="75%
+gemma4:e4b / C6
+時間: 34 秒
+出力: 3,012 トークン
+うち思考（推定）: 1,042 トークン"><rect x="580" y="144" width="64" height="36" rx="3" fill="#489a60"/><text class="cell-text" x="612.0" y="166.0" text-anchor="middle" fill="#ffffff">75%</text></g><rect x="234" y="195.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="204.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / C1
+時間: 10 分 36 秒
+出力: 7,986 トークン
+うち思考（推定）: 7,000 トークン"><rect x="250" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / C2
+時間: 13 分 20 秒
+出力: 9,500 トークン
+うち思考（推定）: 7,750 トークン"><rect x="316" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / C3
+時間: 6 分
+出力: 4,786 トークン
+うち思考（推定）: 4,196 トークン"><rect x="382" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="57%
+gemma4:31b-it-qat / C4
+時間: 12 分 43 秒
+出力: 9,210 トークン
+うち思考（推定）: 6,713 トークン"><rect x="448" y="182" width="64" height="36" rx="3" fill="#6aae7d"/><text class="cell-text" x="480.0" y="204.0" text-anchor="middle" fill="#ffffff">57%</text></g><g class="mark" tabindex="0" data-tip="96%
+gemma4:31b-it-qat / C5
+時間: 17 分 17 秒
+出力: 11,880 トークン
+うち思考（推定）: 8,970 トークン"><rect x="514" y="182" width="64" height="36" rx="3" fill="#22843e"/><text class="cell-text" x="546.0" y="204.0" text-anchor="middle" fill="#ffffff">96%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / C6
+時間: 8 分 50 秒
+出力: 6,908 トークン
+うち思考（推定）: 6,026 トークン"><rect x="580" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="233.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="242.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="88%
+gemma4:31b-ctx32k / C1
+時間: 2 分 58 秒
+出力: 5,108 トークン
+うち思考（推定）: 4,331 トークン"><rect x="250" y="220" width="64" height="36" rx="3" fill="#308c4a"/><text class="cell-text" x="282.0" y="242.0" text-anchor="middle" fill="#ffffff">88%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / C2
+時間: 4 分 32 秒
+出力: 7,753 トークン
+うち思考（推定）: 6,112 トークン"><rect x="316" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / C3
+時間: 4 分 25 秒
+出力: 7,576 トークン
+うち思考（推定）: 6,761 トークン"><rect x="382" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="0%（文法誤り）
+gemma4:31b-ctx32k / C4
+時間: 3 分 55 秒
+出力: 6,695 トークン
+うち思考（推定）: 4,083 トークン"><rect x="448" y="220" width="64" height="36" rx="3" fill="#c0392b"/><text class="cell-text" x="480.0" y="235" text-anchor="middle" fill="#ffffff">0%</text><text class="cell-sub" x="480.0" y="249" text-anchor="middle" fill="#ffffff">文法誤り</text></g><g class="mark" tabindex="0" data-tip="88%
+gemma4:31b-ctx32k / C5
+時間: 6 分 48 秒
+出力: 11,595 トークン
+うち思考（推定）: 9,376 トークン"><rect x="514" y="220" width="64" height="36" rx="3" fill="#318d4b"/><text class="cell-text" x="546.0" y="242.0" text-anchor="middle" fill="#ffffff">88%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / C6
+時間: 4 分 26 秒
+出力: 7,613 トークン
+うち思考（推定）: 6,844 トークン"><rect x="580" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="271.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="280.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="答えなし（エラー）
+qwen3.8-flash-next:IQ4_XS / C1
+状態: error（サーバーがエラーを返した）
+エラー: HTTP 500: {&quot;error&quot;:&quot;an error was encountered while running the model: CUDA error: an illegal memory access was encountered\nCUDA error&quot;}
+理由: error"><rect x="250" y="258" width="64" height="36" rx="3" fill="#8a8f98"/><text class="cell-text" x="282.0" y="273" text-anchor="middle" fill="#ffffff">答えなし</text><text class="cell-sub" x="282.0" y="287" text-anchor="middle" fill="#ffffff">エラー</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / C2
+時間: 8 分 56 秒
+出力: 11,079 トークン
+うち思考（推定）: 9,544 トークン"><rect x="316" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / C3
+時間: 3 分 3 秒
+出力: 3,982 トークン
+うち思考（推定）: 3,650 トークン"><rect x="382" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / C4
+時間: 11 分 36 秒
+出力: 15,272 トークン
+うち思考（推定）: 12,351 トークン"><rect x="448" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="答えなし（上限）
+qwen3.8-flash-next:IQ4_XS / C5
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 25 分 31 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><rect x="514" y="258" width="64" height="36" rx="3" fill="#8a8f98"/><text class="cell-text" x="546.0" y="273" text-anchor="middle" fill="#ffffff">答えなし</text><text class="cell-sub" x="546.0" y="287" text-anchor="middle" fill="#ffffff">上限</text></g><g class="mark" tabindex="0" data-tip="40%
+qwen3.8-flash-next:IQ4_XS / C6
+時間: 4 分 35 秒
+出力: 6,179 トークン
+うち思考（推定）: 5,190 トークン"><rect x="580" y="258" width="64" height="36" rx="3" fill="#89c098"/><text class="cell-text" x="612.0" y="280.0" text-anchor="middle" fill="#0b0b0b">40%</text></g><rect x="234" y="309.0" width="10" height="10" rx="2" fill="#7044bb"/><text class="label" x="228" y="318.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="64%（打切）
+strata-official:IQ3_XXS / C1
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 19 秒
+出力: 25,078 トークン
+うち思考（推定）: 24,568 トークン"><rect x="250" y="296" width="64" height="36" rx="3" fill="#5da671"/><text class="cell-text" x="282.0" y="311" text-anchor="middle" fill="#ffffff">64%</text><text class="cell-sub" x="282.0" y="325" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="100%（打切）
+strata-official:IQ3_XXS / C2
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 41 秒
+出力: 26,560 トークン
+うち思考（推定）: 24,360 トークン"><rect x="316" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="311" text-anchor="middle" fill="#ffffff">100%</text><text class="cell-sub" x="348.0" y="325" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="100%（打切）
+strata-official:IQ3_XXS / C3
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 47 秒
+出力: 24,855 トークン
+うち思考（推定）: 24,626 トークン"><rect x="382" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="311" text-anchor="middle" fill="#ffffff">100%</text><text class="cell-sub" x="414.0" y="325" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="57%（打切）
+strata-official:IQ3_XXS / C4
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 49 秒
+出力: 27,245 トークン
+うち思考（推定）: 24,570 トークン"><rect x="448" y="296" width="64" height="36" rx="3" fill="#6aae7d"/><text class="cell-text" x="480.0" y="311" text-anchor="middle" fill="#ffffff">57%</text><text class="cell-sub" x="480.0" y="325" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="83%（打切）
+strata-official:IQ3_XXS / C5
+思考が予算に届いて打ち切られたあとの答え
+時間: 8 分 4 秒
+出力: 27,135 トークン
+うち思考（推定）: 24,800 トークン"><rect x="514" y="296" width="64" height="36" rx="3" fill="#399152"/><text class="cell-text" x="546.0" y="311" text-anchor="middle" fill="#ffffff">83%</text><text class="cell-sub" x="546.0" y="325" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="100%（打切）
+strata-official:IQ3_XXS / C6
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 35 秒
+出力: 26,549 トークン
+うち思考（推定）: 24,900 トークン"><rect x="580" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="311" text-anchor="middle" fill="#ffffff">100%</text><text class="cell-sub" x="612.0" y="325" text-anchor="middle" fill="#ffffff">打切</text></g><rect x="234" y="347.0" width="10" height="10" rx="2" fill="#7044bb"/><text class="label" x="228" y="356.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / C1
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 41 秒
+出力: 25,202 トークン
+うち思考（推定）: 24,562 トークン"><rect x="250" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="349" text-anchor="middle" fill="#ffffff">100%</text><text class="cell-sub" x="282.0" y="363" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="46%（打切）
+strata-flash-coder:IQ1_M (Coder) / C2
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 48 秒
+出力: 26,043 トークン
+うち思考（推定）: 24,542 トークン"><rect x="316" y="334" width="64" height="36" rx="3" fill="#7eba8e"/><text class="cell-text" x="348.0" y="349" text-anchor="middle" fill="#0b0b0b">46%</text><text class="cell-sub" x="348.0" y="363" text-anchor="middle" fill="#0b0b0b">打切</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder) / C3
+時間: 3 分 23 秒
+出力: 12,375 トークン
+うち思考（推定）: 12,174 トークン"><rect x="382" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="356.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="65%（打切）
+strata-flash-coder:IQ1_M (Coder) / C4
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 44 秒
+出力: 27,249 トークン
+うち思考（推定）: 24,706 トークン"><rect x="448" y="334" width="64" height="36" rx="3" fill="#5aa56f"/><text class="cell-text" x="480.0" y="349" text-anchor="middle" fill="#ffffff">65%</text><text class="cell-sub" x="480.0" y="363" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="4%（打切）
+strata-flash-coder:IQ1_M (Coder) / C5
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 7 秒
+出力: 27,002 トークン
+うち思考（推定）: 24,513 トークン"><rect x="514" y="334" width="64" height="36" rx="3" fill="#cbe7d2"/><text class="cell-text" x="546.0" y="349" text-anchor="middle" fill="#0b0b0b">4%</text><text class="cell-sub" x="546.0" y="363" text-anchor="middle" fill="#0b0b0b">打切</text></g><g class="mark" tabindex="0" data-tip="40%（打切）
+strata-flash-coder:IQ1_M (Coder) / C6
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 11 秒
+出力: 26,492 トークン
+うち思考（推定）: 24,942 トークン"><rect x="580" y="334" width="64" height="36" rx="3" fill="#89c098"/><text class="cell-text" x="612.0" y="349" text-anchor="middle" fill="#0b0b0b">40%</text><text class="cell-sub" x="612.0" y="363" text-anchor="middle" fill="#0b0b0b">打切</text></g></svg><p class="caption">状態が ok でない問:</p><ul class="notes"><li>qwen3.8-flash-next:IQ4_XS の C1: エラー（サーバーがエラーを返した）。答えなし・0 点</li><li>qwen3.8-flash-next:IQ4_XS の C5: 上限（生成の上限トークンに届いた）。答えなし・0 点</li></ul><h3>思考の量と中身（ローカル）</h3><table class="data"><thead><tr><th>モデル</th><th>出力トークン（合計）</th><th>うち思考（推定・合計）</th><th>予算で打切</th><th>「?」/ 1 万字</th><th>「maybe」/ 1 万字</th><th>同じ行の再出現</th></tr></thead><tbody><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td class="num">71,061</td><td class="num">65,467</td><td class="num">0 / 6</td><td class="num">1.4〜12.9</td><td class="num">0.0〜0.4</td><td class="num">1.0〜31.7%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td class="num">27,680</td><td class="num">8,326</td><td class="num">0 / 6</td><td class="num">0.0〜9.2</td><td class="num">0.0</td><td class="num">0.0%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-it-qat</td><td class="num">50,270</td><td class="num">40,655</td><td class="num">0 / 6</td><td class="num">1.9〜8.2</td><td class="num">0.0</td><td class="num">4.5〜29.9%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td class="num">46,340</td><td class="num">37,507</td><td class="num">0 / 6</td><td class="num">1.3〜10.5</td><td class="num">0.0〜0.4</td><td class="num">7.2〜35.6%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8-flash-next:IQ4_XS</td><td class="num">69,280</td><td class="num">63,503</td><td class="num">0 / 6</td><td class="num">0.0〜14.4</td><td class="num">0.0〜0.2</td><td class="num">6.9〜20.0%</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-official:IQ3_XXS</td><td class="num">157,422</td><td class="num">147,824</td><td class="num">6 / 6</td><td class="num">44.5〜71.0</td><td class="num">5.9〜16.2</td><td class="num">0.8〜8.5%</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-flash-coder:IQ1_M (Coder)</td><td class="num">144,363</td><td class="num">135,439</td><td class="num">5 / 6</td><td class="num">41.2〜51.3</td><td class="num">2.6〜13.4</td><td class="num">1.3〜7.1%</td></tr></tbody></table><p class="caption">思考のトークン数は推定。どの API も直接は出さないので、出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数) で出した。「?」と「maybe」（大文字小文字を区別しない）は思考 1 万字あたりの数、同じ行の再出現は 20 字以上の行のうち、それより前に同じ行が出ていた割合。どれも問ごとの値の最小〜最大。「?」と「maybe」が多いのは仕様の読みを疑い続ける型、再出現が多いのは同じ文を繰り返す型の目安。Claude は思考を返さないので載せない。</p><details><summary>易しい版 v1 のコーディング。天井効果で差が出なかったので、難しい版 v2（いまの 6 問）に替えた。順位には使っていない。（記録は tools/model-eval/results/2026-10-08/archive-coding-v1-easy/）</summary><table class="data"><thead><tr><th>モデル</th><th>流した問</th><th>全部合格</th><th>能力</th></tr></thead><tbody><tr><td><span class="swatch" style="background:#1f59bb"></span>Sonnet5.5-xHigh</td><td class="num">6</td><td class="num">6</td><td class="num">100%</td></tr><tr><td><span class="swatch" style="background:#1f59bb"></span>Opus5.5-xHigh</td><td class="num">6</td><td class="num">6</td><td class="num">100%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td class="num">6</td><td class="num">6</td><td class="num">100%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td class="num">6</td><td class="num">3</td><td class="num">78%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td class="num">4</td><td class="num">4</td><td class="num">100%</td></tr></tbody></table></details><h3>能力（問ごとの点数の平均）</h3><div class="legend" aria-label="系統の凡例"><span class="legend-item"><span class="swatch" style="background:#1f59bb"></span>Claude（API）</span><span class="legend-item"><span class="swatch" style="background:#086c61"></span>Ollama（この機体）</span><span class="legend-item"><span class="swatch" style="background:#7044bb"></span>Strata（この機体）</span></div><svg class="chart" viewBox="0 0 770 312" width="770" height="312" role="img" aria-label="コーディング 6 問の能力"><line class="grid" x1="250.0" y1="8" x2="250.0" y2="286"/><text class="tick" x="250.0" y="300" text-anchor="middle">0%</text><line class="grid" x1="357.5" y1="8" x2="357.5" y2="286"/><text class="tick" x="357.5" y="300" text-anchor="middle">25%</text><line class="grid" x1="465.0" y1="8" x2="465.0" y2="286"/><text class="tick" x="465.0" y="300" text-anchor="middle">50%</text><line class="grid" x1="572.5" y1="8" x2="572.5" y2="286"/><text class="tick" x="572.5" y="300" text-anchor="middle">75%</text><line class="grid" x1="680.0" y1="8" x2="680.0" y2="286"/><text class="tick" x="680.0" y="300" text-anchor="middle">100%</text><line class="axis" x1="250" y1="8" x2="250" y2="286"/><text class="label" x="240" y="31.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh
+全部合格 6 問・答えあり 6 問"><rect class="hit" x="250" y="14" width="430" height="26"/><path d="M250.0,19.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#1f59bb"/></g><text class="value" x="686.0" y="31.0">100%</text><text class="label" x="240" y="61.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh
+全部合格 6 問・答えあり 6 問"><rect class="hit" x="250" y="44" width="430" height="26"/><path d="M250.0,49.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#1f59bb"/></g><text class="value" x="686.0" y="61.0">100%</text><text class="label" x="240" y="91.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="83%
+qwen3.8:27b
+全部合格 4 問・答えあり 5 問"><rect class="hit" x="250" y="74" width="430" height="26"/><path d="M250.0,79.0 h351.3 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-351.3 z" fill="#086c61"/></g><text class="value" x="611.3" y="91.0">83%</text><text class="label" x="240" y="121.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="52%
+gemma4:e4b
+全部合格 1 問・答えあり 6 問"><rect class="hit" x="250" y="104" width="430" height="26"/><path d="M250.0,109.0 h218.6 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-218.6 z" fill="#086c61"/></g><text class="value" x="478.6" y="121.0">52%</text><text class="label" x="240" y="151.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="92%
+gemma4:31b-it-qat
+全部合格 4 問・答えあり 6 問"><rect class="hit" x="250" y="134" width="430" height="26"/><path d="M250.0,139.0 h391.9 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-391.9 z" fill="#086c61"/></g><text class="value" x="651.9" y="151.0">92%</text><text class="label" x="240" y="181.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="79%
+gemma4:31b-ctx32k
+全部合格 3 問・答えあり 6 問"><rect class="hit" x="250" y="164" width="430" height="26"/><path d="M250.0,169.0 h336.8 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-336.8 z" fill="#086c61"/></g><text class="value" x="596.8" y="181.0">79%</text><text class="label" x="240" y="211.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="57%
+qwen3.8-flash-next:IQ4_XS
+全部合格 3 問・答えあり 4 問"><rect class="hit" x="250" y="194" width="430" height="26"/><path d="M250.0,199.0 h239.7 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-239.7 z" fill="#086c61"/></g><text class="value" x="499.7" y="211.0">57%</text><text class="label" x="240" y="241.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="84%
+strata-official:IQ3_XXS
+全部合格 3 問・答えあり 6 問"><rect class="hit" x="250" y="224" width="430" height="26"/><path d="M250.0,229.0 h357.1 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-357.1 z" fill="#7044bb"/></g><text class="value" x="617.1" y="241.0">84%</text><text class="label" x="240" y="271.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="59%
+strata-flash-coder:IQ1_M (Coder)
+全部合格 2 問・答えあり 6 問"><rect class="hit" x="250" y="254" width="430" height="26"/><path d="M250.0,259.0 h250.8 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-250.8 z" fill="#7044bb"/></g><text class="value" x="510.8" y="271.0">59%</text></svg><h3>1 問あたりの時間（中央値・対数の目盛り）</h3><svg class="chart" viewBox="0 0 770 312" width="770" height="312" role="img" aria-label="コーディング 6 問の時間"><line class="grid" x1="328.2" y1="8" x2="328.2" y2="286"/><text class="tick" x="328.2" y="300" text-anchor="middle">1 分</text><line class="grid" x1="419.2" y1="8" x2="419.2" y2="286"/><text class="tick" x="419.2" y="300" text-anchor="middle">2 分</text><line class="grid" x1="539.6" y1="8" x2="539.6" y2="286"/><text class="tick" x="539.6" y="300" text-anchor="middle">5 分</text><line class="grid" x1="630.6" y1="8" x2="630.6" y2="286"/><text class="tick" x="630.6" y="300" text-anchor="middle">10 分</text><line class="axis" x1="250" y1="8" x2="250" y2="286"/><text class="label" x="240" y="31.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="46 秒
+Sonnet5.5-xHigh"><rect class="hit" x="250" y="14" width="430" height="26"/><path d="M250.0,19.0 h40.2 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-40.2 z" fill="#1f59bb"/></g><text class="value" x="300.2" y="31.0">46 秒</text><text class="label" x="240" y="61.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="59 秒
+Opus5.5-xHigh"><rect class="hit" x="250" y="44" width="430" height="26"/><path d="M250.0,49.0 h71.9 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-71.9 z" fill="#1f59bb"/></g><text class="value" x="331.9" y="61.0">59 秒</text><text class="label" x="240" y="91.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="4 分 3 秒
+qwen3.8:27b"><rect class="hit" x="250" y="74" width="430" height="26"/><path d="M250.0,79.0 h257.9 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-257.9 z" fill="#086c61"/></g><text class="value" x="517.9" y="91.0">4 分 3 秒</text><text class="label" x="240" y="121.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="48 秒
+gemma4:e4b"><rect class="hit" x="250" y="104" width="430" height="26"/><path d="M250.0,109.0 h44.5 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-44.5 z" fill="#086c61"/></g><text class="value" x="304.5" y="121.0">48 秒</text><text class="label" x="240" y="151.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="11 分 39 秒
+gemma4:31b-it-qat"><rect class="hit" x="250" y="134" width="430" height="26"/><path d="M250.0,139.0 h396.7 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-396.7 z" fill="#086c61"/></g><text class="value" x="656.7" y="151.0">11 分 39 秒</text><text class="label" x="240" y="181.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="4 分 26 秒
+gemma4:31b-ctx32k"><rect class="hit" x="250" y="164" width="430" height="26"/><path d="M250.0,169.0 h269.7 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-269.7 z" fill="#086c61"/></g><text class="value" x="529.7" y="181.0">4 分 26 秒</text><text class="label" x="240" y="211.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="8 分 56 秒
+qwen3.8-flash-next:IQ4_XS"><rect class="hit" x="250" y="194" width="430" height="26"/><path d="M250.0,199.0 h361.9 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-361.9 z" fill="#086c61"/></g><text class="value" x="621.9" y="211.0">8 分 56 秒</text><text class="label" x="240" y="241.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="7 分 44 秒
+strata-official:IQ3_XXS"><rect class="hit" x="250" y="224" width="430" height="26"/><path d="M250.0,229.0 h342.8 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-342.8 z" fill="#7044bb"/></g><text class="value" x="602.8" y="241.0">7 分 44 秒</text><text class="label" x="240" y="271.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="6 分 46 秒
+strata-flash-coder:IQ1_M (Coder)"><rect class="hit" x="250" y="254" width="430" height="26"/><path d="M250.0,259.0 h325.3 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-325.3 z" fill="#7044bb"/></g><text class="value" x="585.3" y="271.0">6 分 46 秒</text></svg><h3>能力 × 時間</h3><svg class="chart" viewBox="0 0 720 410" width="720" height="410" role="img" aria-label="コーディング 6 問"><line class="grid" x1="60" y1="360.0" x2="690" y2="360.0"/><text class="tick" x="52" y="364.0" text-anchor="end">0%</text><line class="grid" x1="60" y1="281.5" x2="690" y2="281.5"/><text class="tick" x="52" y="285.5" text-anchor="end">25%</text><line class="grid" x1="60" y1="203.0" x2="690" y2="203.0"/><text class="tick" x="52" y="207.0" text-anchor="end">50%</text><line class="grid" x1="60" y1="124.5" x2="690" y2="124.5"/><text class="tick" x="52" y="128.5" text-anchor="end">75%</text><line class="grid" x1="60" y1="46.0" x2="690" y2="46.0"/><text class="tick" x="52" y="50.0" text-anchor="end">100%</text><line class="grid" x1="174.6" y1="46" x2="174.6" y2="360"/><text class="tick" x="174.6" y="378" text-anchor="middle">1 分</text><line class="grid" x1="308.0" y1="46" x2="308.0" y2="360"/><text class="tick" x="308.0" y="378" text-anchor="middle">2 分</text><line class="grid" x1="484.2" y1="46" x2="484.2" y2="360"/><text class="tick" x="484.2" y="378" text-anchor="middle">5 分</text><line class="grid" x1="617.6" y1="46" x2="617.6" y2="360"/><text class="tick" x="617.6" y="378" text-anchor="middle">10 分</text><text class="axis-title" x="375.0" y="402" text-anchor="middle">時間（対数。左ほど速い）</text><text class="axis-title" x="14" y="203.0" text-anchor="middle" transform="rotate(-90 14 203.0)">能力</text><g class="mark" tabindex="0" data-tip="能力 100%・46 秒
+Sonnet5.5-xHigh"><circle class="hit" cx="124.7" cy="46.0" r="12"/><circle cx="124.7" cy="46.0" r="6" fill="#1f59bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・59 秒
+Opus5.5-xHigh"><circle class="hit" cx="171.2" cy="46.0" r="12"/><circle cx="171.2" cy="46.0" r="6" fill="#1f59bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 83%・4 分 3 秒
+qwen3.8:27b"><circle class="hit" cx="443.7" cy="100.5" r="12"/><circle cx="443.7" cy="100.5" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 52%・48 秒
+gemma4:e4b"><circle class="hit" cx="131.0" cy="197.5" r="12"/><circle cx="131.0" cy="197.5" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 92%・11 分 39 秒
+gemma4:31b-it-qat"><circle class="hit" cx="647.1" cy="70.9" r="12"/><circle cx="647.1" cy="70.9" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 79%・4 分 26 秒
+gemma4:31b-ctx32k"><circle class="hit" cx="461.0" cy="111.2" r="12"/><circle cx="461.0" cy="111.2" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 57%・8 分 56 秒
+qwen3.8-flash-next:IQ4_XS"><circle class="hit" cx="596.1" cy="182.1" r="12"/><circle cx="596.1" cy="182.1" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 84%・7 分 44 秒
+strata-official:IQ3_XXS"><circle class="hit" cx="568.2" cy="96.3" r="12"/><circle cx="568.2" cy="96.3" r="6" fill="#7044bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 59%・6 分 46 秒
+strata-flash-coder:IQ1_M (Coder)"><circle class="hit" cx="542.4" cy="173.9" r="12"/><circle cx="542.4" cy="173.9" r="6" fill="#7044bb" stroke="var(--surface)" stroke-width="2"/></g><text class="point-label" x="124.7" y="34.0" text-anchor="middle">Sonnet5.5</text><text class="point-label" x="181.2" y="50.0" text-anchor="start">Opus5.5</text><text class="point-label" x="433.7" y="104.5" text-anchor="end">qwen3.8:27b</text><text class="point-label" x="141.0" y="201.5" text-anchor="start">gemma4:e4b</text><text class="point-label" x="637.1" y="74.9" text-anchor="end">gemma4:31b-it-qat</text><text class="point-label" x="461.0" y="131.2" text-anchor="middle">gemma4:31b-ctx32k</text><text class="point-label" x="606.1" y="186.1" text-anchor="start">IQ4_XS</text><text class="point-label" x="578.2" y="100.3" text-anchor="start">official IQ3_XXS</text><text class="point-label" x="532.4" y="177.9" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text></svg><h3>総合順位</h3><table class="data"><thead><tr><th>順位</th><th>モデル</th><th>系統</th><th>能力</th><th>1 問の時間 T（中央値）</th><th>速度点</th><th>総合</th><th>tok/s（参考）</th></tr></thead><tbody><tr><td class="num"><span class="medal" style="background:#c9a227" aria-label="1 位">1</span></td><td><span class="swatch" style="background:#1f59bb"></span>Sonnet5.5-xHigh</td><td>Claude（API）</td><td class="num">100%</td><td class="num">46 秒</td><td class="num">1.000</td><td class="num strong">1.000</td><td class="num">不明</td></tr><tr><td class="num"><span class="medal" style="background:#9aa1a9" aria-label="2 位">2</span></td><td><span class="swatch" style="background:#1f59bb"></span>Opus5.5-xHigh</td><td>Claude（API）</td><td class="num">100%</td><td class="num">59 秒</td><td class="num">0.911</td><td class="num strong">0.973</td><td class="num">不明</td></tr><tr><td class="num"><span class="medal" style="background:#b0703c" aria-label="3 位">3</span></td><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td>Ollama（この機体）</td><td class="num">83%</td><td class="num">4 分 3 秒</td><td class="num">0.389</td><td class="num strong">0.695</td><td class="num">45.2</td></tr><tr><td class="num"><span class="rank">4</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td>Ollama（この機体）</td><td class="num">79%</td><td class="num">4 分 26 秒</td><td class="num">0.356</td><td class="num strong">0.662</td><td class="num">28.9</td></tr><tr><td class="num"><span class="rank">5</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td>Ollama（この機体）</td><td class="num">52%</td><td class="num">48 秒</td><td class="num">0.988</td><td class="num strong">0.659</td><td class="num">90.4</td></tr><tr><td class="num"><span class="rank">6</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-it-qat</td><td>Ollama（この機体）</td><td class="num">92%</td><td class="num">11 分 39 秒</td><td class="num">0.000</td><td class="num strong">0.644</td><td class="num">12.4</td></tr><tr><td class="num"><span class="rank">7</span></td><td><span class="swatch" style="background:#7044bb"></span>strata-official:IQ3_XXS</td><td>Strata（この機体）</td><td class="num">84%</td><td class="num">7 分 44 秒</td><td class="num">0.151</td><td class="num strong">0.633</td><td class="num">74.7</td></tr><tr><td class="num"><span class="rank">8</span></td><td><span class="swatch" style="background:#7044bb"></span>strata-flash-coder:IQ1_M (Coder)</td><td>Strata（この機体）</td><td class="num">59%</td><td class="num">6 分 46 秒</td><td class="num">0.200</td><td class="num strong">0.475</td><td class="num">93.4</td></tr><tr><td class="num"><span class="rank">9</span></td><td><span class="swatch" style="background:#086c61"></span>qwen3.8-flash-next:IQ4_XS</td><td>Ollama（この機体）</td><td class="num">57%</td><td class="num">8 分 56 秒</td><td class="num">0.098</td><td class="num strong">0.426</td><td class="num">22.4</td></tr></tbody></table></section><section id="s4"><h2>4. 追加の 3 試験（指示追従・長文検索・JSON）</h2><ul class="notes callout"><li>天井効果: Sonnet5.5-xHigh・Opus5.5-xHigh・qwen3.8:27b・gemma4:31b-it-qat・gemma4:31b-ctx32k・qwen3.8-flash-next:IQ4_XS は追加の 3 試験の 9 問すべてで全部合格した（能力 100%）。この 6 つの順位の差は速さだけで、能力の差はこの試験では測れていない。</li><li>追加の 3 試験で思考が予算 6,144 トークンで打ち切られたあとの答え: strata-flash-coder:IQ1_M (Coder) の inst2・inst3。Strata は予算に届くと思考の最後に「I have thought about this long enough; time to give my answer.」を差し込み、答えを書かせる（マスの下段の「打切」）。</li></ul><h3>モデル × 問の点数</h3><div class="legend" aria-label="採点の凡例"><span class="legend-item"><span class="swatch" style="background:#1a7f37"></span>正解・全部合格</span><span class="legend-item"><span class="swatch" style="background:#76b688"></span>部分点（濃いほど高い）</span><span class="legend-item"><span class="swatch" style="background:#c0392b"></span>誤り・0 点</span><span class="legend-item"><span class="swatch" style="background:#8a8f98"></span>答えなし・飛ばし・記録なし</span></div><p class="caption">マスの下段の文字（状態）: 上限 = 生成の上限トークンに届いた、時間切れ = 1 要求の時間上限に届いた、無応答 = 一定時間なにも届かず打ち切った、エラー = サーバーがエラーを返した、思考中停止 = 思考の途中で停止トークンが出て、本文が空のまま終わった（0 点・答えなし）、打切 = 思考が予算に届いて打ち切られたあとの答え（Strata）、本文なし／コードなし = 答えの本文やコードのブロックが無かった、禁止 = 禁止の import・呼び出しがあり実行せず 0 点、文法誤り = 答えのコードが Python として読めない。2 つ当てはまるときは「・」でつなぐ。</p><svg class="chart" viewBox="0 0 854 378" width="854" height="378" role="img" aria-label="追加の 3 試験の点数"><text class="tick" x="282.0" y="20" text-anchor="middle">inst1</text><text class="tick" x="348.0" y="20" text-anchor="middle">inst2</text><text class="tick" x="414.0" y="20" text-anchor="middle">inst3</text><text class="tick" x="480.0" y="20" text-anchor="middle">needle1</text><text class="tick" x="546.0" y="20" text-anchor="middle">needle2</text><text class="tick" x="612.0" y="20" text-anchor="middle">needle3</text><text class="tick" x="678.0" y="20" text-anchor="middle">json1</text><text class="tick" x="744.0" y="20" text-anchor="middle">json2</text><text class="tick" x="810.0" y="20" text-anchor="middle">json3</text><rect x="234" y="43.0" width="10" height="10" rx="2" fill="#1f59bb"/><text class="label" x="228" y="52.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / inst1
+時間: 4 秒"><rect x="250" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / inst2
+時間: 4 秒"><rect x="316" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / inst3
+時間: 4 秒"><rect x="382" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / needle1
+時間: 2 秒"><rect x="448" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / needle2
+時間: 2 秒"><rect x="514" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / needle3
+時間: 2 秒"><rect x="580" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / json1
+時間: 2 秒"><rect x="646" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / json2
+時間: 2 秒"><rect x="712" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh / json3
+時間: 2 秒"><rect x="778" y="30" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="52.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="81.0" width="10" height="10" rx="2" fill="#1f59bb"/><text class="label" x="228" y="90.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / inst1
+時間: 6 秒"><rect x="250" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / inst2
+時間: 6 秒"><rect x="316" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / inst3
+時間: 6 秒"><rect x="382" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / needle1
+時間: 3 秒"><rect x="448" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / needle2
+時間: 3 秒"><rect x="514" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / needle3
+時間: 3 秒"><rect x="580" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / json1
+時間: 3 秒"><rect x="646" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / json2
+時間: 3 秒"><rect x="712" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh / json3
+時間: 3 秒"><rect x="778" y="68" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="90.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="119.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="128.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / inst1
+時間: 34 秒
+出力: 1,598 トークン
+うち思考（推定）: 1,563 トークン"><rect x="250" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / inst2
+時間: 14 秒
+出力: 609 トークン
+うち思考（推定）: 561 トークン"><rect x="316" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / inst3
+時間: 15 秒
+出力: 733 トークン
+うち思考（推定）: 709 トークン"><rect x="382" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / needle1
+時間: 13 秒
+出力: 118 トークン
+うち思考（推定）: 116 トークン"><rect x="448" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / needle2
+時間: 13 秒
+出力: 120 トークン
+うち思考（推定）: 118 トークン"><rect x="514" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / needle3
+時間: 13 秒
+出力: 110 トークン
+うち思考（推定）: 108 トークン"><rect x="580" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / json1
+時間: 4 秒
+出力: 163 トークン
+うち思考（推定）: 118 トークン"><rect x="646" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / json2
+時間: 5 秒
+出力: 207 トークン
+うち思考（推定）: 155 トークン"><rect x="712" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b / json3
+時間: 4 秒
+出力: 178 トークン
+うち思考（推定）: 132 トークン"><rect x="778" y="106" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="128.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="157.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="166.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / inst1
+時間: 8 秒
+出力: 707 トークン
+うち思考（推定）: 668 トークン"><rect x="250" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / inst2
+時間: 1 秒
+出力: 107 トークン
+うち思考（推定）: 0 トークン"><rect x="316" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="60%
+gemma4:e4b / inst3
+時間: 1 秒
+出力: 61 トークン
+うち思考（推定）: 0 トークン"><rect x="382" y="144" width="64" height="36" rx="3" fill="#64ab78"/><text class="cell-text" x="414.0" y="166.0" text-anchor="middle" fill="#ffffff">60%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / needle1
+時間: 5 秒
+出力: 273 トークン
+うち思考（推定）: 270 トークン"><rect x="448" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / needle2
+時間: 5 秒
+出力: 254 トークン
+うち思考（推定）: 250 トークン"><rect x="514" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / needle3
+時間: 7 秒
+出力: 428 トークン
+うち思考（推定）: 426 トークン"><rect x="580" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / json1
+時間: 8 秒
+出力: 734 トークン
+うち思考（推定）: 681 トークン"><rect x="646" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / json2
+時間: 7 秒
+出力: 656 トークン
+うち思考（推定）: 594 トークン"><rect x="712" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:e4b / json3
+時間: 6 秒
+出力: 588 トークン
+うち思考（推定）: 536 トークン"><rect x="778" y="144" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="166.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="195.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="204.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / inst1
+時間: 1 分 13 秒
+出力: 1,068 トークン
+うち思考（推定）: 1,047 トークン"><rect x="250" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / inst2
+時間: 1 分 19 秒
+出力: 1,140 トークン
+うち思考（推定）: 1,106 トークン"><rect x="316" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / inst3
+時間: 1 分 3 秒
+出力: 930 トークン
+うち思考（推定）: 910 トークン"><rect x="382" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / needle1
+時間: 55 秒
+出力: 503 トークン
+うち思考（推定）: 501 トークン"><rect x="448" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / needle2
+時間: 34 秒
+出力: 234 トークン
+うち思考（推定）: 231 トークン"><rect x="514" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / needle3
+時間: 45 秒
+出力: 365 トークン
+うち思考（推定）: 363 トークン"><rect x="580" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / json1
+時間: 40 秒
+出力: 568 トークン
+うち思考（推定）: 509 トークン"><rect x="646" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / json2
+時間: 45 秒
+出力: 656 トークン
+うち思考（推定）: 591 トークン"><rect x="712" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat / json3
+時間: 39 秒
+出力: 572 トークン
+うち思考（推定）: 517 トークン"><rect x="778" y="182" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="204.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="233.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="242.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / inst1
+時間: 1 分 21 秒
+出力: 2,338 トークン
+うち思考（推定）: 2,319 トークン"><rect x="250" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / inst2
+時間: 54 秒
+出力: 1,587 トークン
+うち思考（推定）: 1,555 トークン"><rect x="316" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / inst3
+時間: 57 秒
+出力: 1,656 トークン
+うち思考（推定）: 1,635 トークン"><rect x="382" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / needle1
+時間: 32 秒
+出力: 613 トークン
+うち思考（推定）: 611 トークン"><rect x="448" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / needle2
+時間: 51 秒
+出力: 1,120 トークン
+うち思考（推定）: 1,117 トークン"><rect x="514" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / needle3
+時間: 1 分 8 秒
+出力: 1,597 トークン
+うち思考（推定）: 1,595 トークン"><rect x="580" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / json1
+時間: 21 秒
+出力: 587 トークン
+うち思考（推定）: 525 トークン"><rect x="646" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / json2
+時間: 22 秒
+出力: 633 トークン
+うち思考（推定）: 566 トークン"><rect x="712" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k / json3
+時間: 17 秒
+出力: 482 トークン
+うち思考（推定）: 428 トークン"><rect x="778" y="220" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="242.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="271.0" width="10" height="10" rx="2" fill="#086c61"/><text class="label" x="228" y="280.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / inst1
+時間: 1 分 17 秒
+出力: 1,765 トークン
+うち思考（推定）: 1,718 トークン"><rect x="250" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / inst2
+時間: 26 秒
+出力: 531 トークン
+うち思考（推定）: 453 トークン"><rect x="316" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / inst3
+時間: 56 秒
+出力: 1,270 トークン
+うち思考（推定）: 1,225 トークン"><rect x="382" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / needle1
+時間: 59 秒
+出力: 250 トークン
+うち思考（推定）: 249 トークン"><rect x="448" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / needle2
+時間: 54 秒
+出力: 138 トークン
+うち思考（推定）: 136 トークン"><rect x="514" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / needle3
+時間: 52 秒
+出力: 112 トークン
+うち思考（推定）: 110 トークン"><rect x="580" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / json1
+時間: 15 秒
+出力: 269 トークン
+うち思考（推定）: 223 トークン"><rect x="646" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / json2
+時間: 14 秒
+出力: 240 トークン
+うち思考（推定）: 197 トークン"><rect x="712" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS / json3
+時間: 12 秒
+出力: 211 トークン
+うち思考（推定）: 165 トークン"><rect x="778" y="258" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="280.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="309.0" width="10" height="10" rx="2" fill="#7044bb"/><text class="label" x="228" y="318.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / inst1
+時間: 21 秒
+出力: 1,193 トークン
+うち思考（推定）: 1,157 トークン"><rect x="250" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="282.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="80%
+strata-official:IQ3_XXS / inst2
+時間: 13 秒
+出力: 687 トークン
+うち思考（推定）: 640 トークン"><rect x="316" y="296" width="64" height="36" rx="3" fill="#3f9557"/><text class="cell-text" x="348.0" y="318.0" text-anchor="middle" fill="#ffffff">80%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / inst3
+時間: 15 秒
+出力: 988 トークン
+うち思考（推定）: 964 トークン"><rect x="382" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="414.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / needle1
+時間: 7 秒
+出力: 158 トークン
+うち思考（推定）: 157 トークン"><rect x="448" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / needle2
+時間: 6 秒
+出力: 109 トークン
+うち思考（推定）: 107 トークン"><rect x="514" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / needle3
+時間: 8 秒
+出力: 235 トークン
+うち思考（推定）: 233 トークン"><rect x="580" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / json1
+時間: 5 秒
+出力: 191 トークン
+うち思考（推定）: 139 トークン"><rect x="646" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / json2
+時間: 11 秒
+出力: 570 トークン
+うち思考（推定）: 505 トークン"><rect x="712" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-official:IQ3_XXS / json3
+時間: 5 秒
+出力: 189 トークン
+うち思考（推定）: 142 トークン"><rect x="778" y="296" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="318.0" text-anchor="middle" fill="#ffffff">100%</text></g><rect x="234" y="347.0" width="10" height="10" rx="2" fill="#7044bb"/><text class="label" x="228" y="356.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="80%
+strata-flash-coder:IQ1_M (Coder) / inst1
+時間: 1 分 5 秒
+出力: 4,224 トークン
+うち思考（推定）: 4,209 トークン"><rect x="250" y="334" width="64" height="36" rx="3" fill="#3f9557"/><text class="cell-text" x="282.0" y="356.0" text-anchor="middle" fill="#ffffff">80%</text></g><g class="mark" tabindex="0" data-tip="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / inst2
+思考が予算に届いて打ち切られたあとの答え
+時間: 1 分 46 秒
+出力: 6,243 トークン
+うち思考（推定）: 6,209 トークン"><rect x="316" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="348.0" y="349" text-anchor="middle" fill="#ffffff">100%</text><text class="cell-sub" x="348.0" y="363" text-anchor="middle" fill="#ffffff">打切</text></g><g class="mark" tabindex="0" data-tip="20%（打切）
+strata-flash-coder:IQ1_M (Coder) / inst3
+思考が予算に届いて打ち切られたあとの答え
+時間: 1 分 36 秒
+出力: 6,192 トークン
+うち思考（推定）: 6,145 トークン"><rect x="382" y="334" width="64" height="36" rx="3" fill="#aed6b9"/><text class="cell-text" x="414.0" y="349" text-anchor="middle" fill="#0b0b0b">20%</text><text class="cell-sub" x="414.0" y="363" text-anchor="middle" fill="#0b0b0b">打切</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder) / needle1
+時間: 13 秒
+出力: 636 トークン
+うち思考（推定）: 634 トークン"><rect x="448" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="480.0" y="356.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder) / needle2
+時間: 6 秒
+出力: 179 トークン
+うち思考（推定）: 176 トークン"><rect x="514" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="546.0" y="356.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder) / needle3
+時間: 6 秒
+出力: 172 トークン
+うち思考（推定）: 170 トークン"><rect x="580" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="612.0" y="356.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder) / json1
+時間: 4 秒
+出力: 259 トークン
+うち思考（推定）: 208 トークン"><rect x="646" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="678.0" y="356.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder) / json2
+時間: 7 秒
+出力: 471 トークン
+うち思考（推定）: 421 トークン"><rect x="712" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="744.0" y="356.0" text-anchor="middle" fill="#ffffff">100%</text></g><g class="mark" tabindex="0" data-tip="100%
+strata-flash-coder:IQ1_M (Coder) / json3
+時間: 6 秒
+出力: 369 トークン
+うち思考（推定）: 321 トークン"><rect x="778" y="334" width="64" height="36" rx="3" fill="#1a7f37"/><text class="cell-text" x="810.0" y="356.0" text-anchor="middle" fill="#ffffff">100%</text></g></svg><h3>種類ごとの平均</h3><table class="data"><thead><tr><th>モデル</th><th>日本語の指示に従う</th><th>長い資料からの検索</th><th>JSON の構造化出力</th><th>全体</th></tr></thead><tbody><tr><td><span class="swatch" style="background:#1f59bb"></span>Sonnet5.5-xHigh</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">100%</td></tr><tr><td><span class="swatch" style="background:#1f59bb"></span>Opus5.5-xHigh</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">100%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">100%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td class="num">87%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">96%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-it-qat</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">100%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">100%</td></tr><tr><td><span class="swatch" style="background:#086c61"></span>qwen3.8-flash-next:IQ4_XS</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">100%</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-official:IQ3_XXS</td><td class="num">93%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">98%</td></tr><tr><td><span class="swatch" style="background:#7044bb"></span>strata-flash-coder:IQ1_M (Coder)</td><td class="num">67%</td><td class="num">100%</td><td class="num">100%</td><td class="num strong">89%</td></tr></tbody></table><h3>能力（問ごとの点数の平均）</h3><div class="legend" aria-label="系統の凡例"><span class="legend-item"><span class="swatch" style="background:#1f59bb"></span>Claude（API）</span><span class="legend-item"><span class="swatch" style="background:#086c61"></span>Ollama（この機体）</span><span class="legend-item"><span class="swatch" style="background:#7044bb"></span>Strata（この機体）</span></div><svg class="chart" viewBox="0 0 770 312" width="770" height="312" role="img" aria-label="追加の 3 試験の能力"><line class="grid" x1="250.0" y1="8" x2="250.0" y2="286"/><text class="tick" x="250.0" y="300" text-anchor="middle">0%</text><line class="grid" x1="357.5" y1="8" x2="357.5" y2="286"/><text class="tick" x="357.5" y="300" text-anchor="middle">25%</text><line class="grid" x1="465.0" y1="8" x2="465.0" y2="286"/><text class="tick" x="465.0" y="300" text-anchor="middle">50%</text><line class="grid" x1="572.5" y1="8" x2="572.5" y2="286"/><text class="tick" x="572.5" y="300" text-anchor="middle">75%</text><line class="grid" x1="680.0" y1="8" x2="680.0" y2="286"/><text class="tick" x="680.0" y="300" text-anchor="middle">100%</text><line class="axis" x1="250" y1="8" x2="250" y2="286"/><text class="label" x="240" y="31.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Sonnet5.5-xHigh
+全部合格 9 問・答えあり 9 問"><rect class="hit" x="250" y="14" width="430" height="26"/><path d="M250.0,19.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#1f59bb"/></g><text class="value" x="686.0" y="31.0">100%</text><text class="label" x="240" y="61.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="100%
+Opus5.5-xHigh
+全部合格 9 問・答えあり 9 問"><rect class="hit" x="250" y="44" width="430" height="26"/><path d="M250.0,49.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#1f59bb"/></g><text class="value" x="686.0" y="61.0">100%</text><text class="label" x="240" y="91.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="100%
+qwen3.8:27b
+全部合格 9 問・答えあり 9 問"><rect class="hit" x="250" y="74" width="430" height="26"/><path d="M250.0,79.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#086c61"/></g><text class="value" x="686.0" y="91.0">100%</text><text class="label" x="240" y="121.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="96%
+gemma4:e4b
+全部合格 8 問・答えあり 9 問"><rect class="hit" x="250" y="104" width="430" height="26"/><path d="M250.0,109.0 h406.9 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-406.9 z" fill="#086c61"/></g><text class="value" x="666.9" y="121.0">96%</text><text class="label" x="240" y="151.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-it-qat
+全部合格 9 問・答えあり 9 問"><rect class="hit" x="250" y="134" width="430" height="26"/><path d="M250.0,139.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#086c61"/></g><text class="value" x="686.0" y="151.0">100%</text><text class="label" x="240" y="181.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="100%
+gemma4:31b-ctx32k
+全部合格 9 問・答えあり 9 問"><rect class="hit" x="250" y="164" width="430" height="26"/><path d="M250.0,169.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#086c61"/></g><text class="value" x="686.0" y="181.0">100%</text><text class="label" x="240" y="211.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="100%
+qwen3.8-flash-next:IQ4_XS
+全部合格 9 問・答えあり 9 問"><rect class="hit" x="250" y="194" width="430" height="26"/><path d="M250.0,199.0 h426.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-426.0 z" fill="#086c61"/></g><text class="value" x="686.0" y="211.0">100%</text><text class="label" x="240" y="241.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="98%
+strata-official:IQ3_XXS
+全部合格 8 問・答えあり 9 問"><rect class="hit" x="250" y="224" width="430" height="26"/><path d="M250.0,229.0 h416.4 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-416.4 z" fill="#7044bb"/></g><text class="value" x="676.4" y="241.0">98%</text><text class="label" x="240" y="271.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="89%
+strata-flash-coder:IQ1_M (Coder)
+全部合格 7 問・答えあり 9 問"><rect class="hit" x="250" y="254" width="430" height="26"/><path d="M250.0,259.0 h378.2 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-378.2 z" fill="#7044bb"/></g><text class="value" x="638.2" y="271.0">89%</text></svg><h3>1 問あたりの時間（中央値・対数の目盛り）</h3><svg class="chart" viewBox="0 0 770 312" width="770" height="312" role="img" aria-label="追加の 3 試験の時間"><line class="grid" x1="474.0" y1="8" x2="474.0" y2="286"/><text class="tick" x="474.0" y="300" text-anchor="middle">10 秒</text><line class="grid" x1="595.2" y1="8" x2="595.2" y2="286"/><text class="tick" x="595.2" y="300" text-anchor="middle">30 秒</text><line class="grid" x1="671.6" y1="8" x2="671.6" y2="286"/><text class="tick" x="671.6" y="300" text-anchor="middle">1 分</text><line class="axis" x1="250" y1="8" x2="250" y2="286"/><text class="label" x="240" y="31.0" text-anchor="end">Sonnet5.5-xHigh</text><g class="mark" tabindex="0" data-tip="2 秒
+Sonnet5.5-xHigh"><rect class="hit" x="250" y="14" width="430" height="26"/><path d="M250.0,19.0 h33.1 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-33.1 z" fill="#1f59bb"/></g><text class="value" x="293.1" y="31.0">2 秒</text><text class="label" x="240" y="61.0" text-anchor="end">Opus5.5-xHigh</text><g class="mark" tabindex="0" data-tip="3 秒
+Opus5.5-xHigh"><rect class="hit" x="250" y="44" width="430" height="26"/><path d="M250.0,49.0 h79.8 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-79.8 z" fill="#1f59bb"/></g><text class="value" x="339.8" y="61.0">3 秒</text><text class="label" x="240" y="91.0" text-anchor="end">qwen3.8:27b</text><g class="mark" tabindex="0" data-tip="13 秒
+qwen3.8:27b"><rect class="hit" x="250" y="74" width="430" height="26"/><path d="M250.0,79.0 h246.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-246.0 z" fill="#086c61"/></g><text class="value" x="506.0" y="91.0">13 秒</text><text class="label" x="240" y="121.0" text-anchor="end">gemma4:e4b</text><g class="mark" tabindex="0" data-tip="6 秒
+gemma4:e4b"><rect class="hit" x="250" y="104" width="430" height="26"/><path d="M250.0,109.0 h172.3 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-172.3 z" fill="#086c61"/></g><text class="value" x="432.3" y="121.0">6 秒</text><text class="label" x="240" y="151.0" text-anchor="end">gemma4:31b-it-qat</text><g class="mark" tabindex="0" data-tip="45 秒
+gemma4:31b-it-qat"><rect class="hit" x="250" y="134" width="430" height="26"/><path d="M250.0,139.0 h386.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-386.0 z" fill="#086c61"/></g><text class="value" x="646.0" y="151.0">45 秒</text><text class="label" x="240" y="181.0" text-anchor="end">gemma4:31b-ctx32k</text><g class="mark" tabindex="0" data-tip="51 秒
+gemma4:31b-ctx32k"><rect class="hit" x="250" y="164" width="430" height="26"/><path d="M250.0,169.0 h399.5 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-399.5 z" fill="#086c61"/></g><text class="value" x="659.5" y="181.0">51 秒</text><text class="label" x="240" y="211.0" text-anchor="end">qwen3.8-flash-next:IQ4_XS</text><g class="mark" tabindex="0" data-tip="52 秒
+qwen3.8-flash-next:IQ4_XS"><rect class="hit" x="250" y="194" width="430" height="26"/><path d="M250.0,199.0 h401.4 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-401.4 z" fill="#086c61"/></g><text class="value" x="661.4" y="211.0">52 秒</text><text class="label" x="240" y="241.0" text-anchor="end">strata-official:IQ3_XXS</text><g class="mark" tabindex="0" data-tip="8 秒
+strata-official:IQ3_XXS"><rect class="hit" x="250" y="224" width="430" height="26"/><path d="M250.0,229.0 h194.5 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-194.5 z" fill="#7044bb"/></g><text class="value" x="454.5" y="241.0">8 秒</text><text class="label" x="240" y="271.0" text-anchor="end">strata-flash-coder:IQ1_M (Coder)</text><g class="mark" tabindex="0" data-tip="7 秒
+strata-flash-coder:IQ1_M (Coder)"><rect class="hit" x="250" y="254" width="430" height="26"/><path d="M250.0,259.0 h186.7 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-186.7 z" fill="#7044bb"/></g><text class="value" x="446.7" y="271.0">7 秒</text></svg><h3>能力 × 時間</h3><svg class="chart" viewBox="0 0 720 410" width="720" height="410" role="img" aria-label="追加の 3 試験"><line class="grid" x1="60" y1="360.0" x2="690" y2="360.0"/><text class="tick" x="52" y="364.0" text-anchor="end">0%</text><line class="grid" x1="60" y1="281.5" x2="690" y2="281.5"/><text class="tick" x="52" y="285.5" text-anchor="end">25%</text><line class="grid" x1="60" y1="203.0" x2="690" y2="203.0"/><text class="tick" x="52" y="207.0" text-anchor="end">50%</text><line class="grid" x1="60" y1="124.5" x2="690" y2="124.5"/><text class="tick" x="52" y="128.5" text-anchor="end">75%</text><line class="grid" x1="60" y1="46.0" x2="690" y2="46.0"/><text class="tick" x="52" y="50.0" text-anchor="end">100%</text><line class="grid" x1="388.2" y1="46" x2="388.2" y2="360"/><text class="tick" x="388.2" y="378" text-anchor="middle">10 秒</text><line class="grid" x1="565.7" y1="46" x2="565.7" y2="360"/><text class="tick" x="565.7" y="378" text-anchor="middle">30 秒</text><line class="grid" x1="677.7" y1="46" x2="677.7" y2="360"/><text class="tick" x="677.7" y="378" text-anchor="middle">1 分</text><text class="axis-title" x="375.0" y="402" text-anchor="middle">時間（対数。左ほど速い）</text><text class="axis-title" x="14" y="203.0" text-anchor="middle" transform="rotate(-90 14 203.0)">能力</text><g class="mark" tabindex="0" data-tip="能力 100%・2 秒
+Sonnet5.5-xHigh"><circle class="hit" cx="114.4" cy="46.0" r="12"/><circle cx="114.4" cy="46.0" r="6" fill="#1f59bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・3 秒
+Opus5.5-xHigh"><circle class="hit" cx="182.8" cy="46.0" r="12"/><circle cx="182.8" cy="46.0" r="6" fill="#1f59bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・13 秒
+qwen3.8:27b"><circle class="hit" cx="426.3" cy="46.0" r="12"/><circle cx="426.3" cy="46.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 96%・6 秒
+gemma4:e4b"><circle class="hit" cx="318.2" cy="60.0" r="12"/><circle cx="318.2" cy="60.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・45 秒
+gemma4:31b-it-qat"><circle class="hit" cx="631.4" cy="46.0" r="12"/><circle cx="631.4" cy="46.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・51 秒
+gemma4:31b-ctx32k"><circle class="hit" cx="651.1" cy="46.0" r="12"/><circle cx="651.1" cy="46.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 100%・52 秒
+qwen3.8-flash-next:IQ4_XS"><circle class="hit" cx="653.9" cy="46.0" r="12"/><circle cx="653.9" cy="46.0" r="6" fill="#086c61" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 98%・8 秒
+strata-official:IQ3_XXS"><circle class="hit" cx="350.8" cy="53.0" r="12"/><circle cx="350.8" cy="53.0" r="6" fill="#7044bb" stroke="var(--surface)" stroke-width="2"/></g><g class="mark" tabindex="0" data-tip="能力 89%・7 秒
+strata-flash-coder:IQ1_M (Coder)"><circle class="hit" cx="339.3" cy="80.9" r="12"/><circle cx="339.3" cy="80.9" r="6" fill="#7044bb" stroke="var(--surface)" stroke-width="2"/></g><text class="point-label" x="114.4" y="34.0" text-anchor="middle">Sonnet5.5</text><text class="point-label" x="182.8" y="34.0" text-anchor="middle">Opus5.5</text><text class="point-label" x="426.3" y="66.0" text-anchor="middle">qwen3.8:27b</text><text class="point-label" x="308.2" y="64.0" text-anchor="end">gemma4:e4b</text><text class="point-label" x="621.4" y="50.0" text-anchor="end">gemma4:31b-it-qat</text><text class="point-label" x="651.1" y="34.0" text-anchor="middle">gemma4:31b-ctx32k</text><text class="point-label" x="663.9" y="50.0" text-anchor="start">IQ4_XS</text><text class="point-label" x="350.8" y="41.0" text-anchor="middle">official IQ3_XXS</text><text class="point-label" x="349.3" y="84.9" text-anchor="start">strata-flash-coder:IQ1_M (Coder)</text></svg><h3>総合順位</h3><table class="data"><thead><tr><th>順位</th><th>モデル</th><th>系統</th><th>能力</th><th>1 問の時間 T（中央値）</th><th>速度点</th><th>総合</th><th>tok/s（参考）</th></tr></thead><tbody><tr><td class="num"><span class="medal" style="background:#c9a227" aria-label="1 位">1</span></td><td><span class="swatch" style="background:#1f59bb"></span>Sonnet5.5-xHigh</td><td>Claude（API）</td><td class="num">100%</td><td class="num">2 秒</td><td class="num">1.000</td><td class="num strong">1.000</td><td class="num">不明</td></tr><tr><td class="num"><span class="medal" style="background:#9aa1a9" aria-label="2 位">2</span></td><td><span class="swatch" style="background:#1f59bb"></span>Opus5.5-xHigh</td><td>Claude（API）</td><td class="num">100%</td><td class="num">3 秒</td><td class="num">0.873</td><td class="num strong">0.962</td><td class="num">不明</td></tr><tr><td class="num"><span class="medal" style="background:#b0703c" aria-label="3 位">3</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:e4b</td><td>Ollama（この機体）</td><td class="num">96%</td><td class="num">6 秒</td><td class="num">0.622</td><td class="num strong">0.856</td><td class="num">92.3</td></tr><tr><td class="num"><span class="rank">4</span></td><td><span class="swatch" style="background:#7044bb"></span>strata-official:IQ3_XXS</td><td>Strata（この機体）</td><td class="num">98%</td><td class="num">8 秒</td><td class="num">0.562</td><td class="num strong">0.853</td><td class="num">61.4</td></tr><tr><td class="num"><span class="rank">5</span></td><td><span class="swatch" style="background:#086c61"></span>qwen3.8:27b</td><td>Ollama（この機体）</td><td class="num">100%</td><td class="num">13 秒</td><td class="num">0.422</td><td class="num strong">0.827</td><td class="num">48.1</td></tr><tr><td class="num"><span class="rank">6</span></td><td><span class="swatch" style="background:#7044bb"></span>strata-flash-coder:IQ1_M (Coder)</td><td>Strata（この機体）</td><td class="num">89%</td><td class="num">7 秒</td><td class="num">0.583</td><td class="num strong">0.797</td><td class="num">72.1</td></tr><tr><td class="num"><span class="rank">7</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-it-qat</td><td>Ollama（この機体）</td><td class="num">100%</td><td class="num">45 秒</td><td class="num">0.042</td><td class="num strong">0.713</td><td class="num">14.9</td></tr><tr><td class="num"><span class="rank">8</span></td><td><span class="swatch" style="background:#086c61"></span>gemma4:31b-ctx32k</td><td>Ollama（この機体）</td><td class="num">100%</td><td class="num">51 秒</td><td class="num">0.005</td><td class="num strong">0.702</td><td class="num">29.6</td></tr><tr><td class="num"><span class="rank">9</span></td><td><span class="swatch" style="background:#086c61"></span>qwen3.8-flash-next:IQ4_XS</td><td>Ollama（この機体）</td><td class="num">100%</td><td class="num">52 秒</td><td class="num">0.000</td><td class="num strong">0.700</td><td class="num">23.3</td></tr></tbody></table></section><section id="s5"><h2>5. 所見</h2><h3>事実</h3><ul class="notes"><li>3D 数学の能力: 全問正解（100%）は Opus5.5-xHigh・Sonnet5.5-xHigh（3 回とも）、gemma4:31b-ctx32k・gemma4:31b-it-qat・qwen3.8-flash-next:IQ4_XS（各 1 回）、strata-official:IQ3_XXS（2 回とも）。低いのは gemma4:e4b（3 回で 66.7%。(4) は 3 回とも誤り）。</li><li>3D の時間（中央値）は Opus 62 秒・Sonnet 67 秒・gemma4:e4b 115 秒が短く、gemma4:31b-it-qat 3,660 秒・IQ4_XS 3,720 秒が長い。総合は 1 位 Opus 1.000・2 位 Sonnet 0.994・3 位 gemma4:31b-ctx32k 0.856、最下位は IQ4_XS 0.700（能力は 100% で、時間が最も長い）。10-09 に足した Coder は 4 位 0.820（下の Coder の項）。</li><li>コーディング（難しい版 v2）: Claude 2 種は 6 問すべてで隠しテストに全部合格（能力 100%）。1 問の時間の中央値は Sonnet 46 秒・Opus 59 秒で、総合は 1 位 Sonnet 1.000・2 位 Opus 0.973。</li><li>ローカルのコーディングの能力は gemma4:31b-it-qat 92%・strata-official 84%・qwen3.8:27b 83%・gemma4:31b-ctx32k 79%・Coder 59%・IQ4_XS 57%（C1 はエラーで 0 点。C1 の項を参照）・gemma4:e4b 52%。総合の 3 位は qwen3.8:27b 0.695、最下位は IQ4_XS 0.426。10-09 に足した Coder は総合 8 位 0.475（下の Coder の項）。ローカルで 1 問の時間の中央値が最も短いのは gemma4:e4b 48 秒、最も長いのは gemma4:31b-it-qat 699 秒。</li><li>コーディングで 0 点だった問の理由: qwen3.8:27b の C4 は思考だけで 18,635 トークンを出して終わり、本文が無かった。gemma4:31b-ctx32k の C4 は答えのコードの文字列に \u の書き方の誤りがあり、SyntaxError で 1 ケースも動かなかった。gemma4:e4b の C5 は禁止の re を import したので実行せず 0 点。</li><li>IQ4_XS の C1: 15:59 の 1 回目は HTTP 500「CUDA error: an illegal memory access was encountered」で答えなし（元の記録は c1-run1.json.cuda-error-1559 に控えた）。Ollama は runner（llama-server）を自動で起動し直し、その後の C2〜C6 と追加の 9 問は正常に返った。18:53 の流し直しも 39 秒で同じエラーになり答えなし。18:53 の Ollama の journal では、ggml-cuda の量子化行列積 mul_mat_q（mmq.cuh:1409）で止まっていた。どちらの回も配置は同じで、Ollama の記録は「49 layers (36 overflowing)」（GPU 49 層のうち 36 層が CPU 側に溢れる配置）、/api/ps の GPU 配置率 0.431、文脈長 65,536。この問は 0 点で数え、時間の中央値には入れていない。</li><li>IQ4_XS の C5 は 1,531 秒で生成の上限 32,768 トークンに届き、思考のまま本文が出ず 0 点（status length）。</li><li>公式（strata-official）のコーディングは 6 本すべてで、思考の最後に Strata が差し込む「I have thought about this long enough; time to give my answer.」（tools/strata/vendor/Strata/serve/server.py の REASONING_WRAP_UP）があり、思考が予算 24,576 トークンで打ち切られたあとの答え。思考の推定は 1 問 24,360〜24,900 トークン、時間は 439〜484 秒。</li><li>コーディングの思考の中身（問ごとの最小〜最大）: 思考 1 万字あたりの「?」は公式 44.5〜71.0・IQ4_XS 0〜14.4（C2〜C6）・qwen3.8:27b 1.4〜12.9・gemma4 の 3 種 0〜10.5。「maybe」は公式 5.9〜16.2・ほかの 5 種は 0.5 未満。20 字以上の行のうち、それより前に同じ行が出ていた割合は公式 0.8〜8.5%・IQ4_XS 6.9〜20.0%・qwen3.8:27b 1.0〜31.7%・gemma4:31b の 2 種 4.5〜35.6%。</li><li>打ち切りのあとの答えでも、公式のコーディングの能力は 84%（C2・C3・C6 は全部合格）。</li><li>3D 問題の記録（Documents/3D問題_実施モデル一覧_2026-10-08.md）では、公式は予算なしで 49,161〜53,975 トークンで収束し、2 回とも全問正解した。</li><li>追加の 3 試験: 9 種のうち 6 種が 9 問すべて満点。満点でないのは gemma4:e4b の inst3（60%。1 行 40 字以内と、各行に「朝ごはん」を入れる条件を落とした）、strata-official の inst2（80%。「定期的」を使わず「定期に」と書いた）、Coder（inst1 80%・inst3 20%。下の Coder の項）。公式は 1 問を 5〜21 秒で答えた。追加の総合は 1 位 Sonnet 1.000・2 位 Opus 0.962・3 位 gemma4:e4b 0.856、最下位は IQ4_XS 0.700（能力は 100% で、1 問の時間が最も長い 52 秒）。</li><li>gemma4:31b-it-qat（num_ctx を送らず文脈 65,536）は /api/ps の GPU 配置率 0.905、同じ重みの gemma4:31b-ctx32k（32,768）は 1.0。コーディングの生成速度の中央値は 12.4 と 28.9 tok/s、能力は 92% と 79%（差の多くは ctx32k の C4 の 0 点）。</li><li>易しい版 v1 のコーディングでは Claude 2 種と qwen3.8:27b が 6 問とも全部合格、gemma4:31b-ctx32k も流した 4 問とも全部合格で差がつかず、難しい版 v2 に替えた。v1 の記録は results/2026-10-08/archive-coding-v1-easy/ に保管し、順位には使っていない。</li><li>Coder（strata-flash-coder:IQ1_M、Strata 8083）は 2026-10-09 に追加で計測した。条件は公式と同じ（effort high、temperature 1.0 / top_p 0.95 / top_k 20、思考の予算はコーディング 24,576・追加 6,144）。サーバーの設定は既定のまま（reasoning_loop_recovery あり、設定の予算は 0）。</li><li>Coder の 3D: 公式の O1 と同じ条件（予算なし、生成の上限 65,536）で 2 回流し、2 回とも収束して全問正解（48,497・50,895 トークン、711・744 秒、68 tok/s）。総合は 4 位 0.820 で、公式（5 位 0.809、中央値 839 秒）より少し速い。答えは英語（2 回目は日本語と混在）で、1 回目は (1) の途中の式に書き誤り（−t ≤ t ≤ r）があるが結論は正しい。</li><li>Coder のコーディング: 能力 59%（C1 と C3 は全部合格、C4 65%・C2 46%・C6 40%・C5 4%）、1 問の時間の中央値 406 秒、生成 93 tok/s（公式の 75 tok/s より速い）、総合 8 位 0.475。6 問のうち 5 問は思考が予算 24,576 で打ち切られたあとの答えで、C3 だけ約 12,200 トークンで自分から思考を終えた。C5 は答えのコードが変数 i の UnboundLocalError で 24 ケース中 23 が動かず、C6 は解ける盤面でも ValueError を投げた。</li><li>Coder のコーディングの思考: 1 万字あたりの「?」は 41.2〜51.3、「maybe」は 2.6〜13.4、同じ行の再出現は 1.3〜7.1%。公式と同じく、同じ文の繰り返しではなく仕様の読みを疑い続ける型だった。</li><li>Coder の追加の 3 試験: 能力 89%・総合 6 位 0.797。検索（needle）と JSON は 6 問とも満点で 4〜13 秒。日本語の指示（inst）は答えの日本語が崩れていた: inst1 は 5 行とも「映画映画。」、inst2 は「定期的ののののの…」の繰り返し、inst3 は「朝ごはの nutritional balance becomes important.」のように英語が混じった。inst2 と inst3 は思考が予算 6,144 で打ち切られた。</li><li>Coder の inst の点（inst1 80%・inst2 100%・inst3 20%）は、行数・語尾・禁止語などの形の条件だけを機械で確かめた値で、文の意味は見ていない。inst1 と inst2 の答えは意味が通らないが、形の条件を満たしたので点が付いている。tools/strata/README.md の Coder の既知の制約にも「日本語の短い質問は実用にならない」とある。</li><li>Strata 2 種（公式・Coder）のコーディングの点が低い原因を 10-09 に調べた（C4・C5、各条件 3 回）。評価が Strata だけに付けていた思考の予算 24,576 を外すと、公式は平均 69% → 0%、Coder は 62% → 19% に下がった。思考の強さを low にしても基準を上回らなかった（公式 41%・27%、Coder 10%）。設定の誤りは見つからず、この表の Strata の点は「予算に助けられた値」として読む。Ollama のモデルには同じ予算を付けていない。詳しくは Documents/Strata_コーディング性能の調査_2026-10-09.html。</li></ul><h3>意見（解釈）</h3><ul class="notes"><li>コーディング v2 でも Claude 2 種は天井に当たっており、Sonnet と Opus の能力の差はこの試験では測れていない。2 つの順位の差は速さだけで、その時間も API の待ちを含むので、ローカルとの速さの比較は目安にとどまる。</li><li>公式は、同じ文を繰り返すループではなく、仕様の読みを疑い続ける型で予算に届いたと見る（思考 1 万字あたりの「?」がほかのローカル 5 種の数倍、「maybe」が 10 倍以上多く、同じ行の再出現は少ない）。</li><li>公式は 3D では予算なしで収束して全問正解したが、コーディングでは逆だった。10-09 に C4・C5 で確かめると、予算を外した公式は 6 回とも答えが出なかった。予算 24,576 は点を下げるのではなく、考えが終わらないモデルに答えを書かせる助けになっていると見る（Documents/Strata_コーディング性能の調査_2026-10-09.html）。</li><li>ローカルで能力と速さの釣り合いがよいのは qwen3.8:27b と gemma4:31b-ctx32k。gemma4:31b-it-qat はコーディングの能力がローカルで最も高いが遅い。同じ重みの 2 つの能力差は 1 問（C4）でほぼ決まっていて、1 回の試行では重みの差とは言えない。速さでは ctx32k の設定のほうが実用的。</li><li>gemma4:e4b は短い作業（追加の 3 試験）なら速さと点で上位に入るが、難しいコーディング（C2・C5）では大きく落ちる。</li><li>IQ4_XS は C2〜C4 で全部合格と強いが、1 問が長く、C5 は 32,768 トークンでも思考が終わらなかった。大半を CPU 側に置く配置では、長い思考が要る問で時間と上限の両方に当たりやすい。</li><li>試行は各問 1 回なので、1 問の 0 点（qwen3.8:27b と gemma4:31b-ctx32k の C4 など）で順位が入れ替わりうる。総合の細かい差より、全部合格した問の数と、答えなし・上限の出方を見るほうがよい。</li><li>Coder は名前に反して、この試験のコーディングでは公式（84%）より低い 59% だった。10-09 に C4・C5 で確かめると、予算を外しても（平均 62% → 19%）、問題文を英語にしても（29%）、思考の強さを low にしても（10%）、点は上がらなかった。低い点は設定ではなく、IQ1_M の量子化とエキスパートの間引きによると見る。</li><li>Coder の追加試験の能力 89% は高く出すぎている。日本語の文を書かせる作業（inst）は答えが崩れていて実用にならず、点は形の条件だけで付いた。Coder は英語で考えて英語で答える作業（コード、数式、JSON の取り出し）に限って使うのがよいと見る。</li><li>Strata の 2 種（公式と Coder）を比べると、3D とコーディングの能力は公式が安定し、Coder は速さ（93 tok/s、起動 19 秒）で勝る。Coder は IQ1_M でエキスパートを半分に間引いた版で、公式との差が量子化によるのか間引きによるのかは切り分けていない。</li></ul></section><section id="s6"><h2>6. 付録（式・生データ・問題文）</h2><h3>式</h3><ul class="notes formulas"><li>能力 = 回（問）ごとの点数（0〜1）の平均。答えなし・上限・時間切れ・時間の上限で飛ばした問は 0 点</li><li>速度点 = (ln T_max − ln T) ÷ (ln T_max − ln T_min)。T は時間の中央値。最も遅いモデルが 0、最も速いモデルが 1</li><li>総合 = 0.7 × 能力 + 0.3 × 速度点</li></ul><p class="caption">時間 T: 3D は全問に答えるまでの時間の中央値、コーディングと追加は 1 問あたりの時間の中央値。Ollama はロード時間を除く。Claude は Agent の duration（複数問をまとめて頼んだ回は問の数で割る）。時間の幅が広い（数秒〜1 時間）ので、速度点は対数で比べる。時間の上限で飛ばした問とエラーの問は、時間の中央値に入れない。</p><h3>生データの場所</h3><table class="data kv"><tbody><tr><th>ローカルの記録</th><td><code>tools/model-eval/results/2026-10-08/local/&lt;モデル&gt;/&lt;試験&gt;/&lt;問&gt;-run1.json</code></td></tr><tr><th>Claude の記録</th><td><code>tools/model-eval/results/2026-10-08/claude/&lt;sonnet|opus&gt;/&lt;試験&gt;/&lt;問&gt;-run&lt;n&gt;.json</code></td></tr><tr><th>3D の既存記録</th><td><code>tools/model-eval/results/2026-10-08/math3d_local.json（出典 Documents/3D問題_実施モデル一覧_2026-10-08.md）</code></td></tr><tr><th>集計</th><td><code>tools/model-eval/results/2026-10-08/summary.json</code></td></tr><tr><th>問題と隠しテスト</th><td><code>tools/model-eval/suites/</code></td></tr><tr><th>保管（archive-coding-v1-easy）</th><td><code>tools/model-eval/results/2026-10-08/archive-coding-v1-easy/（順位には使っていない）</code></td></tr></tbody></table><h3>問題文</h3><details><summary>3D 数学（TestData/数学難問-三次元空間-TEST.md）</summary><pre># AI性能テスト用 数学難問（三次元空間）
+
+## 問題：3次元幾何・体積
+
+三次元空間内に
+
+\[
+O=(0,0,0),\quad A=(1,0,0),\quad B=(1,1,0),\quad C=(1,1,1)
+\]
+
+をとる。
+
+また、
+
+\[
+\frac12 &lt; r &lt; 1
+\]
+
+とする。
+
+点 \(P\) が線分 \(OA\) 上を動くとき、\(P\) を中心とする半径 \(r\) の球（内部を含む）が通過してできる立体を \(V_1\) とする。
+
+同様に、点 \(P\) が線分 \(AB\) 上を動くときにできる立体を \(V_2\)、点 \(P\) が線分 \(BC\) 上を動くときにできる立体を \(V_3\) とする。
+
+### (1)
+
+平面
+
+\[
+y=t
+\]
+
+が \(V_1\) と \(V_3\) の両方と共有点をもつような \(t\) の範囲を求めよ。
+
+さらに、そのような \(t\) に対して、
+
+- 平面 \(y=t\) と \(V_1\) の共通部分
+- 平面 \(y=t\) と \(V_3\) の共通部分
+
+を同一平面上に図示せよ。
+
+### (2)
+
+\(V_1 \cap V_3\) が \(V_2\) に含まれるための \(r\) の条件を求めよ。
+
+### (3)
+
+\(V_1\) の体積を求めよ。
+
+### (4)
+
+(2) の条件を満たすとき、
+
+\[
+V_1 \cup V_2 \cup V_3
+\]
+
+の体積を求めよ。
+</pre></details><details><summary>コーディング C1（共通の指示 + 問題）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 C1: シェル風の単語分割
+
+関数 `split_words(text: str) -&gt; list[str]` を書いてください。
+
+`text` を、次の規則で「単語」のリストに分けます。規則は POSIX シェルの引用の一部を模したものですが、変数展開やワイルドカードの展開はしません（`$`、`*`、`~` などはただの文字です）。
+
+- 区切り: 引用の外にある半角スペース、タブ（`\t`）、改行（`\n`）の 3 種類だけが単語の区切り。連続していても 1 つの区切りとみなし、先頭と末尾の区切りは無視する。それ以外の文字（`\r`、全角スペースなど）は区切りではなく、単語の一部。
+- 単一引用符 `&#x27;...&#x27;`: 中の文字はすべてそのまま単語に入る（バックスラッシュも特別扱いしない）。最初に現れた `&#x27;` で閉じる。
+- 二重引用符 `&quot;...&quot;`: 中では、バックスラッシュの直後の 1 文字が `&quot;`、`\`、`$`、`` ` `` のいずれかなら、その 1 文字だけを単語に入れる。バックスラッシュの直後が改行なら、その 2 文字を取り除く（行の継続）。それ以外のバックスラッシュはただの文字として残す（`&quot;\n&quot;` の中身は `\` と `n` の 2 文字）。
+- 引用の外のバックスラッシュ: 直後が改行なら、その 2 文字を取り除く（行の継続。単語は切れず、区切りにもならない）。それ以外は直後の 1 文字をそのまま単語に入れる（`\ ` は半角スペース、`\&#x27;` は `&#x27;`、`\#` は `#`）。
+- 引用符そのものは単語に入らない。引用された部分と引用の外の部分が隣り合っていれば 1 つの単語になる（`a&quot;b c&quot;d` は `ab cd` という 1 単語）。`&#x27;&#x27;` や `&quot;&quot;` だけの単語は空文字列の単語になる。
+- コメント: 引用の外の `#` が「単語の先頭」にあるとき、その `#` から行末（次の改行の直前。改行が無ければ文字列の末尾）までを無視する。「単語の先頭」とは、その時点でまだ単語が始まっていない（文字列の先頭か、直前の区切りのあとに、単語の文字も引用符も現れていない）こと。単語の途中の `#`（`a#b`）はただの文字。空の引用のあとの `#`（`&#x27;&#x27;#x`）も単語の途中とみなす。
+- 閉じていない引用符、および文字列の末尾にある単独のバックスラッシュには `ValueError` を送出する。
+- `text` は最大 100,000 文字。空の文字列、区切りだけの文字列には `[]` を返す。
+
+例（入力は Python の文字列リテラルで書いてある。`\\` はバックスラッシュ 1 文字、`\n` は改行 1 文字）:
+- `split_words(&quot;a &#x27;b c&#x27;  d&quot;)` → `[&quot;a&quot;, &quot;b c&quot;, &quot;d&quot;]`
+- `split_words(&#x27;x &quot;y\\&quot;z&quot; # comment\n  w&#x27;)` → `[&quot;x&quot;, &#x27;y&quot;z&#x27;, &quot;w&quot;]`
+- `split_words(&quot;it&#x27;s&quot;)` → `ValueError` を送出</pre></details><details><summary>コーディング C2（共通の指示 + 問題）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 C2: cron 式の次回実行時刻
+
+関数 `next_run(expression: str, after: datetime) -&gt; datetime | None` を書いてください（`datetime` は標準ライブラリ `datetime` モジュールの `datetime` 型。`after` と戻り値は tzinfo の無い naive な値）。
+
+### 式の形
+
+- 式は 5 つのフィールドを 1 個以上の半角スペースかタブで区切ったもの。先頭と末尾の空白は許す。順に「分」「時」「日」「月」「曜日」。
+- 各フィールドの値の範囲: 分 0〜59、時 0〜23、日 1〜31、月 1〜12、曜日 0〜7（0 と 7 はどちらも日曜、1 が月曜、…、6 が土曜）。
+- フィールドは「項目」をコンマ `,` でつないだもの（項目 1 個以上。空の項目は不可）。項目は次のいずれか。
+  - `*`: その範囲の全部の値。
+  - `*/n`: 範囲の最小値から `n` おき（分なら 0, n, 2n, …）。
+  - `a`: 1 つの値。
+  - `a-b`: `a` 以上 `b` 以下の全部の値（`a &lt;= b` が必要）。
+  - `a-b/n`: `a` から `n` おきで `b` 以下の値（`a`, `a+n`, `a+2n`, …）。
+  - `n` は 1 以上の整数。`a/n` の形（範囲を書かずに刻みを付ける形）は不可。
+- 値は 1 桁以上の 10 進の数字（先頭の 0 は許す）。月のフィールドでは `JAN`〜`DEC`、曜日のフィールドでは `SUN`〜`SAT` の英語 3 文字の名前も値として使える（大文字と小文字は区別しない。範囲の端にも使える）。名前が使えるのはこの 2 つのフィールドだけ。
+- 曜日の `7` は `0`（日曜）と同じ。`5-7` は {5, 6, 0}。
+- 上の形に合わないもの（フィールドの数の過不足、範囲外の値、`a &gt; b` の範囲、`n` が 0、知らない名前、`?`、`L`、`@daily` などの拡張、負の数、小数、空の項目）には `ValueError` を送出する。
+
+### 日の決め方（日と曜日の関係）
+
+- 「日」のフィールドと「曜日」のフィールドは、フィールド全体がちょうど `*`（刻みも項目も無い `*` 1 文字）のとき「無指定」とみなす。`*/2` や `*,5` は無指定ではない。
+- 両方とも無指定なら毎日。片方だけ無指定なら、もう片方のフィールドに合う日だけ。両方とも指定があるときは、「日」に合う **か** 「曜日」に合う日（どちらか一方でよい）。
+- もちろん「月」のフィールドにも合う必要がある。存在しない日（4 月 31 日など）は決して合わない。
+
+### 戻り値
+
+- `after` より後（`after` と同じ分は含まない）で、秒とマイクロ秒が 0 の時刻のうち、式に合う最も早いものを返す。`after` の秒・マイクロ秒は、この「より後」の判定にだけ関わる。
+- その時刻の年が `after.year + 10` より大きくなるなら `None` を返す（例: 2 月 30 日の指定は決して合わないので `None`）。
+- 入力の大きさに対して十分速く動くこと。答えが数年先のときや `None` のときも、1 分ずつ全部を調べる作りでは遅すぎる。
+
+例（`from datetime import datetime` とする）:
+- `next_run(&quot;*/15 9-17 * * MON-FRI&quot;, datetime(2026, 10, 9, 17, 50))` → `datetime(2026, 10, 12, 9, 0)`（10 月 9 日は金曜。次は月曜の 9:00）
+- `next_run(&quot;0 0 1 * 1&quot;, datetime(2026, 10, 8))` → `datetime(2026, 10, 12, 0, 0)`（毎月 1 日 **または** 毎週月曜。10 月 8 日は木曜）
+- `next_run(&quot;30 4 30 2 *&quot;, datetime(2026, 1, 1))` → `None`</pre></details><details><summary>コーディング C3（共通の指示 + 問題）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 C3: 時刻表つきの最早到着（乗り換え時間と回数の上限）
+
+関数 `earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -&gt; int` を書いてください。
+
+- 駅は `0` から `n-1` の整数。`connections` の各要素は `(u, v, depart, arrive)` で、「駅 `u` を時刻 `depart` に出て、駅 `v` に時刻 `arrive` に着く便」を表す。時刻は 0 以上の整数（単位は問わない）で、どの便も `depart &lt; arrive`。`u == v` の便や、全く同じ便の重複があってもよい。便どうしは独立で、「同じ列車に乗り続ける」という概念はない。
+- 時刻 `start` に駅 `source` にいる。どの駅でも好きなだけ待てる。
+- 便 `(u, v, depart, arrive)` に乗れるのは、その時点で駅 `u` にいて、次の条件を満たすとき。
+  - 最初の便（出発地 `source` から乗る最初の 1 本）: `start &lt;= depart`。
+  - 2 本目以降の便: 直前の便の `arrive` を `a` として `a + change &lt;= depart`（`change` は 0 以上の整数の乗り換え時間。途中で `source` に戻ってきて乗り直す場合も、この条件が要る）。
+- 乗った便の本数を `k` として、乗り換えの回数は `k - 1`。乗り換えの回数は `max_transfers`（0 以上の整数）以下でなければならない。`max_transfers == 0` なら直通の便 1 本だけで着く必要がある。
+- `target` に着ける最も早い時刻を返す。`source == target` なら、便に乗らずに着いているので `start` を返す（`connections` が空でも同じ）。どうやっても着けないなら `-1` を返す。
+- `n` は最大 100,000、`connections` の長さは最大 200,000、`max_transfers` は最大 10、時刻は最大 10^9。この大きさで十分速く動くこと（たとえば「全部の便を、変化が無くなるまで何度も緩和する」作りでは間に合わない）。入力は上の条件を満たしていると仮定してよい（検査は不要）。
+
+例:
+- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)], 0, 2, 0, 5, 1)` → `30`（20 + 5 &lt;= 25 なので 25 発に乗れる。22 発には乗れない）
+- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)], 0, 2, 0, 0, 0)` → `100`（乗り換え 0 回なので直通だけ）
+- `earliest_arrival(2, [(0, 1, 5, 9)], 0, 1, 6, 0, 3)` → `-1`（5 発には間に合わない）</pre></details><details><summary>コーディング C4（共通の指示 + 問題）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 C4: 厳密な JSON パーサ
+
+関数 `parse_json(text: str) -&gt; object` を書いてください。RFC 8259 の文法に厳密に従って `text` を 1 つの JSON の値として読み、Python の値に変換します。標準ライブラリの `json` モジュール（`json.loads`、`json.JSONDecoder` など）は使わないでください（使った答えは 0 点）。
+
+### 文法
+
+- `text` 全体が「空白（0 個以上）、値 1 つ、空白（0 個以上）」でなければならない。それ以外（空の文字列、空白だけ、値の前後の余計な文字、値が 2 つ）は `ValueError`。
+- 空白は半角スペース、`\t`、`\n`、`\r` の 4 種類だけ。`\f`、`\v`、ノーブレークスペース、先頭の BOM（U+FEFF）は空白ではなく、`ValueError`。
+- 値は、オブジェクト、配列、文字列、数、`true`、`false`、`null` のいずれか。トップレベルの値がオブジェクトや配列でなくてもよい（`&quot;abc&quot;` や `42` だけでも正しい）。
+- リテラルは `true`、`false`、`null` の小文字だけ。`True`、`NULL`、`nul` は `ValueError`。`NaN`、`Infinity`、`-Infinity` も `ValueError`。
+- オブジェクト `{ ... }` は Python の `dict`。キーは必ず文字列。`,` で区切り、末尾の余計な `,`（`{&quot;a&quot;:1,}`）や空のメンバー（`{,}`）は `ValueError`。**同じキーが 2 回出てきたら `ValueError`**（エスケープを解いたあとの文字列として同じなら同じキー。`{&quot;a&quot;:1,&quot;\u0061&quot;:2}` は `ValueError`）。
+- 配列 `[ ... ]` は Python の `list`。末尾の余計な `,` や空の要素（`[1,,2]`、`[,1]`）は `ValueError`。
+- 文字列は `&quot;` で囲む（`&#x27;` は不可）。中で使えるエスケープは `\&quot;` `\\` `\/` `\b` `\f` `\n` `\r` `\t` と `\uXXXX`（16 進 4 桁。大文字小文字どちらも可）だけ。それ以外のエスケープ（`\a`、`\x41`、`\&#x27;`、`\U0001F600`、桁の足りない `\u12`）は `ValueError`。
+  - 文字列の中にエスケープされていない制御文字（U+0000〜U+001F）があれば `ValueError`。U+007F 以降の文字（日本語や絵文字）はそのまま書いてよい。
+  - `\uD83D\uDE00` のように上位サロゲート（U+D800〜U+DBFF）の直後に下位サロゲート（U+DC00〜U+DFFF）の `\u` エスケープが続くときは、合わせて 1 文字（この例では U+1F600）にする。下位サロゲートだけ、上位サロゲートの直後に下位サロゲートのエスケープが続かない、という場合は `ValueError`。`\u0000` は許される（長さ 1 の文字列 `&quot;\x00&quot;`）。
+- 数は `-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?` の形だけ。先頭の `0` に数字が続くもの（`01`）、`+1`、`.5`、`1.`、`1e`、`0x10`、`1_000` は `ValueError`。小数部か指数部があれば Python の `float(その文字列)` と同じ値（`1e400` は `inf`）、どちらも無ければ `int`（桁数に上限はなく、正確な値。`-0` は `int` の `0`）。
+- 入れ子の深さは最大 50,000（`[[[[...]]]]` のような深い入れ子でも、正しく値を返すこと）。`text` の長さは最大 1,000,000 文字で、その長さでも十分速く動くこと（たとえば、読み進めるたびに文字列を切り出す（`text = text[1:]`）作りでは間に合わない）。
+
+例:
+- `parse_json(&#x27; {&quot;a&quot;: [1, 2.5, &quot;x\\ny&quot;], &quot;b&quot;: {&quot;c&quot;: null, &quot;d&quot;: true}} &#x27;)` → `{&quot;a&quot;: [1, 2.5, &quot;x\ny&quot;], &quot;b&quot;: {&quot;c&quot;: None, &quot;d&quot;: True}}`
+- `parse_json(&#x27;&quot;\\u3042\\uD83D\\uDE00&quot;&#x27;)` → `&quot;あ😀&quot;`
+- `parse_json(&#x27;[1, 2,]&#x27;)` → `ValueError` を送出</pre></details><details><summary>コーディング C5（共通の指示 + 問題）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 C5: 正規表現の部分集合のマッチャ
+
+関数 `regex_search(pattern: str, text: str) -&gt; bool` を書いてください。`pattern` が `text` のどこかの部分文字列（空の部分文字列も含む）に一致すれば `True`、しなければ `False` を返します。標準ライブラリの `re` モジュール（および `sre_parse`、`sre_compile`、`_sre`）は使わないでください（使った答えは 0 点）。
+
+### パターンの文法
+
+- 文字: 普通の文字はその文字そのものに一致する。大文字と小文字は区別する。
+- `.`: 改行を含む任意の 1 文字に一致する。
+- `\` の直後の 1 文字: その文字そのものに一致する（`\.` は `.`、`\\` は `\`、`\n` は改行ではなく `n`、`\d` は `d`）。パターンの末尾に単独の `\` があれば `ValueError`。
+- 文字クラス `[...]`: `[` の直後の `^` は否定（`[^...]` は列挙した文字以外の 1 文字）。中身は左から順に項目として読む。項目を読むときは、まず 1 文字（`\` でエスケープされた文字も 1 文字と数え、エスケープを解いた文字になる）を読み、その直後が `-` で、さらにその次の文字が `]` でなければ範囲 `x-y`（`x` 以上 `y` 以下のコードポイント。`y` もエスケープできる。`x &gt; y` なら `ValueError`）、そうでなければ読んだ 1 文字だけの項目とする。`]` はエスケープしない限り常にクラスを閉じる。`-` は項目の 1 文字目として読まれたとき、または `]` の直前にあるときはただの文字。クラスの中では `.` `*` `+` `?` `|` `(` `)` `^`（先頭以外）`$` はただの文字。項目が 1 つも無い `[]`、`[^]`、閉じていない `[` は `ValueError`。
+- `^`: `text` の先頭（位置 0）にだけ一致する幅 0 のアサーション。`$`: `text` の末尾にだけ一致する幅 0 のアサーション（末尾の改行の前には一致しない）。パターンのどこに置いてもよい。
+- 量指定子 `*`（0 回以上）、`+`（1 回以上）、`?`（0 回か 1 回）: 直前の要素（1 文字、`.`、エスケープした文字、文字クラス、グループ `(...)`）に付ける。付ける要素が無いとき（パターンの先頭、`(` や `|` の直後）、量指定子を重ねたとき（`a**`、`a*?`）、`^` や `$` に付けたときは `ValueError`。
+- グループ `( ... )`: 中身を 1 つの要素にまとめる（キャプチャは要らない）。空のグループ `()` は空文字列に一致する。対応の取れていない `(` や `)` は `ValueError`。
+- 選択 `|`: 優先順位は最も低く、左右のどちらかに一致すればよい。空の選択肢（`a|`、`|a`、`(|a)`）は空文字列に一致する。
+- 空のパターン `&quot;&quot;` はどの `text` にも一致する（`True`）。
+
+### 性能
+
+- `pattern` は最大 100 文字、`text` は最大 10,000 文字。
+- バックトラックで指数時間になる作りは不可。`(a|aa)*b` や `(a*)*b` を `&quot;aaaa…a&quot;`（一致しない）と照合する場合や、`a*b` を 5,000 文字の `&quot;aaaa…a&quot;` と照合する場合でも、すぐに答えること（状態集合をたどる方式などを使う）。
+
+例:
+- `regex_search(&quot;^[a-z]+@[a-z]+\\.[a-z]+$&quot;, &quot;foo@bar.com&quot;)` → `True`
+- `regex_search(&quot;(cat|dog)s?$&quot;, &quot;I like dogs&quot;)` → `True`
+- `regex_search(&quot;a$&quot;, &quot;a\n&quot;)` → `False`</pre></details><details><summary>コーディング C6（共通の指示 + 問題）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 C6: 数独を解く（解の一意性の判定つき）
+
+関数 `solve_sudoku(grid: str) -&gt; str` を書いてください。
+
+- `grid` は 81 文字の文字列。9×9 の盤面を行ごとに左から右、上から下の順に並べたもので、各文字は `1`〜`9`（確定しているマス）か `.`（空のマス）。
+- 普通の数独の規則で解く: 各行・各列・太線で区切られた 3×3 のブロック 9 つのそれぞれに、`1`〜`9` がちょうど 1 回ずつ入る。
+- 解がちょうど 1 つに決まるとき、その解を同じ形式（81 文字、`.` を含まない）で返す。
+- 次の場合は `ValueError` を送出する。
+  - `grid` の長さが 81 でない、または `1`〜`9` と `.` 以外の文字（`0`、空白、全角の数字など）を含む。
+  - 確定しているマスどうしが、既に規則に反している（同じ行・列・ブロックに同じ数字がある）。
+  - 解が存在しない（確定しているマスどうしに矛盾は無いが、どう埋めても規則を満たせない）。
+  - 解が 2 つ以上ある（空の盤面など）。
+- 性能: ヒントが 17 個しかない難問、「最難」と呼ばれる種類の問題、確定マスに矛盾は無いが解が存在しない盤面、解が多数ある盤面のいずれも、1 問につき 1 秒程度で答えること。マスを左上から順に試すだけの素朴なバックトラックでは間に合わない（候補の少ないマスから埋める、候補が 1 つのマスを先に確定する、などの工夫が要る）。解が 2 つ以上あることの判定は、2 つ目の解が見つかった時点で打ち切ってよい。
+
+例:
+- `solve_sudoku(&quot;53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79&quot;)` → `&quot;534678912672195348198342567859761423426853791713924856961537284287419635345286179&quot;`
+- `solve_sudoku(&quot;.&quot; * 81)` → `ValueError` を送出（解が多数ある）
+- `solve_sudoku(&quot;11&quot; + &quot;.&quot; * 79)` → `ValueError` を送出（同じ行に 1 が 2 つ）</pre></details><details><summary>追加 日本語の指示に従う inst1</summary><pre>雨の日に家の中で楽しめる過ごし方を紹介してください。
+
+次の条件をすべて守って書いてください。
+1. 行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 5 個書く。
+2. どの行も「- 」を含めて 25 文字以内にする。
+3. 各箇条書きの末尾は「です。」か「ます。」にする。
+4. 最後の行には「以上」の 2 文字だけを書く。
+5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。</pre></details><details><summary>追加 日本語の指示に従う inst2</summary><pre>新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。
+
+次の条件をすべて守って書いてください。
+1. 1 行目には「注意点は次のとおりです。」とだけ書く。
+2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。
+3. 「定期的」という語を、どこかで 1 回以上使う。
+4. 数字（0〜9。全角も含む）を使わない。
+5. 最後の行には「以上」の 2 文字だけを書く。</pre></details><details><summary>追加 日本語の指示に従う inst3</summary><pre>朝ごはんを食べることの利点を説明してください。
+
+次の条件をすべて守って書いてください。
+1. 全体をちょうど 3 行にする（空の行は数えない）。行頭に箇条書きの記号や番号を付けない。
+2. どの行も 40 文字以内にする。
+3. どの行も末尾を「です。」か「ます。」にする。
+4. どの行にも「朝ごはん」という語を入れる。
+5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。</pre></details><details><summary>追加 長い資料からの検索 needle1</summary><pre>次の資料（資料番号 101）を読んで、最後の質問に答えてください。
+
+資料:
+&quot;&quot;&quot;
+第1節。川端地区の農家125戸は、1997年に米を合計6804俵出荷した。梅雨の長雨で収穫は6日遅れたが、品質の検査では一等米の割合が9割を超えた。
+第2節。町営バスの13系統は、1998年に一日32往復へ増便された。始発は5時20分で、終点の南台団地までの所要時間はおよそ19分である。
+第3節。1986年の秋祭りでは、川端地区の山車が6台出て、見物客は延べ6308人に達した。運営に加わったボランティアは97人で、清掃は翌朝8時に終わった。
+第4節。1985年の町議会では、南台地区の歩道の整備に5830万円が計上された。工事は8か月かけて行われ、延長426メートルの区間で段差がなくなった。
+第…（中略。資料は全部で 8,206 文字）
+&quot;&quot;&quot;
+
+質問: この資料には、記録係のあいだで使われている合言葉が 1 つだけ書かれています。その合言葉を答えてください。答えは合言葉だけを 1 行で書き、かぎかっこ・説明・前置きは付けないでください。</pre></details><details><summary>追加 長い資料からの検索 needle2</summary><pre>次の資料（資料番号 202）を読んで、最後の質問に答えてください。
+
+資料:
+&quot;&quot;&quot;
+第1節。町営バスの4系統は、2015年に一日39往復へ増便された。始発は7時30分で、終点の山手団地までの所要時間はおよそ63分である。
+第2節。1987年の町議会では、西沢地区の歩道の整備に3544万円が計上された。工事は8か月かけて行われ、延長1123メートルの区間で段差がなくなった。
+第3節。2007年の秋祭りでは、西沢地区の山車が2台出て、見物客は延べ14753人に達した。運営に加わったボランティアは216人で、清掃は翌朝8時に終わった。
+第4節（1990年の記録）。みずなみ町の山手地区では、春先の平均気温が13度で、前年より1度高かった。用水路の点検は12回行われ、そのうち3か所で補…（中略。資料は全部で 8,207 文字）
+&quot;&quot;&quot;
+
+質問: この資料には、記録係のあいだで使われている合言葉が 1 つだけ書かれています。その合言葉を答えてください。答えは合言葉だけを 1 行で書き、かぎかっこ・説明・前置きは付けないでください。</pre></details><details><summary>追加 長い資料からの検索 needle3</summary><pre>次の資料（資料番号 303）を読んで、最後の質問に答えてください。
+
+資料:
+&quot;&quot;&quot;
+第1節（2000年の記録）。みずなみ町の西沢地区では、春先の平均気温が9度で、前年より3度高かった。用水路の点検は11回行われ、そのうち9か所で補修が必要とされた。
+第2節。1987年の秋祭りでは、西沢地区の山車が3台出て、見物客は延べ18292人に達した。運営に加わったボランティアは288人で、清掃は翌朝10時に終わった。
+第3節（2016年の記録）。みずなみ町の東原地区では、春先の平均気温が12度で、前年より3度高かった。用水路の点検は7回行われ、そのうち2か所で補修が必要とされた。
+第4節。町立図書館の中町分室は、1995年に蔵書を49301冊まで増やした。平日の利用者は一日平均32人で…（中略。資料は全部で 8,239 文字）
+&quot;&quot;&quot;
+
+質問: この資料には、記録係のあいだで使われている合言葉が 1 つだけ書かれています。その合言葉を答えてください。答えは合言葉だけを 1 行で書き、かぎかっこ・説明・前置きは付けないでください。</pre></details><details><summary>追加 JSON の構造化出力 json1</summary><pre>次のメールから注文の情報を取り出し、JSON で答えてください。
+
+メール:
+&quot;&quot;&quot;
+件名: 追加注文のお願い
+
+いつもお世話になっております。株式会社みどり商会の佐藤です。
+先日ご案内いただいた業務用コーヒー豆（品番 KB-204）を 12 袋お願いします。
+前回お願いした紅茶（品番 KB-110）は、今回は不要です。
+納品は 11 月 5 日の午前中を希望します。
+お支払いはいつもどおり請求書でお願いいたします。
+&quot;&quot;&quot;
+
+出力の形式:
+- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。
+  - &quot;company&quot;: 注文した会社の名前（文字列）
+  - &quot;contact&quot;: 担当者の姓（文字列）
+  - &quot;product_code&quot;: 今回注文する商品の品番（文字列）
+  - &quot;quantity&quot;: 今回注文する数（整数）
+  - &quot;delivery_date&quot;: 希望の納品日（&quot;YYYY-MM-DD&quot; の形の文字列。年は 2026 年とする）
+  - &quot;payment&quot;: 支払い方法。&quot;請求書&quot;、&quot;クレジットカード&quot;、&quot;代金引換&quot; のどれか（文字列）
+- JSON のほかには何も書かない。</pre></details><details><summary>追加 JSON の構造化出力 json2</summary><pre>次の申し込みの文から情報を取り出し、JSON で答えてください。
+
+申し込み:
+&quot;&quot;&quot;
+はじめまして、山田花子と申します。
+10 月 24 日（土）の親子料理教室に、私と子ども 2 人の計 3 名で参加したいです。
+子どものうち 1 人に卵のアレルギーがあります。
+当日は電車で行くので、駐車場は使いません。
+連絡先は 090-1234-5678 です。よろしくお願いします。
+&quot;&quot;&quot;
+
+出力の形式:
+- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。
+  - &quot;name&quot;: 申込者の氏名（文字列。姓と名のあいだに空白を入れない）
+  - &quot;event_date&quot;: 教室の日付（&quot;YYYY-MM-DD&quot; の形の文字列。年は 2026 年とする）
+  - &quot;participants&quot;: 参加する人数の合計（整数）
+  - &quot;has_allergy&quot;: アレルギーのある参加者がいるか（true か false）
+  - &quot;needs_parking&quot;: 駐車場を使うか（true か false）
+  - &quot;phone&quot;: 電話番号（文字列。書かれているとおり）
+- JSON のほかには何も書かない。</pre></details><details><summary>追加 JSON の構造化出力 json3</summary><pre>次の社内の問い合わせから情報を取り出し、JSON で答えてください。
+
+問い合わせ:
+&quot;&quot;&quot;
+お疲れさまです。経理部の田中です。
+今朝 9 時ごろから、経費精算システムにログインできなくなりました。
+画面には「エラーコード E-503」と表示されます。
+同じ部署のほかの 4 人も同じ症状で、全員が作業を止めています。
+月末の締めが明後日なので、至急対応をお願いします。
+&quot;&quot;&quot;
+
+出力の形式:
+- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。
+  - &quot;department&quot;: 問い合わせた人の部署（文字列）
+  - &quot;reporter&quot;: 問い合わせた人の姓（文字列）
+  - &quot;system&quot;: 不具合が起きているシステムの名前（文字列）
+  - &quot;error_code&quot;: 表示されたエラーコード（文字列。例 &quot;X-100&quot;）
+  - &quot;affected_users&quot;: 症状が出ている人数。問い合わせた本人も含める（整数）
+  - &quot;priority&quot;: 緊急度。&quot;高&quot;、&quot;中&quot;、&quot;低&quot; のどれか（文字列）
+- JSON のほかには何も書かない。</pre></details></section></main><div id="tip" role="tooltip" hidden></div><script>
+(function(){
+  var tip=document.getElementById('tip');
+  function show(element,x,y){
+    tip.textContent='';
+    element.getAttribute('data-tip').split('\n').forEach(function(line,index){
+      var row=document.createElement('div');row.textContent=line;if(index===0){row.className='tip-value';}tip.appendChild(row);
+    });
+    tip.hidden=false;
+    var width=tip.offsetWidth,height=tip.offsetHeight;
+    var left=Math.min(x+14,window.innerWidth-width-8),top=y+14;
+    if(top+height>window.innerHeight-8){top=y-height-14;}
+    tip.style.left=left+'px';tip.style.top=top+'px';
+  }
+  function hide(){tip.hidden=true;}
+  document.querySelectorAll('[data-tip]').forEach(function(element){
+    element.addEventListener('pointermove',function(event){show(element,event.clientX,event.clientY);});
+    element.addEventListener('pointerleave',hide);
+    element.addEventListener('focus',function(){var box=element.getBoundingClientRect();show(element,box.right,box.top);});
+    element.addEventListener('blur',hide);
+  });
+})();
+</script></body></html>

@@ -1,0 +1,91 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c4",
+  "run": 1,
+  "content": "```python\nfrom collections import OrderedDict\n\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        if capacity < 1:\n            raise ValueError(\"capacity must be at least 1\")\n        self._capacity = capacity\n        self._data = OrderedDict()\n\n    def get(self, key):\n        data = self._data\n        if key not in data:\n            return -1\n        data.move_to_end(key)\n        return data[key]\n\n    def put(self, key, value):\n        data = self._data\n        if key in data:\n            data[key] = value\n            data.move_to_end(key)\n            return None\n        data[key] = value\n        if len(data) > self._capacity:\n            data.popitem(last=False)\n        return None\n\n    def __len__(self):\n        return len(self._data)\n```",
+  "wall_s": 5.273,
+  "usage": {
+    "subagent_tokens": 25229
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 11,
+    "total": 11,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_basic_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_capacity_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_update_no_evict",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_update_makes_recent",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_get_makes_recent",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_missing_get_keeps_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_capacity",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_len_tracks",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_put_returns_none",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hashable_keys",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_ops",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.16,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:48+09:00"
+}

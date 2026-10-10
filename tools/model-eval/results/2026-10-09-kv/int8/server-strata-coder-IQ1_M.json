@@ -1,0 +1,33 @@
+{
+  "kv": "int8",
+  "target": "strata-flash-coder:IQ1_M",
+  "unit": "strata-coder",
+  "slug": "strata-coder-IQ1_M",
+  "status": "ok",
+  "reps": [
+    2,
+    3
+  ],
+  "start_s": 12.0,
+  "engine_started_line": "[strata] 2026-10-09 12:03:08 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile-coder.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8",
+  "slots": {
+    "filled": 8138,
+    "total": 8138
+  },
+  "cache_hit_lines": [
+    "strata serve: decode expert cache hit rate: 96.9% (14150949 hits / 14607214 lookups); 29426 more read by the GPU over PCIe or from another GPU (0.2% of all 14636640 routed)",
+    "strata serve: decode expert cache hit rate: 91.4% (437 hits / 478 lookups); 2 more read by the GPU over PCIe or from another GPU (0.4% of all 480 routed)",
+    "strata serve: decode expert cache hit rate: 97.9% (1208765 hits / 1234800 lookups); 2160 more read by the GPU over PCIe or from another GPU (0.2% of all 1236960 routed)",
+    "strata serve: decode expert cache hit rate: 97.3% (14914552 hits / 15328535 lookups); 26185 more read by the GPU over PCIe or from another GPU (0.2% of all 15354720 routed)",
+    "strata serve: decode expert cache hit rate: 97.0% (1067589 hits / 1100349 lookups); 3171 more read by the GPU over PCIe or from another GPU (0.3% of all 1103520 routed)",
+    "strata serve: decode expert cache hit rate: 96.8% (14397182 hits / 14873910 lookups); 32490 more read by the GPU over PCIe or from another GPU (0.2% of all 14906400 routed)",
+    "strata serve: decode expert cache hit rate: 96.7% (1426340 hits / 1475168 lookups); 4672 more read by the GPU over PCIe or from another GPU (0.3% of all 1479840 routed)",
+    "strata serve: decode expert cache hit rate: 97.5% (14972443 hits / 15360027 lookups); 23013 more read by the GPU over PCIe or from another GPU (0.1% of all 15383040 routed)",
+    "strata serve: decode expert cache hit rate: 97.1% (968943 hits / 998281 lookups); 2999 more read by the GPU over PCIe or from another GPU (0.3% of all 1001280 routed)"
+  ],
+  "vram_before_mib": 16,
+  "vram_used_mib": 23852,
+  "memory_peak_bytes": 38656417792,
+  "memory_current_bytes": 38652121088,
+  "written_at": "2026-10-09T12:31:48+09:00"
+}

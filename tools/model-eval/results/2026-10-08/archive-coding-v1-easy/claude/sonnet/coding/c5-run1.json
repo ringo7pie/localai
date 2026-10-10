@@ -1,0 +1,101 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c5",
+  "run": 1,
+  "content": "```python\n_BINARY_PRECEDENCE = {\"+\": 1, \"-\": 1, \"*\": 2, \"/\": 2}\n_NEGATE = \"~\"\n_PRECEDENCE = {**_BINARY_PRECEDENCE, _NEGATE: 3}\n\n\ndef _read_digits(text: str, start: int) -> int:\n    index = start\n    while index < len(text) and \"0\" <= text[index] <= \"9\":\n        index += 1\n    return index\n\n\ndef _tokenize(expression: str) -> list:\n    tokens: list = []\n    index = 0\n    length = len(expression)\n    while index < length:\n        char = expression[index]\n        if char == \" \":\n            index += 1\n        elif \"0\" <= char <= \"9\":\n            start = index\n            index = _read_digits(expression, index)\n            if index < length and expression[index] == \".\":\n                index += 1\n                fraction_start = index\n                index = _read_digits(expression, index)\n                if index == fraction_start:\n                    raise ValueError(\"小数点の後ろに数字がありません\")\n                tokens.append(float(expression[start:index]))\n            else:\n                tokens.append(int(expression[start:index]))\n        elif char in \"+-*/()\":\n            tokens.append(char)\n            index += 1\n        else:\n            raise ValueError(f\"知らない文字です: {char!r}\")\n    return tokens\n\n\ndef _to_postfix(tokens: list) -> list:\n    output: list = []\n    stack: list[str] = []\n    expect_operand = True\n    for token in tokens:\n        is_symbol = isinstance(token, str)\n        if expect_operand:\n            if not is_symbol:\n                output.append(token)\n                expect_operand = False\n            elif token == \"-\":\n                stack.append(_NEGATE)\n            elif token == \"(\":\n                stack.append(\"(\")\n            else:\n                raise ValueError(\"オペランドが必要な位置に演算子か括弧があります\")\n        else:\n            if is_symbol and token in _BINARY_PRECEDENCE:\n                while (\n                    stack\n                    and stack[-1] != \"(\"\n                    and _PRECEDENCE[stack[-1]] >= _PRECEDENCE[token]\n                ):\n                    output.append(stack.pop())\n                stack.append(token)\n                expect_operand = True\n            elif is_symbol and token == \")\":\n                while stack and stack[-1] != \"(\":\n                    output.append(stack.pop())\n                if not stack:\n                    raise ValueError(\"閉じ括弧に対応する開き括弧がありません\")\n                stack.pop()\n            else:\n                raise ValueError(\"演算子が必要な位置に数か開き括弧があります\")\n    if expect_operand:\n        raise ValueError(\"式が途中で終わっています\")\n    while stack:\n        top = stack.pop()\n        if top == \"(\":\n            raise ValueError(\"開き括弧が閉じられていません\")\n        output.append(top)\n    return output\n\n\ndef _evaluate_postfix(postfix: list) -> int | float:\n    values: list[int | float] = []\n    for item in postfix:\n        if not isinstance(item, str):\n            values.append(item)\n        elif item == _NEGATE:\n            values.append(-values.pop())\n        else:\n            right = values.pop()\n            left = values.pop()\n            if item == \"+\":\n                values.append(left + right)\n            elif item == \"-\":\n                values.append(left - right)\n            elif item == \"*\":\n                values.append(left * right)\n            else:\n                if right == 0:\n                    raise ZeroDivisionError(\"0 で割りました\")\n                values.append(left / right)\n    return values[0]\n\n\ndef evaluate(expression: str) -> int | float:\n    tokens = _tokenize(expression)\n    postfix = _to_postfix(tokens)\n    return _evaluate_postfix(postfix)\n```",
+  "wall_s": 30.505,
+  "usage": {
+    "subagent_tokens": 29059
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 13,
+    "total": 13,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_precedence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_true_division",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_left_associative",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unary_minus",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_unary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_decimals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_spaces_and_nesting",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_zero_division",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_structure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_tokens",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_decimal_format",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_long_expression",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.02,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:48+09:00"
+}

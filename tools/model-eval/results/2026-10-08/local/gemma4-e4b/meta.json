@@ -1,0 +1,99 @@
+{
+  "target": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "sessions": [
+    {
+      "started_at": "2026-10-08T12:28:05+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "gemma4:e4b",
+        "--suite",
+        "all",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-08"
+      ],
+      "items": [
+        "coding/c1",
+        "coding/c2",
+        "coding/c3",
+        "coding/c4",
+        "coding/c5",
+        "coding/c6",
+        "extra/inst1",
+        "extra/inst2",
+        "extra/inst3",
+        "extra/needle1",
+        "extra/needle2",
+        "extra/needle3",
+        "extra/json1",
+        "extra/json2",
+        "extra/json3"
+      ],
+      "checked_at": "2026-10-08T12:28:05+09:00",
+      "gpu_before": {
+        "memory_used_mib": 16,
+        "memory_total_mib": 24576,
+        "utilization_pct": 0
+      },
+      "ollama_version": "0.34.2",
+      "preload_s": 4.54,
+      "preload_load_duration_s": null,
+      "ollama_ps": {
+        "name": "gemma4:e4b",
+        "size": 3485361765,
+        "size_vram": 3485361765,
+        "gpu_ratio": 1.0,
+        "context_length": 65536,
+        "expires_at": "2026-10-08T12:43:09.729587981+09:00"
+      },
+      "gpu_after_preload": {
+        "memory_used_mib": 5686,
+        "memory_total_mib": 24576,
+        "utilization_pct": 7
+      }
+    },
+    {
+      "started_at": "2026-10-08T13:35:42+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "gemma4:e4b",
+        "--suite",
+        "all",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-08"
+      ],
+      "items": [
+        "coding/c1",
+        "coding/c2",
+        "coding/c3",
+        "coding/c4",
+        "coding/c5",
+        "coding/c6"
+      ],
+      "checked_at": "2026-10-08T13:35:42+09:00",
+      "gpu_before": {
+        "memory_used_mib": 16,
+        "memory_total_mib": 24576,
+        "utilization_pct": 0
+      },
+      "ollama_version": "0.34.2",
+      "preload_s": 3.24,
+      "preload_load_duration_s": null,
+      "ollama_ps": {
+        "name": "gemma4:e4b",
+        "size": 3485361765,
+        "size_vram": 3485361765,
+        "gpu_ratio": 1.0,
+        "context_length": 65536,
+        "expires_at": "2026-10-08T13:50:46.23461684+09:00"
+      },
+      "gpu_after_preload": {
+        "memory_used_mib": 5686,
+        "memory_total_mib": 24576,
+        "utilization_pct": 39
+      }
+    }
+  ]
+}

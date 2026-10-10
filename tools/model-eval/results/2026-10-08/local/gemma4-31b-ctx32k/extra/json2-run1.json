@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "extra",
+  "item": "json2",
+  "run": 1,
+  "prompt": "次の申し込みの文から情報を取り出し、JSON で答えてください。\n\n申し込み:\n\"\"\"\nはじめまして、山田花子と申します。\n10 月 24 日（土）の親子料理教室に、私と子ども 2 人の計 3 名で参加したいです。\n子どものうち 1 人に卵のアレルギーがあります。\n当日は電車で行くので、駐車場は使いません。\n連絡先は 090-1234-5678 です。よろしくお願いします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"name\": 申込者の氏名（文字列。姓と名のあいだに空白を入れない）\n  - \"event_date\": 教室の日付（\"YYYY-MM-DD\" の形の文字列。年は 2026 年とする）\n  - \"participants\": 参加する人数の合計（整数）\n  - \"has_allergy\": アレルギーのある参加者がいるか（true か false）\n  - \"needs_parking\": 駐車場を使うか（true か false）\n  - \"phone\": 電話番号（文字列。書かれているとおり）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 515,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:40:53+09:00",
+  "finished_at": "2026-10-08T14:41:16+09:00",
+  "content": "```json\n{\n  \"name\": \"山田花子\",\n  \"event_date\": \"2026-10-24\",\n  \"participants\": 3,\n  \"has_allergy\": true,\n  \"needs_parking\": false,\n  \"phone\": \"090-1234-5678\"\n}\n```",
+  "thinking": "*   Input: A registration message from a user.\n    *   Output: A JSON object with specific keys.\n    *   Keys required:\n        *   `name`: Applicant's name (string, no space between last and first name).\n        *   `event_date`: Date of the class (string, \"YYYY-MM-DD\", year = 2026).\n        *   `participants`: Total number of people (integer).\n        *   `has_allergy`: Boolean (true if any participant has an allergy).\n        *   `needs_parking`: Boolean (true if parking is needed).\n        *   `phone`: Phone number (string, as written).\n    *   Constraint: Output *only* the JSON object.\n\n    *   Text: \"はじめまして、山田花子と申します。10 月 24 日（土）の親子料理教室に、私と子ども 2 人の計 3 名で参加したいです。子どものうち 1 人に卵のアレルギーがあります。当日は電車で行くので、駐車場は使いません。連絡先は 090-1234-5678 です。よろしくお願いします。\"\n    *   Name: 山田花子\n    *   Date: 10月24日 (Year = 2026) -> 2026-10-24\n    *   Participants: 3名 -> 3\n    *   Allergy: \"子どものうち 1 人に卵のアレルギーがあります\" -> true\n    *   Parking: \"駐車場は使いません\" -> false\n    *   Phone: 090-1234-5678\n\n    *   `name`: \"山田花子\"\n    *   `event_date`: \"2026-10-24\"\n    *   `participants`: 3\n    *   `has_allergy`: true\n    *   `needs_parking`: false\n    *   `phone`: \"090-1234-5678\"\n\n    ```json\n    {\n      \"name\": \"山田花子\",\n      \"event_date\": \"2026-10-24\",\n      \"participants\": 3,\n      \"has_allergy\": true,\n      \"needs_parking\": false,\n      \"phone\": \"090-1234-5678\"\n    }\n    ```",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 293,
+  "completion_tokens": 633,
+  "ttft_s": 1.085,
+  "t_first_content_s": 19.308,
+  "wall_s": 22.153,
+  "load_s": 0.001,
+  "server_decode_tok_s": 29.9,
+  "server_prefill_tok_s": 491.96,
+  "server_timings": {
+    "total_duration": 22152546190,
+    "load_duration": 879576,
+    "prompt_eval_count": 293,
+    "prompt_eval_duration": 595579000,
+    "eval_count": 633,
+    "eval_duration": 21172547000
+  },
+  "delta_chunks": 526,
+  "wall_decode_tok_s": 30.05,
+  "thinking_chars": 1350,
+  "content_chars": 160,
+  "thinking_tokens_est": 566,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 22.152,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "fenced",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "name": {
+        "ok": true,
+        "got": "山田花子"
+      },
+      "event_date": {
+        "ok": true,
+        "got": "2026-10-24"
+      },
+      "participants": {
+        "ok": true,
+        "got": 3
+      },
+      "has_allergy": {
+        "ok": true,
+        "got": true
+      },
+      "needs_parking": {
+        "ok": true,
+        "got": false
+      },
+      "phone": {
+        "ok": true,
+        "got": "090-1234-5678"
+      }
+    },
+    "extra_keys": []
+  }
+}

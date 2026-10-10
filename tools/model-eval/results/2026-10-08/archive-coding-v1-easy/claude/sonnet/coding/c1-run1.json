@@ -1,0 +1,96 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c1",
+  "run": 1,
+  "content": "```python\ndef is_balanced(text: str) -> bool:\n    closing_to_opening = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n    opening_brackets = set(closing_to_opening.values())\n    stack: list[str] = []\n    for character in text:\n        if character in opening_brackets:\n            stack.append(character)\n        elif character in closing_to_opening:\n            if not stack or stack[-1] != closing_to_opening[character]:\n                return False\n            stack.pop()\n    return not stack\n```",
+  "wall_s": 3.968,
+  "usage": {
+    "subagent_tokens": 24710
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 12,
+    "total": 12,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_open",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_close",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unclosed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested_ok",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_brackets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_wrong_kind",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_crossing",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_close_before_open",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_angle_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_ok",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_bad",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:48+09:00"
+}

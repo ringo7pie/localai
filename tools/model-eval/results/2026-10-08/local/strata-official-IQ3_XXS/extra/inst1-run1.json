@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "target": "strata-official:IQ3_XXS",
+  "label": "strata-official:IQ3_XXS",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-official:IQ3_XXS",
+  "slug": "strata-official-IQ3_XXS",
+  "suite": "extra",
+  "item": "inst1",
+  "run": 1,
+  "prompt": "雨の日に家の中で楽しめる過ごし方を紹介してください。\n\n次の条件をすべて守って書いてください。\n1. 行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 5 個書く。\n2. どの行も「- 」を含めて 25 文字以内にする。\n3. 各箇条書きの末尾は「です。」か「ます。」にする。\n4. 最後の行には「以上」の 2 文字だけを書く。\n5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。",
+  "prompt_chars": 209,
+  "request": {
+    "model": "strata-official:IQ3_XXS",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-08T18:50:30+09:00",
+  "finished_at": "2026-10-08T18:50:50+09:00",
+  "content": "- 読書で静かに過ごします。\n- 料理を試して学びます。\n- 映画を見て心を動かします。\n- 絵を描き落ち着きます。\n- 音楽を聴き癒やされます。\n以上",
+  "thinking": "We need answer user's request in Japanese. Need produce exactly 5 bullet lines starting with \"- \" and then last line \"以上\". No alphabet letters A-Z a-z full-width too. Each bullet line must be no more than 25 characters including \"- \"? Condition: どの行も「- 」を含めて 25 文字以内にする。 Likely every line? Last line only \"以上\" 2 chars, doesn't start with hyphen but line itself 2 chars okay. Need exactly 5 箇条書き lines, then last line \"以上\". Need each bullet end with です。or ます。 Need no Latin alphabet. Need count chars. In Japanese, characters count each char including hyphen and space. Need ensure <=25. Let's craft 5 lines:\n\n- 読書で静かに過ごします。 count? \"- \" 2 + 読書で静かに過ごします。 11? 読(1)書2で3静4か5に6過7ご8し9ま10す11。12? Wait 過ごします: 過 1? Let's count string: 読 書 で 静 か に 過 ご し ま す 。 = 12? 読1書2で3静4か5に6過7ご8し9ま10す11。12. Add 2 = 14.\n- 料理を試して学びます。 料理を試して学びます。 length: 料1理2を3試4し5て6学7び8ま9す10。11 +2=13.\n- 映画を見て心を動かします。 映1画2を3見4て5心6を7動8か9し10ま11す12。13 +2=15.\n- 絵を描き落ち着きます。 絵1を2描3き4落5ち6つ7き8ま9す10。11 +2=13.\n- 音楽を聴き癒やされます。 音1楽2を3聴4き5癒6や7さ8れ9ま10す11。12? 癒やされます: 癒1や2さ3れ4ま5す6。 maybe after 聴き: 音楽を聴き癒やされます。 音1楽2を3聴4き5癒6や7さ8れ9ま10す11。12 +2=14.\nNeed no alphabet. Good. But maybe \"映画\" ok. Need exactly 5 bullet lines. Last line \"以上\". Need ensure bullet lines each start with \"- \". Need final maybe newline. Ensure not include any alphabet. Also need \"です。\" or \"ます。\" each bullet ending. All end ます。 ok. Need 5 lines exactly? Plus final 以上 = 6 lines total. Good.\n\nDouble-check character count for each including hyphen and space: \nLine1: \"- 読書で静かに過ごします。\" Characters: 1 hyphen, 2 space, 3 読, 4 書, 5 で, 6 静, 7 か, 8 に, 9 過, 10 ご, 11 し, 12 ま, 13 す, 14 。 = 14 <=25.\nLine2: \"- 料理を試して学びます。\" hyphen1 space2 料3 理4 を5 試6 し7 て8 学9 び10 ま11 す12 。13 <=25.\nLine3: \"- 映画を見て心を動かします。\" hyphen1 space2 映3 画4 を5 見6 て7 心8 を9 動10 か11 し12 ま13 す14 。15 <=25.\nLine4: \"- 絵を描き落ち着きます。\" hyphen1 space2 絵3 を4 描5 き6 落7 ち8 つ9 き10 ま11 す12 。13 <=25.\nLine5: \"- 音楽を聴き癒やされます。\" hyphen1 space2 音3 楽4 を5 聴6 き7 癒8 や9 さ10 れ11 ま12 す13 。14 <=25. Wait 癒やされます count: 癒 (1) や2 さ3 れ4 ま5 す6, but preceded by 聴き: 音1楽2を3聴4き5癒6や7さ8れ9ま10す11。12. Yes. Ends されます。 condition says 末尾は「です。」か「ます。」. \"されます。\" ends with \"ます。\"? Actually substring at end: ま す 。 yes. But is it acceptable if passive? Yes ends ます。\nNo alphabets. Good.\n\nPotential issue: \"以上\" line does not start with - but line also no - length 2 <=25. OK.\nNeed output just those lines. Ensure no trailing spaces? Probably okay.\nNeed think about full-width? none. \nLet's final with 5 bullet lines then 以上. Ensure no additional text.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 190,
+  "completion_tokens": 1193,
+  "ttft_s": 1.514,
+  "t_first_content_s": 19.907,
+  "wall_s": 20.633,
+  "load_s": null,
+  "server_decode_tok_s": 62.3,
+  "server_prefill_tok_s": 128.6,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 190,
+    "prompt_ms": 1477.4,
+    "prompt_per_token_ms": 7.776,
+    "prompt_per_second": 128.6,
+    "predicted_n": 1193,
+    "predicted_ms": 19146.8,
+    "predicted_per_token_ms": 16.049,
+    "predicted_per_second": 62.3,
+    "draft_n": 968,
+    "draft_n_accepted": 719
+  },
+  "delta_chunks": 1185,
+  "wall_decode_tok_s": 62.39,
+  "thinking_chars": 2473,
+  "content_chars": 76,
+  "thinking_tokens_est": 1157,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 20.633,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "bullet_count",
+        "label": "「- 」の箇条書きがちょうど 5 個",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 25 文字以内",
+        "ok": true
+      },
+      {
+        "id": "bullet_endings",
+        "label": "箇条書きの末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  }
+}

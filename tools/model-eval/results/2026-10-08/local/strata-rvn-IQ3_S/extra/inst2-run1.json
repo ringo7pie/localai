@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "target": "strata-flash-next:IQ3_S",
+  "label": "strata-flash-next:IQ3_S (RVN)",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-flash-next:IQ3_S",
+  "slug": "strata-rvn-IQ3_S",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "prompt": "新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。\n\n次の条件をすべて守って書いてください。\n1. 1 行目には「注意点は次のとおりです。」とだけ書く。\n2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\n3. 「定期的」という語を、どこかで 1 回以上使う。\n4. 数字（0〜9。全角も含む）を使わない。\n5. 最後の行には「以上」の 2 文字だけを書く。",
+  "prompt_chars": 221,
+  "request": {
+    "model": "strata-flash-next:IQ3_S",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-08T18:01:58+09:00",
+  "finished_at": "2026-10-08T18:02:12+09:00",
+  "content": "注意点は次のとおりです。\n- パスワードは他の人と共有せず、定期的に更新してください。\n- 推測されやすい生年月日や氏名ではなく、長く複雑な文字列に設定してください。\n- 異なるサービスで同じパスワードを使い回さないようにしてください。\n- 入力を誤って見られた場合は、速やかに変更報告をしてください。\n以上",
+  "thinking": "We need answer in Japanese. User requests exact formatting:\n1. First line exactly \"注意点は次のとおりです。\" only.\n2. From second line, bullet list starting each line with \"- \" (half-width hyphen and space), exactly 4 consecutive bullets.\n3. Use word \"定期的\" at least once somewhere.\n4. No digits 0-9 including full-width. So avoid numbers entirely in bullets and last line.\n5. Last line exactly \"以上\" two characters only.\nNeed ensure no digits anywhere. Bullet points exactly 4 lines. Need not include numbers. \"4\" condition but not output. Need use 定期的. Need ensure no ASCII digits. Also avoid full-width digits. Last line \"以上\". Ensure first line exactly. Then four bullets starting with \"- \". Then last line \"以上\". No blank lines? They say 2 行目から... 4 個続けて. Last line 以上. So likely 6 lines total: line1, lines2-5 bullets, line6 以上. Need no extra blank line. Check digits: \"以上\" okay. Bullets can say 定期 的? no numbers. Use Japanese no digits. Need avoid 0-9 in any. Let's produce:\n注意点は次のとおりです。\n- パスワードは他の人と共有せず、定期的に更新してください。\n- 推測されやすい生年月日や氏名ではなく、長く複雑な文字列に設定してください。\n- 異なるサービスで同じパスワードを使い回さないようにしてください。\n- 入力を誤って見られた場合は、速やかに変更報告をしてください。\n以上\nNeed check digits: none. \"他の人と\" maybe not. \"長く複雑\" okay. \"定期 的\" used. Ensure bullet line starts with half-width hyphen and space. Last line only 以上. First line exactly. No numbers. Full-width digits? none. Good. Need be careful if line contains \"3\"? no. \"4\" in text? none. \"以上\" okay. Could there be full-width comma? fine. Need exactly 4 bullets. Count bullets: line2,3,4,5. Good.\nPotential issue \"他の人と共有せず\" maybe password sharing. Fine.\nNeed final only. Ensure no trailing newline? okay.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 195,
+  "completion_tokens": 564,
+  "ttft_s": 1.69,
+  "t_first_content_s": 11.546,
+  "wall_s": 13.053,
+  "load_s": null,
+  "server_decode_tok_s": 49.5,
+  "server_prefill_tok_s": 117.7,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 195,
+    "prompt_ms": 1656.1,
+    "prompt_per_token_ms": 8.493,
+    "prompt_per_second": 117.7,
+    "predicted_n": 564,
+    "predicted_ms": 11390.1,
+    "predicted_per_token_ms": 20.195,
+    "predicted_per_second": 49.5,
+    "draft_n": 395,
+    "draft_n_accepted": 288
+  },
+  "delta_chunks": 556,
+  "wall_decode_tok_s": 49.55,
+  "thinking_chars": 1609,
+  "content_chars": 154,
+  "thinking_tokens_est": 515,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 13.053,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": true
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  }
+}

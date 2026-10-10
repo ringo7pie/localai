@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C2: 時間の文字列を秒に直す\n\n関数 `parse_duration(text: str) -> int` を書いてください。\n\n- `text` は 1 個以上の「成分」からなる。成分は、0 以上の整数（半角数字 1 桁以上）のすぐ後ろに単位の文字が 1 つ付いたもの。\n- 単位は `d`（日 = 86400 秒）、`h`（時 = 3600 秒）、`m`（分 = 60 秒）、`s`（秒）の 4 つで、小文字だけ。\n- 成分は `d`、`h`、`m`、`s` の順に並び、同じ単位は 1 回まで。使わない単位は省いてよい。\n- 成分と成分のあいだには半角スペースが 0 個以上入ってよい。文字列の先頭と末尾の半角スペースも許す。数と単位のあいだにはスペースを入れられない。\n- 合計の秒数を `int` で返す。数の大きさに上限はない（`\"90m\"` は `5400`）。\n- この形に合わない入力（空の文字列、スペースだけ、知らない単位、単位の無い数、順番の誤り、単位の重複、小数、負の数、大文字、区切りの記号など）には `ValueError` を送出する。\n\n例:\n- `parse_duration(\"1h 30m\")` → `5400`\n- `parse_duration(\"2d3s\")` → `172803`",
+  "prompt_chars": 833,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:28:23+09:00",
+  "finished_at": "2026-10-08T12:29:02+09:00",
+  "content": "```python\nimport re\n\ndef parse_duration(text: str) -> int:\n    \"\"\"\n    時間の文字列を秒に直します。\n    d(日=86400s) -> h(時=3600s) -> m(分=60s) -> s(秒=1s) の順に並び、かつ単位は重複してはなりません。\n    \"\"\"\n    \n    # 1. 入力チェック\n    if not text.strip():\n        raise ValueError(\"入力は空であるか、スペースのみです。\")\n\n    # 2. 定義 (単位、秒数、順序)\n    # (単位文字, 秒数)\n    units = [('d', 86400), ('h', 3600), ('m', 60), ('s', 1)]\n    \n    # スペースを全て取り除き、連続する成分にまとめる\n    current_text = text.replace(\" \", \"\")\n    total_seconds = 0\n\n    # 3. 必須順序に従って各成分をパースする\n    for unit_char, multiplier in units:\n        # パターン: ^(\\d+) で行頭の数字をキャプチャし、その後 unit_char が続く\n        pattern = r\"^(\\d+)\" + re.escape(unit_char)\n        match = re.match(pattern, current_text)\n        \n        if match:\n            amount_str = match.group(1)\n            amount = int(amount_str)\n            \n            total_seconds += amount * multiplier\n            \n            # マッチした成分の長さ分だけ文字列を切り捨てる\n            match_length = len(match.group(0))\n            current_text = current_text[match_length:]\n        \n        # 単位の欠落や順序の誤りによる処理は、最後の current_text チェックで検出される\n\n    # 4. 最終検証\n    # 処理が完了した後、current_textが空でない場合、それは未処理の不正な文字や成分が存在したことを意味する。\n    if current_text:\n        # 残っている文字が何かあれば、構造的に不正である\n        raise ValueError(\"不正なフォーマット、未定義の単位、または重複した単位が含まれています。\")\n        \n    return total_seconds\n```",
+  "thinking": "Thinking Process:\n\n1.  **Understand the Goal:** The objective is to implement a Python function `parse_duration(text: str) -> int` that converts a string representing a time duration (in components like \"1d\", \"30m\", etc.) into total seconds.\n\n2.  **Analyze Constraints & Rules:**\n    *   Use only standard library features.\n    *   No file I/O, network, subprocess, stdin.\n    *   Use specified function/variable names (`parse_duration`, `text`).\n    *   The output must be a single Python code block containing only definitions/imports.\n    *   Input format: Components separated by optional spaces.\n    *   Components: `<integer>` followed immediately by a unit.\n    *   Units (in order): `d` (86400), `h` (3600), `m` (60), `s` (1).\n    *   Order must be strictly `d`, then `h`, then `m`, then `s`.\n    *   No unit duplication.\n    *   Handling spaces: Optional spaces between components, optional leading/trailing spaces.\n    *   Error handling: Must raise `ValueError` for *any* invalid format (empty, only spaces, unknown units, missing units, wrong order, duplicates, decimals, negatives, etc.).\n\n3.  **Determine the Implementation Strategy:**\n    *   The input string needs to be parsed into individual components (e.g., \"1h\", \"30m\").\n    *   Regex seems the most robust way to identify the components, but we must ensure we can handle the ordering and structure validation strictly.\n    *   The structure suggests a sequential parsing approach is better than relying solely on regex matching everything at once, as we need to enforce the order (d -> h -> m -> s).\n\n4.  **Step-by-Step Parsing Logic (Focusing on Validation):**\n\n    *   **Preprocessing:** Clean up leading/trailing spaces and split the string based on one or more spaces.\n    *   **Component Validation:** Each resulting segment must be analyzed. A segment must be `<digits><unit>`.\n    *   **The Core Parser (Iterative/State Machine):**\n        *   We need to iterate through the potential components while ensuring they follow the required unit order (D, H, M, S).\n        *   A dictionary mapping units to seconds is helpful: `units = {'d': 86400, 'h': 3600, 'm': 60, 's': 1}`.\n        *   We need to track which units have already been used.\n\n5.  **Refining the Parsing Mechanism (Using Regex for Component Extraction):**\n\n    *   Since spaces are variable, let's use `re.split` or `re.findall` to extract potential components. A component must be digits followed by one of the specific units.\n    *   Regex Pattern: `(\\d+[dhms])`\n\n    *   *Example:* `text = \"1h 30m\"`\n    *   `re.findall(r'(\\d+[dhms])', text)` might yield `['1h', '30m']`.\n\n    *   *Crucial Validation Step 1: Exhaustive Check:* We must ensure the *entire* non-space content of `text` is consumed by the pattern. If `text = \"1h junk 30m\"`, the regex approach might miss \"junk\".\n\n    *   *Alternative Approach: Normalization and Iteration:*\n        1. Strip external whitespace.\n        2. Split the remaining text by space.\n        3. For each segment, validate it against the pattern.\n\n    *   *Let's stick to a generalized regex approach combined with strict validation.*\n\n    *   The full pattern must match the entire input (after stripping spaces): `^(\\d+[dhms](\\s*\\d+[dhms])*)$` (This is getting complicated due to optional spaces).\n\n6.  **Implementing Robust Validation using `re` (Standard Library):**\n\n    *   We use `re.findall` to extract all valid components.\n    *   We must validate two things:\n        1. Does the combined length of all extracted components (with necessary separators) match the original trimmed input? (This handles \"1h junk 30m\").\n        2. Are the extracted components ordered and unique?\n\n    *   Let's simplify the validation by processing the string content *after* removing all spaces.\n\n    *   *Refined Plan:*\n        1. Clean the input: `cleaned_text = text.replace(\" \", \"\")`.\n        2. Use `re.findall` on `cleaned_text` to find all components.\n        3. If `len(components) * (component length)` does not equal the length of the cleaned text, the input had invalid characters/structure *not* captured by the component pattern (e.g., \"1.5h\", \"1h2j\"). This is complex.\n\n    *   *Backtracking to the core structure:* The units MUST be processed in order: D, H, M, S.\n\n7.  **Final Robust Algorithm (State Machine approach):**\n\n    1. Initialize `total_seconds = 0`.\n    2. Define unit multipliers and allowed order: `units = [('d', 86400), ('h', 3600), ('m', 60), ('s', 1)]`.\n    3. Trim and normalize the input (remove all spaces and collapse separators).\n    4. Iterate through the `units` list. For each unit `(unit_char, multiplier)`:\n        a. Search for the numerical prefix followed by this unit character in the remaining input string.\n        b. If found:\n            i. Extract the number (`N`).\n            ii. Calculate `N * multiplier`.\n            iii. Update `total_seconds`.\n            iv. Remove the matched segment (`N` + `unit_char`) from the input string.\n            v. Track usage (prevent duplicates, though the ordered search inherently helps).\n        c. If not found, continue to the next unit.\n    5. After iterating through all units, the remaining input string must be empty. If not empty, it means invalid characters or components were present (e.g., \"1d 2h X\").\n\n8.  **Implementing the Search/Extraction (Using `re.match` or `re.search`):**\n\n    *   We need to find `(number) + unit_char` at the beginning of the current string segment.\n\n    *   Let's implement the loop structure:\n\n```python\nimport re\n\ndef parse_duration(text: str) -> int:\n    # 1. Handle initial invalid states\n    if not text.strip():\n        raise ValueError(\"Empty or whitespace-only input.\")\n\n    # 2. Define units and order\n    units = [('d', 86400), ('h', 3600), ('m', 60), ('s', 1)]\n    \n    current_text = text.strip()\n    total_seconds = 0\n    \n    # 3. Loop through units in mandated order\n    for unit_char, multiplier in units:\n        \n        # Pattern: digits followed immediately by the unit_char\n        # We must account for potential spacing introduced by the parser if we used re.findall,\n        # but since we are processing the stripped text sequentially, we look for the pattern at the start.\n        \n        # The regex needs to handle the structure: Optional space, Number, Unit\n        # Since we are removing spaces first, we search for N + Unit\n        pattern = r\"^(\\d+)\" + re.escape(unit_char)\n        match = re.match(pattern, current_text)\n        \n        if match:\n            amount_str = match.group(1)\n            amount = int(amount_str)\n            \n            total_seconds += amount * multiplier\n            \n            # Remove the matched segment from the current_text\n            match_length = len(match.group(0))\n            current_text = current_text[match_length:]\n            \n    # 4. Final Validation\n    # If anything remains in current_text, it means the input contained invalid structure \n    # or leftover components (e.g., \"1d 2h Junk\" -> \"1d2hJunk\" remaining \"Junk\").\n    if current_text.strip():\n        # This covers extra junk or units appearing out of order (e.g., \"2d3h1d\").\n        # Since we process sequentially, finding \"1d2h1d\" will consume the first \"1d\" and leave \"2h1d\".\n        # If the remaining text contains any valid unit structure, it means duplication or wrong order occurred.\n        \n        # A simple check: If the remaining text starts with a digit, it's invalid (or it's a duplicate unit we missed).\n        if re.search(r'\\d', current_text):\n            raise ValueError(\"Invalid format or duplicate units.\")\n        else:\n            # This handles cases like \"1d 2h \" where the remaining text might just be spaces (which were stripped)\n            # or if the original input was malformed spacing wise.\n            # Given the initial strip, if current_text is non-empty, it must contain invalid content relative to the mandatory order.\n             raise ValueError(\"Invalid format or unconsumed characters.\")\n\n\n    return total_seconds\n```\n\n9.  **Testing Against Edge Cases (Self-Correction/Refinement):**\n\n    *   `parse_duration(\"1h 30m\")`:\n        1. `current_text` = \"1h30m\".\n        2. Unit 'd': No match.\n        3. Unit 'h': Match \"1h\". `total = 3600`. `current_text` = \"30m\".\n        4. Unit 'm': Match \"30m\". `total = 3600 + 1800 = 5400`. `current_text` = \"\".\n        5. Unit 's': No match.\n        6. Remaining text check: `current_text` is empty. Returns 5400. (Correct)\n\n    *   `parse_duration(\"2d3s\")`:\n        1. `current_text` = \"2d3s\".\n        2. Unit 'd': Match \"2d\". `total = 172800`. `current_text` = \"3s\".\n        3. Unit 'h': No match.\n        4. Unit 'm': No match.\n        5. Unit 's': Match \"3s\". `total = 172800 + 3 = 172803`. `current_text` = \"\".\n        6. Remaining text check: Empty. Returns 172803. (Correct)\n\n    *   `parse_duration(\"1d 2d\")`: (Duplicate units)\n        1. `current_text` = \"1d2d\".\n        2. Unit 'd': Match \"1d\". `total = 86400`. `current_text` = \"2d\".\n        3. Unit 'h': No match.\n        4. Unit 'm': No match.\n        5. Unit 's': No match.\n        6. Remaining text check: `current_text` = \"2d\". This contains digits/units, triggering `ValueError`. (Correct, as the remaining text must be empty).\n\n    *   `parse_duration(\"1h 30m 5s extra\")`:\n        1. `current_text` = \"1h30m5sexstra\".\n        2. Unit 'd': No match.\n        3. Unit 'h': Match \"1h\". `total = 3600`. `current_text` = \"30m5sexstra\".\n        4. Unit 'm': Match \"30m\". `total = 5400`. `current_text` = \"5sexstra\".\n        5. Unit 's': Match \"5s\". `total = 5405`. `current_text` = \"extra\".\n        6. Remaining text check: `current_text` = \"extra\". Non-empty, contains no digits/units. Needs refinement on the final validation check.\n\n10. **Refining Error Handling (The Final Validation):**\n\n    The remaining string check must ensure that *only* valid, consumed components were present. If `current_text` is non-empty after the loop, it means the input had unparseable trailing junk, or a structural error (like a unit without a number, or an unexpected unit sequence).\n\n    Let's refine the cleanup step by explicitly requiring that *all* remaining text is empty.\n\n    *Refined Validation:* If `current_text` is not empty after the loop, it is an error.\n\n11. **Final Code Structure Generation:** (Implementing the refined algorithm). (Need to ensure the regex handling for `re.match` is robust against multiple spaces.) Since we strip spaces and concatenate everything, the `re.match` structure remains appropriate.\n\n(Self-check: The standard library `re` module is used. No external packages. Logic seems sound for mandated order and strict structure enforcement.)",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 511,
+  "completion_tokens": 3496,
+  "ttft_s": 0.26,
+  "t_first_content_s": 32.932,
+  "wall_s": 38.769,
+  "load_s": 0.001,
+  "server_decode_tok_s": 90.7,
+  "server_prefill_tok_s": 2686.11,
+  "server_timings": {
+    "total_duration": 38767807911,
+    "load_duration": 1352871,
+    "prompt_eval_count": 511,
+    "prompt_eval_duration": 190238000,
+    "eval_count": 3496,
+    "eval_duration": 38545915000
+  },
+  "delta_chunks": 3113,
+  "wall_decode_tok_s": 90.79,
+  "thinking_chars": 10670,
+  "content_chars": 1303,
+  "thinking_tokens_est": 3116,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 38.768,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.9,
+    "all_passed": false,
+    "passed": 9,
+    "total": 10,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_seconds_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_all_units",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_space",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_value",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_unit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_format",
+        "ok": false,
+        "error": "AssertionError: parse_duration('1 h',): expected ValueError, returned 3600"
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.02,
+    "stderr_tail": ""
+  }
+}

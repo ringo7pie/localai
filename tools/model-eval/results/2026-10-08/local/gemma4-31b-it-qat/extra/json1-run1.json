@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "extra",
+  "item": "json1",
+  "run": 1,
+  "prompt": "次のメールから注文の情報を取り出し、JSON で答えてください。\n\nメール:\n\"\"\"\n件名: 追加注文のお願い\n\nいつもお世話になっております。株式会社みどり商会の佐藤です。\n先日ご案内いただいた業務用コーヒー豆（品番 KB-204）を 12 袋お願いします。\n前回お願いした紅茶（品番 KB-110）は、今回は不要です。\n納品は 11 月 5 日の午前中を希望します。\nお支払いはいつもどおり請求書でお願いいたします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"company\": 注文した会社の名前（文字列）\n  - \"contact\": 担当者の姓（文字列）\n  - \"product_code\": 今回注文する商品の品番（文字列）\n  - \"quantity\": 今回注文する数（整数）\n  - \"delivery_date\": 希望の納品日（\"YYYY-MM-DD\" の形の文字列。年は 2026 年とする）\n  - \"payment\": 支払い方法。\"請求書\"、\"クレジットカード\"、\"代金引換\" のどれか（文字列）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 518,
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T15:56:22+09:00",
+  "finished_at": "2026-10-08T15:57:02+09:00",
+  "content": "```json\n{\n  \"company\": \"株式会社みどり商会\",\n  \"contact\": \"佐藤\",\n  \"product_code\": \"KB-204\",\n  \"quantity\": 12,\n  \"delivery_date\": \"2026-11-05\",\n  \"payment\": \"請求書\"\n}\n```",
+  "thinking": "*   Input: An email requesting an order.\n    *   Goal: Extract specific information into a JSON object.\n    *   Required Fields:\n        *   `company`: Company name.\n        *   `contact`: Contact person's last name.\n        *   `product_code`: Product code of the ordered item.\n        *   `quantity`: Quantity ordered (integer).\n        *   `delivery_date`: Delivery date (YYYY-MM-DD format, Year = 2026).\n        *   `payment`: Payment method (one of: \"請求書\", \"クレジットカード\", \"代金引換\").\n    *   Constraint: Output only the JSON object.\n\n    *   \"件名: 追加注文のお願い\" (Subject: Request for additional order)\n    *   \"いつもお世話になっております。株式会社みどり商会の佐藤です。\"\n        *   Company: 株式会社みどり商会\n        *   Contact: 佐藤\n    *   \"先日ご案内いただいた業務用コーヒー豆（品番 KB-204）を 12 袋お願いします。\"\n        *   Product code: KB-204\n        *   Quantity: 12\n    *   \"前回お願いした紅茶（品番 KB-110）は、今回は不要です。\"\n        *   (Ignore this product code as it's explicitly stated as not needed).\n    *   \"納品は 11 月 5 日の午前中を希望します。\"\n        *   Delivery date: Nov 5.\n        *   Instruction says Year = 2026.\n        *   Formatted: 2026-11-05.\n    *   \"お支払いはいつもどおり請求書でお願いいたします。\"\n        *   Payment: 請求書.\n\n    *   `company`: \"株式会社みどり商会\"\n    *   `contact`: \"佐藤\"\n    *   `product_code`: \"KB-204\"\n    *   `quantity`: 12\n    *   `delivery_date`: \"2026-11-05\"\n    *   `payment`: \"請求書\"\n\n    *   Construct the JSON string based on the extracted values.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 289,
+  "completion_tokens": 568,
+  "ttft_s": 2.295,
+  "t_first_content_s": 34.553,
+  "wall_s": 39.925,
+  "load_s": 0.002,
+  "server_decode_tok_s": 15.01,
+  "server_prefill_tok_s": 355.22,
+  "server_timings": {
+    "total_duration": 39924100744,
+    "load_duration": 1883797,
+    "prompt_eval_count": 289,
+    "prompt_eval_duration": 813581000,
+    "eval_count": 568,
+    "eval_duration": 37836923000
+  },
+  "delta_chunks": 459,
+  "wall_decode_tok_s": 15.1,
+  "thinking_chars": 1370,
+  "content_chars": 158,
+  "thinking_tokens_est": 509,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 39.923,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "fenced",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "company": {
+        "ok": true,
+        "got": "株式会社みどり商会"
+      },
+      "contact": {
+        "ok": true,
+        "got": "佐藤"
+      },
+      "product_code": {
+        "ok": true,
+        "got": "KB-204"
+      },
+      "quantity": {
+        "ok": true,
+        "got": 12
+      },
+      "delivery_date": {
+        "ok": true,
+        "got": "2026-11-05"
+      },
+      "payment": {
+        "ok": true,
+        "got": "請求書"
+      }
+    },
+    "extra_keys": []
+  }
+}

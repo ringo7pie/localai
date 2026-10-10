@@ -1,0 +1,40 @@
+{
+  "target": "strata-flash-next:IQ3_S",
+  "slug": "strata-rvn-IQ3_S",
+  "sessions": [
+    {
+      "started_at": "2026-10-09T14:42:49+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "strata-flash-next:IQ3_S",
+        "--suite",
+        "coding",
+        "--items",
+        "c4,c5",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-09-kv/int8/rep3",
+        "--time-budget-min",
+        "200"
+      ],
+      "items": [
+        "coding/c4",
+        "coding/c5"
+      ],
+      "checked_at": "2026-10-09T14:42:49+09:00",
+      "gpu_before": {
+        "memory_used_mib": 23918,
+        "memory_total_mib": 24576,
+        "utilization_pct": 91
+      },
+      "strata_models": [
+        "strata-flash-next:IQ3_S"
+      ],
+      "gpu_after_preload": {
+        "memory_used_mib": 23918,
+        "memory_total_mib": 24576,
+        "utilization_pct": 48
+      }
+    }
+  ]
+}

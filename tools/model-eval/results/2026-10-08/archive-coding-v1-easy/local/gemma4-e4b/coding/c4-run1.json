@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c4",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C4: LRU キャッシュ\n\nクラス `LRUCache` を書いてください。\n\n- `LRUCache(capacity: int)`: 最大 `capacity` 個の「キーと値の組」を保持するキャッシュを作る。`capacity` が 1 未満なら `ValueError` を送出する。\n- `get(key)`: `key` があればその値を返し、その組を「最も最近使った」ものにする。無ければ `-1` を返す（このとき順番は変えない）。\n- `put(key, value)`: `key` の値を `value` にし、その組を「最も最近使った」ものにする。戻り値は `None`。新しい `key` を入れて組の数が `capacity` を超えるときは、「最も長く使っていない」組を 1 つ取り除く。既にある `key` の更新では何も取り除かない。\n- `len(cache)` で、いま保持している組の数を返す。\n- `key` はハッシュ可能な任意の値。`get` と `put` は平均 O(1) で動くこと（数十万回呼ばれる）。\n\n例:\n- `cache = LRUCache(2)` のあと `cache.put(1, 1)`、`cache.put(2, 2)`、`cache.get(1)` → `1`、`cache.put(3, 3)`（キー 2 が取り除かれる）、`cache.get(2)` → `-1`\n- `cache = LRUCache(1)` のあと `cache.put(\"a\", 10)`、`cache.put(\"a\", 20)`、`cache.get(\"a\")` → `20`、`len(cache)` → `1`",
+  "prompt_chars": 1004,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:29:23+09:00",
+  "finished_at": "2026-10-08T12:29:43+09:00",
+  "content": "```python\nimport collections\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        if capacity < 1:\n            raise ValueError(\"Capacity must be 1 or greater\")\n        self.capacity = capacity\n        # key: value のペアを保持し、挿入順序（またはアクセス順）を維持するためにOrderedDictを使用する\n        self.cache = collections.OrderedDict()\n\n    def get(self, key):\n        if key not in self.cache:\n            return -1\n        \n        # 存在する場合、値を読み出す。\n        value = self.cache[key]\n        \n        # 最新の使用要素としてマークするために、要素をエンドに移動させる (O(1))。\n        self.cache.move_to_end(key)\n        return value\n\n    def put(self, key, value):\n        if key in self.cache:\n            # 既存のキーの場合、値を更新し、最新要素としてマークする。\n            self.cache[key] = value\n            self.cache.move_to_end(key)\n        else:\n            # 新規挿入の場合、容量オーバーチェックを行う。\n            if len(self.cache) == self.capacity:\n                # 容量オーバーの場合、最も長く使っていない要素（アンオーダーの先頭）を削除する (O(1))。\n                # popitem(last=False) は FIFO の要素を取り除く。\n                self.cache.popitem(last=False)\n            \n            # 新しい要素を挿入し、自動的に最新要素となる。\n            self.cache[key] = value\n        # 戻り値は None\n        return None\n\n    def __len__(self):\n        return len(self.cache)\n```",
+  "thinking": "ユーザーはLRU（Least Recently Used）キャッシュを実装するPythonクラス `LRUCache` のコードを求めている。\n\n**制約事項の確認:**\n1. 標準ライブラリのみ使用。\n2. ファイルI/O、ネットワーク、サブプロセス、標準入力からの読み込みは行わない。\n3. 指定された関数名、クラス名、引数名を使用する。\n4. 出力は、必要な定義とインポートのみを含む単一のコードブロックにする。テストコードや説明は入れない。\n5. パフォーマンス要件: `get` と `put` は平均 $O(1)$ で動作すること。\n\n**仕様の分析:**\n1. **`LRUCache(capacity: int)`:**\n    * 初期化。\n    * `capacity` が 1 未満なら `ValueError` を送出する。\n2. **内部構造:**\n    * 容量を管理し、キーとその値、そしてアクセス順序を高速に追跡する必要がある。\n    * $O(1)$ でのアクセスと更新（順番の変更）が求められるため、ハッシュマップと連結リスト（またはそれに類するもの）の組み合わせが最も適している。\n    * Pythonの標準ライブラリでこの役割を最も効率的に果たすのは `collections.OrderedDict` または `collections.defaultdict` のようなOrdered Dictionaryですが、`OrderedDict`自体が実装要件を満たすため、これを使うのがベストプラクティスです。しかし、外部ライブラリを使わないという制約が厳しいため、標準ライブラリの範囲で考える。`OrderedDict` は標準ライブラリの一部であるため使用可能であると仮定する。\n    * 実際のLRUの実装では、辞書（アクセス $O(1)$）と双方向連結リスト（アクセス/移動 $O(1)$）を組み合わせる。Pythonでは `dict` と `collections.deque` や `collections.OrderedDict` を使う。ここでは `collections.OrderedDict` を使用するのが最も簡単かつ効率的である。\n\n3. **`get(key)`:**\n    * `key` が存在するかチェックし、存在すれば値を返す。\n    * 値を返した後、その要素を「最も最近使った」ものにする（つまり、リストの先頭に移動させる）。\n    * 存在しない場合は `-1` を返す（順番変更はしない）。\n4. **`put(key, value)`:**\n    * 値を設定し、要素を「最も最近使った」ものにする（先頭に移動）。\n    * 新しいキーの場合、要素数が `capacity` を超えるかチェックし、超えている場合は「最も長く使っていない」（つまり、リストの末尾）要素を削除する。\n    * 既存のキーを更新する場合、要素数は変わらず、単に値を更新して先頭に移動させるだけ。\n5. **`len(cache)`:**\n    * 現在の要素数を返す。\n\n**実装方針（`collections.OrderedDict` の利用）:**\n`collections.OrderedDict` は、Pythonの辞書機能と、要素の挿入順序（またはアクセス順序）を保持する機能を提供する。\nLRUの実装において、Pythonの辞書（または `OrderedDict`）は以下の性質を利用できる:\n1. `d[key]` で $O(1)$ アクセス。\n2. `popitem(last=False)` で末尾（LRU）を $O(1)$ で取り出せる。\n3. `move_to_end(key)` や、単にキーを再代入（`d[key] = d[key]`）することで、要素を最新のものとしてマークできる。\n\n`collections.OrderedDict` の利用が最も簡潔で、要件を満たす。\n\n**コード構造の確認:**\n1. クラス `LRUCache` を定義。\n2. 初期化メソッド `__init__` で容量を設定し、内部のOrderedDictを準備。\n3. `__len__` メソッドを実装。\n4. `get(key)` を実装。\n5. `put(key, value)` を実装。\n6. `__contains__` やその他のマジックメソッドは不要。\n\n---\n**具体的な実装ステップ:**\n\n1. **`__init__`:**\n   - `self.capacity = capacity` を保存。\n   - `self.cache = collections.OrderedDict()` を初期化。\n   - `capacity < 1` のチェック。\n\n2. **`__len__`:**\n   - `return len(self.cache)`\n\n3. **`get(key)`:**\n   - `if key not in self.cache:` なら `-1` を返す。\n   - 要素が存在する場合:\n     - `value = self.cache[key]` を取得。\n     - 要素を最新化: `self.cache.move_to_end(key)` (これは `OrderedDict` の便利なメソッド)。\n     - `value` を返す。\n\n4. **`put(key, value)`:**\n   - **更新の場合 (key 存在):**\n     - `self.cache[key] = value` で値を更新し、`self.cache.move_to_end(key)` で最新化。\n     - 戻り値は `None`。\n   - **新規挿入の場合 (key 存在しない):**\n     - **容量チェック:** `len(self.cache) == self.capacity` かどうか確認。\n     - **追い出しが必要な場合:** `self.cache.popitem(last=False)` でLRU要素を取り除く。\n     - 挿入: `self.cache[key] = value` で挿入。\n     - 戻り値は `None`。\n\n---\n**自己修正/確認:**\n`collections.OrderedDict` は標準ライブラリの一部であり、使用可能である。\n`get` と `put` の複雑さは、OrderedDictへのアクセス、`move_to_end`、および `popitem` の全てが平均 $O(1)$ で完了するため、パフォーマンス要件を満たしている。\n\nコードは指定されたフォーマットに合わせる。`import collections` が必要。",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 535,
+  "completion_tokens": 1754,
+  "ttft_s": 0.273,
+  "t_first_content_s": 15.155,
+  "wall_s": 19.463,
+  "load_s": 0.001,
+  "server_decode_tok_s": 91.22,
+  "server_prefill_tok_s": 2708.6,
+  "server_timings": {
+    "total_duration": 19462226416,
+    "load_duration": 842806,
+    "prompt_eval_count": 535,
+    "prompt_eval_duration": 197519000,
+    "eval_count": 1754,
+    "eval_duration": 19227916000
+  },
+  "delta_chunks": 1641,
+  "wall_decode_tok_s": 91.41,
+  "thinking_chars": 2898,
+  "content_chars": 1215,
+  "thinking_tokens_est": 1236,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 19.462,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 11,
+    "total": 11,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_basic_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_capacity_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_update_no_evict",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_update_makes_recent",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_get_makes_recent",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_missing_get_keeps_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_capacity",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_len_tracks",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_put_returns_none",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hashable_keys",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_ops",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.14,
+    "stderr_tail": ""
+  }
+}

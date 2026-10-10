@@ -1,0 +1,166 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "content": "```python\nimport calendar\nimport re\nfrom bisect import bisect_left\nfrom datetime import date, datetime\n\n_NUM_RE = re.compile(r\"[0-9]+\")\n_SEP_RE = re.compile(r\"[ \\t]+\")\n\n_MONTH_NAMES = {\n    name: index\n    for index, name in enumerate(\n        [\"JAN\", \"FEB\", \"MAR\", \"APR\", \"MAY\", \"JUN\",\n         \"JUL\", \"AUG\", \"SEP\", \"OCT\", \"NOV\", \"DEC\"],\n        start=1,\n    )\n}\n_DOW_NAMES = {\n    name: index\n    for index, name in enumerate([\"SUN\", \"MON\", \"TUE\", \"WED\", \"THU\", \"FRI\", \"SAT\"])\n}\n\n\ndef _parse_value(token, low, high, names):\n    if _NUM_RE.fullmatch(token):\n        value = int(token)\n    elif (\n        names is not None\n        and token.isascii()\n        and token.isalpha()\n        and token.upper() in names\n    ):\n        value = names[token.upper()]\n    else:\n        raise ValueError(f\"invalid value: {token!r}\")\n    if not low <= value <= high:\n        raise ValueError(f\"value out of range: {token!r}\")\n    return value\n\n\ndef _parse_field(text, low, high, names):\n    if text == \"\":\n        raise ValueError(\"empty field\")\n    values = set()\n    for item in text.split(\",\"):\n        if item == \"\":\n            raise ValueError(\"empty item\")\n        base = item\n        step = None\n        if \"/\" in item:\n            base, step_text = item.split(\"/\", 1)\n            if not _NUM_RE.fullmatch(step_text):\n                raise ValueError(f\"invalid step: {item!r}\")\n            step = int(step_text)\n            if step < 1:\n                raise ValueError(f\"invalid step: {item!r}\")\n        if base == \"*\":\n            start, end = low, high\n        elif \"-\" in base:\n            parts = base.split(\"-\")\n            if len(parts) != 2:\n                raise ValueError(f\"invalid range: {item!r}\")\n            start = _parse_value(parts[0], low, high, names)\n            end = _parse_value(parts[1], low, high, names)\n            if start > end:\n                raise ValueError(f\"invalid range: {item!r}\")\n        else:\n            if step is not None:\n                raise ValueError(f\"step without range: {item!r}\")\n            start = end = _parse_value(base, low, high, names)\n        values.update(range(start, end + 1, step if step is not None else 1))\n    return values\n\n\ndef _parse_expression(expression):\n    stripped = expression.strip(\" \\t\\r\\n\")\n    fields = _SEP_RE.split(stripped)\n    if len(fields) != 5:\n        raise ValueError(\"expression must have exactly 5 fields\")\n    minute_text, hour_text, dom_text, month_text, dow_text = fields\n    minutes = _parse_field(minute_text, 0, 59, None)\n    hours = _parse_field(hour_text, 0, 23, None)\n    doms = _parse_field(dom_text, 1, 31, None)\n    months = _parse_field(month_text, 1, 12, _MONTH_NAMES)\n    dows_raw = _parse_field(dow_text, 0, 7, _DOW_NAMES)\n    dows = {0 if value == 7 else value for value in dows_raw}\n    dom_any = dom_text == \"*\"\n    dow_any = dow_text == \"*\"\n    return minutes, hours, doms, months, dows, dom_any, dow_any\n\n\ndef next_run(expression: str, after: datetime) -> datetime | None:\n    minutes, hours, doms, months, dows, dom_any, dow_any = _parse_expression(expression)\n    times = sorted(hour * 60 + minute for hour in hours for minute in minutes)\n\n    limit_year = min(after.year + 10, 9999)\n    year = after.year\n    month = after.month\n    day = after.day\n    start_minute = after.hour * 60 + after.minute + 1\n\n    while year <= limit_year:\n        if month in months:\n            days_in_month = calendar.monthrange(year, month)[1]\n            for day_number in range(day, days_in_month + 1):\n                if start_minute < 1440:\n                    dom_ok = day_number in doms\n                    cron_dow = (date(year, month, day_number).weekday() + 1) % 7\n                    dow_ok = cron_dow in dows\n                    if dom_any and dow_any:\n                        matched = True\n                    elif dom_any:\n                        matched = dow_ok\n                    elif dow_any:\n                        matched = dom_ok\n                    else:\n                        matched = dom_ok or dow_ok\n                    if matched:\n                        index = bisect_left(times, start_minute)\n                        if index < len(times):\n                            found = times[index]\n                            return datetime(year, month, day_number, found // 60, found % 60)\n                start_minute = 0\n        start_minute = 0\n        day = 1\n        month += 1\n        if month > 12:\n            month = 1\n            year += 1\n    return None\n```",
+  "wall_s": 59.463,
+  "usage": {
+    "subagent_tokens": 35155
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 26,
+    "total": 26,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_every_minute",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_same_minute_is_excluded",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fixed_minute_wraps_hour",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hour_range_wraps_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_from_minimum",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_range_with_step",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists_and_duplicates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_month_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sunday_as_seven",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_day_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_both_restricted_means_or",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_in_day_field_is_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leap_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_impossible_dates_return_none",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_year_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leading_zeros_tabs_and_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_match_time_boundaries",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_field_count",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_syntax",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_names_and_extensions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_naive_datetime",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_far_answers_are_fast",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_none_is_fast",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:15+09:00"
+}

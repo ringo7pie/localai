@@ -1,0 +1,282 @@
+{
+  "source": "Documents/3D問題_実施モデル一覧_2026-10-08.md",
+  "problem": "TestData/数学難問-三次元空間-TEST.md",
+  "grade_legend": "q1〜q4 は小問 (1)〜(4)。true = 正解（○）、false = 誤り（×）、null = 答えなし（—）。(1) は t の範囲で採点",
+  "answer_key": {
+    "q1": "1−r ≤ t ≤ r。断面は (x,z) 平面で、V1 は線分 (0,0)–(1,0) を半径 √(r²−t²) で、V3 は線分 (1,0)–(1,1) を半径 √(r²−(1−t)²) で太らせたスタジアム形",
+    "q2": "1/2 < r ≤ √2/2",
+    "q3": "πr² + (4/3)πr³",
+    "q4": "3πr² + (2π − 8/3)r³（r=0.6 で 4.1741）"
+  },
+  "notes": [
+    "時間はこの md の記録（Open WebUI の会話と Strata の計測）から写した。Open WebUI 経由の回は、ロード時間を含むかどうかを切り分けられない。",
+    "「1 時間 1 分」「1 時間 2 分」は分単位の記録なので、秒は 0 として 3,660 秒・3,720 秒にした。",
+    "tok/s は記録の値。strata RVN の 641 秒の回は 33,492 トークン ÷ 641 秒で計算した値（記録には無い）。",
+    "strata-flash-coder:IQ1_M の 2 回は md からの写しではなく、2026-10-09 の bench_api.py の記録（bench.jsonl）の値。"
+  ],
+  "model_notes": {
+    "gemma4:e4b": "能力には 10-08 の Ollama API（thinking あり）の 3 回を使う。09-27 の Open WebUI の 1 回（○/×/—/—）は参考。",
+    "gemma4:31b-it-qat": "09-27 の記録は GPU 90%・5.2 tok/s。Ollama の既定 65536 で文脈が CPU に溢れていた疑いがある。",
+    "strata-flash-next:IQ3_S": "予算 32,768 の 2 回を使う。予算なしでは 9 本とも思考が終わらず答えなし（8,000〜130,597 トークンで打ち切りか上限）。予算 16,384 の 1 回（○/×/×/×）は参考。",
+    "strata-official:IQ3_XXS": "予算なしで 2 回とも収束して全問正解。",
+    "strata-flash-coder:IQ1_M": "2026-10-09 に追加で流した 2 回（tools/strata/scripts/bench_api.py、記録は results/2026-10-08/local/strata-coder-IQ1_M/math3d/）。公式版の O1 と同じ条件（予算なし）で 2 回とも収束して全問正解。Documents の md には載っていない。"
+  },
+  "runs": [
+    {
+      "target": "qwen3.8:27b",
+      "date": "2026-09-20",
+      "env": "Ollama / Open WebUI",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 18597,
+      "wall_s": 717,
+      "tok_s": 26.4,
+      "used": true,
+      "note": "全問正解"
+    },
+    {
+      "target": "qwen3.8:27b",
+      "date": "2026-09-28",
+      "env": "Ollama / Open WebUI",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": false
+      },
+      "tokens": 25723,
+      "wall_s": 1029,
+      "tok_s": 25.1,
+      "used": true,
+      "note": "(4) は正しい式を出したあと書き換えで誤った"
+    },
+    {
+      "target": "gemma4:e4b",
+      "date": "2026-09-27",
+      "env": "Ollama / Open WebUI",
+      "grade": {
+        "q1": true,
+        "q2": false,
+        "q3": null,
+        "q4": null
+      },
+      "tokens": 5606,
+      "wall_s": 72,
+      "tok_s": 80.0,
+      "used": false,
+      "note": "参考（thinking の設定が 10-08 と違う）"
+    },
+    {
+      "target": "gemma4:e4b",
+      "date": "2026-10-08",
+      "env": "Ollama API（thinking あり）run1",
+      "grade": {
+        "q1": true,
+        "q2": false,
+        "q3": true,
+        "q4": false
+      },
+      "tokens": 9091,
+      "wall_s": 108,
+      "tok_s": 90.0,
+      "used": true,
+      "note": ""
+    },
+    {
+      "target": "gemma4:e4b",
+      "date": "2026-10-08",
+      "env": "Ollama API（thinking あり）run2",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": false
+      },
+      "tokens": 12760,
+      "wall_s": 142,
+      "tok_s": 90.1,
+      "used": true,
+      "note": ""
+    },
+    {
+      "target": "gemma4:e4b",
+      "date": "2026-10-08",
+      "env": "Ollama API（thinking あり）run3",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": false
+      },
+      "tokens": 10372,
+      "wall_s": 115,
+      "tok_s": 90.4,
+      "used": true,
+      "note": ""
+    },
+    {
+      "target": "gemma4:31b-it-qat",
+      "date": "2026-09-27",
+      "env": "Ollama / Open WebUI",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 19118,
+      "wall_s": 3660,
+      "tok_s": 5.2,
+      "used": true,
+      "note": "1 時間 1 分（分単位の記録）"
+    },
+    {
+      "target": "gemma4:31b-ctx32k",
+      "date": "2026-09-28",
+      "env": "Ollama / Open WebUI",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 11421,
+      "wall_s": 441,
+      "tok_s": 27.6,
+      "used": true,
+      "note": "最短で全問正解"
+    },
+    {
+      "target": "qwen3.8-flash-next:IQ4_XS",
+      "date": "2026-09-28",
+      "env": "Ollama / Open WebUI",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 48204,
+      "wall_s": 3720,
+      "tok_s": 13.6,
+      "used": true,
+      "note": "1 時間 2 分（分単位の記録）"
+    },
+    {
+      "target": "strata-flash-next:IQ3_S",
+      "date": "2026-10-07",
+      "env": "Strata 8082・予算 32,768（要求ごと）・平文版",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": false
+      },
+      "tokens": null,
+      "wall_s": 661,
+      "tok_s": null,
+      "used": true,
+      "note": "(4) は 3πr²+(11/3)πr³"
+    },
+    {
+      "target": "strata-flash-next:IQ3_S",
+      "date": "2026-10-07",
+      "env": "Strata 8082・予算 32,768（設定 JSON）・md 版",
+      "grade": {
+        "q1": true,
+        "q2": false,
+        "q3": true,
+        "q4": false
+      },
+      "tokens": 33492,
+      "wall_s": 641,
+      "tok_s": 52.2,
+      "used": true,
+      "note": "(2) r ≤ √3/2、(4) πr²+(4/3)πr³。tok/s は計算値"
+    },
+    {
+      "target": "strata-flash-next:IQ3_S",
+      "date": "2026-10-07",
+      "env": "Strata 8082・予算 16,384・平文版",
+      "grade": {
+        "q1": true,
+        "q2": false,
+        "q3": false,
+        "q4": false
+      },
+      "tokens": null,
+      "wall_s": 412,
+      "tok_s": null,
+      "used": false,
+      "note": "参考（(3) は正しい式を書いて打ち消した）"
+    },
+    {
+      "target": "strata-official:IQ3_XXS",
+      "date": "2026-10-07",
+      "env": "Strata 8084・md 版・temperature 1.0（O1）",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 53975,
+      "wall_s": 904,
+      "tok_s": 59.8,
+      "used": true,
+      "note": "(1) の退化の説明に小さな誤り"
+    },
+    {
+      "target": "strata-official:IQ3_XXS",
+      "date": "2026-10-07",
+      "env": "Strata 8084・md 版・temperature 0.6（O2）",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 49161,
+      "wall_s": 774,
+      "tok_s": 63.7,
+      "used": true,
+      "note": ""
+    },
+    {
+      "target": "strata-flash-coder:IQ1_M",
+      "date": "2026-10-09",
+      "env": "Strata 8083・md 版・effort high・予算なし（要求で 0）・max_tokens 65,536・temperature 1.0 / top_p 0.95 / top_k 20（run1）",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 50895,
+      "wall_s": 743.73,
+      "tok_s": 68.5,
+      "used": true,
+      "note": "答えは英語。(1) の途中の式に書き誤り（−t ≤ t ≤ r）があるが結論は正しい"
+    },
+    {
+      "target": "strata-flash-coder:IQ1_M",
+      "date": "2026-10-09",
+      "env": "Strata 8083・md 版・effort high・予算なし（要求で 0）・max_tokens 65,536・temperature 1.0 / top_p 0.95 / top_k 20（run2）",
+      "grade": {
+        "q1": true,
+        "q2": true,
+        "q3": true,
+        "q4": true
+      },
+      "tokens": 48497,
+      "wall_s": 711.28,
+      "tok_s": 68.3,
+      "used": true,
+      "note": "答えは英語と日本語の混在。(2) は必要性の反例 (1−s, 1/2, s) まで示した"
+    }
+  ]
+}

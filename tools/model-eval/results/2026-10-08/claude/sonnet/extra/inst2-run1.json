@@ -1,0 +1,52 @@
+{
+  "model": "sonnet",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "content": "注意点は次のとおりです。\n- パスワードは他人に教えません。\n- 同じパスワードを使い回しません。\n- 定期的にパスワードを見直して変更します。\n- 長く推測されにくい文字列を選びます。\n以上",
+  "wall_s": 10.84,
+  "usage": {
+    "subagent_tokens": 26024
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": true
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  },
+  "batch_size": 3,
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:38:36+09:00"
+}

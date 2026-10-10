@@ -1,0 +1,363 @@
+Let  
+\[
+S_1=OA,\quad S_2=AB,\quad S_3=BC,
+\]
+and write \(B_r\) for the closed ball of radius \(r\). Then the swept solids are the \(r\)-neighborhoods of the segments:
+\[
+V_i=S_i+B_r.
+\]
+
+---
+
+## (1)
+
+### Range of \(t\)
+
+For \(V_1\), the segment \(OA\) has \(y=0\), so the plane \(y=t\) meets \(V_1\) iff
+\[
+-t\le t\le r\qquad\Longleftrightarrow\qquad -r\le t\le r.
+\]
+
+For \(V_3\), the segment \(BC\) has \(y=1\), so the plane \(y=t\) meets \(V_3\) iff
+\[
+|t-1|\le r\qquad\Longleftrightarrow\qquad 1-r\le t\le 1+r.
+\]
+
+Because \(\frac12<r<1\),
+\[
+1-r<r.
+\]
+Hence the required range is
+
+\[
+\boxed{\,1-r\le t\le r\,}.
+\]
+
+For every such \(t\), the point
+\[
+(1,t,0)
+\]
+belongs to both \(V_1\) and \(V_3\), so this is also the range for a common point.
+
+---
+
+### Cross-sections on the plane \(y=t\)
+
+Identify the plane \(y=t\) with the \((x,z)\)-plane. Put
+\[
+\alpha=\sqrt{r^2-t^2},\qquad \beta=\sqrt{r^2-(t-1)^2}.
+\]
+For \(t\in[1-r,r]\), both \(\alpha,\beta\ge 0\).
+
+The section \(V_1\cap\{y=t\}\) is a horizontal stadium whose axis is the segment
+\[
+(x,z)=(0,0)\ \text{to}\ (1,0),
+\]
+with radius \(\alpha\):
+\[
+V_1\cap\{y=t\}
+=
+\bigl([0,1]\times[-\alpha,\alpha]\bigr)
+\cup D_2((0,0),\alpha)\cup D_2((1,0),\alpha),
+\]
+where \(D_2(P,\rho)\) is a disk in the \((x,z)\)-plane.
+
+The section \(V_3\cap\{y=t\}\) is a vertical stadium whose axis is the segment
+\[
+(x,z)=(1,0)\ \text{to}\ (1,1),
+\]
+with radius \(\beta\):
+\[
+V_3\cap\{y=t\}
+=
+\bigl([1-\beta,1+\beta]\times[0,1]\bigr)
+\cup D_2((1,0),\beta)\cup D_2((1,1),\beta).
+\]
+
+So in the same \((x,z)\)-plane:
+
+- \(V_1\) gives a horizontal stadium along \(x\in[0,1]\);
+- \(V_3\) gives a vertical stadium along \(x=1,\ z\in[0,1]\);
+- both contain the point \((1,0)\).
+
+Also, for later use, since \(t\in[1-r,r]\subset[0,1]\), the section
+\[
+V_2\cap\{y=t\}
+\]
+is simply the disk
+\[
+D_2((1,0),r)
+\]
+in the \((x,z)\)-plane.
+
+---
+
+## (2)
+
+We need the condition for
+\[
+V_1\cap V_3\subset V_2.
+\]
+
+Let \(X=(x,t,z)\in V_1\cap V_3\). Since \(t\in[1-r,r]\subset[0,1]\), the distance from \(X\) to the segment \(AB\) is
+\[
+d(X,V_2)^2=(x-1)^2+z^2.
+\]
+
+We claim that points of \(V_1\cap V_3\) outside the quadrant
+\[
+x<1,\qquad z>0
+\]
+are already inside \(V_2\).
+
+- If \(x\ge1\), then because \(X\in V_1\), the nearest endpoint \(A=(1,0,0)\) gives
+  \[
+  (x-1)^2+t^2+z^2\le r^2,
+  \]
+  so
+  \[
+  (x-1)^2+z^2\le r^2.
+  \]
+  Thus \(X\in V_2\).
+
+- If \(z\le0\), then because \(X\in V_3\), the nearest endpoint \(B=(1,1,0)\) gives
+  \[
+  (x-1)^2+(t-1)^2+z^2\le r^2,
+  \]
+  so again
+  \[
+  (x-1)^2+z^2\le r^2.
+  \]
+  Thus \(X\in V_2\).
+
+Therefore, a point can fail to be in \(V_2\) only when
+\[
+x<1,\quad z>0.
+\]
+
+For such \(x,z\), using the cross-sections found in (1), we have
+
+\[
+z\le \alpha=\sqrt{r^2-t^2},
+\]
+from \(X\in V_1\), and
+\[
+1-x\le \beta=\sqrt{r^2-(t-1)^2},
+\]
+from \(X\in V_3\).
+
+Thus in the cross-section plane \(y=t\), the relevant part of \(V_1\cap V_3\) lies in the rectangle
+\[
+1-\beta\le x\le1,\qquad 0\le z\le\alpha.
+\]
+
+The point farthest from the center \((1,0)\) of the disk \(V_2\cap\{y=t\}\) is
+\[
+(x,z)=(1-\beta,\alpha).
+\]
+Its squared distance from \((1,0)\) is
+\[
+\beta^2+\alpha^2
+=
+\bigl(r^2-(t-1)^2\bigr)+\bigl(r^2-t^2\bigr)
+=
+2r^2-\{t^2+(1-t)^2\}.
+\]
+
+For inclusion \(V_1\cap V_3\subset V_2\), we need this quantity to be at most \(r^2\) for all \(t\in[1-r,r]\):
+\[
+2r^2-\{t^2+(1-t)^2\}\le r^2
+\qquad\Longleftrightarrow\qquad
+t^2+(1-t)^2\ge r^2.
+\]
+
+Since \(r>\frac12\), the interval \([1-r,r]\) contains \(t=\frac12\). The minimum of
+\[
+t^2+(1-t)^2
+\]
+on \([0,1]\) occurs at \(t=\frac12\), where it equals
+\[
+\frac14+\frac14=\frac12.
+\]
+Hence the necessary and sufficient condition is
+\[
+r^2\le \frac12.
+\]
+
+Under the given assumption \(\frac12<r<1\), the answer is
+
+\[
+\boxed{\frac12<r\le \frac1{\sqrt2}}.
+\]
+
+---
+
+## (3) Volume of \(V_1\)
+
+The solid \(V_1\) is a capsule: a cylinder of radius \(r\) and length \(1\), together with two hemispherical caps at the endpoints \(O\) and \(A\). The two hemispheres make one full sphere.
+
+Therefore
+
+\[
+\operatorname{Vol}(V_1)
+=
+\pi r^2+\frac43\pi r^3.
+\]
+
+\[
+\boxed{\operatorname{Vol}(V_1)=\pi r^2+\frac43\pi r^3.}
+\]
+
+---
+
+## (4) Volume of \(V_1\cup V_2\cup V_3\) under the condition in (2)
+
+Assume now
+
+\[
+\frac12<r\le \frac1{\sqrt2}.
+\]
+
+Then by part (2),
+\[
+V_1\cap V_3\subset V_2.
+\]
+
+Hence
+\[
+V_1\cap V_2\cap V_3=V_1\cap V_3.
+\]
+
+By inclusion-exclusion,
+
+\[
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+\sum_i \operatorname{Vol}(V_i)
+-\operatorname{Vol}(V_1\cap V_2)
+-\operatorname{Vol}(V_2\cap V_3)
+-\operatorname{Vol}(V_1\cap V_3)
++\operatorname{Vol}(V_1\cap V_2\cap V_3).
+\]
+
+Because \(V_1\cap V_3=V_1\cap V_2\cap V_3\), the last two terms cancel, so
+
+\[
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+3\operatorname{Vol}(V_1)
+-
+\operatorname{Vol}(V_1\cap V_2)
+-
+\operatorname{Vol}(V_2\cap V_3).
+\]
+
+The two adjacent intersections \(V_1\cap V_2\) and \(V_2\cap V_3\) are congruent, so we compute \(V_1\cap V_2\).
+
+---
+
+### Adjacent intersection \(V_1\cap V_2\)
+
+Shift the common endpoint \(A\) to the origin in coordinates
+\[
+u=1-x,\qquad v=y,\qquad w=z.
+\]
+Then \(V_1\) is the \(r\)-neighborhood of the segment
+\[
+0\le u\le1,\quad v=0,\quad w=0,
+\]
+and \(V_2\) is the \(r\)-neighborhood of the segment
+\[
+u=0,\quad 0\le v\le1,\quad w=0.
+\]
+
+For a fixed \(w\), put
+\[
+\rho=\sqrt{r^2-w^2}.
+\]
+
+In the \((u,v)\)-plane, the cross-section of \(V_1\cap V_2\) is as follows.
+
+- If \(u\ge0,\ v\ge0\), the two cylinder parts impose
+  \[
+  u\le\rho,\qquad v\le\rho,
+  \]
+  giving a square of side \(\rho\), area
+  \[
+  \rho^2.
+  \]
+
+- In each of the other three quadrants, one endpoint ball condition gives a quarter-disk of radius \(\rho\), total area
+  \[
+  3\cdot \frac{\pi}{4}\rho^2=\frac{3\pi}{4}\rho^2.
+  \]
+
+Thus the total cross-section area at height \(w\) is
+
+\[
+\left(1+\frac{3\pi}{4}\right)(r^2-w^2).
+\]
+
+Integrating over \(w\in[-r,r]\),
+
+\[
+\int_{-r}^r (r^2-w^2)\,dw
+=
+2r^3-\frac{2r^3}{3}
+=
+\frac43r^3.
+\]
+
+Therefore
+
+\[
+\operatorname{Vol}(V_1\cap V_2)
+=
+\left(1+\frac{3\pi}{4}\right)\frac43r^3
+=
+\pi r^3+\frac43r^3.
+\]
+
+By symmetry,
+
+\[
+\operatorname{Vol}(V_2\cap V_3)
+=
+\pi r^3+\frac43r^3.
+\]
+
+Now compute the union:
+
+\[
+\begin{aligned}
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+&=
+3\left(\pi r^2+\frac43\pi r^3\right)
+-2\left(\pi r^3+\frac43r^3\right)\\
+&=
+3\pi r^2+4\pi r^3
+-2\pi r^3-\frac83r^3\\
+&=
+3\pi r^2+\left(2\pi-\frac83\right)r^3.
+\end{aligned}
+\]
+
+Hence, under the condition \(\frac12<r\le\frac1{\sqrt2}\),
+
+\[
+\boxed{
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+3\pi r^2+\left(2\pi-\frac83\right)r^3
+}
+\]
+
+or equivalently
+
+\[
+\boxed{
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+3\pi r^2+\frac{6\pi-8}{3}r^3.
+}
+\]

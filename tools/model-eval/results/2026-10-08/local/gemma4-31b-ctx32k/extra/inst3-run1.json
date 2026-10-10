@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "extra",
+  "item": "inst3",
+  "run": 1,
+  "prompt": "朝ごはんを食べることの利点を説明してください。\n\n次の条件をすべて守って書いてください。\n1. 全体をちょうど 3 行にする（空の行は数えない）。行頭に箇条書きの記号や番号を付けない。\n2. どの行も 40 文字以内にする。\n3. どの行も末尾を「です。」か「ます。」にする。\n4. どの行にも「朝ごはん」という語を入れる。\n5. アルファベット（A〜Z、a〜z。全角も含む）を使わない。",
+  "prompt_chars": 194,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:37:04+09:00",
+  "finished_at": "2026-10-08T14:38:01+09:00",
+  "content": "朝ごはんは脳への栄養補給になります。\n朝ごはんを食べると代謝が上がります。\n朝ごはんは集中力を高める鍵です。",
+  "thinking": "*   Topic: Benefits of eating breakfast.\n    *   Condition 1: Exactly 3 lines (excluding empty lines). No bullet points or numbers at the start.\n    *   Condition 2: Each line must be 40 characters or less.\n    *   Condition 3: Each line must end with 「です。」 or 「ます。」.\n    *   Condition 4: Each line must contain the word 「朝ごはん」.\n    *   Condition 5: No alphabet characters (A-Z, a-z, including full-width).\n\n    *   *Line 1 (Energy/Awakening):*\n        朝ごはんを食べると脳にエネルギーが届きます。 (21 chars) - OK.\n    *   *Line 2 (Metabolism/Health):*\n        朝ごはんを食べることで代謝が上がります。 (20 chars) - OK.\n    *   *Line 3 (Concentration/Mental state):*\n        朝ごはんを食べれば集中力が高まります。 (19 chars) - OK.\n\n    *   Line 1: 朝ごはんを食べると脳にエネルギーが届きます。\n        *   3 lines? Yes.\n        *   No bullet/number? Yes.\n        *   <= 40 chars? Yes (21).\n        *   Ends with 「です。」 or 「ます。」? Yes (ます。).\n        *   Contains 「朝ごはん」? Yes.\n        *   No alphabet? Yes.\n    *   Line 2: 朝ごはんを食べることで代謝が上がります。\n        *   3 lines? Yes.\n        *   No bullet/number? Yes.\n        *   <= 40 chars? Yes (20).\n        *   Ends with 「です。」 or 「ます。」? Yes (ます。).\n        *   Contains 「朝ごはん」? Yes.\n        *   No alphabet? Yes.\n    *   Line 3: 朝ごはんを食べれば集中力が高まります。\n        *   3 lines? Yes.\n        *   No bullet/number? Yes.\n        *   <= 40 chars? Yes (19).\n        *   Ends with 「です。」 or 「ます。」? Yes (ます。).\n        *   Contains 「朝ごはん」? Yes.\n        *   No alphabet? Yes.\n\n    Wait, let me check if I can make them more distinct or \"benefit-oriented\" while strictly following the rules.\n\n    Candidate 2:\n    朝ごはんは脳のエネルギー源になります。 (18 chars)\n    朝ごはんで体がゆっくり目覚めます。 (17 chars)\n    朝ごはんを食べると集中力が増します。 (18 chars)\n\n    Check conditions:\n    1. 3 lines. No bullet points. (Check)\n    2. <= 40 chars per line. (Check)\n    3. End with 「です。」 or 「ます。」. (Check)\n    4. Each line contains 「朝ごはん」. (Check)\n    5. No alphabet. (Check)\n\n    Line 1: 朝ごはんは脳のエネルギー源になります。 (18)\n    Line 2: 朝ごはんで体がゆっくり目覚めます。 (17)\n    Line 3: 朝ごはんを食べると集中力が増します。 (18)\n\n    Everything looks correct.\n\n    Double check Condition 1 again: \"全体をちょうど 3 行にする（空の行は数えない）。行頭に箇条書きの記号や番号を付けない。\"\n    Double check Condition 5: \"アルファベット（A〜Z、a〜z。全角も含む）を使わない。\" -> None used.\n\n    Final confirmation:\n    Line 1: 朝ごはんは脳のエネルギー源になります。\n    Line 2: 朝ごはんで体がゆっくり目覚めます。\n    Line 3: 朝ごはんを食べると集中力が増します。\n\n    Wait, let's ensure I don't accidentally include any invisible characters or spaces that could be interpreted as alphabet/special chars.\n\n    Let's try to vary the ending \"です/ます\".\n    Line 1: 朝ごはんは脳への栄養補給になります。 (18)\n    Line 2: 朝ごはんを食べると代謝が上がります。 (18)\n    Line 3: 朝ごはんは健康的な一日の始まりです。 (18)\n\n    Let's check:\n    1. 3 lines? Yes.\n    2. <= 40 chars? Yes.\n    3. Ends with です/ます? Yes.\n    4. \"朝ごはん\" in each? Yes.\n    5. No alphabet? Yes.\n\n    Wait, \"栄養補給\" is fine. \"代謝\" is fine. \"健康的な\" is fine.\n\n    Let's use this set:\n    朝ごはんは脳への栄養補給になります。\n    朝ごはんを食べると代謝が上がります。\n    朝ごはんは健康的な一日の始まりです。\n\n    Wait, let me double check the a-z condition. \"アルファベット（A〜Z、a〜z。全角も含む）を使わない。\"\n    Okay, no English letters.\n\n    Final check of the proposed response:\n    朝ごはんは脳への栄養補給になります。\n    朝ごはんを食べると代謝が上がります。\n    朝ごはんは健康的な一日の始まりです。\n\n    Is there any bullet point? No.\n    Is it exactly 3 lines? Yes.\n    Under 40 chars? Yes.\n    Ends with です/ます? Yes.\n    Contains 朝ごはん? Yes.\n    No alphabet? Yes.\n\n    Perfect.\n\n    Wait, \"朝ごはんを食べることの利点\" (Benefits of eating breakfast).\n    1. Brain nutrition (Benefit)\n    2. Increased metabolism (Benefit)\n    3. Starting the day healthily (Benefit/State)\n\n    Actually, \"朝ごはんは健康的な一日の始まりです\" is more of a description. Maybe \"朝ごはんを食べて集中力を高めます。\" (Increase concentration).\n\n    Revised Set:\n    朝ごはんは脳への栄養補給になります。\n    朝ごはんを食べると代謝が上がります。\n    朝ごはんを食べて集中力を高めます。\n\n    Let's check again.\n    Line 1: 朝ごはんは脳への栄養補給になります。 (18 chars) -> ends in ます。\n    Line 2: 朝ごはんを食べると代謝が上がります。 (18 chars) -> ends in ます。\n    Line 3: 朝ごはんを食べて集中力を高めます。 (17 chars) -> ends in ます。\n\n    Let's try to make one \"です\".\n    Line 3: 朝ごはんは集中力を高める鍵です。 (16 chars) -> ends in です。\n\n    Final Selection:\n    朝ごはんは脳への栄養補給になります。\n    朝ごはんを食べると代謝が上がります。\n    朝ごはんは集中力を高める鍵です。\n\n    Check constraints:\n    1. 3 lines? Yes. No bullets? Yes.\n    2. <= 40 chars? (18, 18, 16) Yes.\n    3. Ends with です/ます? Yes.\n    4. \"朝ごはん\" in each? Yes.\n    5. No alphabet? Yes.\n\n    Correct.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 141,
+  "completion_tokens": 1656,
+  "ttft_s": 0.885,
+  "t_first_content_s": 55.599,
+  "wall_s": 56.737,
+  "load_s": 0.001,
+  "server_decode_tok_s": 29.59,
+  "server_prefill_tok_s": 420.35,
+  "server_timings": {
+    "total_duration": 56736474333,
+    "load_duration": 1214167,
+    "prompt_eval_count": 141,
+    "prompt_eval_duration": 335433000,
+    "eval_count": 1656,
+    "eval_duration": 55955886000
+  },
+  "delta_chunks": 1362,
+  "wall_decode_tok_s": 29.65,
+  "thinking_chars": 4209,
+  "content_chars": 54,
+  "thinking_tokens_est": 1635,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 56.736,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "line_count",
+        "label": "ちょうど 3 行で、行頭に記号や番号が無い",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 40 文字以内",
+        "ok": true
+      },
+      {
+        "id": "line_endings",
+        "label": "どの行も末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "each_line_word",
+        "label": "どの行にも「朝ごはん」",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  }
+}

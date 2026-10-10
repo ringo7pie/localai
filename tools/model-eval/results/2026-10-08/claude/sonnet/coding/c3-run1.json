@@ -1,0 +1,161 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "content": "```python\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n\n    infinity = 1 << 60\n    best = [infinity] * n\n\n    # 1 本目: source から start 以降に出る便（乗り換え時間は要らない）\n    for from_station, to_station, depart, arrive in connections:\n        if from_station == source and depart >= start and arrive < best[to_station]:\n            best[to_station] = arrive\n\n    # 2 本目以降: 直前までの「最大 k 本での最早到着」から、乗り換え時間を足して乗れる便だけを緩和する\n    for _ in range(max_transfers):\n        updated = best[:]\n        changed = False\n        for from_station, to_station, depart, arrive in connections:\n            if best[from_station] + change <= depart and arrive < updated[to_station]:\n                updated[to_station] = arrive\n                changed = True\n        if not changed:\n            break\n        best = updated\n\n    answer = best[target]\n    return answer if answer < infinity else -1\n```",
+  "wall_s": 22.199,
+  "usage": {
+    "subagent_tokens": 30586
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_source_is_target",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_departure_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_minimizes_arrival_not_departure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tight_transfer_with_zero_change",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_change_time_selects_later_connection",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_zero_means_direct_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_makes_it_impossible",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_departure_is_a_trap",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_waiting_at_intermediate_station",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_departure_times_cannot_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_and_self_loops",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_transfers_arrive_earlier",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_arrival_at_a_station_may_use_too_many_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fast_and_slow_stages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_connections_before_start_are_useless",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_time_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_chain_at_the_transfer_limit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_stations_few_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_instances",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_wide_random_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_max_connections_few_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_many_transfer_layers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_stages_with_many_decoys",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.95,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:38:36+09:00"
+}

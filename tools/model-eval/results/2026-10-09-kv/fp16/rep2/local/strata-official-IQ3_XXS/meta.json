@@ -1,0 +1,40 @@
+{
+  "target": "strata-official:IQ3_XXS",
+  "slug": "strata-official-IQ3_XXS",
+  "sessions": [
+    {
+      "started_at": "2026-10-09T13:49:49+09:00",
+      "argv": [
+        "run",
+        "--target",
+        "strata-official:IQ3_XXS",
+        "--suite",
+        "coding",
+        "--items",
+        "c4,c5",
+        "--results-dir",
+        "/home/mt/Proj/localai/tools/model-eval/results/2026-10-09-kv/fp16/rep2",
+        "--time-budget-min",
+        "200"
+      ],
+      "items": [
+        "coding/c4",
+        "coding/c5"
+      ],
+      "checked_at": "2026-10-09T13:49:49+09:00",
+      "gpu_before": {
+        "memory_used_mib": 23900,
+        "memory_total_mib": 24576,
+        "utilization_pct": 63
+      },
+      "strata_models": [
+        "strata-official:IQ3_XXS"
+      ],
+      "gpu_after_preload": {
+        "memory_used_mib": 23900,
+        "memory_total_mib": 24576,
+        "utilization_pct": 63
+      }
+    }
+  ]
+}

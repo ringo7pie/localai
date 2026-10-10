@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "target": "strata-flash-coder:IQ1_M",
+  "label": "strata-flash-coder:IQ1_M (Coder)",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-flash-coder:IQ1_M",
+  "slug": "strata-coder-IQ1_M",
+  "suite": "extra",
+  "item": "json3",
+  "run": 1,
+  "prompt": "次の社内の問い合わせから情報を取り出し、JSON で答えてください。\n\n問い合わせ:\n\"\"\"\nお疲れさまです。経理部の田中です。\n今朝 9 時ごろから、経費精算システムにログインできなくなりました。\n画面には「エラーコード E-503」と表示されます。\n同じ部署のほかの 4 人も同じ症状で、全員が作業を止めています。\n月末の締めが明後日なので、至急対応をお願いします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"department\": 問い合わせた人の部署（文字列）\n  - \"reporter\": 問い合わせた人の姓（文字列）\n  - \"system\": 不具合が起きているシステムの名前（文字列）\n  - \"error_code\": 表示されたエラーコード（文字列。例 \"X-100\"）\n  - \"affected_users\": 症状が出ている人数。問い合わせた本人も含める（整数）\n  - \"priority\": 緊急度。\"高\"、\"中\"、\"低\" のどれか（文字列）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 492,
+  "request": {
+    "model": "strata-flash-coder:IQ1_M",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-09T10:28:36+09:00",
+  "finished_at": "2026-10-09T10:28:42+09:00",
+  "content": "{\n  \"department\": \"経理部\",\n  \"reporter\": \"田中\",\n  \"system\": \"経費精算システム\",\n  \"error_code\": \"E-503\",\n  \"affected_users\": 5,\n  \"priority\": \"高\"\n}",
+  "thinking": "We need answer in Japanese. User asks extract info from an inquiry and output exactly one JSON object only. Need parse. Inquiry:\n\"\"\"\nお疲れさまです。経理部的田中です。\n今朝 9 時ごろから、経費精算システムにログインできなくなリ了吗? Let's read: \"経費精算システムにログインできなリ了吗?\" Actually text: 経費精算システムにログインできなリ了吗? Provided: 経費精算システムにログインできなリ了吗? Let's copy: \"経費精算システムにログインできなリ了吗?\" Hmm original: \"経費精算システムに-login cannot\". It says \"経費精算システムに-login couldn't\" maybe system name is \"経費精算システム\". Error code: \"E-503\". Affected users: same floor's other 4 people same symptom, including requester himself. So 5 total. Priority urgent response: 高. Department: Accounting department (経理部). Reporter: last name Tanaka. Need JSON only. Need ensure valid UTF-8. Keys: department, reporter, system, error_code, affected_users, priority. Values: \"経理部\", \"田中\", \"経費精算システム\", \"E-503\", 5, \"高\". Need output no extra. Also note JSON only, no markdown. Final should be just object. Ensure double quotes.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 316,
+  "completion_tokens": 369,
+  "ttft_s": 0.892,
+  "t_first_content_s": 5.321,
+  "wall_s": 5.989,
+  "load_s": null,
+  "server_decode_tok_s": 72.1,
+  "server_prefill_tok_s": 363.7,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 316,
+    "prompt_ms": 868.9,
+    "prompt_per_token_ms": 2.75,
+    "prompt_per_second": 363.7,
+    "predicted_n": 369,
+    "predicted_ms": 5114.7,
+    "predicted_per_token_ms": 13.861,
+    "predicted_per_second": 72.1,
+    "draft_n": 308,
+    "draft_n_accepted": 218
+  },
+  "delta_chunks": 359,
+  "wall_decode_tok_s": 72.21,
+  "thinking_chars": 920,
+  "content_chars": 136,
+  "thinking_tokens_est": 321,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 5.989,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "department": {
+        "ok": true,
+        "got": "経理部"
+      },
+      "reporter": {
+        "ok": true,
+        "got": "田中"
+      },
+      "system": {
+        "ok": true,
+        "got": "経費精算システム"
+      },
+      "error_code": {
+        "ok": true,
+        "got": "E-503"
+      },
+      "affected_users": {
+        "ok": true,
+        "got": 5
+      },
+      "priority": {
+        "ok": true,
+        "got": "高"
+      }
+    },
+    "extra_keys": []
+  }
+}

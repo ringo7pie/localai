@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "coding",
+  "item": "c1",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C1: シェル風の単語分割\n\n関数 `split_words(text: str) -> list[str]` を書いてください。\n\n`text` を、次の規則で「単語」のリストに分けます。規則は POSIX シェルの引用の一部を模したものですが、変数展開やワイルドカードの展開はしません（`$`、`*`、`~` などはただの文字です）。\n\n- 区切り: 引用の外にある半角スペース、タブ（`\\t`）、改行（`\\n`）の 3 種類だけが単語の区切り。連続していても 1 つの区切りとみなし、先頭と末尾の区切りは無視する。それ以外の文字（`\\r`、全角スペースなど）は区切りではなく、単語の一部。\n- 単一引用符 `'...'`: 中の文字はすべてそのまま単語に入る（バックスラッシュも特別扱いしない）。最初に現れた `'` で閉じる。\n- 二重引用符 `\"...\"`: 中では、バックスラッシュの直後の 1 文字が `\"`、`\\`、`$`、`` ` `` のいずれかなら、その 1 文字だけを単語に入れる。バックスラッシュの直後が改行なら、その 2 文字を取り除く（行の継続）。それ以外のバックスラッシュはただの文字として残す（`\"\\n\"` の中身は `\\` と `n` の 2 文字）。\n- 引用の外のバックスラッシュ: 直後が改行なら、その 2 文字を取り除く（行の継続。単語は切れず、区切りにもならない）。それ以外は直後の 1 文字をそのまま単語に入れる（`\\ ` は半角スペース、`\\'` は `'`、`\\#` は `#`）。\n- 引用符そのものは単語に入らない。引用された部分と引用の外の部分が隣り合っていれば 1 つの単語になる（`a\"b c\"d` は `ab cd` という 1 単語）。`''` や `\"\"` だけの単語は空文字列の単語になる。\n- コメント: 引用の外の `#` が「単語の先頭」にあるとき、その `#` から行末（次の改行の直前。改行が無ければ文字列の末尾）までを無視する。「単語の先頭」とは、その時点でまだ単語が始まっていない（文字列の先頭か、直前の区切りのあとに、単語の文字も引用符も現れていない）こと。単語の途中の `#`（`a#b`）はただの文字。空の引用のあとの `#`（`''#x`）も単語の途中とみなす。\n- 閉じていない引用符、および文字列の末尾にある単独のバックスラッシュには `ValueError` を送出する。\n- `text` は最大 100,000 文字。空の文字列、区切りだけの文字列には `[]` を返す。\n\n例（入力は Python の文字列リテラルで書いてある。`\\\\` はバックスラッシュ 1 文字、`\\n` は改行 1 文字）:\n- `split_words(\"a 'b c'  d\")` → `[\"a\", \"b c\", \"d\"]`\n- `split_words('x \"y\\\\\"z\" # comment\\n  w')` → `[\"x\", 'y\"z', \"w\"]`\n- `split_words(\"it's\")` → `ValueError` を送出",
+  "prompt_chars": 1582,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T13:41:12+09:00",
+  "finished_at": "2026-10-08T13:43:15+09:00",
+  "content": "```python\ndef split_words(text: str) -> list[str]:\n    words: list[str] = []\n    current: list[str] = []\n    word_started = False\n    i = 0\n    n = len(text)\n\n    while i < n:\n        c = text[i]\n\n        # Comment: '#' at word start (outside quotes)\n        if c == '#' and not word_started:\n            while i < n and text[i] != '\\n':\n                i += 1\n            continue\n\n        # Delimiters\n        if c == ' ' or c == '\\t' or c == '\\n':\n            if word_started:\n                words.append(''.join(current))\n                current = []\n                word_started = False\n            i += 1\n            continue\n\n        # Backslash outside quotes\n        if c == '\\\\':\n            if i + 1 >= n:\n                raise ValueError(\"trailing backslash\")\n            nxt = text[i + 1]\n            if nxt == '\\n':\n                i += 2\n            else:\n                current.append(nxt)\n                word_started = True\n                i += 2\n            continue\n\n        # Single quote\n        if c == \"'\":\n            word_started = True\n            j = i + 1\n            while j < n:\n                if text[j] == \"'\":\n                    break\n                current.append(text[j])\n                j += 1\n            else:\n                raise ValueError(\"unterminated single quote\")\n            i = j + 1\n            continue\n\n        # Double quote\n        if c == '\"':\n            word_started = True\n            i += 1\n            while i < n:\n                c2 = text[i]\n                if c2 == '\"':\n                    i += 1\n                    break\n                if c2 == '\\\\':\n                    if i + 1 >= n:\n                        raise ValueError(\"trailing backslash\")\n                    nxt = text[i + 1]\n                    if nxt in ('\"', '\\\\', '$', '`'):\n                        current.append(nxt)\n                        i += 2\n                    elif nxt == '\\n':\n                        i += 2\n                    else:\n                        current.append('\\\\')\n                        current.append(nxt)\n                        i += 2\n                else:\n                    current.append(c2)\n                    i += 1\n            else:\n                raise ValueError(\"unterminated double quote\")\n            continue\n\n        # Regular character\n        current.append(c)\n        word_started = True\n        i += 1\n\n    if word_started:\n        words.append(''.join(current))\n\n    return words\n```",
+  "thinking": "Let me analyze the requirements carefully:\n\n1. `split_words(text: str) -> list[str]` - shell-like word splitting\n2. Delimiters: space, tab, newline (outside quotes)\n3. Single quotes: everything literal until closing `'`\n4. Double quotes: backslash escapes `\\\"`, `\\\\`, `\\$`, `` \\` ``, backslash+newline removes both, other backslashes stay as-is\n5. Outside quotes: backslash+newline removes both, backslash+char keeps only char\n6. `#` at word start (no word characters yet) starts a comment until end of line\n7. Unterminated quotes or trailing backslash → `ValueError`\n8. `''` or `\"\"` alone → empty string word `[\"\"]`\n9. Words are joined if adjacent (no delimiter between quoted and unquoted parts)\n\nLet me think through the algorithm:\n\nI'll use a state machine approach:\n- State: outside, in_single_quote, in_double_quote\n- Track whether current word has started (for `#` comment detection)\n- Build current word character by character\n\nLet me trace through the examples:\n\nExample 1: `\"a 'b c'  d\"`\n- `a` → word \"a\", then space delimiter\n- `'b c'` → single quote, read `b c`, close quote. word \"b c\"\n- space, space → delimiter\n- `d` → word \"d\"\nResult: `[\"a\", \"b c\", \"d\"]` ✓\n\nExample 2: `'x \"y\\\\\"z\" # comment\\n  w'`\nIn Python, this string is: `x \"y\\\"z\" # comment\\n  w`\n- `x` → word \"x\", space delimiter\n- `\"y\\\"z\"` → double quote, read `y`, `\\\"` → `\"`, `z`, close quote. word `y\"z`\n- space → delimiter\n- `# comment` → at word start (no characters yet), comment until newline\n- `\\n` → delimiter (newline)\n- space, space → delimiter\n- `w` → word \"w\"\nResult: `[\"x\", 'y\"z', \"w\"]` ✓\n\nExample 3: `\"it's\"`\n- `i`, `t` → word \"it\"\n- `'` → open single quote\n- `s\"` → inside single quote, read `s` and `\"`\n- End of string → unterminated single quote → ValueError ✓\n\nNow let me think about the comment rule more carefully:\n- `#` at word start: \"その時点でまだ単語が始まっていない（文字列の先頭か、直前の区切りのあとに、単語の文字も引用符も現れていない）\"\n- So after a delimiter, if the next non-delimiter char is `#`, it's a comment\n- But `''#x` → `''` starts a word (empty quoted string), then `#` is in the middle of the word, so it's just a char\n- Wait, re-reading: \"空の引用のあとの `#`（`''#x`）も単語の途中とみなす\" - so after `''`, the word has started (even though it's empty), so `#` is just a character.\n\nSo the key is: a word has \"started\" if any character (including quote marks) has been encountered since the last delimiter.\n\nLet me reconsider: \"単語の文字も引用符も現れていない\" - no word characters AND no quote marks have appeared.\n\nSo the condition for `#` being a comment is: since the last delimiter (or start of string), NO characters have been seen at all (not even quotes).\n\nLet me code this up:\n\n```python\ndef split_words(text: str) -> list[str]:\n    words = []\n    current_word = []\n    word_started = False  # whether any char (including quotes) has been seen for current word\n    i = 0\n    n = len(text)\n    \n    while i < n:\n        c = text[i]\n        \n        # Check for comment: # at word start, outside quotes\n        if c == '#' and not word_started:\n            # Skip until newline or end\n            while i < n and text[i] != '\\n':\n                i += 1\n            # Don't consume the newline (it's a delimiter)\n            continue\n        \n        if c == ' ' or c == '\\t' or c == '\\n':\n            # Delimiter\n            if word_started:\n                words.append(''.join(current_word))\n                current_word = []\n                word_started = False\n            i += 1\n            continue\n        \n        if c == '\\\\':\n            if i + 1 >= n:\n                raise ValueError(\"trailing backslash\")\n            nxt = text[i + 1]\n            if nxt == '\\n':\n                # Line continuation - remove both\n                i += 2\n                # word_started should remain as-is (continuation doesn't reset)\n                # Actually, line continuation means \"word is not cut, not a delimiter\"\n                # So it doesn't affect word_started\n                continue\n            else:\n                current_word.append(nxt)\n                word_started = True\n                i += 2\n                continue\n        \n        if c == \"'\":\n            # Single quote\n            word_started = True\n            # Find closing quote\n            j = i + 1\n            while j < n:\n                if text[j] == \"'\":\n                    break\n                current_word.append(text[j])\n                j += 1\n            else:\n                raise ValueError(\"unterminated single quote\")\n            i = j + 1\n            continue\n        \n        if c == '\"':\n            # Double quote\n            word_started = True\n            i += 1\n            while i < n:\n                c2 = text[i]\n                if c2 == '\"':\n                    i += 1\n                    break\n                if c2 == '\\\\':\n                    if i + 1 >= n:\n                        raise ValueError(\"trailing backslash\")\n                    nxt = text[i + 1]\n                    if nxt in ('\"', '\\\\', '$', '`'):\n                        current_word.append(nxt)\n                        i += 2\n                        continue\n                    elif nxt == '\\n':\n                        i += 2\n                        continue\n                    else:\n                        # Other backslash: keep as-is (backslash + char)\n                        current_word.append('\\\\')\n                        current_word.append(nxt)\n                        i += 2\n                        continue\n                else:\n                    current_word.append(c2)\n                    i += 1\n                    continue\n            else:\n                raise ValueError(\"unterminated double quote\")\n            continue\n        \n        # Regular character\n        current_word.append(c)\n        word_started = True\n        i += 1\n    \n    if word_started:\n        words.append(''.join(current_word))\n    \n    return words\n```\n\nWait, let me re-check the double quote backslash rule:\n\"中では、バックスラッシュの直後の 1 文字が `\"`、`\\`、`$`、`` ` `` のいずれかなら、その 1 文字だけを単語に入れる。バックスラッシュの直後が改行なら、その 2 文字を取り除く（行の継続）。それ以外のバックスラッシュはただの文字として残す（`\"\\n\"` の中身は `\\` と `n` の 2 文字）\"\n\nSo in double quotes:\n- `\\\"` → `\"`\n- `\\\\` → `\\`\n- `\\$` → `$`\n- `` \\` `` → `` ` ``\n- `\\` + newline → removed (both)\n- `\\` + other → keep both `\\` and the other char\n\nWait, \"それ以外のバックスラッシュはただの文字として残す\" - the backslash itself remains as a literal character. So `\\n` (backslash + n) stays as `\\n` (two chars: backslash and n).\n\nLet me re-check: `\"\\n\"` の中身は `\\` と `n` の 2 文字 - yes, the content is backslash and n, two characters.\n\nSo in my code, for double quotes, when backslash is followed by something not in `\"`, `\\`, `$`, `` ` ``, and not newline:\n- Append `\\` and the next char (both)\n\nThat's what I have. Good.\n\nNow for outside quotes:\n\"引用の外のバックスラッシュ: 直後が改行なら、その 2 文字を取り除く（行の継続。単語は切れず、区切りにもならない）。それ以外は直後の 1 文字をそのまま単語に入れる（`\\ ` は半角スペース、`\\'` は `'`、`\\#` は `#`）\"\n\nSo outside quotes:\n- `\\` + newline → removed\n- `\\` + any other char → only that char is added (backslash is consumed)\n\nThat's what I have. Good.\n\nNow let me think about the comment detection edge case:\n- \"その時点でまだ単語が始まっていない（文字列の先頭か、直前の区切りのあとに、単語の文字も引用符も現れていない）\"\n\nSo `word_started` is False means no characters (including quotes) have been seen since the last delimiter. That's exactly what I'm checking.\n\nWait, but what about after a line continuation? Like `a\\` + newline + `b`. The backslash+newline is removed, and the word continues. In my code, when I encounter `\\` + newline outside quotes, I just skip it (`i += 2`) and don't modify `word_started`. Since we're in the middle of a word, `word_started` is already True. That's fine.\n\nBut what about at the start? Like `\\` + newline + `b`? In this case, `word_started` is False, we skip the backslash+newline, then we see `b` and add it. The word would be `b`. Is that correct? The spec says \"単語は切れず、区切りにもならない\" - the word is not cut and it's not a delimiter. So it's as if the backslash+newline don't exist. The word starts with `b`. I think that's correct.\n\nActually wait, what about `#` after a line continuation at word start? Like `\\` + newline + `# comment`? In this case:\n- We see `\\` + newline, skip them. `word_started` is still False.\n- Then we see `#`, and since `word_started` is False, it's a comment.\n\nI think that's correct behavior - the line continuation is transparent.\n\nLet me also think about: what if `word_started` is True but `current_word` is empty? Like after `''`. In that case, `word_started` is True (because we saw quote marks), so `#` would NOT be a comment. That matches the spec: \"空の引用のあとの `#`（`''#x`）も単語の途中とみなす\"\n\nMy code handles this correctly because when I see `'`, I set `word_started = True` before looking for the closing quote.\n\nLet me also verify: `''` alone → `[\"\"]`. In my code:\n- See `'`, set `word_started = True`\n- Look for closing `'`, find it at position 1\n- Add nothing to current_word (empty)\n- i becomes 2\n- End of string\n- word_started is True, so append `''` → `[\"\"]` ✓\n\nWhat about `'' # comment`? \n- See `'`, word_started = True\n- Find closing `'` at pos 1, i = 2\n- See space, word_started is True → append `\"\"`, reset\n- See `#`, word_started is False → comment, skip to newline\n- Done → `[\"\"]`\n\nAnd `a # comment` → `[\"a\"]`\n- See `a`, word_started = True\n- See space, append \"a\", reset\n- See `#`, word_started is False → comment\n- Done → `[\"a\"]`\n\nWhat about `a#b`? → `[\"a#b\"]`\n- See `a`, word_started = True\n- See `#`, word_started is True → regular char, append\n- See `b`, append\n- Done → `[\"a#b\"]` ✓\n\nNow let me think about the `ValueError` for trailing backslash. The spec says: \"閉じていない引用符、および文字列の末尾にある単独のバックスラッシュには `ValueError` を送出する\"\n\n\"文字列の末尾にある単独のバックスラッシュ\" - a lone backslash at the end of the string. In my code, when I see `\\` and `i + 1 >= n`, I raise ValueError. That covers the end of string case.\n\nBut what about inside double quotes? Like `\"abc\\` - the backslash is at the end. In my double-quote handling, when I see `\\` and `i + 1 >= n`, I raise ValueError. Good.\n\nWhat about inside single quotes? Like `'abc\\` - the backslash is just a regular character inside single quotes. It doesn't trigger the trailing backslash error. The error would be \"unterminated single quote\" since we never find the closing `'`. That seems correct.\n\nWait, what about `\"abc\\` (double quote, then abc, then backslash at end)? In my code:\n- Enter double quote loop\n- Read `a`, `b`, `c`\n- See `\\`, check `i + 1 >= n` → True → raise ValueError(\"trailing backslash\")\n\nGood.\n\nWhat about `\\` at the very end of the string (outside quotes)?\n- See `\\`, check `i + 1 >= n` → True → raise ValueError(\"trailing backslash\")\n\nGood.\n\nLet me also consider: what about a backslash inside single quotes? Like `'a\\b'`. The spec says \"中の文字はすべてそのまま単語に入る（バックスラッシュも特別扱いしない）\". So `\\b` stays as `\\b` (two chars). My code handles this because in single quote mode, I just copy characters until the closing `'`.\n\nNow let me think about performance. The text can be up to 100,000 characters. My algorithm is O(n) since each character is visited at most once (or twice for backslash sequences). Should be fine.\n\nLet me also double-check the double quote backslash handling. In my loop:\n```python\nif c2 == '\\\\':\n    if i + 1 >= n:\n        raise ValueError(\"trailing backslash\")\n    nxt = text[i + 1]\n    if nxt in ('\"', '\\\\', '$', '`'):\n        current_word.append(nxt)\n        i += 2\n        continue\n    elif nxt == '\\n':\n        i += 2\n        continue\n    else:\n        current_word.append('\\\\')\n        current_word.append(nxt)\n        i += 2\n        continue\n```\n\nWait, I need to be careful. Inside the double-quote while loop, I'm using `i` as the index. Let me restructure to make sure the indices are correct.\n\nActually, let me restructure the double quote handling:\n\n```python\nif c == '\"':\n    word_started = True\n    i += 1  # move past opening \"\n    while i < n:\n        c2 = text[i]\n        if c2 == '\"':\n            i += 1  # move past closing \"\n            break\n        if c2 == '\\\\':\n            if i + 1 >= n:\n                raise ValueError(\"trailing backslash\")\n            nxt = text[i + 1]\n            if nxt in ('\"', '\\\\', '$', '`'):\n                current_word.append(nxt)\n                i += 2\n            elif nxt == '\\n':\n                i += 2\n            else:\n                current_word.append('\\\\')\n                current_word.append(nxt)\n                i += 2\n        else:\n            current_word.append(c2)\n            i += 1\n    else:\n        raise ValueError(\"unterminated double quote\")\n    continue\n```\n\nThis looks correct. The `while...else` construct: the `else` clause runs if the loop terminates normally (i >= n), which means we never found the closing `\"`.\n\nLet me trace through example 2 again more carefully:\nInput string (actual characters): `x \"y\\\"z\" # comment\\n  w`\n\n- i=0: `x`, regular char, append, word_started=True, i=1\n- i=1: ` `, delimiter, word_started → append \"x\", reset, i=2\n- i=2: `\"`, double quote, word_started=True, i=3\n  - i=3: `y`, append, i=4\n  - i=4: `\\`, next is `\"`, in set → append `\"`, i=6\n  - i=6: `z`, append, i=7\n  - i=7: `\"`, closing quote, i=8\n- i=8: ` `, delimiter, word_started → append `y\"z`, reset, i=9\n- i=9: `#`, word_started is False → comment! Skip until `\\n`\n  - i goes from 9 to wherever `\\n` is\n  - Let's say `# comment` is positions 9-17, `\\n` is at 18\n  - i becomes 18 (pointing at `\\n`)\n- i=18: `\\n`, delimiter, word_started is False → do nothing, i=19\n- i=19: ` `, delimiter, word_started is False → do nothing, i=20\n- i=20: ` `, delimiter, word_started is False → do nothing, i=21\n- i=21: `w`, regular char, append, word_started=True, i=22\n- End: word_started → append \"w\"\nResult: `[\"x\", 'y\"z', \"w\"]` ✓\n\nNow let me think about one more edge case. What about `#` inside quotes?\n- `\"# comment\"` → the `#` is inside double quotes, so it's a regular character. Word is `# comment`.\n- `'# comment'` → same for single quotes.\n\nMy code handles this correctly because the comment check only happens in the outer loop, and inside quotes we're in a separate sub-loop.\n\nWhat about `'a # b'`? The `#` is inside single quotes, so it's just a character. My code would be in the single-quote sub-loop and just copy characters. ✓\n\nWhat about `a # b` (no quotes)? \n- `a` → word starts\n- ` ` → delimiter, append \"a\"\n- `#` → word_started is False → comment until newline\n- Result: `[\"a\"]`\n\nAnd `a\\ # b`?\n- `a` → word starts\n- `\\` → next is ` `, append ` `, i advances past both\n- `#` → word_started is True (because we added ` ` to current_word) → regular char\n- Wait, that's wrong. Let me re-read the spec.\n\n\"それ以外は直後の 1 文字をそのまま単語に入れる（`\\ ` は半角スペース、`\\'` は `'`、`\\#` は `#`）\"\n\nSo `\\#` → `#` is added to the word. And since the word has started (we added `#`), it's not a comment. But in my code:\n- `a` → append, word_started=True\n- ` ` → delimiter, append \"a\", reset word_started=False\n- `\\` → next is `#`, append `#`, word_started=True, i advances\n- ` ` → delimiter, append \"#\", reset\n- `b` → append, word_started=True\nResult: `[\"a\", \"#\", \"b\"]`\n\nHmm, but what about `\\# comment`?\n- `\\` → next is `#`, append `#`, word_started=True\n- ` ` → delimiter, append \"#\", reset\n- `c` → append, word_started=True\n- ...\nResult: `[\"#\", \"comment\"]`\n\nThat seems right. The `\\#` escapes the `#` so it's not a comment.\n\nWhat about just `# comment` at the start?\n- `#` → word_started is False → comment\n- Skip to newline\n- Result: `[]`\n\nWhat about `a# comment`?\n- `a` → append, word_started=True\n- `#` → word_started is True → regular char, append\n- ` ` → delimiter, append \"a#\", reset\n- `c` → append, word_started=True\n- ...\nResult: `[\"a#\", \"comment\"]`\n\nThat matches the spec: \"単語の途中の `#`（`a#b`）はただの文字\"\n\nI think my solution is correct. Let me write the final clean version.\n\nActually, wait. Let me re-read one more time about the comment:\n\"コメント: 引用の外の `#` が「単語の先頭」にあるとき、その `#` から行末（次の改行の直前。改行が無ければ文字列の末尾）までを無視する。\"\n\n\"行末（次の改行の直前\" - up to (but not including) the next newline. So the newline itself is still processed as a delimiter.\n\nMy code: `while i < n and text[i] != '\\n': i += 1` - this stops at the newline but doesn't consume it. Then the main loop will see the newline and treat it as a delimiter. ✓\n\nOne more thing: \"「単語の先頭」とは、その時点でまだ単語が始まっていない（文字列の先頭か、直前の区切りのあとに、単語の文字も引用符も現れていない）こと。\"\n\nThis confirms my `word_started` flag approach.\n\nI'm satisfied the solution is correct. Let me write the final version.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 931,
+  "completion_tokens": 5437,
+  "ttft_s": 1.673,
+  "t_first_content_s": 113.537,
+  "wall_s": 123.217,
+  "load_s": 0.001,
+  "server_decode_tok_s": 44.73,
+  "server_prefill_tok_s": 559.47,
+  "server_timings": {
+    "total_duration": 123216603834,
+    "load_duration": 975103,
+    "prompt_eval_count": 931,
+    "prompt_eval_duration": 1664080000,
+    "eval_count": 5437,
+    "eval_duration": 121543754000
+  },
+  "delta_chunks": 4695,
+  "wall_decode_tok_s": 44.72,
+  "thinking_chars": 16283,
+  "content_chars": 2471,
+  "thinking_tokens_est": 4721,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 123.216,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty_and_separators_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_plain_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_quotes_keep_everything",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quotes_keep_dollar_and_single_quote",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quote_escapes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quote_non_escapes_keep_backslash",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_outside_backslash_escapes_anything",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_adjacent_parts_join",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_quotes_make_empty_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_comment_at_line_start",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_comment_after_separator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hash_inside_word_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hash_after_empty_quotes_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hash_quoted_or_escaped_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_comment_text_may_contain_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_line_continuation_outside_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_line_continuation_then_comment",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_line_continuation_inside_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_other_whitespace_is_not_separator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unterminated_quotes_raise",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_trailing_backslash_raises",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_errors_are_not_masked_by_comments",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_mixed_long_line",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_input_many_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_single_quoted_words",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.04,
+    "stderr_tail": ""
+  }
+}

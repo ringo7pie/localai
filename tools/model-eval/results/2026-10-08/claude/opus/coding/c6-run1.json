@@ -1,0 +1,136 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "content": "```python\n_ALL = 0x1FF\n_ROW_OF = [i // 9 for i in range(81)]\n_COL_OF = [i % 9 for i in range(81)]\n_BOX_OF = [(i // 9) // 3 * 3 + (i % 9) // 3 for i in range(81)]\n_UNITS = []\nfor _r in range(9):\n    _UNITS.append((0, _r, [_r * 9 + _c for _c in range(9)]))\nfor _c in range(9):\n    _UNITS.append((1, _c, [_r * 9 + _c for _r in range(9)]))\nfor _b in range(9):\n    _br = (_b // 3) * 3\n    _bc = (_b % 3) * 3\n    _UNITS.append((2, _b, [(_br + _dr) * 9 + _bc + _dc for _dr in range(3) for _dc in range(3)]))\n\n\ndef _search(board, rows, cols, boxes, found, limit):\n    while True:\n        progress = False\n        cand = {}\n        for idx in range(81):\n            if board[idx]:\n                continue\n            row = _ROW_OF[idx]\n            col = _COL_OF[idx]\n            box = _BOX_OF[idx]\n            mask = _ALL & ~(rows[row] | cols[col] | boxes[box])\n            if not mask:\n                return\n            if not (mask & (mask - 1)):\n                board[idx] = mask\n                rows[row] |= mask\n                cols[col] |= mask\n                boxes[box] |= mask\n                progress = True\n                continue\n            cand[idx] = mask\n        if progress:\n            continue\n        if not cand:\n            found.append(board[:])\n            return\n\n        singles = []\n        for kind, unit_index, cells in _UNITS:\n            once = 0\n            twice = 0\n            for idx in cells:\n                cell_mask = cand.get(idx, 0)\n                twice |= once & cell_mask\n                once |= cell_mask\n            if kind == 0:\n                used = rows[unit_index]\n            elif kind == 1:\n                used = cols[unit_index]\n            else:\n                used = boxes[unit_index]\n            if (once | used) != _ALL:\n                return\n            hidden = once & ~twice\n            while hidden:\n                bit = hidden & -hidden\n                hidden ^= bit\n                for idx in cells:\n                    if cand.get(idx, 0) & bit:\n                        singles.append((idx, bit))\n                        break\n\n        if singles:\n            for idx, bit in singles:\n                if board[idx]:\n                    if board[idx] != bit:\n                        return\n                    continue\n                row = _ROW_OF[idx]\n                col = _COL_OF[idx]\n                box = _BOX_OF[idx]\n                if (rows[row] | cols[col] | boxes[box]) & bit:\n                    return\n                board[idx] = bit\n                rows[row] |= bit\n                cols[col] |= bit\n                boxes[box] |= bit\n            continue\n\n        best_idx = min(cand, key=lambda key: cand[key].bit_count())\n        mask = cand[best_idx]\n        row = _ROW_OF[best_idx]\n        col = _COL_OF[best_idx]\n        box = _BOX_OF[best_idx]\n        while mask:\n            bit = mask & -mask\n            mask ^= bit\n            new_board = board[:]\n            new_rows = rows[:]\n            new_cols = cols[:]\n            new_boxes = boxes[:]\n            new_board[best_idx] = bit\n            new_rows[row] |= bit\n            new_cols[col] |= bit\n            new_boxes[box] |= bit\n            _search(new_board, new_rows, new_cols, new_boxes, found, limit)\n            if len(found) >= limit:\n                return\n        return\n\n\ndef solve_sudoku(grid: str) -> str:\n    if not isinstance(grid, str) or len(grid) != 81:\n        raise ValueError(\"grid must be a string of length 81\")\n    allowed = \"123456789.\"\n    for ch in grid:\n        if ch not in allowed:\n            raise ValueError(\"invalid character in grid\")\n\n    board = [0] * 81\n    rows = [0] * 9\n    cols = [0] * 9\n    boxes = [0] * 9\n    for idx, ch in enumerate(grid):\n        if ch == \".\":\n            continue\n        bit = 1 << (ord(ch) - ord(\"1\"))\n        row = _ROW_OF[idx]\n        col = _COL_OF[idx]\n        box = _BOX_OF[idx]\n        if (rows[row] | cols[col] | boxes[box]) & bit:\n            raise ValueError(\"given cells conflict\")\n        board[idx] = bit\n        rows[row] |= bit\n        cols[col] |= bit\n        boxes[box] |= bit\n\n    found = []\n    _search(board, rows, cols, boxes, found, 2)\n    if not found:\n        raise ValueError(\"no solution\")\n    if len(found) > 1:\n        raise ValueError(\"multiple solutions\")\n    return \"\".join(str(value.bit_length()) for value in found[0])\n```",
+  "wall_s": 58.405,
+  "usage": {
+    "subagent_tokens": 33833
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 20,
+    "total": 20,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_bad_length",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflicting_givens",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflict_inside_an_otherwise_full_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_already_solved",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_blank",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_puzzle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_generated_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_cell_without_candidates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_and_nearly_empty_have_many_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exactly_two_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_underdetermined_hard_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsolvable_without_direct_conflict",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2012",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2010_and_escargot",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_easter_monster",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_a",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_b",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_royle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_puzzles_in_sequence",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.17,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:17+09:00"
+}

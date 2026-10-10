@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C3: 時刻表つきの最早到着（乗り換え時間と回数の上限）\n\n関数 `earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int` を書いてください。\n\n- 駅は `0` から `n-1` の整数。`connections` の各要素は `(u, v, depart, arrive)` で、「駅 `u` を時刻 `depart` に出て、駅 `v` に時刻 `arrive` に着く便」を表す。時刻は 0 以上の整数（単位は問わない）で、どの便も `depart < arrive`。`u == v` の便や、全く同じ便の重複があってもよい。便どうしは独立で、「同じ列車に乗り続ける」という概念はない。\n- 時刻 `start` に駅 `source` にいる。どの駅でも好きなだけ待てる。\n- 便 `(u, v, depart, arrive)` に乗れるのは、その時点で駅 `u` にいて、次の条件を満たすとき。\n  - 最初の便（出発地 `source` から乗る最初の 1 本）: `start <= depart`。\n  - 2 本目以降の便: 直前の便の `arrive` を `a` として `a + change <= depart`（`change` は 0 以上の整数の乗り換え時間。途中で `source` に戻ってきて乗り直す場合も、この条件が要る）。\n- 乗った便の本数を `k` として、乗り換えの回数は `k - 1`。乗り換えの回数は `max_transfers`（0 以上の整数）以下でなければならない。`max_transfers == 0` なら直通の便 1 本だけで着く必要がある。\n- `target` に着ける最も早い時刻を返す。`source == target` なら、便に乗らずに着いているので `start` を返す（`connections` が空でも同じ）。どうやっても着けないなら `-1` を返す。\n- `n` は最大 100,000、`connections` の長さは最大 200,000、`max_transfers` は最大 10、時刻は最大 10^9。この大きさで十分速く動くこと（たとえば「全部の便を、変化が無くなるまで何度も緩和する」作りでは間に合わない）。入力は上の条件を満たしていると仮定してよい（検査は不要）。\n\n例:\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)], 0, 2, 0, 5, 1)` → `30`（20 + 5 <= 25 なので 25 発に乗れる。22 発には乗れない）\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)], 0, 2, 0, 0, 0)` → `100`（乗り換え 0 回なので直通だけ）\n- `earliest_arrival(2, [(0, 1, 5, 9)], 0, 1, 6, 0, 3)` → `-1`（5 発には間に合わない）",
+  "prompt_chars": 1711,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T13:49:18+09:00",
+  "finished_at": "2026-10-08T13:50:16+09:00",
+  "content": "```python\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n\n    INF = float('inf')\n\n    dp_prev = [INF] * n\n    dp_prev[source] = start\n\n    best = INF\n\n    for t in range(1, max_transfers + 2):\n        dp_cur = [INF] * n\n        for (u, v, depart, arrive) in connections:\n            if t == 1:\n                if dp_prev[u] <= depart:\n                    if arrive < dp_cur[v]:\n                        dp_cur[v] = arrive\n            else:\n                if dp_prev[u] + change <= depart:\n                    if arrive < dp_cur[v]:\n                        dp_cur[v] = arrive\n        if dp_cur[target] < best:\n            best = dp_cur[target]\n        dp_prev = dp_cur\n\n    return best if best != INF else -1\n```",
+  "thinking": "Let me analyze this problem carefully.\n\nWe need to find the earliest arrival time at `target` station, given:\n- `n` stations (0 to n-1)\n- `connections`: list of (u, v, depart, arrive) - a service from u to v\n- `source`: starting station\n- `target`: destination station\n- `start`: time we're at source\n- `change`: minimum transfer time between services\n- `max_transfers`: maximum number of transfers (so max services = max_transfers + 1)\n\nKey constraints:\n- First service: must have `start <= depart`\n- Subsequent services: must have `prev_arrive + change <= depart`\n- Number of services k, transfers = k-1, must be <= max_transfers\n- We can wait at any station\n- No \"staying on the same train\" concept - each connection is independent\n\nThis is essentially a shortest path problem where:\n- State: (station, number_of_services_taken)\n- We want to minimize arrival time at target with at most max_transfers+1 services\n\nSince max_transfers is at most 10, we can use a layered approach:\n- Layer 0: starting at source at time `start`, 0 services taken\n- Layer i: having taken i services, we're at some station\n\nFor each layer, we want to find the earliest time we can be at each station.\n\nAlgorithm:\n1. `dist[t][v]` = earliest time we can be at station v having taken exactly t services. But actually, we want \"at most t services\" or we can track exactly t services.\n\nLet me think differently. Let `dp[t][v]` = earliest arrival time at station v after taking exactly t services.\n\nBase case: `dp[0][source] = start`, `dp[0][v] = infinity` for v != source.\n\nTransition: `dp[t][v]` = min over all connections (u, v, depart, arrive) where `dp[t-1][u] + change <= depart` (for t >= 2) or `dp[t-1][u] <= depart` (for t == 1) of `arrive`.\n\nWait, let me re-read the constraints:\n- First service (t=1): `start <= depart`\n- Subsequent services (t>=2): `prev_arrive + change <= depart`\n\nSo the condition is:\n- For t=1: `dp[0][u] <= depart` (where dp[0][u] is start if u==source, else infinity)\n- For t>=2: `dp[t-1][u] + change <= depart`\n\nAnd `dp[t][v] = min of arrive over all valid connections (u, v, depart, arrive)`\n\nThe answer is `min(dp[1][target], dp[2][target], ..., dp[max_transfers+1][target])`.\n\nSpecial case: if source == target, return start.\n\nNow, how to compute this efficiently?\n\nFor each layer t (from 1 to max_transfers+1):\n- For each station v, we want `dp[t][v] = min of arrive over all connections (u, v, depart, arrive) where dp[t-1][u] + (change if t>=2 else 0) <= depart`\n\nThis is: for each connection (u, v, depart, arrive), check if the condition is met, and if so, update dp[t][v] = min(dp[t][v], arrive).\n\nThe total work per layer is O(|connections|), and we have at most max_transfers+1 = 11 layers. So total work is O(11 * 200000) = O(2.2 million), which is very fast.\n\nWait, but I need to be careful. For each layer, I iterate over all connections and check the condition. That's O(|connections|) per layer, and 11 layers max. So total is O(11 * 200000) which is fine.\n\nLet me code this up:\n\n```python\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n    \n    INF = float('inf')\n    \n    # dp_prev[v] = earliest time at station v with (t-1) services taken\n    dp_prev = [INF] * n\n    dp_prev[source] = start\n    \n    best = INF\n    \n    for t in range(1, max_transfers + 2):  # t = 1 to max_transfers+1\n        dp_cur = [INF] * n\n        for (u, v, depart, arrive) in connections:\n            if t == 1:\n                # first service: start <= depart\n                if dp_prev[u] <= depart:\n                    if arrive < dp_cur[v]:\n                        dp_cur[v] = arrive\n            else:\n                # subsequent: prev_arrive + change <= depart\n                if dp_prev[u] + change <= depart:\n                    if arrive < dp_cur[v]:\n                        dp_cur[v] = arrive\n        if dp_cur[target] < best:\n            best = dp_cur[target]\n        dp_prev = dp_cur\n    \n    return best if best != INF else -1\n```\n\nWait, let me verify with the examples:\n\nExample 1: `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)], 0, 2, 0, 5, 1)`\n- source=0, target=2, start=0, change=5, max_transfers=1\n- So we can take at most 2 services.\n\nt=1 (first service, max 1 transfer total... wait no, max_transfers=1 means we can take up to 2 services):\n- dp_prev = [0, inf, inf] (at station 0 at time 0)\n- Connection (0,1,10,20): dp_prev[0]=0 <= 10 ✓, dp_cur[1] = 20\n- Connection (1,2,25,30): dp_prev[1]=inf, inf <= 25 ✗\n- Connection (1,2,22,40): dp_prev[1]=inf, inf <= 22 ✗\n- dp_cur = [inf, 20, inf]\n- best = inf (dp_cur[2] = inf)\n\nt=2:\n- dp_prev = [inf, 20, inf]\n- Connection (0,1,10,20): dp_prev[0]=inf, inf+5 <= 10 ✗\n- Connection (1,2,25,30): dp_prev[1]=20, 20+5=25 <= 25 ✓, dp_cur[2] = 30\n- Connection (1,2,22,40): dp_prev[1]=20, 20+5=25 <= 22 ✗\n- dp_cur = [inf, inf, 30]\n- best = 30\n\nResult: 30 ✓\n\nExample 2: `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)], 0, 2, 0, 0, 0)`\n- source=0, target=2, start=0, change=0, max_transfers=0\n- max_transfers=0, so only 1 service allowed.\n\nt=1:\n- dp_prev = [0, inf, inf]\n- Connection (0,1,10,20): 0 <= 10 ✓, dp_cur[1] = 20\n- Connection (1,2,25,30): inf <= 25 ✗\n- Connection (0,2,0,100): 0 <= 0 ✓, dp_cur[2] = 100\n- dp_cur = [inf, 20, 100]\n- best = 100\n\nResult: 100 ✓\n\nExample 3: `earliest_arrival(2, [(0, 1, 5, 9)], 0, 1, 6, 0, 3)`\n- source=0, target=1, start=6, change=0, max_transfers=3\n\nt=1:\n- dp_prev = [6, inf]\n- Connection (0,1,5,9): 6 <= 5 ✗\n- dp_cur = [inf, inf]\n- best = inf\n\nt=2,3,4: all connections will fail since dp_prev is all inf.\n\nResult: -1 ✓\n\nThe solution looks correct. Let me also consider edge cases:\n- What if there's a self-loop (u==v)? The problem says it's possible. In that case, we'd just update dp_cur[u] with arrive if the condition is met. That's fine.\n- What about duplicate connections? Just take the minimum, which is handled by the min operation.\n\nOne optimization: I could break early if dp_cur[target] is already smaller than any possible future improvement, but that's not necessary given the constraints.\n\nActually, let me reconsider the time complexity. We have at most max_transfers+1 = 11 iterations, each iterating over all 200,000 connections. That's 2.2 million operations total, which is very fast.\n\nThe memory is O(n) per layer, which is fine.\n\nLet me also consider: do I need to handle the case where max_transfers could be 0? Yes, in that case the range is range(1, 1+2) = range(1, 3) = [1, 2]. Wait no, max_transfers=0 means 1 service max. So range(1, max_transfers+2) = range(1, 2) = [1]. That's correct.\n\nWait, let me re-read: \"max_transfers は 0 以上の整数\". And \"乗り換えの回数は max_transfers 以下\". So if max_transfers=0, we can take 1 service (0 transfers). If max_transfers=1, we can take 2 services (1 transfer). Etc.\n\nSo max services = max_transfers + 1. My loop goes from t=1 to t=max_transfers+1, which is correct.\n\nThe code looks good. Let me finalize it.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 949,
+  "completion_tokens": 2638,
+  "ttft_s": 2.31,
+  "t_first_content_s": 54.8,
+  "wall_s": 58.79,
+  "load_s": 0.002,
+  "server_decode_tok_s": 46.71,
+  "server_prefill_tok_s": 581.5,
+  "server_timings": {
+    "total_duration": 58788862912,
+    "load_duration": 1726117,
+    "prompt_eval_count": 949,
+    "prompt_eval_duration": 1631990000,
+    "eval_count": 2638,
+    "eval_duration": 56479349000
+  },
+  "delta_chunks": 2329,
+  "wall_decode_tok_s": 46.69,
+  "thinking_chars": 7055,
+  "content_chars": 864,
+  "thinking_tokens_est": 2350,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 58.788,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_source_is_target",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_departure_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_minimizes_arrival_not_departure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tight_transfer_with_zero_change",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_change_time_selects_later_connection",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_zero_means_direct_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_makes_it_impossible",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_departure_is_a_trap",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_waiting_at_intermediate_station",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_departure_times_cannot_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_and_self_loops",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_transfers_arrive_earlier",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_arrival_at_a_station_may_use_too_many_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fast_and_slow_stages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_connections_before_start_are_useless",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_time_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_chain_at_the_transfer_limit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_stations_few_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_instances",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_wide_random_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_max_connections_few_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_many_transfer_layers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_stages_with_many_decoys",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.89,
+    "stderr_tail": ""
+  }
+}

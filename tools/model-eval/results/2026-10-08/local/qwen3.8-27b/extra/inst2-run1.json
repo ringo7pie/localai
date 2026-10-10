@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "prompt": "新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。\n\n次の条件をすべて守って書いてください。\n1. 1 行目には「注意点は次のとおりです。」とだけ書く。\n2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\n3. 「定期的」という語を、どこかで 1 回以上使う。\n4. 数字（0〜9。全角も含む）を使わない。\n5. 最後の行には「以上」の 2 文字だけを書く。",
+  "prompt_chars": 221,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:38:44+09:00",
+  "finished_at": "2026-10-08T12:38:57+09:00",
+  "content": "注意点は次のとおりです。\n- パスワードは他人に教えず、共有しないこと\n- 定期的に見直し、古いパスワードの再利用を避けること\n- 複数のサイトで同じパスワードを使わず、それぞれ異なるものを使うこと\n- 書面上にパスワードを記録せず、記憶で管理すること\n以上",
+  "thinking": "The user wants me to write a note about safe password handling for new employees. Let me carefully follow all the constraints:\n\n1. First line: exactly \"注意点は次のとおりです。\"\n2. From the second line, write exactly 4 bullet points starting with \"- \" (half-width hyphen and half-width space)\n3. Use the word \"定期的\" at least once somewhere\n4. Do not use any digits (0-9, including full-width)\n5. The last line should be only the 2 characters \"以上\"\n\nLet me draft this:\n\nLine 1: 注意点は次のとおりです。\nLine 2: - パスワードは他人に教えず、共有しないこと\nLine 3: - 定期的に見直し、古いパスワードの再利用を避けること\nLine 4: - 複数のサイトで同じパスワードを使わず、それぞれ異なるものを使うこと\nLine 5: - 書面上にパスワードを記録せず、記憶で管理すること\nLine 6: 以上\n\nLet me check all constraints:\n1. First line is exactly \"注意点は次のとおりです。\" ✓\n2. Four bullet points starting with \"- \" (half-width hyphen + half-width space) ✓\n3. \"定期的\" appears in line 3 ✓\n4. No digits anywhere - let me check... \"注意点は次のとおりです。\" - no digits. The bullet points - no digits. \"以上\" - no digits. ✓\n5. Last line is only \"以上\" ✓\n\nWait, let me re-read constraint 2: \"2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\"\n\nSo from line 2, I write exactly 4 bullet points consecutively. That means lines 2, 3, 4, 5 are the bullet points. Then line 6 is \"以上\".\n\nLet me make sure there are no hidden digits. Let me recheck each character:\n- 注意点は次のとおりです。 - no digits ✓\n- パスワードは他人に教えず、共有しないこと - no digits ✓\n- 定期的に見直し、古いパスワードの再利用を避けること - no digits ✓\n- 複数のサイトで同じパスワードを使わず、それぞれ異なるものを使うこと - no digits ✓\n- 書面上にパスワードを記録せず、記憶で管理すること - no digits ✓\n- 以上 - no digits ✓\n\nAll looks good. Let me finalize.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 153,
+  "completion_tokens": 609,
+  "ttft_s": 0.722,
+  "t_first_content_s": 12.479,
+  "wall_s": 13.632,
+  "load_s": 0.001,
+  "server_decode_tok_s": 47.17,
+  "server_prefill_tok_s": 310.63,
+  "server_timings": {
+    "total_duration": 13631883809,
+    "load_duration": 1000241,
+    "prompt_eval_count": 153,
+    "prompt_eval_duration": 492540000,
+    "eval_count": 609,
+    "eval_duration": 12910512000
+  },
+  "delta_chunks": 538,
+  "wall_decode_tok_s": 47.09,
+  "thinking_chars": 1521,
+  "content_chars": 129,
+  "thinking_tokens_est": 561,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 13.631,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": true
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  }
+}

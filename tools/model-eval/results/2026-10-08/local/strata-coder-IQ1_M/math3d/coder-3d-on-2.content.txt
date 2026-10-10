@@ -1,0 +1,559 @@
+Let
+
+\[
+S_1=OA,\qquad S_2=AB,\qquad S_3=BC
+\]
+
+and \(V_i=\{X;\,d(X,S_i)\le r\}\), where \(d\) is Euclidean distance.  
+Throughout, \(1/2<r<1\).
+
+---
+
+## (1) 平面 \(y=t\) と \(V_1,V_3\) の共通点条件
+
+### 共通点条件
+
+平面 \(y=t\) 与 \(V_1\) の共通点 exists iff
+
+\[
+|t|\le r.
+\]
+
+平面 \(y=t\) 与 \(V_3\) の共通点 exists iff
+
+\[
+|1-t|\le r
+\quad\Longleftrightarrow\quad
+1-r\le t\le 1+r.
+\]
+
+Since \(1/2<r<1\),
+
+\[
+[-r,r]\cap[1-r,1+r]=[1-r,r].
+\]
+
+Therefore
+
+\[
+\boxed{\,1-r\le t\le r\,}.
+\]
+
+---
+
+### cross-section diagrams in the plane \(y=t\)
+
+Put coordinates \((x,z)\) on the plane \(y=t\), with \(x\) horizontal and \(z\) vertical.
+
+Define
+
+\[
+a=\sqrt{r^2-t^2},\qquad b=\sqrt{r^2-(1-t)^2}.
+\]
+
+For \(t\in[1-r,r]\), both \(a,b\ge0\).
+
+#### \(V_1\) の cross-section
+
+The centerline of \(V_1\) intersects the plane \(y=t\) as the horizontal segment
+
+\[
+(0,0)\text{--}(1,0).
+\]
+
+Thus
+
+\[
+V_1\cap\{y=t\}
+\]
+
+is the 2D capsule whose axis is this segment and whose radius is \(a\):
+
+\[
+V_1\cap\{y=t\}
+=
+\{(x,z);\ \mathrm{dist}((x,z),[0,1]\times\{0\})\le a\}.
+\]
+
+Equivalently,
+
+\[
+V_1\cap\{y=t\}
+=
+([0,1]\times[-a,a])
+\ \cup\ 
+D((0,0),a)
+\ \cup\ 
+D((1,0),a),
+\]
+
+where \(D(P,\rho)\) is the closed disk centered at \(P\) with radius \(\rho\).
+
+#### \(V_3\) の cross-section
+
+The centerline of \(V_3\) intersects the plane \(y=t\) as the vertical segment
+
+\[
+(1,0)\text{--}(1,1).
+\]
+
+Thus
+
+\[
+V_3\cap\{y=t\}
+=
+\{(x,z);\ \mathrm{dist}((x,z),\{1\}\times[0,1])\le b\}.
+\]
+
+Equivalently,
+
+\[
+V_3\cap\{y=t\}
+=
+([1-b,1+b]\times[0,1])
+\ \cup\ 
+D((1,0),b)
+\ \cup\ 
+D((1,1),b).
+\]
+
+#### Desired figure
+
+On the same \((x,z)\)-plane, draw the L-shaped unit segment
+
+\[
+(0,0)\to(1,0)\to(1,1),
+\]
+
+then thicken the horizontal part by radius \(a\) and the vertical part by radius \(b\).  
+The two capsule-shaped cross-sections meet at the point \((1,0)\). At the endpoints \(t=1-r\) or \(t=r\), one of the radii becomes \(0\), so the corresponding capsule degenerates into a line segment.
+
+---
+
+## (2) Condition for \(V_1\cap V_3\subset V_2\)
+
+We claim that
+
+\[
+\boxed{\,r\le \frac1{\sqrt2}\,}
+\]
+
+is necessary and sufficient.
+
+Because the problem assumes \(1/2<r<1\), the final condition is
+
+\[
+\boxed{\,\frac12<r\le \frac1{\sqrt2}\,}.
+\]
+
+---
+
+### Sufficiency
+
+Take any point \(X=(x,y,z)\in V_1\cap V_3\).
+
+Since \(d(X,S_1)\le r\) and \(d(X,S_3)\le r\), the \(y\)-coordinate must satisfy
+
+\[
+|y|\le r,\qquad |1-y|\le r.
+\]
+
+Thus
+
+\[
+y\in[1-r,r]\subset[0,1].
+\]
+
+Also, from \(d(X,S_3)\le r\),
+
+\[
+|1-x|\le r,
+\]
+
+and since \(r<1\),
+
+\[
+x\ge 1-r>0.
+\]
+
+We check \(X\in V_2\) by cases.
+
+---
+
+### Case 1: \(x\ge1\)
+
+For \(V_1\),
+
+\[
+d(X,S_1)^2=(x-1)^2+y^2+z^2\le r^2.
+\]
+
+Since \(y\in[0,1]\), the \(y\)-distance to \(S_2=AB\) is zero, so
+
+\[
+d(X,S_2)^2=(x-1)^2+z^2
+\le (x-1)^2+y^2+z^2
+\le r^2.
+\]
+
+Hence \(X\in V_2\).
+
+---
+
+### Case 2: \(0<x\le1\)
+
+Here \(x\in[0,1]\). Also \(z\in[-r,r]\), so \(|z|<1\).
+
+#### Subcase 2-1: \(z\le0\)
+
+For \(V_3\),
+
+\[
+d(X,S_3)^2=(1-x)^2+(1-y)^2+z^2\le r^2.
+\]
+
+Again \(y\in[0,1]\), so
+
+\[
+d(X,S_2)^2=(1-x)^2+z^2
+\le (1-x)^2+(1-y)^2+z^2
+\le r^2.
+\]
+
+Thus \(X\in V_2\).
+
+#### Subcase 2-2: \(0\le z\)
+
+Since \(z<r<1\), \(z\in[0,1]\). Then
+
+\[
+d(X,S_1)^2=y^2+z^2\le r^2,
+\]
+
+and
+
+\[
+d(X,S_3)^2=(1-x)^2+(1-y)^2\le r^2.
+\]
+
+Therefore
+
+\[
+(1-x)^2\le r^2-(1-y)^2,
+\qquad
+z^2\le r^2-y^2.
+\]
+
+Hence
+
+\[
+(1-x)^2+z^2
+\le
+2r^2-\{y^2+(1-y)^2\}.
+\]
+
+But for \(0\le y\le1\),
+
+\[
+y^2+(1-y)^2\ge \frac12.
+\]
+
+Therefore, if \(r^2\le1/2\),
+
+\[
+d(X,S_2)^2
+=
+(1-x)^2+z^2
+\le
+2r^2-\frac12
+\le r^2.
+\]
+
+So \(X\in V_2\).
+
+Thus, if \(r\le1/\sqrt2\), then
+
+\[
+V_1\cap V_3\subset V_2.
+\]
+
+---
+
+### Necessity
+
+Assume
+
+\[
+r>\frac1{\sqrt2}.
+\]
+
+Let
+
+\[
+s=\sqrt{r^2-\frac14}.
+\]
+
+Because \(r<1\), we have \(0<s<1\). Consider
+
+\[
+X=(1-s,\frac12,s).
+\]
+
+Then \(x=1-s\in[0,1]\), \(y=1/2\in[0,1]\), \(z=s\in[0,1]\). We compute squared distances.
+
+For \(S_1=OA\),
+
+\[
+d(X,S_1)^2=y^2+z^2
+=\frac14+s^2=r^2.
+\]
+
+For \(S_3=BC\),
+
+\[
+d(X,S_3)^2=(1-x)^2+(1-y)^2
+=s^2+\frac14=r^2.
+\]
+
+So \(X\in V_1\cap V_3\).
+
+But for \(S_2=AB\),
+
+\[
+d(X,S_2)^2=(1-x)^2+z^2
+=s^2+s^2
+=2r^2-\frac12.
+\]
+
+Since \(r^2>1/2\),
+
+\[
+2r^2-\frac12>r^2.
+\]
+
+Thus \(X\notin V_2\). Hence inclusion fails for \(r>1/\sqrt2\). Therefore the condition is also necessary.
+
+---
+
+## (3) Volume of \(V_1\)
+
+\(V_1\) is the solid swept by a sphere of radius \(r\) whose center moves along a unit segment \(OA\). This is a cylinder of radius \(r\) and height \(1\), together with two hemispheres of radius \(r\), i.e. a sphere.
+
+Hence
+
+\[
+\operatorname{Vol}(V_1)
+=
+\pi r^2\cdot1+\frac43\pi r^3.
+\]
+
+Thus
+
+\[
+\boxed{
+\operatorname{Vol}(V_1)
+=
+\pi r^2+\frac43\pi r^3
+}.
+\]
+
+Let us denote this volume by
+
+\[
+S=\pi r^2+\frac43\pi r^3.
+\]
+
+By the same reason,
+
+\[
+\operatorname{Vol}(V_1)=\operatorname{Vol}(V_2)=\operatorname{Vol}(V_3)=S.
+\]
+
+---
+
+## (4) Volume of \(V_1\cup V_2\cup V_3\) under the condition of (2)
+
+First compute the volume of an adjacent pair intersection, for example
+
+\[
+J=\operatorname{Vol}(V_1\cap V_2).
+\]
+
+By an isometry, we may regard \(V_1\) and \(V_2\) as the \(r\)-neighborhoods of the two unit segments
+
+\[
+S_x=\{(u,0,0);\ 0\le u\le1\},
+\qquad
+S_y=\{(0,v,0);\ 0\le v\le1\}
+\]
+
+meeting at right angle at the origin.
+
+Because \(r<1\), the far endpoints \(u=1\), \(v=1\) do not affect the intersection.
+
+Fix \(z\in[-r,r]\), and put
+
+\[
+s=\sqrt{r^2-z^2}.
+\]
+
+In the \(xy\)-plane at height \(z\), the intersection \(V_1\cap V_2\) has the following cross-section:
+
+- In the first quadrant \(x\ge0,\ y\ge0\), the conditions are
+
+\[
+y^2\le s^2,\qquad x^2\le s^2,
+\]
+
+so the region is a square of side \(s\), area \(s^2\).
+
+- In the other three quadrants, at least one of \(x,y\) is negative, so the common endpoint \((0,0,0)\) controls the distance. The region is a quarter-disk of radius \(s\) in each of these three quadrants.
+
+Therefore the cross-section area at height \(z\) is
+
+\[
+A(z)=s^2+3\cdot\frac{\pi s^2}{4}
+=
+\left(1+\frac{3\pi}{4}\right)s^2
+=
+\left(1+\frac{3\pi}{4}\right)(r^2-z^2).
+\]
+
+Thus
+
+\[
+J
+=
+\int_{-r}^r A(z)\,dz
+=
+\left(1+\frac{3\pi}{4}\right)
+\int_{-r}^r (r^2-z^2)\,dz.
+\]
+
+Now
+
+\[
+\int_{-r}^r (r^2-z^2)\,dz
+=
+\frac43 r^3.
+\]
+
+So
+
+\[
+J
+=
+\left(1+\frac{3\pi}{4}\right)\frac43 r^3
+=
+\pi r^3+\frac43 r^3
+=
+\left(\pi+\frac43\right)r^3.
+\]
+
+By symmetry,
+
+\[
+\operatorname{Vol}(V_1\cap V_2)
+=
+\operatorname{Vol}(V_2\cap V_3)
+=
+J
+=
+\left(\pi+\frac43\right)r^3.
+\]
+
+Now assume the condition from (2), namely
+
+\[
+V_1\cap V_3\subset V_2.
+\]
+
+Then the two sets \(V_1\setminus V_2\) and \(V_3\setminus V_2\) are disjoint: if a point belonged to both, it would be in \(V_1\cap V_3\) but outside \(V_2\), contradicting the condition.
+
+Therefore, under the condition,
+
+\[
+V_1\cup V_2\cup V_3
+=
+V_2
+\ \cup\ 
+(V_1\setminus V_2)
+\ \cup\ 
+(V_3\setminus V_2)
+\]
+
+is a disjoint decomposition. Hence
+
+\[
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+\operatorname{Vol}(V_2)
++
+\operatorname{Vol}(V_1\setminus V_2)
++
+\operatorname{Vol}(V_3\setminus V_2).
+\]
+
+Since
+
+\[
+\operatorname{Vol}(V_1\setminus V_2)=S-J,
+\qquad
+\operatorname{Vol}(V_3\setminus V_2)=S-J,
+\]
+
+we get
+
+\[
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+S+(S-J)+(S-J)
+=
+3S-2J.
+\]
+
+Substitute \(S\) and \(J\):
+
+\[
+3S-2J
+=
+3\left(\pi r^2+\frac43\pi r^3\right)
+-
+2\left(\pi r^3+\frac43 r^3\right).
+\]
+
+Simplifying,
+
+\[
+3S-2J
+=
+3\pi r^2
++
+\left(2\pi-\frac83\right)r^3.
+\]
+
+Therefore, when
+
+\[
+\frac12<r\le\frac1{\sqrt2},
+\]
+
+the required volume is
+
+\[
+\boxed{
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+3\pi r^2+\left(2\pi-\frac83\right)r^3
+}.
+\]
+
+Equivalently,
+
+\[
+\boxed{
+\operatorname{Vol}(V_1\cup V_2\cup V_3)
+=
+\pi r^2(3+2r)-\frac83r^3
+}.
+\]

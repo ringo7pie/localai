@@ -1,0 +1,101 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c5",
+  "run": 1,
+  "content": "```python\n_PRECEDENCE = {\"+\": 1, \"-\": 1, \"*\": 2, \"/\": 2, \"neg\": 3}\n\n\ndef _is_digit(char: str) -> bool:\n    return \"0\" <= char <= \"9\"\n\n\ndef _tokenize(expression: str) -> list:\n    tokens = []\n    index = 0\n    length = len(expression)\n    while index < length:\n        char = expression[index]\n        if char == \" \":\n            index += 1\n            continue\n        if _is_digit(char):\n            start = index\n            while index < length and _is_digit(expression[index]):\n                index += 1\n            if index < length and expression[index] == \".\":\n                index += 1\n                fraction_start = index\n                while index < length and _is_digit(expression[index]):\n                    index += 1\n                if index == fraction_start:\n                    raise ValueError(\"invalid number: missing digits after decimal point\")\n                tokens.append((\"num\", float(expression[start:index])))\n            else:\n                tokens.append((\"num\", int(expression[start:index])))\n            continue\n        if char in \"+-*/()\":\n            tokens.append((\"op\", char))\n            index += 1\n            continue\n        raise ValueError(f\"unknown character: {char!r}\")\n    return tokens\n\n\ndef _to_postfix(tokens: list) -> list:\n    output = []\n    operators = []\n    expect_operand = True\n    for kind, token in tokens:\n        if expect_operand:\n            if kind == \"num\":\n                output.append((\"num\", token))\n                expect_operand = False\n            elif token == \"-\":\n                operators.append(\"neg\")\n            elif token == \"(\":\n                operators.append(\"(\")\n            else:\n                raise ValueError(f\"unexpected token: {token!r}\")\n        else:\n            if kind == \"num\" or token == \"(\":\n                raise ValueError(\"missing operator\")\n            if token == \")\":\n                while operators and operators[-1] != \"(\":\n                    output.append((\"op\", operators.pop()))\n                if not operators:\n                    raise ValueError(\"unmatched closing parenthesis\")\n                operators.pop()\n            else:\n                precedence = _PRECEDENCE[token]\n                while (\n                    operators\n                    and operators[-1] != \"(\"\n                    and _PRECEDENCE[operators[-1]] >= precedence\n                ):\n                    output.append((\"op\", operators.pop()))\n                operators.append(token)\n                expect_operand = True\n    if expect_operand:\n        raise ValueError(\"incomplete expression\")\n    while operators:\n        operator = operators.pop()\n        if operator == \"(\":\n            raise ValueError(\"unmatched opening parenthesis\")\n        output.append((\"op\", operator))\n    return output\n\n\ndef _evaluate_postfix(postfix: list) -> int | float:\n    values = []\n    for kind, item in postfix:\n        if kind == \"num\":\n            values.append(item)\n            continue\n        if item == \"neg\":\n            if not values:\n                raise ValueError(\"invalid expression\")\n            values.append(-values.pop())\n            continue\n        if len(values) < 2:\n            raise ValueError(\"invalid expression\")\n        right = values.pop()\n        left = values.pop()\n        if item == \"+\":\n            values.append(left + right)\n        elif item == \"-\":\n            values.append(left - right)\n        elif item == \"*\":\n            values.append(left * right)\n        else:\n            if right == 0:\n                raise ZeroDivisionError(\"division by zero\")\n            values.append(left / right)\n    if len(values) != 1:\n        raise ValueError(\"invalid expression\")\n    return values[0]\n\n\ndef evaluate(expression: str) -> int | float:\n    if not isinstance(expression, str):\n        raise ValueError(\"expression must be a string\")\n    tokens = _tokenize(expression)\n    postfix = _to_postfix(tokens)\n    return _evaluate_postfix(postfix)\n```",
+  "wall_s": 46.301,
+  "usage": {
+    "subagent_tokens": 29871
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 13,
+    "total": 13,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_precedence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_true_division",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_left_associative",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unary_minus",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_unary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_decimals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_spaces_and_nesting",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_zero_division",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_structure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_tokens",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_decimal_format",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_long_expression",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:57+09:00"
+}

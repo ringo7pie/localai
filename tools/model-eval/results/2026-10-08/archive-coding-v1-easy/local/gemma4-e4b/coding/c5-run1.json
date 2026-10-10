@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c5",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C5: 四則演算の式を計算する\n\n関数 `evaluate(expression: str) -> int | float` を書いてください。\n\n- `expression` は次の要素からなる式。\n  - 数: 0 以上の整数（`12`）か小数（`3.5`、`0.25`）。小数点の前と後ろには、それぞれ数字が 1 つ以上ある。\n  - 二項演算子 `+` `-` `*` `/`。`*` と `/` は `+` と `-` より先に計算し、同じ優先順位どうしは左から計算する。`/` は普通の割り算（`7 / 2` は `3.5`）。\n  - 単項のマイナス `-`。数や括弧の前に付けられ、重ねてもよい（`--3` は `3`、`2 * -3` は `-6`）。単項のプラスは無い。\n  - 括弧 `(` `)`。入れ子にしてよい。\n  - 半角スペース。どこに入れてもよく、無視する。ただし数の途中には入らない（`1 2` は誤り）。\n- 値を数（`int` か `float`）で返す。答え合わせでは誤差 1e-9 まで許す。\n- 0 で割ったときは `ZeroDivisionError` を送出する。\n- 式として正しくない入力（空の文字列、括弧の不一致、演算子の過不足、知らない文字、`**` など）には `ValueError` を送出する。\n- `eval`、`exec`、`compile` は使わない（使った答えは 0 点）。\n\n例:\n- `evaluate(\"2 * (3 + 4)\")` → `14`\n- `evaluate(\"-8 / 2\")` → `-4.0`",
+  "prompt_chars": 966,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:29:43+09:00",
+  "finished_at": "2026-10-08T12:30:22+09:00",
+  "content": "```python\nclass Parser:\n    def __init__(self, expression: str):\n        # 全てのスペースを削除するが、計算の論理構造を壊さない\n        self.expr = expression.replace(\" \", \"\")\n        self.pos = 0\n\n    def peek(self) -> str | None:\n        \"\"\"現在の位置の文字を返す。\"\"\"\n        if self.pos < len(self.expr):\n            return self.expr[self.pos]\n        return None\n\n    def consume(self, expected: str | None = None) -> str:\n        \"\"\"現在の位置の文字を消費し、それを返す。\"\"\"\n        if self.pos >= len(self.expr):\n            raise ValueError(\"Unexpected end of input.\")\n        \n        char = self.expr[self.pos]\n        if expected is not None and char != expected:\n            raise ValueError(f\"Expected '{expected}' but found '{char}' at position {self.pos}.\")\n        \n        self.pos += 1\n        return char\n\n    def is_digit(self) -> bool:\n        \"\"\"現在の文字が数字かチェックする。\"\"\"\n        char = self.peek()\n        return char is not None and '0' <= char <= '9'\n\n    def is_operator(self) -> bool:\n        \"\"\"現在の文字が二項演算子かチェックする。\"\"\"\n        char = self.peek()\n        return char in ('+', '-', '*', '/')\n\n    def parse(self) -> float:\n        \"\"\"式全体を解析し、計算結果を返す。\"\"\"\n        try:\n            result = self.parse_expression()\n            # 全ての文字を消費したか確認する (余分なトークンがないか)\n            if self.pos < len(self.expr):\n                raise ValueError(f\"Unexpected character sequence starting with '{self.expr[self.pos:]}'.\")\n            return result\n        except Exception as e:\n            # 予期しないエラーは全てValueErrorに集約する\n            if isinstance(e, ValueError):\n                raise\n            raise ValueError(f\"Syntax Error: {e}\")\n\n    def parse_expression(self) -> float:\n        \"\"\"+ と - を扱う (最も低い優先度)\"\"\"\n        result = self.parse_term()\n        \n        while True:\n            char = self.peek()\n            if char == '+' or char == '-':\n                op = self.consume() # 二項演算子を消費\n                \n                # 式の残りの部分を解析\n                try:\n                    right = self.parse_term()\n                except ValueError:\n                    # 演算子を消費したが、その後ろに何も続かなかった場合\n                    raise ValueError(f\"Missing operand after {op}\")\n                \n                if op == '+':\n                    result += right\n                else: # op == '-'\n                    result -= right\n            else:\n                break\n        return result\n\n    def parse_term(self) -> float:\n        \"\"\"* と / を扱う (中優先度)\"\"\"\n        result = self.parse_factor()\n        \n        while True:\n            char = self.peek()\n            if char == '*' or char == '/':\n                op = self.consume() # 二項演算子を消費\n                \n                try:\n                    right = self.parse_factor()\n                except ValueError:\n                    raise ValueError(f\"Missing operand after {op}\")\n                \n                if op == '*':\n                    result *= right\n                else: # op == '/'\n                    if right == 0.0:\n                        raise ZeroDivisionError(\"Division by zero\")\n                    result /= right\n            else:\n                break\n        return result\n\n    def parse_factor(self) -> float:\n        \"\"\"数値、括弧、単項マイナスを扱う (最も高い優先度)\"\"\"\n        \n        # 1. 単項マイナスチェック\n        is_unary_minus = False\n        if self.peek() == '-' and (self.pos == 0 or self.expr[self.pos-1] in ('(', '+', '-', '*', '/')):\n            is_unary_minus = True\n\n        if self.peek() == '(':\n            self.consume('(') # '(' を消費\n            result = self.parse_expression()\n            self.consume(')') # ')' を消費\n            return result\n        \n        elif self.is_digit():\n            # 2. 数値の読み取り\n            start_pos = self.pos\n            while self.pos < len(self.expr) and (self.expr[self.pos].isdigit() or self.expr[self.pos] == '.'):\n                self.pos += 1\n            number_str = self.expr[start_pos:self.pos]\n            value = float(number_str)\n            \n            # 3. 単項マイナスが付加される場合\n            if is_unary_minus:\n                # このケースは、数値の前に単項マイナスがある場合\n                # 例: parse_factor -> -3.5\n                # 既に前段階で '-' が消費されていることが理想だが、\n                # 単純な再帰下降構造を保つため、ここでは特別な処理をしない。\n                # 単項マイナスは「次の要素が数値または開き括弧」の直前にチェックする。\n                # しかし、トークン化の段階で - を消費すると、それが二項マイナスかどうかの判定が難しくなる。\n                # 最も簡単な解決策は、単項マイナスを直接数値に含めること。\n                \n                # ここで、単項マイナスを最初に処理するようにロジックを組み直す。\n                return -value\n            \n            return value\n        \n        # 4. 単項マイナスだけが来た場合（例：-() のような不正な構文を避ける）\n        if is_unary_minus:\n            # 単項マイナスは、直後に数値か '(' が来ることを期待する。\n            # 数値処理の前に、単項マイナスを処理する。\n            self.consume('-') # 単項マイナスを消費\n            \n            # 負の数として処理するために、再帰的に parse_factor を呼び出す\n            # ただし、この再帰呼び出しでは、負の数となる要素が処理される\n            next_val = self.parse_factor()\n            return -next_val\n        \n        # 最後に、上記のどれにも該当しない場合はエラー\n        raise ValueError(\"Invalid syntax or expected number/parentheses.\")\n\n\ndef evaluate(expression: str) -> int | float:\n    \"\"\"\n    数式を計算する。\n    \"\"\"\n    # 入力チェック\n    if not expression.strip():\n        raise ValueError(\"Expression cannot be empty.\")\n    \n    # 演算子が連続して存在する場合、これは不正な構文となるが、\n    # 厳密な構文チェックはParserの内部に任せる。\n    \n    parser = Parser(expression)\n    result = parser.parse()\n\n    # 結果が整数に近いかチェックし、可能であれば整数として返す\n    if abs(result - round(result)) < 1e-9 and result == float(int(result)):\n        return int(result)\n    \n    return result\n```",
+  "thinking": "ユーザーは、与えられた仕様に基づき、数式を評価する Python 関数 `evaluate(expression: str) -> int | float` を求めている。\n\n制約事項が非常に厳しいので、一つずつ確認し、設計を進める。\n\n**制約事項の確認:**\n1. **標準ライブラリのみ使用。** 外部パッケージは不可。\n2. **入出力制限:** ファイルI/O、ネットワーク、サブプロセス、標準入力からの読み込みは禁止。\n3. **シグネチャの維持:** 関数名、引数名、クラス名（今回はクラスは不要そう）はそのまま使う。\n4. **出力形式:** コードブロック 1 つだけ。定義、補助関数、必要な import のみ。テストコード、説明文は禁止。\n5. **禁止機能:** `eval`, `exec`, `compile` は使用不可。\n\n**仕様の分析 (数式評価):**\n* **要素:** 数 (整数/小数)、二項演算子 (+, -, *, /)、括弧 ((, ))、単項マイナス (-)、半角スペース。\n* **計算優先順位:**\n    1. 括弧 `()` (最も高い)\n    2. 乗算 `*` と 除算 `/` (同じ優先度、左から)\n    3. 加算 `+` と 減算 `-` (最も低い、左から)\n* **単項マイナス:** 数や括弧の前に付く。重ねても良い (`--3` は `3`)。\n* **エラー処理:**\n    * ゼロ除算: `ZeroDivisionError`\n    * 不正な式: `ValueError` (空、括弧不一致、過不足、無効文字など)\n\n**設計アプローチの検討:**\nこれは標準的なコンパイラやインタープリタが扱うトピックであり、通常は以下のいずれかの手法が使われる。\n1. **Shunting-Yard Algorithm (RPN変換):** 中置記法を逆ポーランド記法に変換し、スタックで評価する。\n2. **Recursive Descent Parsing:** 文法を定義し、再帰的に解析する（優先度を扱うのに適している）。\n\n仕様が複雑なため、単なる数値スタック操作ではなく、パーシング（文法解析）が必須となる。再帰下降パーサが、優先順位の処理と括弧の処理を組み合わせるのに最も適していると思われる。\n\n---\n\n### ステップ 1: トークン化 (Lexing)\n\n入力文字列を意味のある最小単位（トークン）に分割する必要がある。\nトークンには以下が含まれる可能性がある:\n* 数字 (Number): `12`, `3.5`, `0.25`\n* 演算子 (Operator): `+`, `-`, `*`, `/`\n* 括弧 (Paren): `(`, `)`\n* 識別子（今回は単項マイナスも識別子の一部として扱うか、特別なトークンとして扱う）\n\nスペースは無視する。\n\n単項マイナスが厄介。単項マイナスは、式の開始時、または別の演算子や開括弧の直後に現れた場合にのみ単項として扱われる。\n\n**トークナイザーの設計:**\n1. 文字列を走査する。\n2. 数字が続いたら、それが一つの `Number` トークン。\n3. `(`, `)`, `+`, `*`, `/` はそのままトークン。\n4. `-` の場合:\n    * 前のトークンが演算子、または式が始まっている場合（または文字列の先頭）: 単項マイナスとしてマークする。\n    * それ以外の場合: 二項マイナス演算子。\n\n例: `2 * -3`\n- 2 (Number)\n- * (Op)\n- - (単項マイナストークン) 3 (Number)\n\n例: `2 - 3`\n- 2 (Number)\n- - (二項マイナス演算子) 3 (Number)\n\nただし、単項マイナスは数学的には「負の数」を意味する。トークンレベルで区別するよりも、パーサー内で特殊なルールとして処理するか、数値としてマイナス符号を初期値に組み込むのが効率的である。\n\n最も簡単な方法は、式全体を先に正規化し、すべての単項マイナスを疑似的な「負の数の始まり」として認識すること。\n\n---\n\n### ステップ 2: パーシングと評価 (Parsing & Evaluation)\n\n再帰下降パーサの構造を採用する。演算子の優先順位に基づき、以下の関数を定義する。\n\n1. `parse_expression()`: 最低優先度（+、-）を扱う。\n2. `parse_term()`: 中優先度（*、/）を扱う。\n3. `parse_factor()`: 最高優先度（数値、括弧、単項マイナス）を扱う。\n\n**処理の核となる工夫 (単項マイナス):**\n\n単項マイナスの処理は、`parse_factor` レベルで行うのが自然。\n\n1. `parse_factor` は、まず単項マイナスの有無をチェックする。\n2. もし単項マイナスが検出されたら、残りの `parse_factor` を呼び出し、結果に `-1 * result` を掛ける。\n3. 次に、括弧 `()` を処理し、再帰的に `parse_expression` を呼び出す。\n4. それ以外の場合は、数字を読み取り、`float()` に変換して返す。\n\n**実装の調整 (Token Stream):**\n\n文字列全体をトークンストリームとして扱い、現在の位置（インデックス）を管理するグローバルな状態（またはクラスの属性）を持つヘルパークラスを設計するのが最も安全。\n\n---\n\n### ステップ 3: 具体的な実装計画（Pythonコード構造）\n\n#### 1. Tokenizer/Lexer\n\n```python\n# Helper class or list management to track position\nclass Tokenizer:\n    # ... state management ...\n    def tokenize(self, expression):\n        # ... returns list of tokens (type, value)\n```\n\n#### 2. Parser/Evaluator\n\nパーサーはトークンのリストを受け取り、どこまで消費したかを管理しながら計算を行う。\n\n**単項マイナスの再検討:**\nもし入力が `--3` の場合、トークナイザーはこれを `(-`, `-`, `3` のような形で分割する可能性がある。\nより簡単なアプローチとして、一旦全てのスペースを削除し、文字列を操作しながらトークンを認識し、単項マイナスの有無を判定する。\n\n例: `2 * -3`\n1. `2` -> Number\n2. ` ` -> Skip\n3. `*` -> Operator\n4. ` ` -> Skip\n5. `-` -> (この `-` は単項か二項か？直前に演算子があるなら二項、そうでなければ単項の可能性がある)\n\n**より堅牢なアプローチ: 字句解析の改善**\n\n空の文字列チェック、および不正な文字チェックは、トークナイズの段階で行うべき。\n\nトークンリストを生成し、どこからどこまで使用したかを管理するイテレータを使う。\n\n---\n（自己修正：再帰下降の適用）\n\n全てのステップを一つの関数内で完結させ、ステート管理を内部で行うように実装します。\n\n1. **初期クリーニング:** スペースを無視する。\n2. **ストリーミング/ポインタ:** 現在解析位置を追跡するポインタを用意する。\n\n### 最終的な構造 (Python Implementation)\n\n（実装を試行錯誤し、堅牢な再帰下降パーサーを構築する。特に単項マイナスと二項マイナス、そしてエラー処理に注意する。）\n\n* **Numbers:** Floatとしてパースする。\n* **Precedence:** `parse_expression` (+) -> `parse_term` (*) -> `parse_factor` (Number / Unary Min / Paren)\n\n（詳細な実装フェーズに進む。Pythonの標準機能のみに依存する。）\n\n---\n*Self-Correction on Single Tokenization:* The issue of distinguishing unary minus from binary minus is fundamental. In a state machine/parser context, when we encounter `-`:\n1. If it's the start of the expression, OR\n2. If the previous token was an operator (`+`, `-`, `*`, `/`), OR\n3. If the previous token was an opening parenthesis `(`,\n... then it is treated as unary.\n\nWe must manage this state explicitly.\n\nLet's use a class-like structure internally for the state management (position pointer) to keep the code clean, even though only the external function `evaluate` is required.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 555,
+  "completion_tokens": 3513,
+  "ttft_s": 0.268,
+  "t_first_content_s": 21.106,
+  "wall_s": 38.979,
+  "load_s": 0.001,
+  "server_decode_tok_s": 90.66,
+  "server_prefill_tok_s": 2843.53,
+  "server_timings": {
+    "total_duration": 38978548635,
+    "load_duration": 1022896,
+    "prompt_eval_count": 555,
+    "prompt_eval_duration": 195180000,
+    "eval_count": 3513,
+    "eval_duration": 38747550000
+  },
+  "delta_chunks": 3371,
+  "wall_decode_tok_s": 90.75,
+  "thinking_chars": 4061,
+  "content_chars": 5414,
+  "thinking_tokens_est": 1506,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 38.978,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.7692,
+    "all_passed": false,
+    "passed": 10,
+    "total": 13,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_precedence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_true_division",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_left_associative",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unary_minus",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_unary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_decimals",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_spaces_and_nesting",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_zero_division",
+        "ok": false,
+        "error": "AssertionError: evaluate('1 / 0',): expected ZeroDivisionError, got ValueError: Syntax Error: Division by zero"
+      },
+      {
+        "name": "case_error_structure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_error_tokens",
+        "ok": false,
+        "error": "AssertionError: evaluate('1 2',): expected ValueError, returned 12"
+      },
+      {
+        "name": "case_error_decimal_format",
+        "ok": false,
+        "error": "AssertionError: evaluate('3.',): expected ValueError, returned 3"
+      },
+      {
+        "name": "case_long_expression",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  }
+}

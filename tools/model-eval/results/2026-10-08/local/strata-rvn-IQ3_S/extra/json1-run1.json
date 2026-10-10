@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "target": "strata-flash-next:IQ3_S",
+  "label": "strata-flash-next:IQ3_S (RVN)",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-flash-next:IQ3_S",
+  "slug": "strata-rvn-IQ3_S",
+  "suite": "extra",
+  "item": "json1",
+  "run": 1,
+  "prompt": "次のメールから注文の情報を取り出し、JSON で答えてください。\n\nメール:\n\"\"\"\n件名: 追加注文のお願い\n\nいつもお世話になっております。株式会社みどり商会の佐藤です。\n先日ご案内いただいた業務用コーヒー豆（品番 KB-204）を 12 袋お願いします。\n前回お願いした紅茶（品番 KB-110）は、今回は不要です。\n納品は 11 月 5 日の午前中を希望します。\nお支払いはいつもどおり請求書でお願いいたします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"company\": 注文した会社の名前（文字列）\n  - \"contact\": 担当者の姓（文字列）\n  - \"product_code\": 今回注文する商品の品番（文字列）\n  - \"quantity\": 今回注文する数（整数）\n  - \"delivery_date\": 希望の納品日（\"YYYY-MM-DD\" の形の文字列。年は 2026 年とする）\n  - \"payment\": 支払い方法。\"請求書\"、\"クレジットカード\"、\"代金引換\" のどれか（文字列）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 518,
+  "request": {
+    "model": "strata-flash-next:IQ3_S",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-08T18:02:59+09:00",
+  "finished_at": "2026-10-08T18:03:05+09:00",
+  "content": "{\n  \"company\": \"株式会社みどり商会\",\n  \"contact\": \"佐藤\",\n  \"product_code\": \"KB-204\",\n  \"quantity\": 12,\n  \"delivery_date\": \"2026-11-05\",\n  \"payment\": \"請求書\"\n}",
+  "thinking": "We need answer user's request. Need output only JSON object. User Japanese: extract order info from email. Need JSON keys: company: 株式会社みどり商会? contact: surname 佐藤? product_code: KB-204. quantity: 12. delivery_date: year 2026, November 5 => \"2026-11-05\". payment: 請求書. Need no other text. Ensure valid JSON.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 340,
+  "completion_tokens": 173,
+  "ttft_s": 2.107,
+  "t_first_content_s": 4.27,
+  "wall_s": 5.849,
+  "load_s": null,
+  "server_decode_tok_s": 46.0,
+  "server_prefill_tok_s": 163.4,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 340,
+    "prompt_ms": 2080.3,
+    "prompt_per_token_ms": 6.119,
+    "prompt_per_second": 163.4,
+    "predicted_n": 173,
+    "predicted_ms": 3759.1,
+    "predicted_per_token_ms": 21.729,
+    "predicted_per_second": 46.0,
+    "draft_n": 141,
+    "draft_n_accepted": 117
+  },
+  "delta_chunks": 163,
+  "wall_decode_tok_s": 45.97,
+  "thinking_chars": 307,
+  "content_chars": 146,
+  "thinking_tokens_est": 117,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 5.849,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "company": {
+        "ok": true,
+        "got": "株式会社みどり商会"
+      },
+      "contact": {
+        "ok": true,
+        "got": "佐藤"
+      },
+      "product_code": {
+        "ok": true,
+        "got": "KB-204"
+      },
+      "quantity": {
+        "ok": true,
+        "got": 12
+      },
+      "delivery_date": {
+        "ok": true,
+        "got": "2026-11-05"
+      },
+      "payment": {
+        "ok": true,
+        "got": "請求書"
+      }
+    },
+    "extra_keys": []
+  }
+}

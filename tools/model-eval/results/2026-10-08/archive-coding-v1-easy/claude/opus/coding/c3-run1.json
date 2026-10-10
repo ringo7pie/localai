@@ -1,0 +1,91 @@
+{
+  "model": "opus",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "content": "```python\ndef merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:\n    for start, end in intervals:\n        if start > end:\n            raise ValueError(f\"invalid interval: start {start} > end {end}\")\n    if not intervals:\n        return []\n    ordered = sorted(intervals, key=lambda item: (item[0], item[1]))\n    merged: list[tuple[int, int]] = []\n    current_start, current_end = ordered[0]\n    for start, end in ordered[1:]:\n        if start <= current_end:\n            if end > current_end:\n                current_end = end\n        else:\n            merged.append((current_start, current_end))\n            current_start, current_end = start, end\n    merged.append((current_start, current_end))\n    return merged\n```",
+  "wall_s": 7.699,
+  "usage": {
+    "subagent_tokens": 25252
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 11,
+    "total": 11,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_point",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsorted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_not_touching",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_input_unchanged",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_returns_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_error",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_random",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.26,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T12:31:57+09:00"
+}

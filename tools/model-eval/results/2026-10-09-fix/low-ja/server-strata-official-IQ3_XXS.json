@@ -1,0 +1,31 @@
+{
+  "condition": "low-ja",
+  "target": "strata-official:IQ3_XXS",
+  "unit": "strata-official",
+  "slug": "strata-official-IQ3_XXS",
+  "status": "ok",
+  "reps": [
+    1,
+    2,
+    3
+  ],
+  "start_s": 38.0,
+  "engine_started_line": "[strata] 2026-10-09 22:23:12 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8 --resident-experts",
+  "slots": {
+    "filled": 9703,
+    "total": 9703
+  },
+  "cache_hit_lines": [
+    "strata serve: decode expert cache hit rate: 93.2% (18322632 hits / 19657704 lookups); 326616 more read by the GPU over PCIe or from another GPU (1.6% of all 19984320 routed)",
+    "strata serve: decode expert cache hit rate: 94.1% (18313289 hits / 19464963 lookups); 303357 more read by the GPU over PCIe or from another GPU (1.5% of all 19768320 routed)",
+    "strata serve: decode expert cache hit rate: 92.5% (7743847 hits / 8374519 lookups); 182441 more read by the GPU over PCIe or from another GPU (2.1% of all 8556960 routed)",
+    "strata serve: decode expert cache hit rate: 92.5% (15465655 hits / 16714168 lookups); 359912 more read by the GPU over PCIe or from another GPU (2.1% of all 17074080 routed)",
+    "strata serve: decode expert cache hit rate: 91.8% (16992138 hits / 18512089 lookups); 451271 more read by the GPU over PCIe or from another GPU (2.4% of all 18963360 routed)",
+    "strata serve: decode expert cache hit rate: 93.6% (18290426 hits / 19547010 lookups); 341790 more read by the GPU over PCIe or from another GPU (1.7% of all 19888800 routed)"
+  ],
+  "vram_before_mib": 142,
+  "vram_used_mib": 23887,
+  "memory_peak_bytes": 53688332288,
+  "memory_current_bytes": 53686771712,
+  "written_at": "2026-10-09T23:08:39+09:00"
+}

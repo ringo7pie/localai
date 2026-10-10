@@ -1,0 +1,11 @@
+{
+  "kind": "json",
+  "expected": {
+    "company": "株式会社みどり商会",
+    "contact": "佐藤",
+    "product_code": "KB-204",
+    "quantity": 12,
+    "delivery_date": "2026-11-05",
+    "payment": "請求書"
+  }
+}

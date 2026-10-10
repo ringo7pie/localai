@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "coding",
+  "item": "c1",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C1: 括弧の対応\n\n関数 `is_balanced(text: str) -> bool` を書いてください。\n\n- 文字列 `text` の中の 3 種類の括弧 `()`、`[]`、`{}` が正しく対応していれば `True`、そうでなければ `False` を返す。\n- 正しく対応しているとは、どの閉じ括弧にも、それより前にある同じ種類の開き括弧が 1 つずつ対応し、対応する組どうしが交差せず、最後に閉じられていない開き括弧が残らないこと。\n- 括弧以外の文字（`<` と `>` も含む）は無視する。\n- 空の文字列は `True`。\n- `text` は最大 100,000 文字。\n\n例:\n- `is_balanced(\"a(b[c]{d}e)f\")` → `True`\n- `is_balanced(\"([)]\")` → `False`",
+  "prompt_chars": 647,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:31:52+09:00",
+  "finished_at": "2026-10-08T12:32:02+09:00",
+  "content": "```python\ndef is_balanced(text: str) -> bool:\n    stack: list[str] = []\n    matching = {')': '(', ']': '[', '}': '{'}\n    opening = {'(', '[', '{'}\n\n    for ch in text:\n        if ch in opening:\n            stack.append(ch)\n        elif ch in matching:\n            if not stack or stack[-1] != matching[ch]:\n                return False\n            stack.pop()\n\n    return len(stack) == 0\n```",
+  "thinking": "The user wants a Python function `is_balanced(text: str) -> bool` that checks if parentheses `()`, `[]`, `{}` are properly balanced.\n\nRequirements:\n- Only standard library\n- No file I/O, network, subprocess, stdin\n- Use exact function name and parameter name\n- Output as a single python code block\n- No tests, examples, or prints\n\nThe algorithm is straightforward:\n1. Use a stack\n2. Iterate through each character\n3. If it's an opening bracket `(`, `[`, `{`, push to stack\n4. If it's a closing bracket `)`, `]`, `}`, check if stack is non-empty and top matches\n5. Ignore all other characters\n6. At the end, stack must be empty\n\nLet me write this:\n\n```python\ndef is_balanced(text: str) -> bool:\n    stack = []\n    matching = {')': '(', ']': '[', '}': '{'}\n    opening = {'(', '[', '{'}\n    \n    for ch in text:\n        if ch in opening:\n            stack.append(ch)\n        elif ch in matching:\n            if not stack or stack[-1] != matching[ch]:\n                return False\n            stack.pop()\n    \n    return len(stack) == 0\n```\n\nThis is O(n) time and O(n) space, which handles 100,000 characters fine.\n\nNo imports needed since I'm only using built-in data structures.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 364,
+  "completion_tokens": 433,
+  "ttft_s": 0.877,
+  "t_first_content_s": 7.978,
+  "wall_s": 9.944,
+  "load_s": 0.003,
+  "server_decode_tok_s": 47.76,
+  "server_prefill_tok_s": 424.97,
+  "server_timings": {
+    "total_duration": 9942406483,
+    "load_duration": 2891556,
+    "prompt_eval_count": 364,
+    "prompt_eval_duration": 856538000,
+    "eval_count": 433,
+    "eval_duration": 9066460000
+  },
+  "delta_chunks": 359,
+  "wall_decode_tok_s": 47.65,
+  "thinking_chars": 1177,
+  "content_chars": 392,
+  "thinking_tokens_est": 325,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 9.941,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 12,
+    "total": 12,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_open",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_close",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unclosed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nested_ok",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_brackets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_wrong_kind",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_crossing",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_close_before_open",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_angle_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_ok",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_deep_bad",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  }
+}

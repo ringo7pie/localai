@@ -1,0 +1,27 @@
+{
+  "model": "opus",
+  "suite": "extra",
+  "item": "needle2",
+  "run": 1,
+  "content": "銀河モノレール",
+  "wall_s": 8.416,
+  "usage": {
+    "subagent_tokens": 51108
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 4,
+  "tool_uses_note": "raw の 4 は問題文 3 ファイルの Read と結果を返す SubagentHandback。問題文が長いのでファイルで渡した。答えの検索・計算のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "needle",
+    "score": 1.0,
+    "all_passed": true,
+    "normalized": "銀河モノレール",
+    "expected": "銀河モノレール",
+    "contains": true,
+    "depth": 0.55
+  },
+  "batch_size": 3,
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:17+09:00"
+}

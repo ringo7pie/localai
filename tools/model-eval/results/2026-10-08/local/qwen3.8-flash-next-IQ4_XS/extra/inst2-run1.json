@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "target": "qwen3.8-flash-next:IQ4_XS",
+  "label": "qwen3.8-flash-next:IQ4_XS",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8-flash-next:IQ4_XS",
+  "slug": "qwen3.8-flash-next-IQ4_XS",
+  "suite": "extra",
+  "item": "inst2",
+  "run": 1,
+  "prompt": "新入社員に向けて、パスワードを安全に扱うための注意点を書いてください。\n\n次の条件をすべて守って書いてください。\n1. 1 行目には「注意点は次のとおりです。」とだけ書く。\n2. 2 行目から、行頭を「- 」（半角のハイフンと半角スペース）で始める箇条書きを、ちょうど 4 個続けて書く。\n3. 「定期的」という語を、どこかで 1 回以上使う。\n4. 数字（0〜9。全角も含む）を使わない。\n5. 最後の行には「以上」の 2 文字だけを書く。",
+  "prompt_chars": 221,
+  "request": {
+    "model": "qwen3.8-flash-next:IQ4_XS",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T16:55:04+09:00",
+  "finished_at": "2026-10-08T16:55:30+09:00",
+  "content": "注意点は次のとおりです。\n- パスワードは推測されやすい生年月日や辞書にある語を避け、英大文字・小文字・記号を混ぜて設定してください。\n- 定期的なパスワード変更を習慣づけ、同じパスワードを複数のサービスで使い回さないでください。\n- パスワードをメモや付箋に書いて机やモニターに貼ることは絶対にやめてください。\n- 画面を離れる際は必ずロックをかけ、他人にパスワードを見られないよう徹底してください。\n以上",
+  "thinking": "The user wants me to write password security tips for new employees, following specific formatting rules:\n\n1. Line 1 must be exactly: 「注意点は次のとおりです。」\n2. Lines 2-5 must be bullet points starting with \"- \" (half-width hyphen and half-width space), exactly 4 items.\n3. Must use 「定期的」 at least once.\n4. No digits (0-9, including full-width ０-９).\n5. The last line must be exactly 「以上」 (2 characters only).\n\nLet me draft this:\n\nLine 1: 注意点は次のとおりです。\nLine 2: - パスワードは推測されやすい生年月日や辞書にある語を避け、英大文字・小文字・記号を混ぜて設定してください。\nLine 3: - 定期的なパスワード変更を習慣づけ、同じパスワードを複数のサービスで使い回さないでください。\nLine 4: - パスワードをメモや付箋に書いて机やモニターに貼ることは絶対にやめてください。\nLine 5: - 画面を離れる際は必ずロックをかけ、他人にパスワードを見られないよう徹底してください。\nLine 6: 以上\n\nLet me check all conditions:\n1. ✓ Line 1 is exactly 「注意点は次のとおりです。」\n2. ✓ 4 bullet points starting with \"- \" (half-width hyphen + half-width space)\n3. ✓ 「定期的」appears in line 3\n4. Let me check for digits: No digits in any of the text. ✓\n5. ✓ Last line is 「以上」\n\nWait, let me re-check condition 4. No digits 0-9 or full-width ０-９. Let me scan carefully... Looks good. No numbers anywhere.\n\nLet me also make sure there's no hidden digit. \"生年月日\" - no digits. All looks clean.\n\nThis looks good. Let me finalize.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 153,
+  "completion_tokens": 531,
+  "ttft_s": 2.835,
+  "t_first_content_s": 20.754,
+  "wall_s": 25.649,
+  "load_s": 0.001,
+  "server_decode_tok_s": 23.28,
+  "server_prefill_tok_s": 57.96,
+  "server_timings": {
+    "total_duration": 25647932234,
+    "load_duration": 1065395,
+    "prompt_eval_count": 153,
+    "prompt_eval_duration": 2639957000,
+    "eval_count": 531,
+    "eval_duration": 22813993000
+  },
+  "delta_chunks": 479,
+  "wall_decode_tok_s": 23.27,
+  "thinking_chars": 1178,
+  "content_chars": 204,
+  "thinking_tokens_est": 453,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 25.648,
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "first_line",
+        "label": "1 行目が「注意点は次のとおりです。」だけ",
+        "ok": true
+      },
+      {
+        "id": "bullet_block",
+        "label": "2 行目から「- 」の箇条書きがちょうど 4 個続く",
+        "ok": true
+      },
+      {
+        "id": "keyword",
+        "label": "「定期的」を 1 回以上使う",
+        "ok": true
+      },
+      {
+        "id": "no_digits",
+        "label": "数字を使わない",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      }
+    ]
+  }
+}

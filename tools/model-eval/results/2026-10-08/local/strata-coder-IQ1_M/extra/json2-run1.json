@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "target": "strata-flash-coder:IQ1_M",
+  "label": "strata-flash-coder:IQ1_M (Coder)",
+  "family": "strata",
+  "backend": "strata",
+  "model": "strata-flash-coder:IQ1_M",
+  "slug": "strata-coder-IQ1_M",
+  "suite": "extra",
+  "item": "json2",
+  "run": 1,
+  "prompt": "次の申し込みの文から情報を取り出し、JSON で答えてください。\n\n申し込み:\n\"\"\"\nはじめまして、山田花子と申します。\n10 月 24 日（土）の親子料理教室に、私と子ども 2 人の計 3 名で参加したいです。\n子どものうち 1 人に卵のアレルギーがあります。\n当日は電車で行くので、駐車場は使いません。\n連絡先は 090-1234-5678 です。よろしくお願いします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"name\": 申込者の氏名（文字列。姓と名のあいだに空白を入れない）\n  - \"event_date\": 教室の日付（\"YYYY-MM-DD\" の形の文字列。年は 2026 年とする）\n  - \"participants\": 参加する人数の合計（整数）\n  - \"has_allergy\": アレルギーのある参加者がいるか（true か false）\n  - \"needs_parking\": 駐車場を使うか（true か false）\n  - \"phone\": 電話番号（文字列。書かれているとおり）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 515,
+  "request": {
+    "model": "strata-flash-coder:IQ1_M",
+    "stream": true,
+    "max_tokens": 8192,
+    "reasoning_effort": "high",
+    "reasoning_budget_tokens": 6144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "started_at": "2026-10-09T10:28:28+09:00",
+  "finished_at": "2026-10-09T10:28:36+09:00",
+  "content": "{\n  \"name\": \"山田花子\",\n  \"event_date\": \"2026-10-24\",\n  \"participants\": 3,\n  \"has_allergy\": true,\n  \"needs_parking\": false,\n  \"phone\": \"090-1234-5678\"\n}",
+  "thinking": "We need answer user's request in Japanese. Need output only JSON object with six keys. Extract from reservation text.\n\nUser says:\n次のreservation text extract info.\nReservation:\n\"\"\"\nはじめ ん 堂 田 子 氏.\n10 月 24 日 (Sat) parent-child cooking class, myself and 2 kids total 3 people want to participate.\nAmong my children, 1 has egg allergy.\nThat day will go by train, parking not used.\nPhone is 090-1234-5678. Thank you.\n\"\"\"\n\nOutput format: JSON object with 6 keys:\n- \"name\": applicant's full name (string. no space between first and last name?) The text: 山田花子と申します. Name 山田花子. They say no whitespace between surname and given? “姓と名的あいだに空白を入れない” likely don't insert whitespace between surname and given name? Actually maybe means name should not have whitespace between last and first? Chinese/Japanese: 山田花子 already no space. Use \"山田花子\".\n- event_date: classroom date \"YYYY-MM-DD\". year assume 2026. October 24 Saturday. -> \"2026-10-24\". Need check day of week? 2026-10-24 is Saturday? 2026 Oct 24 yes likely. Good.\n- participants: total number integer: 3.\n- has_allergy: whether participants with allergy exist: true.\n- needs_parking: parking used: false.\n- phone: string as written: \"090-1234-5678\".\n\nMust output only JSON, no markdown. Need final only JSON.\n",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 330,
+  "completion_tokens": 471,
+  "ttft_s": 0.895,
+  "t_first_content_s": 6.518,
+  "wall_s": 7.392,
+  "load_s": null,
+  "server_decode_tok_s": 72.3,
+  "server_prefill_tok_s": 378.2,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 330,
+    "prompt_ms": 872.6,
+    "prompt_per_token_ms": 2.644,
+    "prompt_per_second": 378.2,
+    "predicted_n": 471,
+    "predicted_ms": 6513.8,
+    "predicted_per_token_ms": 13.83,
+    "predicted_per_second": 72.3,
+    "draft_n": 396,
+    "draft_n_accepted": 279
+  },
+  "delta_chunks": 461,
+  "wall_decode_tok_s": 72.35,
+  "thinking_chars": 1251,
+  "content_chars": 148,
+  "thinking_tokens_est": 421,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 7.392,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "name": {
+        "ok": true,
+        "got": "山田花子"
+      },
+      "event_date": {
+        "ok": true,
+        "got": "2026-10-24"
+      },
+      "participants": {
+        "ok": true,
+        "got": 3
+      },
+      "has_allergy": {
+        "ok": true,
+        "got": true
+      },
+      "needs_parking": {
+        "ok": true,
+        "got": false
+      },
+      "phone": {
+        "ok": true,
+        "got": "090-1234-5678"
+      }
+    },
+    "extra_keys": []
+  }
+}

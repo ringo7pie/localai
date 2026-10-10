@@ -1,0 +1,173 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C6: 数独を解く（解の一意性の判定つき）\n\n関数 `solve_sudoku(grid: str) -> str` を書いてください。\n\n- `grid` は 81 文字の文字列。9×9 の盤面を行ごとに左から右、上から下の順に並べたもので、各文字は `1`〜`9`（確定しているマス）か `.`（空のマス）。\n- 普通の数独の規則で解く: 各行・各列・太線で区切られた 3×3 のブロック 9 つのそれぞれに、`1`〜`9` がちょうど 1 回ずつ入る。\n- 解がちょうど 1 つに決まるとき、その解を同じ形式（81 文字、`.` を含まない）で返す。\n- 次の場合は `ValueError` を送出する。\n  - `grid` の長さが 81 でない、または `1`〜`9` と `.` 以外の文字（`0`、空白、全角の数字など）を含む。\n  - 確定しているマスどうしが、既に規則に反している（同じ行・列・ブロックに同じ数字がある）。\n  - 解が存在しない（確定しているマスどうしに矛盾は無いが、どう埋めても規則を満たせない）。\n  - 解が 2 つ以上ある（空の盤面など）。\n- 性能: ヒントが 17 個しかない難問、「最難」と呼ばれる種類の問題、確定マスに矛盾は無いが解が存在しない盤面、解が多数ある盤面のいずれも、1 問につき 1 秒程度で答えること。マスを左上から順に試すだけの素朴なバックトラックでは間に合わない（候補の少ないマスから埋める、候補が 1 つのマスを先に確定する、などの工夫が要る）。解が 2 つ以上あることの判定は、2 つ目の解が見つかった時点で打ち切ってよい。\n\n例:\n- `solve_sudoku(\"53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79\")` → `\"534678912672195348198342567859761423426853791713924856961537284287419635345286179\"`\n- `solve_sudoku(\".\" * 81)` → `ValueError` を送出（解が多数ある）\n- `solve_sudoku(\"11\" + \".\" * 79)` → `ValueError` を送出（同じ行に 1 が 2 つ）",
+  "prompt_chars": 1285,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:05:50+09:00",
+  "finished_at": "2026-10-08T14:07:31+09:00",
+  "content": "```python\ndef solve_sudoku(grid: str) -> str:\n    if len(grid) != 81:\n        raise ValueError(\"Invalid grid length\")\n    for ch in grid:\n        if ch not in '123456789.':\n            raise ValueError(\"Invalid character in grid\")\n\n    FULL = 0x1FF  # bits 0..8 representing digits 1..9\n\n    row_used = [0] * 9\n    col_used = [0] * 9\n    block_used = [0] * 9\n\n    for i, ch in enumerate(grid):\n        r, c = divmod(i, 9)\n        b = (r // 3) * 3 + (c // 3)\n        if ch != '.':\n            bit = 1 << (ord(ch) - 49)\n            if (row_used[r] & bit) or (col_used[c] & bit) or (block_used[b] & bit):\n                raise ValueError(\"Contradiction in given digits\")\n            row_used[r] |= bit\n            col_used[c] |= bit\n            block_used[b] |= bit\n\n    grid_list = list(grid)\n    solution_count = 0\n    first_solution = None\n\n    def backtrack() -> None:\n        nonlocal solution_count, first_solution\n        if solution_count >= 2:\n            return\n\n        # MRV: pick the empty cell with the fewest candidates\n        min_n = 10\n        best_i = -1\n        best_cands = 0\n\n        for i in range(81):\n            if grid_list[i] != '.':\n                continue\n            r, c = divmod(i, 9)\n            b = (r // 3) * 3 + (c // 3)\n            cands = FULL ^ (row_used[r] | col_used[c] | block_used[b])\n            n = cands.bit_count()\n            if n == 0:\n                return  # dead end\n            if n < min_n:\n                min_n = n\n                best_i = i\n                best_cands = cands\n                if n == 1:\n                    break\n\n        if best_i == -1:\n            # No empty cells remaining → a complete solution\n            solution_count += 1\n            if first_solution is None:\n                first_solution = ''.join(grid_list)\n            return\n\n        r, c = divmod(best_i, 9)\n        b = (r // 3) * 3 + (c // 3)\n\n        cands = best_cands\n        while cands:\n            bit = cands & (-cands)\n            cands ^= bit\n            d = bit.bit_length()  # 1..9\n\n            grid_list[best_i] = chr(48 + d)\n            row_used[r] |= bit\n            col_used[c] |= bit\n            block_used[b] |= bit\n\n            backtrack()\n\n            if solution_count >= 2:\n                return\n\n            row_used[r] ^= bit\n            col_used[c] ^= bit\n            block_used[b] ^= bit\n            grid_list[best_i] = '.'\n\n    backtrack()\n\n    if solution_count == 0:\n        raise ValueError(\"No solution exists\")\n    elif solution_count >= 2:\n        raise ValueError(\"Multiple solutions exist\")\n    return first_solution\n```",
+  "thinking": "Let me analyze the problem:\n\n1. I need to write a `solve_sudoku(grid: str) -> str` function in Python 3.12\n2. It takes an 81-character string representing a 9x9 Sudoku grid\n3. Returns the unique solution if exactly one exists\n4. Raises ValueError for: invalid input, contradictions in given digits, no solution, multiple solutions\n\nKey requirements:\n- Only standard library\n- No file I/O, network, subprocess, stdin\n- Must be fast: solve in ~1 second even for hard puzzles\n- Need efficient backtracking with heuristics (MRV - Minimum Remaining Values, constraint propagation)\n\nLet me design the algorithm:\n\n1. **Input validation**: Check length is 81, all chars are 1-9 or '.'\n2. **Check for contradictions**: For each row, column, and 3x3 block, check if any digit appears more than once\n3. **Solving with backtracking + heuristics**:\n   - Use MRV (Minimum Remaining Values): always pick the cell with the fewest candidates\n   - Use constraint propagation: if a cell has only 1 candidate, fill it in (and propagate)\n   - This is essentially a form of \"naked singles\" + \"hidden singles\" propagation\n   - Stop counting solutions at 2 (to detect non-uniqueness)\n\nLet me think about the data structures:\n- Grid: 81-character list (mutable)\n- For each cell (0-80), maintain a set of possible digits (1-9)\n- Row masks, column masks, block masks for tracking used digits\n\nActually, let me use a bit-based approach for efficiency:\n- `row_used[r]`: bitmask of digits used in row r\n- `col_used[c]`: bitmask of digits used in column c\n- `block_used[b]`: bitmask of digits used in block b\n\nFor each cell (r, c), the candidates = ~(row_used[r] | col_used[c] | block_used[b]) & 0x1FF (bits 0-8 for digits 1-9)\n\nThe MRV heuristic: at each step, find the empty cell with the fewest candidates. If any cell has 0 candidates, it's a dead end.\n\nIf any cell has exactly 1 candidate, we can fill it in (constraint propagation).\n\nAlgorithm:\n1. Initialize the grid and masks\n2. Check for contradictions (given digits conflicting)\n3. Use a recursive backtracking with:\n   - Propagation: repeatedly fill in cells with only 1 candidate (naked singles)\n   - MRV: if no naked singles, pick the cell with fewest candidates and try each\n   - Count solutions, stop at 2\n\nLet me code this up:\n\n```python\ndef solve_sudoku(grid: str) -> str:\n    # Validate input\n    if len(grid) != 81:\n        raise ValueError(\"Invalid grid length\")\n    for ch in grid:\n        if ch not in '123456789.':\n            raise ValueError(\"Invalid character in grid\")\n    \n    # Initialize\n    row_used = [0] * 9  # bitmask\n    col_used = [0] * 9\n    block_used = [0] * 9\n    \n    # Set up given digits\n    for i, ch in enumerate(grid):\n        r, c = divmod(i, 9)\n        b = (r // 3) * 3 + (c // 3)\n        if ch != '.':\n            d = ord(ch) - ord('0')\n            bit = 1 << (d - 1)\n            # Check for contradiction\n            if (row_used[r] & bit) or (col_used[c] & bit) or (block_used[b] & bit):\n                raise ValueError(\"Contradiction in given digits\")\n            row_used[r] |= bit\n            col_used[c] |= bit\n            block_used[b] |= bit\n    \n    # Count solutions (stop at 2)\n    solution_count = 0\n    first_solution = None\n    \n    def block_of(r, c):\n        return (r // 3) * 3 + (c // 3)\n    \n    def backtrack(row_used, col_used, block_used, grid_list):\n        nonlocal solution_count, first_solution\n        if solution_count >= 2:\n            return\n        \n        # Find the empty cell with fewest candidates (MRV)\n        min_cands = 10\n        best_cell = -1\n        best_cand_set = 0\n        \n        for i in range(81):\n            if grid_list[i] != '.':\n                continue\n            r, c = divmod(i, 9)\n            b = block_of(r, c)\n            used = row_used[r] | col_used[c] | block_used[b]\n            cands = (~used) & 0x1FF  # 9 bits\n            n = bin(cands).count('1')\n            if n == 0:\n                return  # dead end\n            if n < min_cands:\n                min_cands = n\n                best_cell = i\n                best_cand_set = cands\n                if n == 1:\n                    break  # can't do better\n        \n        if best_cell == -1:\n            # No empty cells - found a solution\n            solution_count += 1\n            if first_solution is None:\n                first_solution = ''.join(grid_list)\n            return\n        \n        r, c = divmod(best_cell, 9)\n        b = block_of(r, c)\n        \n        # Try each candidate\n        cands = best_cand_set\n        while cands:\n            bit = cands & (-cands)  # lowest set bit\n            cands ^= bit\n            d = bit.bit_length()  # digit value (1-9)\n            \n            # Place digit\n            grid_list[best_cell] = chr(ord('0') + d)\n            row_used[r] |= bit\n            col_used[c] |= bit\n            block_used[b] |= bit\n            \n            backtrack(row_used, col_used, block_used, grid_list)\n            \n            # Undo\n            grid_list[best_cell] = '.'\n            row_used[r] ^= bit\n            col_used[c] ^= bit\n            block_used[b] ^= bit\n            \n            if solution_count >= 2:\n                return\n    \n    grid_list = list(grid)\n    backtrack(row_used, col_used, block_used, grid_list)\n    \n    if solution_count == 0:\n        raise ValueError(\"No solution exists\")\n    elif solution_count >= 2:\n        raise ValueError(\"Multiple solutions exist\")\n    else:\n        return first_solution\n```\n\nWait, this is a basic MRV approach. The problem says \"ヒントが 17 個しかない難問\" (puzzles with only 17 hints) and \"最難\" (hardest) types need to be solved in ~1 second. Let me think about whether MRV alone is sufficient.\n\nFor the hardest Sudoku puzzles, MRV with backtracking should work. The key insight is that MRV dramatically reduces the search space compared to naive left-to-right backtracking.\n\nHowever, I should also add constraint propagation (naked singles) to make it even faster. Let me add a propagation step:\n\nActually, let me think more carefully. The MRV approach already picks cells with 1 candidate first (since n=1 is the minimum possible). But it doesn't propagate - it only fills one cell at a time and then re-scans. This is actually fine because after filling a cell, we re-scan all cells to find the new MRV.\n\nBut wait, there's a subtle issue. When I break out of the loop when n==1, I'm only filling one naked single at a time. After filling it, I re-scan. This is equivalent to iterative constraint propagation for naked singles.\n\nActually, I think the current approach is already quite good. Let me also consider:\n- The scan is O(81) per step\n- The number of steps is bounded by the number of empty cells + backtracking\n- For hard puzzles, this should be fast enough\n\nLet me also add a small optimization: instead of scanning all 81 cells every time, I could maintain a priority queue. But for 81 cells, the linear scan should be fast enough.\n\nActually, let me reconsider. The problem says \"マスを左上から順に試すだけの素朴なバックトラックでは間に合わない\" (naive left-to-right backtracking won't keep up). This implies we need at least MRV. My approach does MRV, so it should be fine.\n\nLet me also think about the constraint propagation more carefully. In my current code:\n1. I scan all cells to find MRV\n2. If MRV is 1, I fill that one cell\n3. I re-scan all cells\n4. Repeat\n\nThis is effectively doing naked singles propagation, but one at a time. It's correct but might be slightly slower than doing all naked singles in one pass. However, for 81 cells, the difference is negligible.\n\nActually wait, I realize there might be an issue with my approach. When I find a cell with n==1 candidates and break, I then try that one candidate. But what if there are multiple cells with n==1? I only fill one and then re-scan. This is correct but means I'm doing O(81) work per single cell fill. For a puzzle with 64 empty cells, that's 64 * 81 = 5184 operations just for propagation. That's fine.\n\nLet me also think about whether I need hidden singles. Hidden singles (a digit that can only go in one place in a row/column/block) would further reduce the search space. But I think MRV + naked singles should be sufficient for the 1-second requirement.\n\nLet me refine my code to make sure it's correct and efficient:\n\n```python\ndef solve_sudoku(grid: str) -> str:\n    if len(grid) != 81:\n        raise ValueError(\"Invalid grid length\")\n    for ch in grid:\n        if ch not in '123456789.':\n            raise ValueError(\"Invalid character in grid\")\n    \n    row_used = [0] * 9\n    col_used = [0] * 9\n    block_used = [0] * 9\n    \n    for i, ch in enumerate(grid):\n        r, c = divmod(i, 9)\n        b = (r // 3) * 3 + (c // 3)\n        if ch != '.':\n            d = ord(ch) - ord('0')\n            bit = 1 << (d - 1)\n            if (row_used[r] & bit) or (col_used[c] & bit) or (block_used[b] & bit):\n                raise ValueError(\"Contradiction in given digits\")\n            row_used[r] |= bit\n            col_used[c] |= bit\n            block_used[b] |= bit\n    \n    solution_count = 0\n    first_solution = None\n    grid_list = list(grid)\n    \n    FULL = 0x1FF  # 9 bits set\n    \n    def block_of(r, c):\n        return (r // 3) * 3 + (c // 3)\n    \n    def backtrack():\n        nonlocal solution_count, first_solution\n        if solution_count >= 2:\n            return\n        \n        # Find empty cell with fewest candidates (MRV)\n        min_cands = 10\n        best_cell = -1\n        best_cand = 0\n        \n        for i in range(81):\n            if grid_list[i] != '.':\n                continue\n            r = i // 9\n            c = i % 9\n            b = (r // 3) * 3 + (c // 3)\n            used = row_used[r] | col_used[c] | block_used[b]\n            cands = FULL ^ (used & FULL)\n            n = cands.bit_count()\n            if n == 0:\n                return  # dead end\n            if n < min_cands:\n                min_cands = n\n                best_cell = i\n                best_cand = cands\n                if n == 1:\n                    break\n        \n        if best_cell == -1:\n            # All cells filled - solution found\n            solution_count += 1\n            if first_solution is None:\n                first_solution = ''.join(grid_list)\n            return\n        \n        r = best_cell // 9\n        c = best_cell % 9\n        b = (r // 3) * 3 + (c // 3)\n        \n        cands = best_cand\n        while cands:\n            bit = cands & (-cands)\n            cands ^= bit\n            d = bit.bit_length()  # 1-9\n            \n            grid_list[best_cell] = chr(48 + d)\n            row_used[r] |= bit\n            col_used[c] |= bit\n            block_used[b] |= bit\n            \n            backtrack()\n            \n            row_used[r] ^= bit\n            col_used[c] ^= bit\n            block_used[b] ^= bit\n            grid_list[best_cell] = '.'\n            \n            if solution_count >= 2:\n                return\n    \n    backtrack()\n    \n    if solution_count == 0:\n        raise ValueError(\"No solution exists\")\n    elif solution_count >= 2:\n        raise ValueError(\"Multiple solutions exist\")\n    return first_solution\n```\n\nHmm, wait. I'm using closures with nonlocal variables. Let me make sure this works correctly in Python 3.12. Yes, it should be fine.\n\nLet me trace through the example:\n- `solve_sudoku(\"53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79\")`\n- This should return the given solution string.\n\nLet me also think about edge cases:\n- Empty grid (all dots): should raise ValueError (multiple solutions)\n- Grid with contradictions: should raise ValueError\n- Grid with no solution: should raise ValueError\n\nI think my solution is correct. Let me also think about performance:\n- The MRV heuristic means we always pick the most constrained cell\n- This dramatically reduces the branching factor\n- For the hardest puzzles (like those with 17 clues), MRV should solve them in milliseconds\n- The O(81) scan per step is negligible\n\nOne thing I want to double-check: the `bit_count()` method is available in Python 3.10+. Since we're targeting 3.12, this is fine.\n\nLet me also make sure the validation is correct:\n- Length check: `len(grid) != 81`\n- Character check: each char must be '1'-'9' or '.'\n\nI think the solution is complete. Let me write the final version.\n\nActually, wait - I want to reconsider the performance. The problem mentions \"最難\" (hardest) puzzles. Let me think about whether MRV alone is sufficient or if I need additional techniques.\n\nThe key insight for hard Sudokus is:\n1. MRV (pick cell with fewest candidates) - I have this\n2. Naked singles propagation (if a cell has only 1 candidate, fill it) - I have this (implicitly, since MRV will pick n=1 cells first)\n3. Hidden singles (if a digit can only go in one cell in a row/col/block, place it) - I don't have this\n\nFor most hard puzzles, MRV + naked singles should be sufficient. Hidden singles can help in some cases but add complexity. Let me stick with MRV + naked singles for now, as it should meet the 1-second requirement.\n\nActually, let me think about this more carefully. The \"hardest\" Sudoku puzzles are designed to require a lot of backtracking. MRV helps, but for truly hard puzzles, you might still need significant backtracking. However, with MRV, the branching factor is typically very low (2-3 at most), and the depth is at most 81. So the worst case is 3^81, which is infeasible. But in practice, MRV on real Sudokus solves them very quickly because the constraint propagation (naked singles) eliminates most possibilities before you need to branch.\n\nI believe my solution will be fast enough. Let me finalize it.\n\nOne more thought: should I add a timeout or limit? The problem says \"1秒程度で答えること\" (answer within about 1 second). I don't think I need an explicit timeout if the algorithm is efficient. The MRV heuristic should handle all cases within the time limit.\n\nLet me write the final clean version.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 788,
+  "completion_tokens": 4437,
+  "ttft_s": 2.271,
+  "t_first_content_s": 87.775,
+  "wall_s": 100.924,
+  "load_s": 0.001,
+  "server_decode_tok_s": 44.98,
+  "server_prefill_tok_s": 556.91,
+  "server_timings": {
+    "total_duration": 100923803822,
+    "load_duration": 982592,
+    "prompt_eval_count": 788,
+    "prompt_eval_duration": 1414957000,
+    "eval_count": 4437,
+    "eval_duration": 98653210000
+  },
+  "delta_chunks": 3685,
+  "wall_decode_tok_s": 45.0,
+  "thinking_chars": 13908,
+  "content_chars": 2597,
+  "thinking_tokens_est": 3739,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 100.923,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 20,
+    "total": 20,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_bad_length",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflicting_givens",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflict_inside_an_otherwise_full_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_already_solved",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_blank",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_puzzle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_generated_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_cell_without_candidates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_and_nearly_empty_have_many_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exactly_two_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_underdetermined_hard_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsolvable_without_direct_conflict",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2012",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2010_and_escargot",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_easter_monster",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_a",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_b",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_royle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_puzzles_in_sequence",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 3.76,
+    "stderr_tail": ""
+  }
+}

@@ -1,0 +1,6054 @@
+{
+  "kind": "fix",
+  "date": "2026-10-09-fix",
+  "generated_at": "2026-10-10T00:24:00+09:00",
+  "root": "tools/model-eval/results/2026-10-09-fix",
+  "conditions": [
+    "budget24k-ja",
+    "nobudget-ja",
+    "nobudget-en",
+    "low-ja",
+    "low-65k-ja"
+  ],
+  "baseline": "budget24k-ja",
+  "labels": {
+    "budget24k-ja": "思考最大・上限 24,576（最初の評価）",
+    "nobudget-ja": "思考最大・上限なし",
+    "nobudget-en": "思考最大・上限なし・英語",
+    "low-ja": "low・上限なし（生成 32,768）",
+    "low-65k-ja": "low・上限なし（生成 65,536）"
+  },
+  "reps": [
+    1,
+    2,
+    3
+  ],
+  "items": [
+    "c4",
+    "c5"
+  ],
+  "sampling": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "models": [
+    {
+      "key": "strata-flash-coder:IQ1_M",
+      "label": "strata-flash-coder:IQ1_M (Coder)",
+      "short": "Coder IQ1_M",
+      "slug": "strata-coder-IQ1_M",
+      "unit": "strata-coder"
+    },
+    {
+      "key": "strata-official:IQ3_XXS",
+      "label": "strata-official:IQ3_XXS",
+      "short": "公式 IQ3_XXS",
+      "slug": "strata-official-IQ3_XXS",
+      "unit": "strata-official"
+    }
+  ],
+  "excluded": {
+    "strata-flash-next:IQ3_S": "2026-10-09 の利用者の指示。成績が低いため、実験の対象から外した"
+  },
+  "results": {
+    "strata-flash-coder:IQ1_M": {
+      "c4": {
+        "budget24k-ja": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 0.6522,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 404.343,
+              "tokens": 27249,
+              "thinking_tokens_est": 24706,
+              "tok_s": 96.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 91642,
+                "question_per_10k": 47.467318478426925,
+                "maybe_per_10k": 10.148185329870584,
+                "repeated_line_pct": 7.107438016528926
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.6087,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 414.7,
+              "tokens": 27039,
+              "thinking_tokens_est": 24363,
+              "tok_s": 97.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 92877,
+                "question_per_10k": 54.15764936421289,
+                "maybe_per_10k": 13.458660378780538,
+                "repeated_line_pct": 6.115702479338843
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.8261,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 428.15,
+              "tokens": 27438,
+              "thinking_tokens_est": 24317,
+              "tok_s": 90.7,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 92743,
+                "question_per_10k": 46.688159753296745,
+                "maybe_per_10k": 17.251975890363692,
+                "repeated_line_pct": 5.956678700361011
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.6522,
+            0.6087,
+            0.8261
+          ],
+          "n_records": 3,
+          "mean": 0.6956666666666665,
+          "min": 0.6087,
+          "max": 0.8261,
+          "n_all_passed": 0,
+          "tok_s_median": 96.8,
+          "time_s_median": 414.7,
+          "tokens_median": 27249,
+          "thinking_tokens_median": 24363,
+          "n_budget_cut": 3,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 3,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 3,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "ok",
+            "ok",
+            "ok"
+          ]
+        },
+        "nobudget-ja": {
+          "runs": [
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 592.84,
+              "tokens": 37935,
+              "thinking_tokens_est": 37935,
+              "tok_s": 64.1,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 148328,
+                "question_per_10k": 45.574672347769805,
+                "maybe_per_10k": 7.213742516584865,
+                "repeated_line_pct": 5.876288659793814
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "repeat_stop",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.3478,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 813.734,
+              "tokens": 51551,
+              "thinking_tokens_est": 49187,
+              "tok_s": 63.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 191609,
+                "question_per_10k": 37.83747110000052,
+                "maybe_per_10k": 9.13318267931047,
+                "repeated_line_pct": 12.895377128953772
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": null,
+              "time_s": 1061.292,
+              "tokens": 65536,
+              "thinking_tokens_est": 64680,
+              "tok_s": 61.0,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 253478,
+                "question_per_10k": 37.12353734840894,
+                "maybe_per_10k": 10.770165458146268,
+                "repeated_line_pct": 11.150864639236731
+              },
+              "syntax_error": true,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 2,
+              "first_attempt_status": "eos_in_thinking",
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "answer_truncated",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.0,
+            0.3478,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.11593333333333333,
+          "min": 0.0,
+          "max": 0.3478,
+          "n_all_passed": 0,
+          "tok_s_median": 63.5,
+          "time_s_median": 813.734,
+          "tokens_median": 51551,
+          "thinking_tokens_median": 49187,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 1,
+          "n_eos_final": 0,
+          "n_retried": 1,
+          "n_length": 2,
+          "n_answered": 2,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 1,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 1,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "ok",
+            "length"
+          ]
+        },
+        "nobudget-en": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 971.563,
+              "tokens": 59720,
+              "thinking_tokens_est": 57366,
+              "tok_s": 61.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 224040,
+                "question_per_10k": 40.394572397786106,
+                "maybe_per_10k": 10.132119264417067,
+                "repeated_line_pct": 12.013256006628003
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "en"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": null,
+              "time_s": 1043.185,
+              "tokens": 65536,
+              "thinking_tokens_est": 63216,
+              "tok_s": 63.5,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 239032,
+                "question_per_10k": 36.564142039559556,
+                "maybe_per_10k": 13.052645670872518,
+                "repeated_line_pct": 14.118457300275484
+              },
+              "syntax_error": true,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "en"
+              },
+              "end": "answer_truncated",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 155.139,
+              "tokens": 9841,
+              "thinking_tokens_est": 9841,
+              "tok_s": 64.0,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 37306,
+                "question_per_10k": 43.15659679408138,
+                "maybe_per_10k": 8.04160188709591,
+                "repeated_line_pct": 0.5
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "en"
+              },
+              "end": "repeat_stop",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.3333333333333333,
+          "min": 0.0,
+          "max": 1.0,
+          "n_all_passed": 1,
+          "tok_s_median": 63.5,
+          "time_s_median": 971.563,
+          "tokens_median": 59720,
+          "thinking_tokens_median": 57366,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 2,
+          "n_answered": 2,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 1,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 1,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "ok",
+            "length",
+            "length"
+          ]
+        },
+        "low-ja": {
+          "runs": [
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 509.122,
+              "tokens": 32768,
+              "thinking_tokens_est": 32768,
+              "tok_s": 64.6,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 125557,
+                "question_per_10k": 42.29154885828747,
+                "maybe_per_10k": 11.70782990992139,
+                "repeated_line_pct": 9.213759213759214
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 333.419,
+              "tokens": 22411,
+              "thinking_tokens_est": 22411,
+              "tok_s": 67.5,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 84575,
+                "question_per_10k": 35.70795152231747,
+                "maybe_per_10k": 12.415016257759385,
+                "repeated_line_pct": 9.937888198757763
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "repeat_stop",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            },
+            {
+              "cell": "scored",
+              "score": 0.6087,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 273.314,
+              "tokens": 21490,
+              "thinking_tokens_est": 19515,
+              "tok_s": 79.0,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 70841,
+                "question_per_10k": 8.751993901836506,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 21.720116618075803
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            }
+          ],
+          "scores": [
+            0.0,
+            0.0,
+            0.6087
+          ],
+          "n_records": 3,
+          "mean": 0.2029,
+          "min": 0.0,
+          "max": 0.6087,
+          "n_all_passed": 0,
+          "tok_s_median": 67.5,
+          "time_s_median": 333.419,
+          "tokens_median": 22411,
+          "thinking_tokens_median": 22411,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 2,
+          "n_answered": 1,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 1,
+            "repeat_stop": 1,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "length",
+            "ok"
+          ]
+        },
+        "low-65k-ja": {
+          "runs": [
+            {
+              "rep": 1,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 2,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 3,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            }
+          ],
+          "scores": [],
+          "n_records": 0,
+          "mean": null,
+          "min": null,
+          "max": null,
+          "n_all_passed": 0,
+          "tok_s_median": null,
+          "time_s_median": null,
+          "tokens_median": null,
+          "thinking_tokens_median": null,
+          "n_budget_cut": 0,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 0,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 3
+          },
+          "statuses": [
+            "missing",
+            "missing",
+            "missing"
+          ]
+        }
+      },
+      "c5": {
+        "budget24k-ja": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 0.0417,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 426.894,
+              "tokens": 27002,
+              "thinking_tokens_est": 24513,
+              "tok_s": 94.2,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 95670,
+                "question_per_10k": 51.32225358001463,
+                "maybe_per_10k": 8.989233824605416,
+                "repeated_line_pct": 1.5384615384615385
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 419.286,
+              "tokens": 26750,
+              "thinking_tokens_est": 24485,
+              "tok_s": 93.6,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 93555,
+                "question_per_10k": 50.451606007161566,
+                "maybe_per_10k": 8.978675645342312,
+                "repeated_line_pct": 1.7467248908296942
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.5833,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 435.524,
+              "tokens": 26537,
+              "thinking_tokens_est": 24617,
+              "tok_s": 92.6,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 96185,
+                "question_per_10k": 61.132193169413114,
+                "maybe_per_10k": 6.86177678432188,
+                "repeated_line_pct": 1.996007984031936
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.0417,
+            1.0,
+            0.5833
+          ],
+          "n_records": 3,
+          "mean": 0.5416666666666666,
+          "min": 0.0417,
+          "max": 1.0,
+          "n_all_passed": 1,
+          "tok_s_median": 93.6,
+          "time_s_median": 426.894,
+          "tokens_median": 26750,
+          "thinking_tokens_median": 24513,
+          "n_budget_cut": 3,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 3,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 3,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "ok",
+            "ok",
+            "ok"
+          ]
+        },
+        "nobudget-ja": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 0.7917,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 1007.772,
+              "tokens": 61212,
+              "thinking_tokens_est": 59068,
+              "tok_s": 73.3,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 238407,
+                "question_per_10k": 38.58947094674233,
+                "maybe_per_10k": 6.123981258939544,
+                "repeated_line_pct": 13.161993769470403
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1101.406,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 55.9,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 254051,
+                "question_per_10k": 47.11652384757391,
+                "maybe_per_10k": 6.33731022511228,
+                "repeated_line_pct": 7.430340557275541
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 534.388,
+              "tokens": 32587,
+              "thinking_tokens_est": 32587,
+              "tok_s": 61.1,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 127745,
+                "question_per_10k": 50.804336764648326,
+                "maybe_per_10k": 7.593252182081491,
+                "repeated_line_pct": 1.676829268292683
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "repeat_stop",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.7917,
+            0.0,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.26389999999999997,
+          "min": 0.0,
+          "max": 0.7917,
+          "n_all_passed": 0,
+          "tok_s_median": 61.1,
+          "time_s_median": 1007.772,
+          "tokens_median": 61212,
+          "thinking_tokens_median": 59068,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 2,
+          "n_answered": 1,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 1,
+            "repeat_stop": 1,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "ok",
+            "length",
+            "length"
+          ]
+        },
+        "nobudget-en": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": null,
+              "time_s": 1056.854,
+              "tokens": 65536,
+              "thinking_tokens_est": 64708,
+              "tok_s": 62.1,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 251775,
+                "question_per_10k": 43.054314367987295,
+                "maybe_per_10k": 6.75206037136332,
+                "repeated_line_pct": 5.772005772005772
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "en"
+              },
+              "end": "answer_truncated",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1116.064,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 55.4,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 258701,
+                "question_per_10k": 45.728466453550624,
+                "maybe_per_10k": 8.078824589004295,
+                "repeated_line_pct": 7.320872274143301
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "en"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.75,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 908.622,
+              "tokens": 55169,
+              "thinking_tokens_est": 53308,
+              "tok_s": 62.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 215427,
+                "question_per_10k": 42.1488485658715,
+                "maybe_per_10k": 5.988107340305533,
+                "repeated_line_pct": 12.237442922374429
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "en"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.0,
+            0.0,
+            0.75
+          ],
+          "n_records": 3,
+          "mean": 0.25,
+          "min": 0.0,
+          "max": 0.75,
+          "n_all_passed": 0,
+          "tok_s_median": 62.1,
+          "time_s_median": 1056.854,
+          "tokens_median": 65536,
+          "thinking_tokens_median": 64708,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 2,
+          "n_answered": 2,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 1,
+            "no_answer_at_limit": 1,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "length",
+            "ok"
+          ]
+        },
+        "low-ja": {
+          "runs": [
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 535.088,
+              "tokens": 32768,
+              "thinking_tokens_est": 32768,
+              "tok_s": 61.4,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 129380,
+                "question_per_10k": 47.766269902612464,
+                "maybe_per_10k": 6.337919307466378,
+                "repeated_line_pct": 8.68945868945869
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 452.433,
+              "tokens": 32768,
+              "thinking_tokens_est": 32768,
+              "tok_s": 72.6,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 114292,
+                "question_per_10k": 13.561754103524306,
+                "maybe_per_10k": 0.26248556329401884,
+                "repeated_line_pct": 9.388097233864208
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 515.48,
+              "tokens": 32768,
+              "thinking_tokens_est": 32768,
+              "tok_s": 63.7,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 130566,
+                "question_per_10k": 42.43064810134339,
+                "maybe_per_10k": 4.901735520732809,
+                "repeated_line_pct": 12.278481012658228
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            }
+          ],
+          "scores": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n_all_passed": 0,
+          "tok_s_median": 63.7,
+          "time_s_median": 515.48,
+          "tokens_median": 32768,
+          "thinking_tokens_median": 32768,
+          "n_budget_cut": 0,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 3,
+          "n_answered": 0,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 3,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "length",
+            "length"
+          ]
+        },
+        "low-65k-ja": {
+          "runs": [
+            {
+              "rep": 1,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 2,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 3,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            }
+          ],
+          "scores": [],
+          "n_records": 0,
+          "mean": null,
+          "min": null,
+          "max": null,
+          "n_all_passed": 0,
+          "tok_s_median": null,
+          "time_s_median": null,
+          "tokens_median": null,
+          "thinking_tokens_median": null,
+          "n_budget_cut": 0,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 0,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 3
+          },
+          "statuses": [
+            "missing",
+            "missing",
+            "missing"
+          ]
+        }
+      }
+    },
+    "strata-official:IQ3_XXS": {
+      "c4": {
+        "budget24k-ja": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 0.5652,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 468.982,
+              "tokens": 27245,
+              "thinking_tokens_est": 24570,
+              "tok_s": 83.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 96471,
+                "question_per_10k": 46.646142364026495,
+                "maybe_per_10k": 14.09750080335023,
+                "repeated_line_pct": 2.742230347349177
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "eos_in_thinking",
+              "reason": "本文が無い",
+              "time_s": 211.285,
+              "tokens": 12248,
+              "thinking_tokens_est": 12248,
+              "tok_s": 58.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 50710,
+                "question_per_10k": 51.469138237034116,
+                "maybe_per_10k": 14.39558272530073,
+                "repeated_line_pct": 2.42914979757085
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "eos_in_thinking",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high",
+              "eos_legacy": true
+            },
+            {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 475.147,
+              "tokens": 26798,
+              "thinking_tokens_est": 24518,
+              "tok_s": 79.2,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 95497,
+                "question_per_10k": 43.352147187869775,
+                "maybe_per_10k": 8.167795846989959,
+                "repeated_line_pct": 6.375838926174497
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.5652,
+            0.0,
+            1.0
+          ],
+          "n_records": 3,
+          "mean": 0.5217333333333333,
+          "min": 0.0,
+          "max": 1.0,
+          "n_all_passed": 1,
+          "tok_s_median": 79.2,
+          "time_s_median": 468.982,
+          "tokens_median": 26798,
+          "thinking_tokens_median": 24518,
+          "n_budget_cut": 2,
+          "n_self_finished": 0,
+          "n_eos": 1,
+          "n_eos_final": 1,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 2,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 2,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 1,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "ok",
+            "eos_in_thinking",
+            "ok"
+          ]
+        },
+        "nobudget-ja": {
+          "runs": [
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "eos_in_thinking",
+              "reason": "eos_in_thinking",
+              "time_s": 1203.076,
+              "tokens": 64065,
+              "thinking_tokens_est": 64065,
+              "tok_s": 51.9,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 252569,
+                "question_per_10k": 48.422411301466134,
+                "maybe_per_10k": 12.986550210041612,
+                "repeated_line_pct": 10.323089046493301
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 2,
+              "first_attempt_status": "eos_in_thinking",
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "eos_in_thinking",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1215.669,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 51.9,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 248328,
+                "question_per_10k": 43.00763506330337,
+                "maybe_per_10k": 13.288876002706099,
+                "repeated_line_pct": 10.835629017447198
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 2,
+              "first_attempt_status": "eos_in_thinking",
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1164.295,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 56.4,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 244430,
+                "question_per_10k": 44.42989813034407,
+                "maybe_per_10k": 10.432434643865319,
+                "repeated_line_pct": 4.770872567482737
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n_all_passed": 0,
+          "tok_s_median": 51.9,
+          "time_s_median": 1203.076,
+          "tokens_median": 65536,
+          "thinking_tokens_median": 65536,
+          "n_budget_cut": 0,
+          "n_self_finished": 0,
+          "n_eos": 3,
+          "n_eos_final": 1,
+          "n_retried": 2,
+          "n_length": 2,
+          "n_answered": 0,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 2,
+            "repeat_stop": 0,
+            "eos_in_thinking": 1,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "eos_in_thinking",
+            "length",
+            "length"
+          ]
+        },
+        "nobudget-en": {
+          "runs": [
+            {
+              "rep": 1,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 2,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 3,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": false,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            }
+          ],
+          "scores": [],
+          "n_records": 0,
+          "mean": null,
+          "min": null,
+          "max": null,
+          "n_all_passed": 0,
+          "tok_s_median": null,
+          "time_s_median": null,
+          "tokens_median": null,
+          "thinking_tokens_median": null,
+          "n_budget_cut": 0,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 0,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 3
+          },
+          "statuses": [
+            "missing",
+            "missing",
+            "missing"
+          ]
+        },
+        "low-ja": {
+          "runs": [
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 566.681,
+              "tokens": 32768,
+              "thinking_tokens_est": 32768,
+              "tok_s": 58.1,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 124724,
+                "question_per_10k": 50.431352426156955,
+                "maybe_per_10k": 10.102305891408228,
+                "repeated_line_pct": 5.793103448275862
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            },
+            {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 215.636,
+              "tokens": 14735,
+              "thinking_tokens_est": 12747,
+              "tok_s": 69.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 48305,
+                "question_per_10k": 8.90177000310527,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 21.10912343470483
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            },
+            {
+              "cell": "scored",
+              "score": 0.3478,
+              "all_passed": false,
+              "status": "length",
+              "reason": null,
+              "time_s": 491.839,
+              "tokens": 32768,
+              "thinking_tokens_est": 30843,
+              "tok_s": 67.0,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 113464,
+                "question_per_10k": 9.077769160262287,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 23.81370826010545
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "answer_truncated",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            }
+          ],
+          "scores": [
+            0.0,
+            1.0,
+            0.3478
+          ],
+          "n_records": 3,
+          "mean": 0.44926666666666665,
+          "min": 0.0,
+          "max": 1.0,
+          "n_all_passed": 1,
+          "tok_s_median": 67.0,
+          "time_s_median": 491.839,
+          "tokens_median": 32768,
+          "thinking_tokens_median": 30843,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 2,
+          "n_answered": 2,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 1,
+            "no_answer_at_limit": 1,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "ok",
+            "length"
+          ]
+        },
+        "low-65k-ja": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 299.208,
+              "tokens": 20897,
+              "thinking_tokens_est": 18554,
+              "tok_s": 70.5,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 67075,
+                "question_per_10k": 11.032426388371226,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 21.27659574468085
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1132.489,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 58.0,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 256343,
+                "question_per_10k": 41.467877024143434,
+                "maybe_per_10k": 9.596517166452761,
+                "repeated_line_pct": 5.850191361399672
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            },
+            {
+              "cell": "scored",
+              "score": 0.6087,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 216.014,
+              "tokens": 15166,
+              "thinking_tokens_est": 12932,
+              "tok_s": 71.0,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 48628,
+                "question_per_10k": 6.374928025006168,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 20.701754385964914
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            }
+          ],
+          "scores": [
+            1.0,
+            0.0,
+            0.6087
+          ],
+          "n_records": 3,
+          "mean": 0.5362333333333333,
+          "min": 0.0,
+          "max": 1.0,
+          "n_all_passed": 1,
+          "tok_s_median": 70.5,
+          "time_s_median": 299.208,
+          "tokens_median": 20897,
+          "thinking_tokens_median": 18554,
+          "n_budget_cut": 0,
+          "n_self_finished": 2,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 1,
+          "n_answered": 2,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 2,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 1,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "ok",
+            "length",
+            "ok"
+          ]
+        }
+      },
+      "c5": {
+        "budget24k-ja": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 0.8333,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 483.531,
+              "tokens": 27135,
+              "thinking_tokens_est": 24800,
+              "tok_s": 75.8,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 96649,
+                "question_per_10k": 63.735786195408124,
+                "maybe_per_10k": 11.277923206655009,
+                "repeated_line_pct": 1.2658227848101267
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 0.75,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 470.637,
+              "tokens": 26622,
+              "thinking_tokens_est": 24429,
+              "tok_s": 75.3,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 98969,
+                "question_per_10k": 51.228162353868385,
+                "maybe_per_10k": 11.114591437722924,
+                "repeated_line_pct": 3.78619153674833
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            },
+            {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 464.688,
+              "tokens": 26785,
+              "thinking_tokens_est": 24501,
+              "tok_s": 74.3,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": true,
+              "thinking_stats": {
+                "chars": 96854,
+                "question_per_10k": 60.60668635265451,
+                "maybe_per_10k": 11.150804303384477,
+                "repeated_line_pct": 5.405405405405405
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 24576,
+                "prompt_lang": "ja"
+              },
+              "end": "budget_cut",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.8333,
+            0.75,
+            1.0
+          ],
+          "n_records": 3,
+          "mean": 0.8611,
+          "min": 0.75,
+          "max": 1.0,
+          "n_all_passed": 1,
+          "tok_s_median": 75.3,
+          "time_s_median": 470.637,
+          "tokens_median": 26785,
+          "thinking_tokens_median": 24501,
+          "n_budget_cut": 3,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 3,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 3,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "ok",
+            "ok",
+            "ok"
+          ]
+        },
+        "nobudget-ja": {
+          "runs": [
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1169.294,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 56.2,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 253271,
+                "question_per_10k": 50.53875098214955,
+                "maybe_per_10k": 9.55498260756265,
+                "repeated_line_pct": 7.938718662952645
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1188.135,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 55.3,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 257723,
+                "question_per_10k": 53.73986799781161,
+                "maybe_per_10k": 7.372256259627585,
+                "repeated_line_pct": 2.5472473294987674
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1246.073,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 51.4,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 267052,
+                "question_per_10k": 51.07619489837185,
+                "maybe_per_10k": 7.788745263094828,
+                "repeated_line_pct": 11.637572734829593
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "high"
+            }
+          ],
+          "scores": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n_all_passed": 0,
+          "tok_s_median": 55.3,
+          "time_s_median": 1188.135,
+          "tokens_median": 65536,
+          "thinking_tokens_median": 65536,
+          "n_budget_cut": 0,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 3,
+          "n_answered": 0,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 3,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "length",
+            "length"
+          ]
+        },
+        "nobudget-en": {
+          "runs": [
+            {
+              "rep": 1,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 2,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": true,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            },
+            {
+              "rep": 3,
+              "cell": "missing",
+              "status": "missing",
+              "score": null,
+              "all_passed": false,
+              "time_s": null,
+              "tokens": null,
+              "thinking_tokens_est": null,
+              "tok_s": null,
+              "budget_cut": false,
+              "attempts": 0,
+              "first_attempt_status": null,
+              "limits": null,
+              "planned": false,
+              "end": "missing",
+              "truncated": false,
+              "has_answer": false,
+              "effort": null
+            }
+          ],
+          "scores": [],
+          "n_records": 0,
+          "mean": null,
+          "min": null,
+          "max": null,
+          "n_all_passed": 0,
+          "tok_s_median": null,
+          "time_s_median": null,
+          "tokens_median": null,
+          "thinking_tokens_median": null,
+          "n_budget_cut": 0,
+          "n_self_finished": 0,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 0,
+          "n_answered": 0,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 0,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 3
+          },
+          "statuses": [
+            "missing",
+            "missing",
+            "missing"
+          ]
+        },
+        "low-ja": {
+          "runs": [
+            {
+              "cell": "scored",
+              "score": 0.125,
+              "all_passed": false,
+              "status": "length",
+              "reason": null,
+              "time_s": 478.719,
+              "tokens": 32768,
+              "thinking_tokens_est": 30938,
+              "tok_s": 68.8,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 108821,
+                "question_per_10k": 16.173348894055376,
+                "maybe_per_10k": 0.18378805561426564,
+                "repeated_line_pct": 16.18181818181818
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "answer_truncated",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            },
+            {
+              "cell": "scored",
+              "score": 1.0,
+              "all_passed": true,
+              "status": "ok",
+              "reason": null,
+              "time_s": 431.382,
+              "tokens": 28773,
+              "thinking_tokens_est": 26594,
+              "tok_s": 67.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 95337,
+                "question_per_10k": 16.363007017212624,
+                "maybe_per_10k": 0.4195642824926314,
+                "repeated_line_pct": 29.45205479452055
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            },
+            {
+              "cell": "scored",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": null,
+              "time_s": 494.303,
+              "tokens": 32768,
+              "thinking_tokens_est": 31150,
+              "tok_s": 66.6,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 106959,
+                "question_per_10k": 12.621658766443216,
+                "maybe_per_10k": 0.18698753728064024,
+                "repeated_line_pct": 18.173076923076923
+              },
+              "syntax_error": true,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 32768,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "answer_truncated",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            }
+          ],
+          "scores": [
+            0.125,
+            1.0,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.375,
+          "min": 0.0,
+          "max": 1.0,
+          "n_all_passed": 1,
+          "tok_s_median": 67.1,
+          "time_s_median": 478.719,
+          "tokens_median": 32768,
+          "thinking_tokens_median": 30938,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 2,
+          "n_answered": 3,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 2,
+            "no_answer_at_limit": 0,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "ok",
+            "length"
+          ]
+        },
+        "low-65k-ja": {
+          "runs": [
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1179.634,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 55.7,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 256952,
+                "question_per_10k": 52.38332451197111,
+                "maybe_per_10k": 10.391045798437062,
+                "repeated_line_pct": 6.23398804440649
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 1,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            },
+            {
+              "cell": "scored",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "ok",
+              "reason": null,
+              "time_s": 231.265,
+              "tokens": 16039,
+              "thinking_tokens_est": 13769,
+              "tok_s": 70.1,
+              "finish": "stop",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 49718,
+                "question_per_10k": 9.654451104227846,
+                "maybe_per_10k": 0.0,
+                "repeated_line_pct": 16.390423572744016
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 2,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "self_finished",
+              "truncated": false,
+              "has_answer": true,
+              "effort": "low"
+            },
+            {
+              "cell": "no_answer",
+              "score": 0.0,
+              "all_passed": false,
+              "status": "length",
+              "reason": "length（上限に達して本文が無い）",
+              "time_s": 1167.695,
+              "tokens": 65536,
+              "thinking_tokens_est": 65536,
+              "tok_s": 56.2,
+              "finish": "length",
+              "error": null,
+              "budget_cut": false,
+              "thinking_stats": {
+                "chars": 259338,
+                "question_per_10k": 51.97849910155859,
+                "maybe_per_10k": 11.722154100054754,
+                "repeated_line_pct": 3.8939519469759736
+              },
+              "syntax_error": false,
+              "violations": 0,
+              "rep": 3,
+              "attempts": 1,
+              "first_attempt_status": null,
+              "limits": {
+                "max_tokens": 65536,
+                "reasoning_budget_tokens": 0,
+                "prompt_lang": "ja"
+              },
+              "end": "no_answer_at_limit",
+              "truncated": false,
+              "has_answer": false,
+              "effort": "low"
+            }
+          ],
+          "scores": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_records": 3,
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n_all_passed": 0,
+          "tok_s_median": 56.2,
+          "time_s_median": 1167.695,
+          "tokens_median": 65536,
+          "thinking_tokens_median": 65536,
+          "n_budget_cut": 0,
+          "n_self_finished": 1,
+          "n_eos": 0,
+          "n_eos_final": 0,
+          "n_retried": 0,
+          "n_length": 2,
+          "n_answered": 1,
+          "n_truncated": 0,
+          "ends": {
+            "self_finished": 1,
+            "budget_cut": 0,
+            "answer_truncated": 0,
+            "no_answer_at_limit": 2,
+            "repeat_stop": 0,
+            "eos_in_thinking": 0,
+            "error": 0,
+            "missing": 0
+          },
+          "statuses": [
+            "length",
+            "ok",
+            "length"
+          ]
+        }
+      }
+    }
+  },
+  "combined": {
+    "strata-flash-coder:IQ1_M": {
+      "budget24k-ja": {
+        "runs": [
+          {
+            "cell": "scored",
+            "score": 0.6522,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 404.343,
+            "tokens": 27249,
+            "thinking_tokens_est": 24706,
+            "tok_s": 96.8,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 91642,
+              "question_per_10k": 47.467318478426925,
+              "maybe_per_10k": 10.148185329870584,
+              "repeated_line_pct": 7.107438016528926
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.6087,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 414.7,
+            "tokens": 27039,
+            "thinking_tokens_est": 24363,
+            "tok_s": 97.1,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 92877,
+              "question_per_10k": 54.15764936421289,
+              "maybe_per_10k": 13.458660378780538,
+              "repeated_line_pct": 6.115702479338843
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.8261,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 428.15,
+            "tokens": 27438,
+            "thinking_tokens_est": 24317,
+            "tok_s": 90.7,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 92743,
+              "question_per_10k": 46.688159753296745,
+              "maybe_per_10k": 17.251975890363692,
+              "repeated_line_pct": 5.956678700361011
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.0417,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 426.894,
+            "tokens": 27002,
+            "thinking_tokens_est": 24513,
+            "tok_s": 94.2,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 95670,
+              "question_per_10k": 51.32225358001463,
+              "maybe_per_10k": 8.989233824605416,
+              "repeated_line_pct": 1.5384615384615385
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 1.0,
+            "all_passed": true,
+            "status": "ok",
+            "reason": null,
+            "time_s": 419.286,
+            "tokens": 26750,
+            "thinking_tokens_est": 24485,
+            "tok_s": 93.6,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 93555,
+              "question_per_10k": 50.451606007161566,
+              "maybe_per_10k": 8.978675645342312,
+              "repeated_line_pct": 1.7467248908296942
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.5833,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 435.524,
+            "tokens": 26537,
+            "thinking_tokens_est": 24617,
+            "tok_s": 92.6,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 96185,
+              "question_per_10k": 61.132193169413114,
+              "maybe_per_10k": 6.86177678432188,
+              "repeated_line_pct": 1.996007984031936
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          }
+        ],
+        "scores": [
+          0.6522,
+          0.6087,
+          0.8261,
+          0.0417,
+          1.0,
+          0.5833
+        ],
+        "n_records": 6,
+        "mean": 0.6186666666666667,
+        "min": 0.0417,
+        "max": 1.0,
+        "n_all_passed": 1,
+        "tok_s_median": 93.9,
+        "time_s_median": 423.09000000000003,
+        "tokens_median": 27020.5,
+        "thinking_tokens_median": 24499.0,
+        "n_budget_cut": 6,
+        "n_self_finished": 0,
+        "n_eos": 0,
+        "n_eos_final": 0,
+        "n_retried": 0,
+        "n_length": 0,
+        "n_answered": 6,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 0,
+          "budget_cut": 6,
+          "answer_truncated": 0,
+          "no_answer_at_limit": 0,
+          "repeat_stop": 0,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "ok",
+          "ok",
+          "ok",
+          "ok",
+          "ok",
+          "ok"
+        ]
+      },
+      "nobudget-ja": {
+        "runs": [
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 592.84,
+            "tokens": 37935,
+            "thinking_tokens_est": 37935,
+            "tok_s": 64.1,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 148328,
+              "question_per_10k": 45.574672347769805,
+              "maybe_per_10k": 7.213742516584865,
+              "repeated_line_pct": 5.876288659793814
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "repeat_stop",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.3478,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 813.734,
+            "tokens": 51551,
+            "thinking_tokens_est": 49187,
+            "tok_s": 63.5,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 191609,
+              "question_per_10k": 37.83747110000052,
+              "maybe_per_10k": 9.13318267931047,
+              "repeated_line_pct": 12.895377128953772
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": null,
+            "time_s": 1061.292,
+            "tokens": 65536,
+            "thinking_tokens_est": 64680,
+            "tok_s": 61.0,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 253478,
+              "question_per_10k": 37.12353734840894,
+              "maybe_per_10k": 10.770165458146268,
+              "repeated_line_pct": 11.150864639236731
+            },
+            "syntax_error": true,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 2,
+            "first_attempt_status": "eos_in_thinking",
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "answer_truncated",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.7917,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 1007.772,
+            "tokens": 61212,
+            "thinking_tokens_est": 59068,
+            "tok_s": 73.3,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 238407,
+              "question_per_10k": 38.58947094674233,
+              "maybe_per_10k": 6.123981258939544,
+              "repeated_line_pct": 13.161993769470403
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1101.406,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 55.9,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 254051,
+              "question_per_10k": 47.11652384757391,
+              "maybe_per_10k": 6.33731022511228,
+              "repeated_line_pct": 7.430340557275541
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 534.388,
+            "tokens": 32587,
+            "thinking_tokens_est": 32587,
+            "tok_s": 61.1,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 127745,
+              "question_per_10k": 50.804336764648326,
+              "maybe_per_10k": 7.593252182081491,
+              "repeated_line_pct": 1.676829268292683
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "repeat_stop",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          }
+        ],
+        "scores": [
+          0.0,
+          0.3478,
+          0.0,
+          0.7917,
+          0.0,
+          0.0
+        ],
+        "n_records": 6,
+        "mean": 0.18991666666666665,
+        "min": 0.0,
+        "max": 0.7917,
+        "n_all_passed": 0,
+        "tok_s_median": 62.3,
+        "time_s_median": 910.753,
+        "tokens_median": 56381.5,
+        "thinking_tokens_median": 54127.5,
+        "n_budget_cut": 0,
+        "n_self_finished": 2,
+        "n_eos": 1,
+        "n_eos_final": 0,
+        "n_retried": 1,
+        "n_length": 4,
+        "n_answered": 3,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 2,
+          "budget_cut": 0,
+          "answer_truncated": 1,
+          "no_answer_at_limit": 1,
+          "repeat_stop": 2,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "length",
+          "ok",
+          "length",
+          "ok",
+          "length",
+          "length"
+        ]
+      },
+      "nobudget-en": {
+        "runs": [
+          {
+            "cell": "scored",
+            "score": 1.0,
+            "all_passed": true,
+            "status": "ok",
+            "reason": null,
+            "time_s": 971.563,
+            "tokens": 59720,
+            "thinking_tokens_est": 57366,
+            "tok_s": 61.5,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 224040,
+              "question_per_10k": 40.394572397786106,
+              "maybe_per_10k": 10.132119264417067,
+              "repeated_line_pct": 12.013256006628003
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "en"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": null,
+            "time_s": 1043.185,
+            "tokens": 65536,
+            "thinking_tokens_est": 63216,
+            "tok_s": 63.5,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 239032,
+              "question_per_10k": 36.564142039559556,
+              "maybe_per_10k": 13.052645670872518,
+              "repeated_line_pct": 14.118457300275484
+            },
+            "syntax_error": true,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "en"
+            },
+            "end": "answer_truncated",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 155.139,
+            "tokens": 9841,
+            "thinking_tokens_est": 9841,
+            "tok_s": 64.0,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 37306,
+              "question_per_10k": 43.15659679408138,
+              "maybe_per_10k": 8.04160188709591,
+              "repeated_line_pct": 0.5
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "en"
+            },
+            "end": "repeat_stop",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": null,
+            "time_s": 1056.854,
+            "tokens": 65536,
+            "thinking_tokens_est": 64708,
+            "tok_s": 62.1,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 251775,
+              "question_per_10k": 43.054314367987295,
+              "maybe_per_10k": 6.75206037136332,
+              "repeated_line_pct": 5.772005772005772
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "en"
+            },
+            "end": "answer_truncated",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1116.064,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 55.4,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 258701,
+              "question_per_10k": 45.728466453550624,
+              "maybe_per_10k": 8.078824589004295,
+              "repeated_line_pct": 7.320872274143301
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "en"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.75,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 908.622,
+            "tokens": 55169,
+            "thinking_tokens_est": 53308,
+            "tok_s": 62.8,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 215427,
+              "question_per_10k": 42.1488485658715,
+              "maybe_per_10k": 5.988107340305533,
+              "repeated_line_pct": 12.237442922374429
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "en"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          }
+        ],
+        "scores": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.75
+        ],
+        "n_records": 6,
+        "mean": 0.2916666666666667,
+        "min": 0.0,
+        "max": 1.0,
+        "n_all_passed": 1,
+        "tok_s_median": 62.45,
+        "time_s_median": 1007.374,
+        "tokens_median": 62628.0,
+        "thinking_tokens_median": 60291.0,
+        "n_budget_cut": 0,
+        "n_self_finished": 2,
+        "n_eos": 0,
+        "n_eos_final": 0,
+        "n_retried": 0,
+        "n_length": 4,
+        "n_answered": 4,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 2,
+          "budget_cut": 0,
+          "answer_truncated": 2,
+          "no_answer_at_limit": 1,
+          "repeat_stop": 1,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "ok",
+          "length",
+          "length",
+          "length",
+          "length",
+          "ok"
+        ]
+      },
+      "low-ja": {
+        "runs": [
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 509.122,
+            "tokens": 32768,
+            "thinking_tokens_est": 32768,
+            "tok_s": 64.6,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 125557,
+              "question_per_10k": 42.29154885828747,
+              "maybe_per_10k": 11.70782990992139,
+              "repeated_line_pct": 9.213759213759214
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 333.419,
+            "tokens": 22411,
+            "thinking_tokens_est": 22411,
+            "tok_s": 67.5,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 84575,
+              "question_per_10k": 35.70795152231747,
+              "maybe_per_10k": 12.415016257759385,
+              "repeated_line_pct": 9.937888198757763
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "repeat_stop",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 0.6087,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 273.314,
+            "tokens": 21490,
+            "thinking_tokens_est": 19515,
+            "tok_s": 79.0,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 70841,
+              "question_per_10k": 8.751993901836506,
+              "maybe_per_10k": 0.0,
+              "repeated_line_pct": 21.720116618075803
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 535.088,
+            "tokens": 32768,
+            "thinking_tokens_est": 32768,
+            "tok_s": 61.4,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 129380,
+              "question_per_10k": 47.766269902612464,
+              "maybe_per_10k": 6.337919307466378,
+              "repeated_line_pct": 8.68945868945869
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 452.433,
+            "tokens": 32768,
+            "thinking_tokens_est": 32768,
+            "tok_s": 72.6,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 114292,
+              "question_per_10k": 13.561754103524306,
+              "maybe_per_10k": 0.26248556329401884,
+              "repeated_line_pct": 9.388097233864208
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 515.48,
+            "tokens": 32768,
+            "thinking_tokens_est": 32768,
+            "tok_s": 63.7,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 130566,
+              "question_per_10k": 42.43064810134339,
+              "maybe_per_10k": 4.901735520732809,
+              "repeated_line_pct": 12.278481012658228
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          }
+        ],
+        "scores": [
+          0.0,
+          0.0,
+          0.6087,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n_records": 6,
+        "mean": 0.10145,
+        "min": 0.0,
+        "max": 0.6087,
+        "n_all_passed": 0,
+        "tok_s_median": 66.05,
+        "time_s_median": 480.77750000000003,
+        "tokens_median": 32768.0,
+        "thinking_tokens_median": 32768.0,
+        "n_budget_cut": 0,
+        "n_self_finished": 1,
+        "n_eos": 0,
+        "n_eos_final": 0,
+        "n_retried": 0,
+        "n_length": 5,
+        "n_answered": 1,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 1,
+          "budget_cut": 0,
+          "answer_truncated": 0,
+          "no_answer_at_limit": 4,
+          "repeat_stop": 1,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "length",
+          "length",
+          "ok",
+          "length",
+          "length",
+          "length"
+        ]
+      },
+      "low-65k-ja": {
+        "runs": [
+          {
+            "rep": 1,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 2,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 3,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 1,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 2,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 3,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          }
+        ],
+        "scores": [],
+        "n_records": 0,
+        "mean": null,
+        "min": null,
+        "max": null,
+        "n_all_passed": 0,
+        "tok_s_median": null,
+        "time_s_median": null,
+        "tokens_median": null,
+        "thinking_tokens_median": null,
+        "n_budget_cut": 0,
+        "n_self_finished": 0,
+        "n_eos": 0,
+        "n_eos_final": 0,
+        "n_retried": 0,
+        "n_length": 0,
+        "n_answered": 0,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 0,
+          "budget_cut": 0,
+          "answer_truncated": 0,
+          "no_answer_at_limit": 0,
+          "repeat_stop": 0,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 6
+        },
+        "statuses": [
+          "missing",
+          "missing",
+          "missing",
+          "missing",
+          "missing",
+          "missing"
+        ]
+      }
+    },
+    "strata-official:IQ3_XXS": {
+      "budget24k-ja": {
+        "runs": [
+          {
+            "cell": "scored",
+            "score": 0.5652,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 468.982,
+            "tokens": 27245,
+            "thinking_tokens_est": 24570,
+            "tok_s": 83.8,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 96471,
+              "question_per_10k": 46.646142364026495,
+              "maybe_per_10k": 14.09750080335023,
+              "repeated_line_pct": 2.742230347349177
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "eos_in_thinking",
+            "reason": "本文が無い",
+            "time_s": 211.285,
+            "tokens": 12248,
+            "thinking_tokens_est": 12248,
+            "tok_s": 58.8,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 50710,
+              "question_per_10k": 51.469138237034116,
+              "maybe_per_10k": 14.39558272530073,
+              "repeated_line_pct": 2.42914979757085
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "eos_in_thinking",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high",
+            "eos_legacy": true
+          },
+          {
+            "cell": "scored",
+            "score": 1.0,
+            "all_passed": true,
+            "status": "ok",
+            "reason": null,
+            "time_s": 475.147,
+            "tokens": 26798,
+            "thinking_tokens_est": 24518,
+            "tok_s": 79.2,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 95497,
+              "question_per_10k": 43.352147187869775,
+              "maybe_per_10k": 8.167795846989959,
+              "repeated_line_pct": 6.375838926174497
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.8333,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 483.531,
+            "tokens": 27135,
+            "thinking_tokens_est": 24800,
+            "tok_s": 75.8,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 96649,
+              "question_per_10k": 63.735786195408124,
+              "maybe_per_10k": 11.277923206655009,
+              "repeated_line_pct": 1.2658227848101267
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 0.75,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 470.637,
+            "tokens": 26622,
+            "thinking_tokens_est": 24429,
+            "tok_s": 75.3,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 98969,
+              "question_per_10k": 51.228162353868385,
+              "maybe_per_10k": 11.114591437722924,
+              "repeated_line_pct": 3.78619153674833
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          },
+          {
+            "cell": "scored",
+            "score": 1.0,
+            "all_passed": true,
+            "status": "ok",
+            "reason": null,
+            "time_s": 464.688,
+            "tokens": 26785,
+            "thinking_tokens_est": 24501,
+            "tok_s": 74.3,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": true,
+            "thinking_stats": {
+              "chars": 96854,
+              "question_per_10k": 60.60668635265451,
+              "maybe_per_10k": 11.150804303384477,
+              "repeated_line_pct": 5.405405405405405
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 24576,
+              "prompt_lang": "ja"
+            },
+            "end": "budget_cut",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "high"
+          }
+        ],
+        "scores": [
+          0.5652,
+          0.0,
+          1.0,
+          0.8333,
+          0.75,
+          1.0
+        ],
+        "n_records": 6,
+        "mean": 0.6914166666666667,
+        "min": 0.0,
+        "max": 1.0,
+        "n_all_passed": 2,
+        "tok_s_median": 75.55,
+        "time_s_median": 469.8095,
+        "tokens_median": 26791.5,
+        "thinking_tokens_median": 24509.5,
+        "n_budget_cut": 5,
+        "n_self_finished": 0,
+        "n_eos": 1,
+        "n_eos_final": 1,
+        "n_retried": 0,
+        "n_length": 0,
+        "n_answered": 5,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 0,
+          "budget_cut": 5,
+          "answer_truncated": 0,
+          "no_answer_at_limit": 0,
+          "repeat_stop": 0,
+          "eos_in_thinking": 1,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "ok",
+          "eos_in_thinking",
+          "ok",
+          "ok",
+          "ok",
+          "ok"
+        ]
+      },
+      "nobudget-ja": {
+        "runs": [
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "eos_in_thinking",
+            "reason": "eos_in_thinking",
+            "time_s": 1203.076,
+            "tokens": 64065,
+            "thinking_tokens_est": 64065,
+            "tok_s": 51.9,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 252569,
+              "question_per_10k": 48.422411301466134,
+              "maybe_per_10k": 12.986550210041612,
+              "repeated_line_pct": 10.323089046493301
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 2,
+            "first_attempt_status": "eos_in_thinking",
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "eos_in_thinking",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1215.669,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 51.9,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 248328,
+              "question_per_10k": 43.00763506330337,
+              "maybe_per_10k": 13.288876002706099,
+              "repeated_line_pct": 10.835629017447198
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 2,
+            "first_attempt_status": "eos_in_thinking",
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1164.295,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 56.4,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 244430,
+              "question_per_10k": 44.42989813034407,
+              "maybe_per_10k": 10.432434643865319,
+              "repeated_line_pct": 4.770872567482737
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1169.294,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 56.2,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 253271,
+              "question_per_10k": 50.53875098214955,
+              "maybe_per_10k": 9.55498260756265,
+              "repeated_line_pct": 7.938718662952645
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1188.135,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 55.3,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 257723,
+              "question_per_10k": 53.73986799781161,
+              "maybe_per_10k": 7.372256259627585,
+              "repeated_line_pct": 2.5472473294987674
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1246.073,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 51.4,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 267052,
+              "question_per_10k": 51.07619489837185,
+              "maybe_per_10k": 7.788745263094828,
+              "repeated_line_pct": 11.637572734829593
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "high"
+          }
+        ],
+        "scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n_records": 6,
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "n_all_passed": 0,
+        "tok_s_median": 53.599999999999994,
+        "time_s_median": 1195.6055000000001,
+        "tokens_median": 65536.0,
+        "thinking_tokens_median": 65536.0,
+        "n_budget_cut": 0,
+        "n_self_finished": 0,
+        "n_eos": 3,
+        "n_eos_final": 1,
+        "n_retried": 2,
+        "n_length": 5,
+        "n_answered": 0,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 0,
+          "budget_cut": 0,
+          "answer_truncated": 0,
+          "no_answer_at_limit": 5,
+          "repeat_stop": 0,
+          "eos_in_thinking": 1,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "eos_in_thinking",
+          "length",
+          "length",
+          "length",
+          "length",
+          "length"
+        ]
+      },
+      "nobudget-en": {
+        "runs": [
+          {
+            "rep": 1,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 2,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 3,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": false,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 1,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 2,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": true,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          },
+          {
+            "rep": 3,
+            "cell": "missing",
+            "status": "missing",
+            "score": null,
+            "all_passed": false,
+            "time_s": null,
+            "tokens": null,
+            "thinking_tokens_est": null,
+            "tok_s": null,
+            "budget_cut": false,
+            "attempts": 0,
+            "first_attempt_status": null,
+            "limits": null,
+            "planned": false,
+            "end": "missing",
+            "truncated": false,
+            "has_answer": false,
+            "effort": null
+          }
+        ],
+        "scores": [],
+        "n_records": 0,
+        "mean": null,
+        "min": null,
+        "max": null,
+        "n_all_passed": 0,
+        "tok_s_median": null,
+        "time_s_median": null,
+        "tokens_median": null,
+        "thinking_tokens_median": null,
+        "n_budget_cut": 0,
+        "n_self_finished": 0,
+        "n_eos": 0,
+        "n_eos_final": 0,
+        "n_retried": 0,
+        "n_length": 0,
+        "n_answered": 0,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 0,
+          "budget_cut": 0,
+          "answer_truncated": 0,
+          "no_answer_at_limit": 0,
+          "repeat_stop": 0,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 6
+        },
+        "statuses": [
+          "missing",
+          "missing",
+          "missing",
+          "missing",
+          "missing",
+          "missing"
+        ]
+      },
+      "low-ja": {
+        "runs": [
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 566.681,
+            "tokens": 32768,
+            "thinking_tokens_est": 32768,
+            "tok_s": 58.1,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 124724,
+              "question_per_10k": 50.431352426156955,
+              "maybe_per_10k": 10.102305891408228,
+              "repeated_line_pct": 5.793103448275862
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 1.0,
+            "all_passed": true,
+            "status": "ok",
+            "reason": null,
+            "time_s": 215.636,
+            "tokens": 14735,
+            "thinking_tokens_est": 12747,
+            "tok_s": 69.1,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 48305,
+              "question_per_10k": 8.90177000310527,
+              "maybe_per_10k": 0.0,
+              "repeated_line_pct": 21.10912343470483
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 0.3478,
+            "all_passed": false,
+            "status": "length",
+            "reason": null,
+            "time_s": 491.839,
+            "tokens": 32768,
+            "thinking_tokens_est": 30843,
+            "tok_s": 67.0,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 113464,
+              "question_per_10k": 9.077769160262287,
+              "maybe_per_10k": 0.0,
+              "repeated_line_pct": 23.81370826010545
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "answer_truncated",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 0.125,
+            "all_passed": false,
+            "status": "length",
+            "reason": null,
+            "time_s": 478.719,
+            "tokens": 32768,
+            "thinking_tokens_est": 30938,
+            "tok_s": 68.8,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 108821,
+              "question_per_10k": 16.173348894055376,
+              "maybe_per_10k": 0.18378805561426564,
+              "repeated_line_pct": 16.18181818181818
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "answer_truncated",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 1.0,
+            "all_passed": true,
+            "status": "ok",
+            "reason": null,
+            "time_s": 431.382,
+            "tokens": 28773,
+            "thinking_tokens_est": 26594,
+            "tok_s": 67.1,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 95337,
+              "question_per_10k": 16.363007017212624,
+              "maybe_per_10k": 0.4195642824926314,
+              "repeated_line_pct": 29.45205479452055
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": null,
+            "time_s": 494.303,
+            "tokens": 32768,
+            "thinking_tokens_est": 31150,
+            "tok_s": 66.6,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 106959,
+              "question_per_10k": 12.621658766443216,
+              "maybe_per_10k": 0.18698753728064024,
+              "repeated_line_pct": 18.173076923076923
+            },
+            "syntax_error": true,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 32768,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "answer_truncated",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          }
+        ],
+        "scores": [
+          0.0,
+          1.0,
+          0.3478,
+          0.125,
+          1.0,
+          0.0
+        ],
+        "n_records": 6,
+        "mean": 0.4121333333333333,
+        "min": 0.0,
+        "max": 1.0,
+        "n_all_passed": 2,
+        "tok_s_median": 67.05,
+        "time_s_median": 485.279,
+        "tokens_median": 32768.0,
+        "thinking_tokens_median": 30890.5,
+        "n_budget_cut": 0,
+        "n_self_finished": 2,
+        "n_eos": 0,
+        "n_eos_final": 0,
+        "n_retried": 0,
+        "n_length": 4,
+        "n_answered": 5,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 2,
+          "budget_cut": 0,
+          "answer_truncated": 3,
+          "no_answer_at_limit": 1,
+          "repeat_stop": 0,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "length",
+          "ok",
+          "length",
+          "length",
+          "ok",
+          "length"
+        ]
+      },
+      "low-65k-ja": {
+        "runs": [
+          {
+            "cell": "scored",
+            "score": 1.0,
+            "all_passed": true,
+            "status": "ok",
+            "reason": null,
+            "time_s": 299.208,
+            "tokens": 20897,
+            "thinking_tokens_est": 18554,
+            "tok_s": 70.5,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 67075,
+              "question_per_10k": 11.032426388371226,
+              "maybe_per_10k": 0.0,
+              "repeated_line_pct": 21.27659574468085
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1132.489,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 58.0,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 256343,
+              "question_per_10k": 41.467877024143434,
+              "maybe_per_10k": 9.596517166452761,
+              "repeated_line_pct": 5.850191361399672
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 0.6087,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 216.014,
+            "tokens": 15166,
+            "thinking_tokens_est": 12932,
+            "tok_s": 71.0,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 48628,
+              "question_per_10k": 6.374928025006168,
+              "maybe_per_10k": 0.0,
+              "repeated_line_pct": 20.701754385964914
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1179.634,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 55.7,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 256952,
+              "question_per_10k": 52.38332451197111,
+              "maybe_per_10k": 10.391045798437062,
+              "repeated_line_pct": 6.23398804440649
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 1,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          },
+          {
+            "cell": "scored",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "ok",
+            "reason": null,
+            "time_s": 231.265,
+            "tokens": 16039,
+            "thinking_tokens_est": 13769,
+            "tok_s": 70.1,
+            "finish": "stop",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 49718,
+              "question_per_10k": 9.654451104227846,
+              "maybe_per_10k": 0.0,
+              "repeated_line_pct": 16.390423572744016
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 2,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "self_finished",
+            "truncated": false,
+            "has_answer": true,
+            "effort": "low"
+          },
+          {
+            "cell": "no_answer",
+            "score": 0.0,
+            "all_passed": false,
+            "status": "length",
+            "reason": "length（上限に達して本文が無い）",
+            "time_s": 1167.695,
+            "tokens": 65536,
+            "thinking_tokens_est": 65536,
+            "tok_s": 56.2,
+            "finish": "length",
+            "error": null,
+            "budget_cut": false,
+            "thinking_stats": {
+              "chars": 259338,
+              "question_per_10k": 51.97849910155859,
+              "maybe_per_10k": 11.722154100054754,
+              "repeated_line_pct": 3.8939519469759736
+            },
+            "syntax_error": false,
+            "violations": 0,
+            "rep": 3,
+            "attempts": 1,
+            "first_attempt_status": null,
+            "limits": {
+              "max_tokens": 65536,
+              "reasoning_budget_tokens": 0,
+              "prompt_lang": "ja"
+            },
+            "end": "no_answer_at_limit",
+            "truncated": false,
+            "has_answer": false,
+            "effort": "low"
+          }
+        ],
+        "scores": [
+          1.0,
+          0.0,
+          0.6087,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n_records": 6,
+        "mean": 0.26811666666666667,
+        "min": 0.0,
+        "max": 1.0,
+        "n_all_passed": 1,
+        "tok_s_median": 64.05,
+        "time_s_median": 715.8485000000001,
+        "tokens_median": 43216.5,
+        "thinking_tokens_median": 42045.0,
+        "n_budget_cut": 0,
+        "n_self_finished": 3,
+        "n_eos": 0,
+        "n_eos_final": 0,
+        "n_retried": 0,
+        "n_length": 3,
+        "n_answered": 3,
+        "n_truncated": 0,
+        "ends": {
+          "self_finished": 3,
+          "budget_cut": 0,
+          "answer_truncated": 0,
+          "no_answer_at_limit": 3,
+          "repeat_stop": 0,
+          "eos_in_thinking": 0,
+          "error": 0,
+          "missing": 0
+        },
+        "statuses": [
+          "ok",
+          "length",
+          "ok",
+          "length",
+          "ok",
+          "length"
+        ]
+      }
+    }
+  },
+  "comparisons": {
+    "strata-flash-coder:IQ1_M": {
+      "c4": {
+        "nobudget-ja": {
+          "label": "下がった",
+          "baseline_mean": 0.6956666666666665,
+          "mean": 0.11593333333333333,
+          "diff": -0.5797333333333332,
+          "baseline_range": [
+            0.6087,
+            0.8261
+          ],
+          "range": [
+            0.0,
+            0.3478
+          ]
+        },
+        "nobudget-en": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6956666666666665,
+          "mean": 0.3333333333333333,
+          "diff": -0.36233333333333323,
+          "baseline_range": [
+            0.6087,
+            0.8261
+          ],
+          "range": [
+            0.0,
+            1.0
+          ]
+        },
+        "low-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6956666666666665,
+          "mean": 0.2029,
+          "diff": -0.4927666666666666,
+          "baseline_range": [
+            0.6087,
+            0.8261
+          ],
+          "range": [
+            0.0,
+            0.6087
+          ]
+        },
+        "low-65k-ja": {
+          "label": "比べられない",
+          "baseline_mean": 0.6956666666666665,
+          "mean": null,
+          "diff": null,
+          "baseline_range": [
+            0.6087,
+            0.8261
+          ],
+          "range": [
+            null,
+            null
+          ]
+        }
+      },
+      "c5": {
+        "nobudget-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.5416666666666666,
+          "mean": 0.26389999999999997,
+          "diff": -0.27776666666666666,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.7917
+          ]
+        },
+        "nobudget-en": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.5416666666666666,
+          "mean": 0.25,
+          "diff": -0.29166666666666663,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.75
+          ]
+        },
+        "low-ja": {
+          "label": "下がった",
+          "baseline_mean": 0.5416666666666666,
+          "mean": 0.0,
+          "diff": -0.5416666666666666,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.0
+          ]
+        },
+        "low-65k-ja": {
+          "label": "比べられない",
+          "baseline_mean": 0.5416666666666666,
+          "mean": null,
+          "diff": null,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            null,
+            null
+          ]
+        }
+      },
+      "all": {
+        "nobudget-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6186666666666667,
+          "mean": 0.18991666666666665,
+          "diff": -0.4287500000000001,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.7917
+          ]
+        },
+        "nobudget-en": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6186666666666667,
+          "mean": 0.2916666666666667,
+          "diff": -0.327,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            0.0,
+            1.0
+          ]
+        },
+        "low-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6186666666666667,
+          "mean": 0.10145,
+          "diff": -0.5172166666666667,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.6087
+          ]
+        },
+        "low-65k-ja": {
+          "label": "比べられない",
+          "baseline_mean": 0.6186666666666667,
+          "mean": null,
+          "diff": null,
+          "baseline_range": [
+            0.0417,
+            1.0
+          ],
+          "range": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    "strata-official:IQ3_XXS": {
+      "c4": {
+        "nobudget-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.5217333333333333,
+          "mean": 0.0,
+          "diff": -0.5217333333333333,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.0
+          ]
+        },
+        "nobudget-en": {
+          "label": "比べられない",
+          "baseline_mean": 0.5217333333333333,
+          "mean": null,
+          "diff": null,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            null,
+            null
+          ]
+        },
+        "low-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.5217333333333333,
+          "mean": 0.44926666666666665,
+          "diff": -0.07246666666666662,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            0.0,
+            1.0
+          ]
+        },
+        "low-65k-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.5217333333333333,
+          "mean": 0.5362333333333333,
+          "diff": 0.014500000000000068,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "c5": {
+        "nobudget-ja": {
+          "label": "下がった",
+          "baseline_mean": 0.8611,
+          "mean": 0.0,
+          "diff": -0.8611,
+          "baseline_range": [
+            0.75,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.0
+          ]
+        },
+        "nobudget-en": {
+          "label": "比べられない",
+          "baseline_mean": 0.8611,
+          "mean": null,
+          "diff": null,
+          "baseline_range": [
+            0.75,
+            1.0
+          ],
+          "range": [
+            null,
+            null
+          ]
+        },
+        "low-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.8611,
+          "mean": 0.375,
+          "diff": -0.4861,
+          "baseline_range": [
+            0.75,
+            1.0
+          ],
+          "range": [
+            0.0,
+            1.0
+          ]
+        },
+        "low-65k-ja": {
+          "label": "下がった",
+          "baseline_mean": 0.8611,
+          "mean": 0.0,
+          "diff": -0.8611,
+          "baseline_range": [
+            0.75,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "all": {
+        "nobudget-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6914166666666667,
+          "mean": 0.0,
+          "diff": -0.6914166666666667,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            0.0,
+            0.0
+          ]
+        },
+        "nobudget-en": {
+          "label": "比べられない",
+          "baseline_mean": 0.6914166666666667,
+          "mean": null,
+          "diff": null,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            null,
+            null
+          ]
+        },
+        "low-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6914166666666667,
+          "mean": 0.4121333333333333,
+          "diff": -0.2792833333333334,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            0.0,
+            1.0
+          ]
+        },
+        "low-65k-ja": {
+          "label": "差は判定できない",
+          "baseline_mean": 0.6914166666666667,
+          "mean": 0.26811666666666667,
+          "diff": -0.4233,
+          "baseline_range": [
+            0.0,
+            1.0
+          ],
+          "range": [
+            0.0,
+            1.0
+          ]
+        }
+      }
+    }
+  },
+  "not_run": {
+    "strata-flash-coder:IQ1_M": {
+      "budget24k-ja": false,
+      "nobudget-ja": false,
+      "nobudget-en": false,
+      "low-ja": false,
+      "low-65k-ja": true
+    },
+    "strata-official:IQ3_XXS": {
+      "budget24k-ja": false,
+      "nobudget-ja": false,
+      "nobudget-en": true,
+      "low-ja": false,
+      "low-65k-ja": false
+    }
+  },
+  "pooled": {
+    "strata-flash-coder:IQ1_M": {
+      "budget24k-ja": {
+        "n_records": 6,
+        "tok_s_median": 93.9,
+        "time_s_median": 423.09000000000003,
+        "tokens_median": 27020.5,
+        "thinking_tokens_median": 24499.0,
+        "n_budget_cut": 6
+      },
+      "nobudget-ja": {
+        "n_records": 6,
+        "tok_s_median": 62.3,
+        "time_s_median": 910.753,
+        "tokens_median": 56381.5,
+        "thinking_tokens_median": 54127.5,
+        "n_budget_cut": 0
+      },
+      "nobudget-en": {
+        "n_records": 6,
+        "tok_s_median": 62.45,
+        "time_s_median": 1007.374,
+        "tokens_median": 62628.0,
+        "thinking_tokens_median": 60291.0,
+        "n_budget_cut": 0
+      },
+      "low-ja": {
+        "n_records": 6,
+        "tok_s_median": 66.05,
+        "time_s_median": 480.77750000000003,
+        "tokens_median": 32768.0,
+        "thinking_tokens_median": 32768.0,
+        "n_budget_cut": 0
+      },
+      "low-65k-ja": {
+        "n_records": 0,
+        "tok_s_median": null,
+        "time_s_median": null,
+        "tokens_median": null,
+        "thinking_tokens_median": null,
+        "n_budget_cut": 0
+      }
+    },
+    "strata-official:IQ3_XXS": {
+      "budget24k-ja": {
+        "n_records": 6,
+        "tok_s_median": 75.55,
+        "time_s_median": 469.8095,
+        "tokens_median": 26791.5,
+        "thinking_tokens_median": 24509.5,
+        "n_budget_cut": 5
+      },
+      "nobudget-ja": {
+        "n_records": 6,
+        "tok_s_median": 53.599999999999994,
+        "time_s_median": 1195.6055000000001,
+        "tokens_median": 65536.0,
+        "thinking_tokens_median": 65536.0,
+        "n_budget_cut": 0
+      },
+      "nobudget-en": {
+        "n_records": 0,
+        "tok_s_median": null,
+        "time_s_median": null,
+        "tokens_median": null,
+        "thinking_tokens_median": null,
+        "n_budget_cut": 0
+      },
+      "low-ja": {
+        "n_records": 6,
+        "tok_s_median": 67.05,
+        "time_s_median": 485.279,
+        "tokens_median": 32768.0,
+        "thinking_tokens_median": 30890.5,
+        "n_budget_cut": 0
+      },
+      "low-65k-ja": {
+        "n_records": 6,
+        "tok_s_median": 64.05,
+        "time_s_median": 715.8485000000001,
+        "tokens_median": 43216.5,
+        "thinking_tokens_median": 42045.0,
+        "n_budget_cut": 0
+      }
+    }
+  },
+  "servers": {
+    "strata-flash-coder:IQ1_M": {
+      "budget24k-ja": null,
+      "nobudget-ja": {
+        "status": "ok",
+        "reps": [
+          1,
+          2,
+          3
+        ],
+        "start_s": 34.0,
+        "engine_started_line": "[strata] 2026-10-09 16:09:27 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile-coder.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8",
+        "engine_kv": "int8",
+        "context": 131072,
+        "slots_filled": 8138,
+        "slots_total": 8138,
+        "cache_hit_pct": 97.20036831525147,
+        "cache_hit_lookups": 210109138,
+        "cache_hit_lines": 11,
+        "vram_before_mib": 16,
+        "vram_used_mib": 23850,
+        "memory_peak_bytes": 38656729088,
+        "memory_current_bytes": 38291734528,
+        "written_at": "2026-10-09T17:42:39+09:00"
+      },
+      "nobudget-en": {
+        "status": "ok",
+        "reps": [
+          1,
+          2,
+          3
+        ],
+        "start_s": 34.0,
+        "engine_started_line": "[strata] 2026-10-09 16:09:27 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile-coder.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8",
+        "engine_kv": "int8",
+        "context": 131072,
+        "slots_filled": 8138,
+        "slots_total": 8138,
+        "cache_hit_pct": 97.10609264533947,
+        "cache_hit_lookups": 197945003,
+        "cache_hit_lines": 10,
+        "vram_before_mib": 16,
+        "vram_used_mib": 23973,
+        "memory_peak_bytes": 38656729088,
+        "memory_current_bytes": 38533373952,
+        "written_at": "2026-10-09T19:10:12+09:00"
+      },
+      "low-ja": {
+        "status": "ok",
+        "reps": [
+          1,
+          2,
+          3
+        ],
+        "start_s": 28.0,
+        "engine_started_line": "[strata] 2026-10-09 21:39:02 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile-coder.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8",
+        "engine_kv": "int8",
+        "context": 131072,
+        "slots_filled": 8074,
+        "slots_total": 8074,
+        "cache_hit_pct": 97.31731842973215,
+        "cache_hit_lookups": 106127728,
+        "cache_hit_lines": 6,
+        "vram_before_mib": 142,
+        "vram_used_mib": 23835,
+        "memory_peak_bytes": 38657486848,
+        "memory_current_bytes": 38647992320,
+        "written_at": "2026-10-09T22:23:10+09:00"
+      },
+      "low-65k-ja": null
+    },
+    "strata-official:IQ3_XXS": {
+      "budget24k-ja": null,
+      "nobudget-ja": {
+        "status": "ok",
+        "reps": [
+          1,
+          2,
+          3
+        ],
+        "start_s": 38.0,
+        "engine_started_line": "[strata] 2026-10-09 19:10:14 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8 --resident-experts",
+        "engine_kv": "int8",
+        "context": 131072,
+        "slots_filled": 9703,
+        "slots_total": 9703,
+        "cache_hit_pct": 93.11057014393823,
+        "cache_hit_lookups": 276032769,
+        "cache_hit_lines": 12,
+        "vram_before_mib": 142,
+        "vram_used_mib": 23891,
+        "memory_peak_bytes": 53688565760,
+        "memory_current_bytes": 53567004672,
+        "written_at": "2026-10-09T21:27:10+09:00"
+      },
+      "nobudget-en": null,
+      "low-ja": {
+        "status": "ok",
+        "reps": [
+          1,
+          2,
+          3
+        ],
+        "start_s": 38.0,
+        "engine_started_line": "[strata] 2026-10-09 22:23:12 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8 --resident-experts",
+        "engine_kv": "int8",
+        "context": 131072,
+        "slots_filled": 9703,
+        "slots_total": 9703,
+        "cache_hit_pct": 93.01610016335803,
+        "cache_hit_lookups": 102270453,
+        "cache_hit_lines": 6,
+        "vram_before_mib": 142,
+        "vram_used_mib": 23887,
+        "memory_peak_bytes": 53688332288,
+        "memory_current_bytes": 53686771712,
+        "written_at": "2026-10-09T23:08:39+09:00"
+      },
+      "low-65k-ja": {
+        "status": "ok",
+        "reps": [
+          1,
+          2,
+          3
+        ],
+        "start_s": 35.0,
+        "engine_started_line": "[strata] 2026-10-09 23:09:43 engine started: /home/mt/Proj/localai/tools/strata/vendor/Strata/engine/strata --serve --pack /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/pack --native /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/mt/Proj/localai/tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/mt/Proj/localai/tools/strata/vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /home/mt/Proj/localai/tools/strata/models/mtp/rt --max-context 131072 --kv int8 --resident-experts",
+        "engine_kv": "int8",
+        "context": 131072,
+        "slots_filled": 9703,
+        "slots_total": 9703,
+        "cache_hit_pct": 92.64767359045787,
+        "cache_hit_lookups": 152377212,
+        "cache_hit_lines": 6,
+        "vram_before_mib": 142,
+        "vram_used_mib": 23887,
+        "memory_peak_bytes": 53687894016,
+        "memory_current_bytes": 52285718528,
+        "written_at": "2026-10-10T00:20:44+09:00"
+      }
+    }
+  },
+  "journal_counts": {
+    "strata-flash-coder:IQ1_M": {
+      "slug": "strata-coder-IQ1_M",
+      "unit": "strata-coder",
+      "arms": {
+        "nobudget-ja": {
+          "since": "2026-10-09 16:10:01",
+          "until": "2026-10-09 17:42:39",
+          "counts": {
+            "repeated_reasoning": 4,
+            "thinking_budget_reached": 0,
+            "max_tokens_reached": 2,
+            "lines": 5403
+          }
+        },
+        "nobudget-en": {
+          "since": "2026-10-09 17:42:39",
+          "until": "2026-10-09 19:10:12",
+          "counts": {
+            "repeated_reasoning": 4,
+            "thinking_budget_reached": 0,
+            "max_tokens_reached": 3,
+            "lines": 5122
+          }
+        },
+        "low-ja": {
+          "since": "2026-10-09 21:39:30",
+          "until": "2026-10-09 22:23:10",
+          "counts": {
+            "repeated_reasoning": 0,
+            "thinking_budget_reached": 0,
+            "max_tokens_reached": 4,
+            "lines": 2586
+          }
+        }
+      },
+      "patterns": {
+        "repeated_reasoning": "repeated reasoning detected",
+        "thinking_budget_reached": "thinking budget reached",
+        "max_tokens_reached": "the reply reached max tokens"
+      },
+      "written_at": "2026-10-09T22:23:10+09:00",
+      "total": {
+        "since": "2026-10-09 21:39:02",
+        "until": "2026-10-09 22:23:10",
+        "counts": {
+          "repeated_reasoning": 0,
+          "thinking_budget_reached": 0,
+          "max_tokens_reached": 4,
+          "lines": 2606
+        }
+      }
+    },
+    "strata-official:IQ3_XXS": {
+      "slug": "strata-official-IQ3_XXS",
+      "unit": "strata-official",
+      "arms": {
+        "nobudget-ja": {
+          "since": "2026-10-09 19:10:51",
+          "until": "2026-10-09 21:27:10",
+          "counts": {
+            "repeated_reasoning": 4,
+            "thinking_budget_reached": 0,
+            "max_tokens_reached": 4,
+            "lines": 7973
+          }
+        },
+        "low-ja": {
+          "since": "2026-10-09 22:23:49",
+          "until": "2026-10-09 23:08:39",
+          "counts": {
+            "repeated_reasoning": 0,
+            "thinking_budget_reached": 0,
+            "max_tokens_reached": 1,
+            "lines": 2622
+          }
+        },
+        "low-65k-ja": {
+          "since": "2026-10-09 23:10:17",
+          "until": "2026-10-10 00:20:44",
+          "counts": {
+            "repeated_reasoning": 0,
+            "thinking_budget_reached": 0,
+            "max_tokens_reached": 2,
+            "lines": 4141
+          }
+        }
+      },
+      "patterns": {
+        "repeated_reasoning": "repeated reasoning detected",
+        "thinking_budget_reached": "thinking budget reached",
+        "max_tokens_reached": "the reply reached max tokens"
+      },
+      "written_at": "2026-10-10T00:20:45+09:00",
+      "total": {
+        "since": "2026-10-09 23:09:42",
+        "until": "2026-10-10 00:20:44",
+        "counts": {
+          "repeated_reasoning": 0,
+          "thinking_budget_reached": 0,
+          "max_tokens_reached": 2,
+          "lines": 4161
+        }
+      }
+    }
+  },
+  "limits_seen": {
+    "budget24k-ja": [
+      {
+        "max_tokens": 32768,
+        "reasoning_budget_tokens": 24576,
+        "prompt_lang": "ja"
+      }
+    ],
+    "nobudget-ja": [
+      {
+        "max_tokens": 65536,
+        "reasoning_budget_tokens": 0,
+        "prompt_lang": "ja"
+      }
+    ],
+    "nobudget-en": [
+      {
+        "max_tokens": 65536,
+        "reasoning_budget_tokens": 0,
+        "prompt_lang": "en"
+      }
+    ],
+    "low-ja": [
+      {
+        "max_tokens": 32768,
+        "reasoning_budget_tokens": 0,
+        "prompt_lang": "ja"
+      }
+    ],
+    "low-65k-ja": [
+      {
+        "max_tokens": 65536,
+        "reasoning_budget_tokens": 0,
+        "prompt_lang": "ja"
+      }
+    ]
+  },
+  "efforts_seen": {
+    "budget24k-ja": [
+      "high"
+    ],
+    "nobudget-ja": [
+      "high"
+    ],
+    "nobudget-en": [
+      "high"
+    ],
+    "low-ja": [
+      "low"
+    ],
+    "low-65k-ja": [
+      "low"
+    ]
+  },
+  "sources": {
+    "budget24k-ja": {
+      "note": "既存の記録の写し。思考の上限 24,576・生成 32,768・日本語（この調査のために流したものではない）",
+      "arm": "budget24k-ja",
+      "limits": {
+        "reasoning_budget_tokens": 24576,
+        "max_tokens": 32768,
+        "prompt_lang": "ja"
+      },
+      "rep1_source": "tools/model-eval/results/2026-10-08",
+      "reps_source": "tools/model-eval/results/2026-10-09-kv/int8",
+      "files": [
+        {
+          "slug": "strata-coder-IQ1_M",
+          "rep": 1,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-08/local/strata-coder-IQ1_M/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-coder-IQ1_M/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-coder-IQ1_M",
+          "rep": 1,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-08/local/strata-coder-IQ1_M/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-coder-IQ1_M/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-official-IQ3_XXS",
+          "rep": 1,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-08/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-official-IQ3_XXS",
+          "rep": 1,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-08/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-rvn-IQ3_S",
+          "rep": 1,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-08/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-rvn-IQ3_S",
+          "rep": 1,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-08/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep1/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-coder-IQ1_M",
+          "rep": 2,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-coder-IQ1_M/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-coder-IQ1_M/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-coder-IQ1_M",
+          "rep": 2,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-coder-IQ1_M/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-coder-IQ1_M/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-official-IQ3_XXS",
+          "rep": 2,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-official-IQ3_XXS",
+          "rep": 2,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-rvn-IQ3_S",
+          "rep": 2,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-rvn-IQ3_S",
+          "rep": 2,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep2/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep2/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-coder-IQ1_M",
+          "rep": 3,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-coder-IQ1_M/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-coder-IQ1_M/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-coder-IQ1_M",
+          "rep": 3,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-coder-IQ1_M/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-coder-IQ1_M/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-official-IQ3_XXS",
+          "rep": 3,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-official-IQ3_XXS/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-official-IQ3_XXS",
+          "rep": 3,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-official-IQ3_XXS/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-rvn-IQ3_S",
+          "rep": 3,
+          "item": "c4",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-rvn-IQ3_S/coding/c4-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        },
+        {
+          "slug": "strata-rvn-IQ3_S",
+          "rep": 3,
+          "item": "c5",
+          "from": "tools/model-eval/results/2026-10-09-kv/int8/rep3/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+          "to": "tools/model-eval/results/2026-10-09-fix/budget24k-ja/rep3/local/strata-rvn-IQ3_S/coding/c5-run1.json",
+          "copied_at": "2026-10-09T16:09:26+09:00"
+        }
+      ]
+    }
+  },
+  "planned_reps": {
+    "strata-flash-coder:IQ1_M": {
+      "budget24k-ja": [
+        1,
+        2,
+        3
+      ],
+      "nobudget-ja": [
+        1,
+        2,
+        3
+      ],
+      "nobudget-en": [
+        1,
+        2,
+        3
+      ],
+      "low-ja": [
+        1,
+        2,
+        3
+      ],
+      "low-65k-ja": [
+        1,
+        2,
+        3
+      ]
+    },
+    "strata-official:IQ3_XXS": {
+      "budget24k-ja": [
+        1,
+        2,
+        3
+      ],
+      "nobudget-ja": [
+        1,
+        2,
+        3
+      ],
+      "nobudget-en": [
+        1,
+        2
+      ],
+      "low-ja": [
+        1,
+        2,
+        3
+      ],
+      "low-65k-ja": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  "warnings": [],
+  "missing": []
+}

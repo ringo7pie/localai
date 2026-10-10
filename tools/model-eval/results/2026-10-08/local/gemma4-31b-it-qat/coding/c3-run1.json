@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "coding",
+  "item": "c3",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C3: 時刻表つきの最早到着（乗り換え時間と回数の上限）\n\n関数 `earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int` を書いてください。\n\n- 駅は `0` から `n-1` の整数。`connections` の各要素は `(u, v, depart, arrive)` で、「駅 `u` を時刻 `depart` に出て、駅 `v` に時刻 `arrive` に着く便」を表す。時刻は 0 以上の整数（単位は問わない）で、どの便も `depart < arrive`。`u == v` の便や、全く同じ便の重複があってもよい。便どうしは独立で、「同じ列車に乗り続ける」という概念はない。\n- 時刻 `start` に駅 `source` にいる。どの駅でも好きなだけ待てる。\n- 便 `(u, v, depart, arrive)` に乗れるのは、その時点で駅 `u` にいて、次の条件を満たすとき。\n  - 最初の便（出発地 `source` から乗る最初の 1 本）: `start <= depart`。\n  - 2 本目以降の便: 直前の便の `arrive` を `a` として `a + change <= depart`（`change` は 0 以上の整数の乗り換え時間。途中で `source` に戻ってきて乗り直す場合も、この条件が要る）。\n- 乗った便の本数を `k` として、乗り換えの回数は `k - 1`。乗り換えの回数は `max_transfers`（0 以上の整数）以下でなければならない。`max_transfers == 0` なら直通の便 1 本だけで着く必要がある。\n- `target` に着ける最も早い時刻を返す。`source == target` なら、便に乗らずに着いているので `start` を返す（`connections` が空でも同じ）。どうやっても着けないなら `-1` を返す。\n- `n` は最大 100,000、`connections` の長さは最大 200,000、`max_transfers` は最大 10、時刻は最大 10^9。この大きさで十分速く動くこと（たとえば「全部の便を、変化が無くなるまで何度も緩和する」作りでは間に合わない）。入力は上の条件を満たしていると仮定してよい（検査は不要）。\n\n例:\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)], 0, 2, 0, 5, 1)` → `30`（20 + 5 <= 25 なので 25 発に乗れる。22 発には乗れない）\n- `earliest_arrival(3, [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)], 0, 2, 0, 0, 0)` → `100`（乗り換え 0 回なので直通だけ）\n- `earliest_arrival(2, [(0, 1, 5, 9)], 0, 1, 6, 0, 3)` → `-1`（5 発には間に合わない）",
+  "prompt_chars": 1711,
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T15:05:36+09:00",
+  "finished_at": "2026-10-08T15:11:36+09:00",
+  "content": "```python\ndef earliest_arrival(n: int, connections: list[tuple[int, int, int, int]], source: int, target: int, start: int, change: int, max_transfers: int) -> int:\n    if source == target:\n        return start\n    \n    # INF represents an unreachable station\n    INF = float('inf')\n    # dist[u] will store the earliest arrival time at station u using at most k trains\n    dist = [INF] * n\n    dist[source] = start\n    \n    # We can take at most max_transfers + 1 trains.\n    # For each k from 1 up to max_transfers + 1, we find the earliest arrival \n    # times using at most k trains.\n    for k in range(1, max_transfers + 2):\n        # new_dist will store the earliest arrival times using at most k trains.\n        # Initially, it's at least as good as using k-1 trains.\n        new_dist = list(dist)\n        \n        # Determine the required waiting time before taking the k-th train.\n        # The first train taken (k=1) requires no waiting time beyond the start time.\n        # Every subsequent train (k > 1) requires the specified 'change' time.\n        wait_time = 0 if k == 1 else change\n        \n        for u, v, depart, arrive in connections:\n            # To take the k-th train from u to v, we must have reached u\n            # within k-1 trains and waited for the required change time.\n            if dist[u] + wait_time <= depart:\n                if arrive < new_dist[v]:\n                    new_dist[v] = arrive\n        \n        # Update the global distance array for the next train count.\n        dist = new_dist\n        \n    # Return the arrival time at the target if reachable, otherwise -1.\n    result = dist[target]\n    return int(result) if result != INF else -1\n```",
+  "thinking": "*   `n` stations (0 to $n-1$).\n    *   `connections`: List of tuples `(u, v, depart, arrive)`.\n    *   `source`, `target`: Starting and ending stations.\n    *   `start`: Initial time at `source`.\n    *   `change`: Required waiting time between transfers.\n    *   `max_transfers`: Maximum number of transfers allowed (k-1 <= max_transfers, where k is number of trains).\n    *   Goal: Find the earliest arrival time at `target`.\n    *   `source == target` returns `start`.\n    *   Constraint: $n \\le 100,000$, `connections` $\\le 200,000$, `max_transfers` $\\le 10$.\n\n    *   `max_transfers` is small (up to 10). This suggests a DP approach or a modified Dijkstra where the state includes the number of transfers.\n    *   State: `(station, num_transfers)`\n    *   Let `dp[k][u]` be the earliest arrival time at station `u` using exactly `k` trains.\n    *   Actually, `dp[k][u]` can be the earliest arrival time at station `u` using *at most* `k` trains.\n    *   For $k=0$: `dp[0][source] = start`, all other `dp[0][u] = infinity`. (Special case: `source == target`).\n    *   For $k=1 \\dots max\\_transfers + 1$:\n        *   We want to find the earliest arrival at station $v$ by taking a train $(u, v, depart, arrive)$ given we reached station $u$ at time $t_{prev}$.\n        *   For the first train ($k=1$): $u = source$, $start \\le depart$.\n        *   For subsequent trains ($k > 1$): $t_{prev} + change \\le depart$.\n\n    *   `n` is large (100,000), `connections` is large (200,000).\n    *   `max_transfers` is small (10).\n    *   Total states: $(max\\_transfers + 2) \\times n$.\n    *   Calculating `dp[k][v]` from `dp[k-1][u]`:\n        $dp[k][v] = \\min(\\{arrive \\mid (u, v, depart, arrive) \\in connections, dp[k-1][u] + (change \\text{ if } k > 1 \\text{ else } 0) \\le depart\\} \\cup \\{dp[k-1][v]\\})$\n    *   Wait, if we only care about the *number of trains*, this looks like a Bellman-Ford-like update. But since we want the earliest arrival, we can optimize.\n    *   Crucially, for a fixed $k$, we are looking for trains $(u, v, depart, arrive)$ where $depart \\ge dp[k-1][u] + change$ (or $start$ for $k=1$).\n\n    *   Let `min_arrival[k][u]` be the minimum arrival time at station `u` using at most `k` trains.\n    *   For $k=0$: `min_arrival[0][source] = start`, all others $\\infty$.\n    *   For $k=1 \\dots max\\_transfers+1$:\n        *   `min_arrival[k][u] = min_arrival[k-1][u]` for all $u$.\n        *   For each train $(u, v, depart, arrive)$:\n            *   If $k=1$: If $u == source$ and $depart \\ge start$, then `min_arrival[1][v] = min(min_arrival[1][v], arrive)`.\n            *   If $k > 1$: If $depart \\ge min\\_arrival[k-1][u] + change$, then `min_arrival[k][v] = min(min_arrival[k][v], arrive)`.\n\n    *   Wait, the number of trains $k$ is small. Let's re-verify the complexity.\n    *   For each $k \\in [1, max\\_transfers+1]$, we iterate through all $M$ connections once.\n    *   Total complexity: $O((max\\_transfers+1) \\cdot M)$.\n    *   With $M=200,000$ and $max\\_transfers=10$, this is $11 \\cdot 200,000 = 2.2 \\times 10^6$, which is well within the time limit for Python 3.12.\n\n    *   Initial state:\n        `dist = [float('inf')] * n`\n        `dist[source] = start`\n    *   Special case: `if source == target: return start`\n    *   Loop `k` from 1 to `max_transfers + 1`:\n        *   `new_dist = list(dist)`\n        *   For `u, v, depart, arrive` in `connections`:\n            *   `wait_time = 0 if k == 1 else change`\n            *   `if dist[u] + wait_time <= depart:`\n                `if arrive < new_dist[v]:`\n                    `new_dist[v] = arrive`\n        *   `dist = new_dist`\n    *   Final answer: `dist[target]` if not `inf` else `-1`.\n\n    *   Actually, the condition `dist[u] + wait_time <= depart` depends on `dist` from the *previous* number of trains. This is exactly what the logic above does.\n    *   Let's trace:\n        `source=0, target=2, start=0, change=5, max_transfers=1`\n        `connections = [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)]`\n        - `dist = [0, inf, inf]`\n        - `k=1`:\n            - `(0, 1, 10, 20): 0+0 <= 10` -> `new_dist[1] = 20`\n            - `(1, 2, 25, 30): inf+0 <= 25` (False)\n            - `(1, 2, 22, 40): inf+0 <= 22` (False)\n            - `dist = [0, 20, inf]`\n        - `k=2`:\n            - `(0, 1, 10, 20): 0+5 <= 10` -> `new_dist[1] = min(20, 20) = 20`\n            - `(1, 2, 25, 30): 20+5 <= 25` -> `new_dist[2] = min(inf, 30) = 30`\n            - `(1, 2, 22, 40): 20+5 <= 22` (False)\n            - `dist = [0, 20, 30]`\n        - `result = dist[2] = 30`. Correct.\n\n    *   Another trace:\n        `source=0, target=2, start=0, change=0, max_transfers=0`\n        `connections = [(0, 1, 10, 20), (1, 2, 25, 30), (0, 2, 0, 100)]`\n        - `dist = [0, inf, inf]`\n        - `k=1`:\n            - `(0, 1, 10, 20): 0+0 <= 10` -> `new_dist[1] = 20`\n            - `(1, 2, 25, 30): inf+0 <= 25` (False)\n            - `(0, 2, 0, 100): 0+0 <= 0` -> `new_dist[2] = 100`\n            - `dist = [0, 20, 100]`\n        - `result = dist[2] = 100`. Correct.\n\n    *   Memory: `dist` and `new_dist` are $O(n)$. `connections` is $O(M)$. Both are well within limits.\n    *   Time: $O((max\\_transfers+1) \\cdot M)$. $11 \\cdot 200,000 = 2.2 \\times 10^6$. Python can handle this in under 1 second usually.\n\n    *   `source == target`: Return `start`.\n    *   `max_transfers = 0`: `k` goes from 1 to 1. Only direct trains are considered.\n    *   No path: Return `-1`.\n    *   `connections` empty: If `source == target` return `start`, else return `-1`.\n    *   `u == v`: Handled correctly by the logic.\n    *   Duplicates: Handled correctly.\n    *   `depart < arrive`: Guaranteed.\n    *   `start <= depart` for the first train.\n    *   `a + change <= depart` for subsequent trains.\n\n    *   `dist = [float('inf')] * n` is fine.\n    *   `new_dist = list(dist)`\n    *   The `wait_time` is `0` for `k=1` and `change` for `k > 1`.\n    *   Wait, if `source == target`, the problem says \"return start\". My logic would return `start` if `dist[target]` remains `start`. But `dist[target]` would only be `start` if `source == target` and no trains arrive at `target` earlier than `start`. However, since `depart < arrive` and `start <= depart`, no train can arrive at `target` *before* `start`. But we should explicitly return `start` at the beginning.\n\n    *   Input: `n: int`, `connections: list[tuple[int, int, int, int]]`, `source: int`, `target: int`, `start: int`, `change: int`, `max_transfers: int`.\n    *   `n` up to 100,000, `M` up to 200,000.\n    *   The loop $O((max\\_transfers+1) \\cdot M)$ is the bottleneck.\n    *   Python's `for u, v, depart, arrive in connections:` is quite fast.\n    *   `if dist[u] + wait_time <= depart:` is also fast.\n    *   Using a large integer instead of `float('inf')` might be slightly faster, but `float('inf')` is usually okay. Let's use a very large integer like $10^{15}$.\n\n    Wait, the problem says:\n    \"If `source == target`, then you've already arrived at the destination without taking any trains, so return `start`.\"\n    This means if `source == target`, the answer is `start` regardless of `connections`, `change`, or `max_transfers`.\n\n    Is there any other way to speed it up?\n    One could sort `connections` by `depart` time, but with `max_transfers` being so small, the simple Bellman-Ford-like approach is likely the intended one. If we sorted by `depart`, we could potentially optimize the inner loop, but we'd need to do it for each `k`. Given the constraints, $2.2 \\times 10^6$ operations should pass.\n\n    Actually, one detail:\n    In the `k=1` case, `dist[u]` is `start` only if `u == source`.\n    If `u != source`, `dist[u]` is `inf`, so `dist[u] + 0 <= depart` will be false.\n    So for `k=1`, the only trains that can be taken are those starting at `source`.\n    For `k > 1`, the trains that can be taken are those starting at any `u` that was reached in `k-1` steps.\n\n    Let's refine the `k=1` loop slightly for clarity, though the current logic is correct.\n\n    `max_transfers` can be 0. The loop `for k in range(1, max_transfers + 2):` will run for $k=1$ only if `max_transfers=0`. This correctly means only 1 train (0 transfers) is allowed.\n\n    If `source == target`, return `start` immediately.\n\n    Wait, I just realized a potential issue.\n    If `dist[u]` is `inf`, then `dist[u] + wait_time <= depart` might be problematic if `wait_time` is also some value.\n    `float('inf') + 5` is still `float('inf')`.\n    `float('inf') <= depart` is always `False`.\n    So it should be fine.\n\n    Actually, let's double-check the `k=1` condition.\n    The rule is:\n    - First train: `start <= depart`\n    - Second train onwards: `arrive_prev + change <= depart`\n\n    My code:\n    - `dist[source] = start`\n    - `k=1`: `wait_time = 0`. `dist[u] + 0 <= depart`.\n      If `u == source`, `start + 0 <= depart` (Correct)\n      If `u != source`, `inf + 0 <= depart` (False)\n    - `k=2`: `wait_time = change`. `dist[u] + change <= depart`.\n      If `u` was reached by 1 train at `arrive_1`, `arrive_1 + change <= depart` (Correct)\n      If `u` was not reached, `inf + change <= depart` (False)\n\n    This is perfect.\n\n    - Python 3.12.\n    - Standard library only.\n    - No file/network/subprocess/stdin.\n    - Exact function/class/argument names.\n    - Only one code block.\n\n    - `n=100,000`\n    - `M=200,000`\n    - `max_transfers=10`\n    - Time limit: Not specified, but \"should be fast enough\" usually means 1-2 seconds.\n    - $11 \\times 200,000 = 2.2$ million iterations.\n    - Inside the loop: basic additions and comparisons.\n    - Python 3.12's performance: $2.2 \\times 10^6$ simple iterations should take around 0.2-0.5 seconds.\n\n    Is it possible that `dist[u]` could be updated *during* the same `k` iteration?\n    My code uses `new_dist` to store updates for the current `k` and then updates `dist` at the end of the `k` loop.\n    Wait, the problem says \"the number of trains used is $k$, the number of transfers is $k-1$\".\n    If I use `new_dist` to store the earliest arrival time at each station using *at most* `k` trains, then the $k$-th train must have been preceded by at most $k-1$ trains.\n    This is exactly what `new_dist[v] = min(new_dist[v], arrive)` where `dist[u] + wait_time <= depart` does. `dist[u]` is the earliest arrival at `u` using at most $k-1$ trains.\n\n    Wait, one detail: what if we can take *multiple* trains at the same \"level\" $k$?\n    The problem says \"the number of trains used is $k$, the number of transfers is $k-1$\".\n    This means if we take $k$ trains, we have $k-1$ transfers.\n    The constraint is $k-1 \\le max\\_transfers$, so $k \\le max\\_transfers + 1$.\n    Each train taken increases $k$ by 1.\n    So my approach of iterating $k$ from 1 to $max\\_transfers+1$ and using `dist` (for $k-1$) to update `new_dist` (for $k$) is correct.\n\n    `dist = [inf] * n`\n    `dist[source] = start`\n    For `k = 1 to max_transfers + 1`:\n      `new_dist = dist[:]`\n      For `u, v, depart, arrive in connections`:\n        `wait = 0 if k == 1 else change`\n        `if dist[u] + wait <= depart: new_dist[v] = min(new_dist[v], arrive)`\n      `dist = new_dist`\n\n    Wait, if `max_transfers = 1`, we can take up to 2 trains.\n    - $k=1$: `dist[source]=start`, `new_dist[v]` is the earliest arrival at $v$ using 1 train.\n    - $k=2$: `dist` now has the earliest arrival at all $u$ using 1 train. `new_dist[v]` will be the earliest arrival at $v$ using 2 trains (by taking a train from $u$ that was reached in 1 train).\n\n    Example 1: `source=0, target=2, start=0, change=5, max_transfers=1`\n    `connections = [(0, 1, 10, 20), (1, 2, 25, 30), (1, 2, 22, 40)]`\n    - `dist = [0, inf, inf]`\n    - `k=1`: `new_dist[1] = 20`, `dist = [0, 20, inf]`\n    - `k=2`: `new_dist[2] = min(inf, 30) = 30` (from `dist[1]=20, 20+5 <= 25`), `dist = [0, 20, 30]`\n    - Result: `dist[2] = 30`. Correct.\n\n    One more check: if `max_transfers = 0`, we can take only 1 train.\n    - `k=1`: `new_dist[v]` will be the earliest arrival using 1 train.\n    - `dist = new_dist`.\n    - Result: `dist[target]`. Correct.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 951,
+  "completion_tokens": 4786,
+  "ttft_s": 3.551,
+  "t_first_content_s": 323.083,
+  "wall_s": 359.891,
+  "load_s": 0.001,
+  "server_decode_tok_s": 13.42,
+  "server_prefill_tok_s": 432.08,
+  "server_timings": {
+    "total_duration": 359890520785,
+    "load_duration": 1187857,
+    "prompt_eval_count": 951,
+    "prompt_eval_duration": 2200987000,
+    "eval_count": 4786,
+    "eval_duration": 356560537000
+  },
+  "delta_chunks": 4213,
+  "wall_decode_tok_s": 13.43,
+  "thinking_chars": 12022,
+  "content_chars": 1690,
+  "thinking_tokens_est": 4196,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 359.89,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 25,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_source_is_target",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_departure_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_direct_minimizes_arrival_not_departure",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tight_transfer_with_zero_change",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_change_time_selects_later_connection",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_zero_means_direct_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transfer_limit_makes_it_impossible",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_departure_is_a_trap",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_waiting_at_intermediate_station",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_departure_times_cannot_chain",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_and_self_loops",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_transfers_arrive_earlier",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_earliest_arrival_at_a_station_may_use_too_many_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fast_and_slow_stages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_connections_before_start_are_useless",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_time_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_chain_at_the_transfer_limit",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_many_stations_few_connections",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_instances",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_wide_random_graph",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_max_connections_few_transfers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_many_transfer_layers",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_perf_stages_with_many_decoys",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.8,
+    "stderr_tail": ""
+  }
+}

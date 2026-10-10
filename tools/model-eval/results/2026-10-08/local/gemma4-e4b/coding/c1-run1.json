@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "coding",
+  "item": "c1",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C1: シェル風の単語分割\n\n関数 `split_words(text: str) -> list[str]` を書いてください。\n\n`text` を、次の規則で「単語」のリストに分けます。規則は POSIX シェルの引用の一部を模したものですが、変数展開やワイルドカードの展開はしません（`$`、`*`、`~` などはただの文字です）。\n\n- 区切り: 引用の外にある半角スペース、タブ（`\\t`）、改行（`\\n`）の 3 種類だけが単語の区切り。連続していても 1 つの区切りとみなし、先頭と末尾の区切りは無視する。それ以外の文字（`\\r`、全角スペースなど）は区切りではなく、単語の一部。\n- 単一引用符 `'...'`: 中の文字はすべてそのまま単語に入る（バックスラッシュも特別扱いしない）。最初に現れた `'` で閉じる。\n- 二重引用符 `\"...\"`: 中では、バックスラッシュの直後の 1 文字が `\"`、`\\`、`$`、`` ` `` のいずれかなら、その 1 文字だけを単語に入れる。バックスラッシュの直後が改行なら、その 2 文字を取り除く（行の継続）。それ以外のバックスラッシュはただの文字として残す（`\"\\n\"` の中身は `\\` と `n` の 2 文字）。\n- 引用の外のバックスラッシュ: 直後が改行なら、その 2 文字を取り除く（行の継続。単語は切れず、区切りにもならない）。それ以外は直後の 1 文字をそのまま単語に入れる（`\\ ` は半角スペース、`\\'` は `'`、`\\#` は `#`）。\n- 引用符そのものは単語に入らない。引用された部分と引用の外の部分が隣り合っていれば 1 つの単語になる（`a\"b c\"d` は `ab cd` という 1 単語）。`''` や `\"\"` だけの単語は空文字列の単語になる。\n- コメント: 引用の外の `#` が「単語の先頭」にあるとき、その `#` から行末（次の改行の直前。改行が無ければ文字列の末尾）までを無視する。「単語の先頭」とは、その時点でまだ単語が始まっていない（文字列の先頭か、直前の区切りのあとに、単語の文字も引用符も現れていない）こと。単語の途中の `#`（`a#b`）はただの文字。空の引用のあとの `#`（`''#x`）も単語の途中とみなす。\n- 閉じていない引用符、および文字列の末尾にある単独のバックスラッシュには `ValueError` を送出する。\n- `text` は最大 100,000 文字。空の文字列、区切りだけの文字列には `[]` を返す。\n\n例（入力は Python の文字列リテラルで書いてある。`\\\\` はバックスラッシュ 1 文字、`\\n` は改行 1 文字）:\n- `split_words(\"a 'b c'  d\")` → `[\"a\", \"b c\", \"d\"]`\n- `split_words('x \"y\\\\\"z\" # comment\\n  w')` → `[\"x\", 'y\"z', \"w\"]`\n- `split_words(\"it's\")` → `ValueError` を送出",
+  "prompt_chars": 1582,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T13:35:46+09:00",
+  "finished_at": "2026-10-08T13:36:23+09:00",
+  "content": "```python\ndef split_words(text: str) -> list[str]:\n    \"\"\"\n    text を、シェル風の引用規則に基づいて「単語」のリストに分割する。\n    \"\"\"\n    results = []\n    current_word = []\n    \n    i = 0\n    text_len = len(text)\n    \n    # 状態フラグ\n    in_single_quotes = False\n    in_double_quotes = False\n    \n    def flush_word():\n        \"\"\"現在の単語を確定し、resultsリストに追加する。\"\"\"\n        nonlocal current_word\n        if current_word:\n            results.append(\"\".join(current_word))\n            current_word = []\n\n    while i < text_len:\n        char = text[i]\n        \n        # --- 1. コメント処理 ---\n        # 引用符の外で、単語の開始時（かつ、直前の文字が区切りでない）に # がある場合\n        is_start_of_word = not current_word and (i == 0 or text[i-1] not in (' ', '\\t', '\\n'))\n        if char == '#' and not in_single_quotes and not in_double_quotes and is_start_of_word:\n            # コメント開始。残りのテキストをスキップ\n            i = text_len\n            break\n\n        # --- 2. 区切り文字処理 ---\n        if not in_single_quotes and not in_double_quotes and char in (' ', '\\t', '\\n'):\n            flush_word()\n            i += 1\n            continue\n\n        # --- 3. 引用符の中身の処理 ---\n        if in_single_quotes:\n            if char == \"'\":\n                in_single_quotes = False\n                # 引用符自体は単語に入らない\n                i += 1\n                continue\n            else:\n                # シングルクォート内では全てリテラル\n                current_word.append(char)\n                i += 1\n                continue\n        \n        elif in_double_quotes:\n            if char == '\"':\n                in_double_quotes = False\n                # 引用符自体は単語に入らない\n                i += 1\n                continue\n\n            # エスケープシーケンス処理\n            if char == '\\\\':\n                if i + 1 >= text_len:\n                    # 文字列末尾の単独バックスラッシュ\n                    raise ValueError(\"Unterminated string: trailing backslash\")\n                \n                next_char = text[i+1]\n                \n                # 1. エスケープが必要な文字の場合: \", \\, $, `\n                if next_char in ('\"', '\\\\', '$', '`'):\n                    current_word.append(next_char)\n                    i += 2 # \\と次の文字を消費\n                    continue\n                \n                # 2. 行継続の場合: \\n\n                elif next_char == '\\n':\n                    # \\n は2文字（改行そのものとバックスラッシュ）を取り除く。\n                    # ここでは、\\ はエスケープ文字として処理され、直後の文字が \\n の場合を想定。\n                    # しかし、Pythonの文字列リテラルとして処理されているため、\\nは既に'\\n'文字である。\n                    # 仕様に基づき、改行自体がエスケープされるのは、「直後が改行なら、その 2 文字を取り除く」\n                    # ここでは、'\\\\' + '\\n' のシーケンスが入力されたと仮定する。\n                    # 入力されたテキストで '\\n' を探しているため、\\はエスケープ文字として扱われる。\n                    \n                    # 実際にエスケープされるパターンは、エスケープ文字として '\\' が続き、その次が '\\n' の場合\n                    # しかし、この実装では、文字ストリーム上で '\\' が検出された直後の文字をチェックする。\n                    \n                    # 厳密には、シェルの動作として、\\ はエスケープ文字だが、Python文字列リテラルとして既に解釈されているため、\n                    # 入力されたテキストが '\\' の文字と '\\n' の文字が連続しているものと解釈する。\n                    \n                    # この処理の前提は、\\ の後に \\n がある場合、2文字分スキップし、単語に何も追加しないこと。\n                    i += 2 \n                    continue\n                \n                # 3. それ以外のバックスラッシュ (\\x)\n                # \\ と次の文字をリテラルとして残す\n                current_word.append(char)\n                current_word.append(next_char)\n                i += 2\n                continue\n            \n            # それ以外の文字\n            current_word.append(char)\n            i += 1\n            continue\n        \n        # --- 4. 引用符の外の処理 ---\n        \n        # 4a. 引用符の開始\n        if char == \"'\" and not in_single_quotes:\n            # 以前の単語が確定していない場合、空文字列の単語として処理されるが、\n            # 単語分割の構造上、ここでは空の単語として扱うのではなく、単に次の状態遷移を行う。\n            # flush_word() を呼び出すのは、文字の後に区切りがあるときなので、ここでは何もしない。\n            in_single_quotes = True\n            i += 1\n            continue\n            \n        if char == '\"' and not in_double_quotes:\n            in_double_quotes = True\n            i += 1\n            continue\n\n        # 4b. バックスラッシュのエスケープ処理（引用符の外）\n        if char == '\\\\':\n            if i + 1 >= text_len:\n                # 文字列末尾の単独バックスラッシュ\n                raise ValueError(\"Unterminated string: trailing backslash\")\n            \n            next_char = text[i+1]\n            \n            # 行継続: \\n\n            if next_char == '\\n':\n                # 2文字を取り除く（改行自体を無視する）\n                i += 2\n                continue\n            else:\n                # 直後の1文字をそのまま単語に入れる (エスケープではないリテラル処理)\n                current_word.append(next_char)\n                i += 2 # \\と次の文字を消費\n                continue\n\n        # 4c. 通常の単語文字処理\n        # 引用符の外、区切り文字ではない文字\n        current_word.append(char)\n        i += 1\n\n    # --- 5. 終了処理 ---\n    \n    # 未閉じの引用符チェック\n    if in_single_quotes or in_double_quotes:\n        raise ValueError(\"Unterminated string: unclosed quote\")\n    \n    # 最後に残った単語を確定\n    flush_word()\n    \n    return results\n\n```",
+  "thinking": "ユーザーは、複雑な仕様を持つシェル風の単語分割を行うPython関数 `split_words(text: str) -> list[str]` の実装を求めている。\n\n**制約の確認:**\n1. 標準ライブラリのみ使用。外部パッケージ禁止。\n2. ファイルI/O、ネットワーク、サブプロセス、標準入力禁止。\n3. 関数名、クラス名、引数名は仕様通りにする。\n4. 出力は、定義された関数と必要なimport、補助関数のみを含む単一のコードブロック。説明やテストコードは含めない。\n\n**仕様の分析（`split_words`）：**\n\n1. **区切り文字:** 半角スペース (` `)、タブ (`\\t`)、改行 (`\\n`) のみ。\n2. **連続区切り:** 連続していても1つの区切りとみなし、先頭/末尾の区切りは無視する。\n3. **単語の構成:**\n    * 基本的には、区切り文字に囲まれた塊。\n    * 特別なルール：引用符、バックスラッシュ、コメント。\n\n**詳細なルール処理戦略（ステートマシンアプローチが最適）:**\n\n入力テキストを走査し、現在の状態（引用符の中、引用符の外、バックスラッシュの直後など）を管理しながら、単語を組み立てていく必要がある。\n\n**状態変数:**\n* `result`: 結果として集められた単語リスト。\n* `current_word`: 現在構築中の単語文字列。\n* `in_single_quotes`: シングルクォート内か (True/False)。\n* `in_double_quotes`: ダブルクォート内か (True/False)。\n* `escape_next`: 直前の文字がバックスラッシュで、エスケープ処理が必要か (True/False)。\n\n**処理のコア部分：走査（Index i を進める）**\n\n---\n\n### 1. コメント処理（最も優先度が高い）\n* **条件:** 引用符の外、単語がまだ始まっていない状態 (`current_word` が空、かつ直前が区切り/開始) で `#` を見つけた場合。\n* **動作:** `#` から行末までをスキップし、単語分割処理を一時停止する。\n\n### 2. 区切り文字の処理\n* **条件:** 引用符の外（`in_single_quotes` か `in_double_quotes` が False）。\n* **文字:** スペース、タブ、改行。\n* **動作:**\n    * `current_word` が空でなければ、単語を確定し `result` に追加する。\n    * `current_word` をクリアする。\n    * 連続する区切りは無視されるため、次の文字へ進む。\n\n### 3. 引用符の処理（State Change）\n\n#### A. シングルクォート `'`\n* **開始:** 引用符の外で `'` を見つけたとき。\n    * `current_word` が空なら、前の単語を確定する（必要なら）。\n    * `in_single_quotes = True` に設定し、次の文字から読み取り開始。\n* **終了:** シングルクォート内で、その `'` を見つけたとき。\n    * `in_single_quotes = False` に戻す。\n    * 引用符は単語に入らない。\n* **内部:** シングルクォート内では、全てのリテラル文字として単語に追加。\n\n#### B. ダブルクォート `\"`\n* **開始:** 引用符の外で `\"` を見つけたとき。\n    * 同上。`in_double_quotes = True`。\n* **終了:** ダブルクォート内で、その `\"` を見つけたとき。\n    * `in_double_quotes = False`。\n    * 引用符は単語に入らない。\n* **内部 (エスケープ処理):**\n    * **バックスラッシュ `\\` の直後:**\n        * 次の文字 `C` が `\"`, `\\`, `$`, `` ` `` のいずれかの場合: `C` のみを取得し、単語に追加。インデックスを2進める（`\\` と `C` を消費）。\n        * 次の文字 `C` が改行 `\\n` の場合: その2文字を取り除く（行継続）。インデックスを2進める。\n        * それ以外の場合: `\\` と `C` の2文字をそのまま（エスケープなし）単語に追加。\n    * **その他の文字:** 単語に追加。\n\n### 4. バックスラッシュ `\\` （引用符の外）\n* **条件:** 引用符の外。\n* **動作:**\n    * **直後が改行 (`\\n`) の場合:** 2文字（`\\` と `\\n`）を取り除き、単語を継続させる（行継続）。インデックスを2進める。\n    * **その他の場合:** 直後の1文字をそのまま単語に追加。インデックスを2進める。\n    * **注意:** これはエスケープシーケンス処理であり、次の文字をそのままリテラルとして扱う。\n\n### 5. エッジケースとエラーハンドリング\n* **未閉じの引用符:**\n    * 走査終了時に `in_single_quotes` または `in_double_quotes` が True の場合: `ValueError` を送出。\n* **単独のバックスラッシュ:**\n    * 文字列の末尾に単独の `\\` がある場合: `ValueError` を送出（これは直後に改行がないため、未終了のエスケープとみなせるか）。仕様には「文字列の末尾にある単独のバックスラッシュ」とあるので、これに対応する。\n\n---\n\n### 実装の設計（Pythonのループ構造）\n\nこの複雑なルールセットを扱うため、手動のインデックス操作を行う走査関数（または`while`ループ）が必要となる。\n\n初期化: `i = 0`, `current_word = []` (または `\"\"`), `results = []`\n\nループ構造を定義し、各文字 `text[i]` がどのような意味を持つかを判定していく。\n\n#### ステートマシンによる詳細な実装計画\n\n1. **初期処理:** 空文字列または区切り文字のみの文字列の場合の処理。\n2. **メインループ:** `while i < len(text)`\n\n---\n（自己修正/検討）\n`text` は Python の文字列リテラルとして受け取るため、改行 `\\n` やバックスラッシュ `\\\\` は既にPythonの文字列として解釈された状態のデータである。入力文字列の走査時に、それが実際に `\\n` 文字（ASCII 10）なのか、`\\` 文字（エスケープ文字）なのかを区別する必要がある。\n\nPythonの文字列処理を念頭に置くと、改行は既に `\\n` (単一文字) として存在する。\n\n#### 再検討：区切りと文字\n* 区切り: ' ', '\\t', '\\n' のいずれか。\n* その他の文字: 単語の一部。\n\n---\n（コーディング開始）\n\nロジックが非常に複雑なため、複数のヘルパー関数や状態フラグを明確に定義することが重要。\n\n特にバックスラッシュのエスケープ処理と引用符内の処理は慎重に行う必要がある。\n\n1. **前処理としての単語確定:** ループの開始時、区切り文字が検出され、かつ `current_word` に文字がある場合、単語を確定し記録する必要がある。\n2. **バックスラッシュ処理の整合性:**\n    * 引用符の外: `\\` の直後の文字が `\\n` なら、`\\` と `\\n` の2文字をスキップ（行継続）。\n    * 引用符の外: `\\` の直後の文字が何か一つなら、その文字をリテラルとして単語に追加し、2文字をスキップ。\n    * 引用符の中: エスケープ処理のルールに従う。\n\nこのロジックを一つにまとめるのは難しいため、インデックス `i` を進めるロジックに全てを組み込む。\n\n---\n（Pythonコードとして記述する）",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 941,
+  "completion_tokens": 3354,
+  "ttft_s": 0.407,
+  "t_first_content_s": 20.14,
+  "wall_s": 37.126,
+  "load_s": 0.001,
+  "server_decode_tok_s": 91.25,
+  "server_prefill_tok_s": 2588.4,
+  "server_timings": {
+    "total_duration": 37125442036,
+    "load_duration": 1139696,
+    "prompt_eval_count": 941,
+    "prompt_eval_duration": 363545000,
+    "eval_count": 3354,
+    "eval_duration": 36756687000
+  },
+  "delta_chunks": 3210,
+  "wall_decode_tok_s": 91.34,
+  "thinking_chars": 3454,
+  "content_chars": 4795,
+  "thinking_tokens_est": 1404,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 37.125,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.68,
+    "all_passed": false,
+    "passed": 17,
+    "total": 25,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_empty_and_separators_only",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_plain_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_quotes_keep_everything",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quotes_keep_dollar_and_single_quote",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quote_escapes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_double_quote_non_escapes_keep_backslash",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_outside_backslash_escapes_anything",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_adjacent_parts_join",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_quotes_make_empty_words",
+        "ok": false,
+        "error": "AssertionError: expected ['', '', 'ab'], got ['ab']"
+      },
+      {
+        "name": "case_comment_at_line_start",
+        "ok": false,
+        "error": "AssertionError: expected ['foo'], got []"
+      },
+      {
+        "name": "case_comment_after_separator",
+        "ok": false,
+        "error": "AssertionError: expected ['foo', 'qux'], got ['foo', '#', 'bar', 'baz', 'qux']"
+      },
+      {
+        "name": "case_hash_inside_word_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hash_after_empty_quotes_is_literal",
+        "ok": false,
+        "error": "AssertionError: expected ['#x'], got []"
+      },
+      {
+        "name": "case_hash_quoted_or_escaped_is_literal",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_comment_text_may_contain_quotes",
+        "ok": false,
+        "error": "AssertionError: expected ['x'], got []"
+      },
+      {
+        "name": "case_line_continuation_outside_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_line_continuation_then_comment",
+        "ok": false,
+        "error": "AssertionError: expected ['d'], got ['#c', 'd']"
+      },
+      {
+        "name": "case_line_continuation_inside_quotes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_other_whitespace_is_not_separator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unterminated_quotes_raise",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_trailing_backslash_raises",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_errors_are_not_masked_by_comments",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_mixed_long_line",
+        "ok": false,
+        "error": "AssertionError: expected ['cmd', '--opt=a b', 'c def', '#g', 'next word', '$x$y'], got ['cmd', '--opt=a b', 'c def', '#g', '#', 'tail', 'comment', 'next word', '$x$y']"
+      },
+      {
+        "name": "case_large_input_many_words",
+        "ok": false,
+        "error": "AssertionError: expected ['ab', 'c d', 'e', 'x', 'ab', 'c d', 'e', 'x', 'ab', 'c d', 'e', 'x', 'ab', 'c d', 'e', 'x', 'ab', 'c d', 'e', 'x', 'ab', 'c d', 'e', 'x', 'ab', 'c d', 'e', 'x', 'ab', 'c d', 'e', 'x', 'ab', 'c d', 'e…, got ['ab', 'c d', 'e', 'x', '#', 'comment', 'ab', 'c d', 'e', 'x', '#', 'comment', 'ab', 'c d', 'e', 'x', '#', 'comment', 'ab', 'c d', 'e', 'x', '#', 'comment', 'ab', 'c d', 'e', 'x', '#', 'comment', 'ab'…"
+      },
+      {
+        "name": "case_large_single_quoted_words",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.05,
+    "stderr_tail": ""
+  }
+}

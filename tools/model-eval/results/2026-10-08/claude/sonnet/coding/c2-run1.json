@@ -1,0 +1,166 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "content": "```python\nimport re\nfrom calendar import monthrange\nfrom datetime import datetime, timedelta\n\n_MONTH_NAMES = {\n    name: index\n    for index, name in enumerate(\n        (\"JAN\", \"FEB\", \"MAR\", \"APR\", \"MAY\", \"JUN\", \"JUL\", \"AUG\", \"SEP\", \"OCT\", \"NOV\", \"DEC\"),\n        start=1,\n    )\n}\n_DOW_NAMES = {\n    name: index\n    for index, name in enumerate((\"SUN\", \"MON\", \"TUE\", \"WED\", \"THU\", \"FRI\", \"SAT\"))\n}\n_DIGITS = re.compile(r\"[0-9]+\")\n_SEPARATOR = re.compile(r\"[ \\t]+\")\n\n\ndef _parse_value(token, low, high, names):\n    if _DIGITS.fullmatch(token):\n        value = int(token)\n    elif names is not None and token.isascii() and token.upper() in names:\n        value = names[token.upper()]\n    else:\n        raise ValueError(f\"invalid value: {token!r}\")\n    if not low <= value <= high:\n        raise ValueError(f\"value out of range: {token!r}\")\n    return value\n\n\ndef _parse_range(text, low, high, names):\n    bounds = text.split(\"-\")\n    if len(bounds) != 2:\n        raise ValueError(f\"invalid range: {text!r}\")\n    start = _parse_value(bounds[0], low, high, names)\n    end = _parse_value(bounds[1], low, high, names)\n    if start > end:\n        raise ValueError(f\"descending range: {text!r}\")\n    return start, end\n\n\ndef _parse_field(text, low, high, names):\n    values = set()\n    for item in text.split(\",\"):\n        if item == \"\":\n            raise ValueError(\"empty item\")\n        step = 1\n        if \"/\" in item:\n            parts = item.split(\"/\")\n            if len(parts) != 2:\n                raise ValueError(f\"invalid item: {item!r}\")\n            base, step_text = parts\n            if not _DIGITS.fullmatch(step_text):\n                raise ValueError(f\"invalid step: {item!r}\")\n            step = int(step_text)\n            if step < 1:\n                raise ValueError(f\"step must be >= 1: {item!r}\")\n            if base == \"*\":\n                start, end = low, high\n            elif \"-\" in base:\n                start, end = _parse_range(base, low, high, names)\n            else:\n                raise ValueError(f\"step without range: {item!r}\")\n        elif item == \"*\":\n            start, end = low, high\n        elif \"-\" in item:\n            start, end = _parse_range(item, low, high, names)\n        else:\n            start = end = _parse_value(item, low, high, names)\n        values.update(range(start, end + 1, step))\n    return values\n\n\ndef _parse_expression(expression):\n    if not isinstance(expression, str):\n        raise ValueError(\"expression must be a string\")\n    fields = _SEPARATOR.split(expression.strip(\" \\t\"))\n    if len(fields) != 5:\n        raise ValueError(\"expression must have exactly 5 fields\")\n    minutes = _parse_field(fields[0], 0, 59, None)\n    hours = _parse_field(fields[1], 0, 23, None)\n    days = _parse_field(fields[2], 1, 31, None)\n    months = _parse_field(fields[3], 1, 12, _MONTH_NAMES)\n    weekdays_raw = _parse_field(fields[4], 0, 7, _DOW_NAMES)\n    weekdays = {0 if value == 7 else value for value in weekdays_raw}\n    day_is_star = fields[2] == \"*\"\n    weekday_is_star = fields[4] == \"*\"\n    return minutes, hours, days, months, weekdays, day_is_star, weekday_is_star\n\n\ndef next_run(expression: str, after: datetime) -> datetime | None:\n    (\n        minutes,\n        hours,\n        days,\n        months,\n        weekdays,\n        day_is_star,\n        weekday_is_star,\n    ) = _parse_expression(expression)\n\n    try:\n        start = after.replace(second=0, microsecond=0) + timedelta(minutes=1)\n    except OverflowError:\n        return None\n\n    sorted_minutes = sorted(minutes)\n    sorted_hours = sorted(hours)\n    sorted_months = sorted(months)\n    last_year = min(after.year + 10, 9999)\n    start_date = (start.year, start.month, start.day)\n\n    for year in range(start.year, last_year + 1):\n        for month in sorted_months:\n            if (year, month) < (start.year, start.month):\n                continue\n            days_in_month = monthrange(year, month)[1]\n            for day in range(1, days_in_month + 1):\n                if (year, month, day) < start_date:\n                    continue\n                day_match = day in days\n                # cron の曜日: 0 = 日曜。Python の weekday() は 0 = 月曜\n                weekday_match = ((datetime(year, month, day).weekday() + 1) % 7) in weekdays\n                if day_is_star and weekday_is_star:\n                    matched = True\n                elif day_is_star:\n                    matched = weekday_match\n                elif weekday_is_star:\n                    matched = day_match\n                else:\n                    matched = day_match or weekday_match\n                if not matched:\n                    continue\n                same_day = (year, month, day) == start_date\n                for hour in sorted_hours:\n                    if same_day and hour < start.hour:\n                        continue\n                    for minute in sorted_minutes:\n                        if same_day and hour == start.hour and minute < start.minute:\n                            continue\n                        return datetime(year, month, day, hour, minute)\n    return None\n```",
+  "wall_s": 44.434,
+  "usage": {
+    "subagent_tokens": 34971
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 26,
+    "total": 26,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_every_minute",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_same_minute_is_excluded",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fixed_minute_wraps_hour",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hour_range_wraps_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_from_minimum",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_range_with_step",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists_and_duplicates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_month_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sunday_as_seven",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_day_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_both_restricted_means_or",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_in_day_field_is_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leap_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_impossible_dates_return_none",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_year_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leading_zeros_tabs_and_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_match_time_boundaries",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_field_count",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_syntax",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_names_and_extensions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_naive_datetime",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_far_answers_are_fast",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_none_is_fast",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:38:35+09:00"
+}

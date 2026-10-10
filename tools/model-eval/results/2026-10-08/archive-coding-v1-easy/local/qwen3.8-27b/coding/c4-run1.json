@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "coding",
+  "item": "c4",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C4: LRU キャッシュ\n\nクラス `LRUCache` を書いてください。\n\n- `LRUCache(capacity: int)`: 最大 `capacity` 個の「キーと値の組」を保持するキャッシュを作る。`capacity` が 1 未満なら `ValueError` を送出する。\n- `get(key)`: `key` があればその値を返し、その組を「最も最近使った」ものにする。無ければ `-1` を返す（このとき順番は変えない）。\n- `put(key, value)`: `key` の値を `value` にし、その組を「最も最近使った」ものにする。戻り値は `None`。新しい `key` を入れて組の数が `capacity` を超えるときは、「最も長く使っていない」組を 1 つ取り除く。既にある `key` の更新では何も取り除かない。\n- `len(cache)` で、いま保持している組の数を返す。\n- `key` はハッシュ可能な任意の値。`get` と `put` は平均 O(1) で動くこと（数十万回呼ばれる）。\n\n例:\n- `cache = LRUCache(2)` のあと `cache.put(1, 1)`、`cache.put(2, 2)`、`cache.get(1)` → `1`、`cache.put(3, 3)`（キー 2 が取り除かれる）、`cache.get(2)` → `-1`\n- `cache = LRUCache(1)` のあと `cache.put(\"a\", 10)`、`cache.put(\"a\", 20)`、`cache.get(\"a\")` → `20`、`len(cache)` → `1`",
+  "prompt_chars": 1004,
+  "request": {
+    "model": "qwen3.8:27b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 16384
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:35:36+09:00",
+  "finished_at": "2026-10-08T12:36:10+09:00",
+  "content": "```python\nclass _Node:\n    __slots__ = ('key', 'value', 'prev', 'next')\n\n    def __init__(self, key, value):\n        self.key = key\n        self.value = value\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        if capacity < 1:\n            raise ValueError(\"capacity must be >= 1\")\n        self.capacity = capacity\n        self._cache: dict = {}\n        self._size = 0\n        self._head = _Node(None, None)\n        self._tail = _Node(None, None)\n        self._head.next = self._tail\n        self._tail.prev = self._head\n\n    def _unlink(self, node: _Node) -> None:\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _insert_after_head(self, node: _Node) -> None:\n        node.next = self._head.next\n        node.prev = self._head\n        self._head.next.prev = node\n        self._head.next = node\n\n    def _move_to_front(self, node: _Node) -> None:\n        self._unlink(node)\n        self._insert_after_head(node)\n\n    def get(self, key):\n        node = self._cache.get(key)\n        if node is None:\n            return -1\n        self._move_to_front(node)\n        return node.value\n\n    def put(self, key, value) -> None:\n        node = self._cache.get(key)\n        if node is not None:\n            node.value = value\n            self._move_to_front(node)\n        else:\n            node = _Node(key, value)\n            self._cache[key] = node\n            self._insert_after_head(node)\n            self._size += 1\n            if self._size > self.capacity:\n                lru = self._tail.prev\n                self._unlink(lru)\n                del self._cache[lru.key]\n                self._size -= 1\n\n    def __len__(self) -> int:\n        return self._size\n```",
+  "thinking": "The user wants a Python 3.12 implementation of an LRU Cache class that:\n1. Uses only standard library\n2. No file I/O, network, subprocess, or stdin\n3. Uses exact function/class/argument names as specified\n4. Answer in a single python code block\n5. No tests, examples, or print statements outside the block\n\nRequirements:\n- `LRUCache(capacity: int)`: Initialize with capacity. Raise ValueError if capacity < 1.\n- `get(key)`: Return value if key exists, mark as most recently used. Return -1 if not found (don't change order).\n- `put(key, value)`: Set value for key, mark as most recently used. Return None. If new key exceeds capacity, evict least recently used. Updating existing key doesn't evict.\n- `len(cache)`: Return number of entries.\n- Keys are hashable. `get` and `put` should be average O(1).\n\nFor O(1) get and put, I need a combination of a hash map (dict) and a doubly-linked list to track order.\n\nImplementation:\n- Use a `dict` for O(1) lookup: `self.cache = {}` mapping key -> node\n- Use a doubly-linked list for ordering: head (most recent) <-> ... <-> tail (least recent)\n- `get(key)`: if key in dict, move node to head, return value. Else return -1.\n- `put(key, value)`: if key in dict, update value, move to head. Else create new node, add to head, if len > capacity, remove tail.\n- `__len__`: return the current size.\n\nLet me implement the doubly-linked list with a dummy head and tail for simplicity.\n\n```python\nclass _Node:\n    __slots__ = ('key', 'value', 'prev', 'next')\n    \n    def __init__(self, key, value):\n        self.key = key\n        self.value = value\n        self.prev = None\n        self.next = None\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        if capacity < 1:\n            raise ValueError(\"capacity must be >= 1\")\n        self.capacity = capacity\n        self.cache = {}  # key -> node\n        self.size = 0\n        # Dummy head and tail\n        self.head = _Node(None, None)  # most recent side\n        self.tail = _Node(None, None)  # least recent side\n        self.head.next = self.tail\n        self.tail.prev = self.head\n    \n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n    \n    def _add_to_head(self, node):\n        node.next = self.head.next\n        node.prev = self.head\n        self.head.next.prev = node\n        self.head.next = node\n    \n    def _move_to_head(self, node):\n        self._remove(node)\n        self._add_to_head(node)\n    \n    def get(self, key):\n        if key not in self.cache:\n            return -1\n        node = self.cache[key]\n        self._move_to_head(node)\n        return node.value\n    \n    def put(self, key, value):\n        if key in self.cache:\n            node = self.cache[key]\n            node.value = value\n            self._move_to_head(node)\n        else:\n            node = _Node(key, value)\n            self.cache[key] = node\n            self._add_to_head(node)\n            self.size += 1\n            if self.size > self.capacity:\n                # Remove tail (least recently used)\n                lru = self.tail.prev\n                self._remove(lru)\n                del self.cache[lru.key]\n                self.size -= 1\n    \n    def __len__(self):\n        return self.size\n```\n\nLet me verify with the examples:\n1. `cache = LRUCache(2)`, `cache.put(1, 1)`, `cache.put(2, 2)`, `cache.get(1)` → 1, `cache.put(3, 3)` (key 2 evicted), `cache.get(2)` → -1\n   - After put(1,1): [1]\n   - After put(2,2): [2, 1] (2 is most recent)\n   - get(1): returns 1, order becomes [1, 2]\n   - put(3,3): new key, size becomes 3 > 2, evict tail which is 2. Order: [3, 1]\n   - get(2): not found, return -1 ✓\n\n2. `cache = LRUCache(1)`, `cache.put(\"a\", 10)`, `cache.put(\"a\", 20)`, `cache.get(\"a\")` → 20, `len(cache)` → 1\n   - put(\"a\", 10): new, size=1, order: [a]\n   - put(\"a\", 20): existing, update value, move to head (already at head). size stays 1. ✓\n   - get(\"a\"): returns 20 ✓\n   - len(cache): 1 ✓\n\nLooks good. Let me finalize.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 529,
+  "completion_tokens": 1639,
+  "ttft_s": 1.257,
+  "t_first_content_s": 25.386,
+  "wall_s": 33.831,
+  "load_s": 0.001,
+  "server_decode_tok_s": 50.32,
+  "server_prefill_tok_s": 507.88,
+  "server_timings": {
+    "total_duration": 33830754240,
+    "load_duration": 1409170,
+    "prompt_eval_count": 529,
+    "prompt_eval_duration": 1041579000,
+    "eval_count": 1639,
+    "eval_duration": 32574002000
+  },
+  "delta_chunks": 1345,
+  "wall_decode_tok_s": 50.29,
+  "thinking_chars": 3968,
+  "content_chars": 1753,
+  "thinking_tokens_est": 1137,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 33.83,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 11,
+    "total": 11,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_basic_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_capacity_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_update_no_evict",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_update_makes_recent",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_get_makes_recent",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_missing_get_keeps_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_capacity",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_len_tracks",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_put_returns_none",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hashable_keys",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_ops",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.17,
+    "stderr_tail": ""
+  }
+}

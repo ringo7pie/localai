@@ -1,0 +1,203 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "coding",
+  "item": "c2",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C2: cron 式の次回実行時刻\n\n関数 `next_run(expression: str, after: datetime) -> datetime | None` を書いてください（`datetime` は標準ライブラリ `datetime` モジュールの `datetime` 型。`after` と戻り値は tzinfo の無い naive な値）。\n\n### 式の形\n\n- 式は 5 つのフィールドを 1 個以上の半角スペースかタブで区切ったもの。先頭と末尾の空白は許す。順に「分」「時」「日」「月」「曜日」。\n- 各フィールドの値の範囲: 分 0〜59、時 0〜23、日 1〜31、月 1〜12、曜日 0〜7（0 と 7 はどちらも日曜、1 が月曜、…、6 が土曜）。\n- フィールドは「項目」をコンマ `,` でつないだもの（項目 1 個以上。空の項目は不可）。項目は次のいずれか。\n  - `*`: その範囲の全部の値。\n  - `*/n`: 範囲の最小値から `n` おき（分なら 0, n, 2n, …）。\n  - `a`: 1 つの値。\n  - `a-b`: `a` 以上 `b` 以下の全部の値（`a <= b` が必要）。\n  - `a-b/n`: `a` から `n` おきで `b` 以下の値（`a`, `a+n`, `a+2n`, …）。\n  - `n` は 1 以上の整数。`a/n` の形（範囲を書かずに刻みを付ける形）は不可。\n- 値は 1 桁以上の 10 進の数字（先頭の 0 は許す）。月のフィールドでは `JAN`〜`DEC`、曜日のフィールドでは `SUN`〜`SAT` の英語 3 文字の名前も値として使える（大文字と小文字は区別しない。範囲の端にも使える）。名前が使えるのはこの 2 つのフィールドだけ。\n- 曜日の `7` は `0`（日曜）と同じ。`5-7` は {5, 6, 0}。\n- 上の形に合わないもの（フィールドの数の過不足、範囲外の値、`a > b` の範囲、`n` が 0、知らない名前、`?`、`L`、`@daily` などの拡張、負の数、小数、空の項目）には `ValueError` を送出する。\n\n### 日の決め方（日と曜日の関係）\n\n- 「日」のフィールドと「曜日」のフィールドは、フィールド全体がちょうど `*`（刻みも項目も無い `*` 1 文字）のとき「無指定」とみなす。`*/2` や `*,5` は無指定ではない。\n- 両方とも無指定なら毎日。片方だけ無指定なら、もう片方のフィールドに合う日だけ。両方とも指定があるときは、「日」に合う **か** 「曜日」に合う日（どちらか一方でよい）。\n- もちろん「月」のフィールドにも合う必要がある。存在しない日（4 月 31 日など）は決して合わない。\n\n### 戻り値\n\n- `after` より後（`after` と同じ分は含まない）で、秒とマイクロ秒が 0 の時刻のうち、式に合う最も早いものを返す。`after` の秒・マイクロ秒は、この「より後」の判定にだけ関わる。\n- その時刻の年が `after.year + 10` より大きくなるなら `None` を返す（例: 2 月 30 日の指定は決して合わないので `None`）。\n- 入力の大きさに対して十分速く動くこと。答えが数年先のときや `None` のときも、1 分ずつ全部を調べる作りでは遅すぎる。\n\n例（`from datetime import datetime` とする）:\n- `next_run(\"*/15 9-17 * * MON-FRI\", datetime(2026, 10, 9, 17, 50))` → `datetime(2026, 10, 12, 9, 0)`（10 月 9 日は金曜。次は月曜の 9:00）\n- `next_run(\"0 0 1 * 1\", datetime(2026, 10, 8))` → `datetime(2026, 10, 12, 0, 0)`（毎月 1 日 **または** 毎週月曜。10 月 8 日は木曜）\n- `next_run(\"30 4 30 2 *\", datetime(2026, 1, 1))` → `None`",
+  "prompt_chars": 2065,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:10:38+09:00",
+  "finished_at": "2026-10-08T14:15:10+09:00",
+  "content": "```python\nfrom datetime import datetime, timedelta\n\ndef next_run(expression: str, after: datetime) -> datetime | None:\n    # Split expression into 5 fields: minute, hour, day, month, weekday\n    parts = expression.strip().split()\n    if len(parts) != 5:\n        raise ValueError(\"Invalid expression: must have 5 fields\")\n    \n    month_names = {\"JAN\": 1, \"FEB\": 2, \"MAR\": 3, \"APR\": 4, \"MAY\": 5, \"JUN\": 6, \n                   \"JUL\": 7, \"AUG\": 8, \"SEP\": 9, \"OCT\": 10, \"NOV\": 11, \"DEC\": 12}\n    weekday_names = {\"SUN\": 0, \"MON\": 1, \"TUE\": 2, \"WED\": 3, \"THU\": 4, \"FRI\": 5, \"SAT\": 6}\n\n    def parse_val(v, names):\n        if names and v.upper() in names:\n            return names[v.upper()]\n        if v.isdigit():\n            return int(v)\n        raise ValueError(f\"Invalid value: {v}\")\n\n    def parse_field(field, min_val, max_val, names=None):\n        if not field:\n            raise ValueError(\"Empty field\")\n        items = field.split(',')\n        res = set()\n        for item in items:\n            if not item:\n                raise ValueError(\"Empty item in comma-separated list\")\n            if '/' in item:\n                range_p, step_p = item.split('/')\n                if not step_p.isdigit():\n                    raise ValueError(\"Step must be an integer\")\n                step = int(step_p)\n                if step <= 0:\n                    raise ValueError(\"Step must be positive\")\n                if range_p == '*':\n                    start, end = min_val, max_val\n                elif '-' in range_p:\n                    s_str, e_str = range_p.split('-')\n                    start = parse_val(s_str, names)\n                    end = parse_val(e_str, names)\n                    if start > end:\n                        raise ValueError(\"Range start cannot be greater than end\")\n                else:\n                    raise ValueError(\"Step requires a range or '*' (a/n is not allowed)\")\n                for v in range(start, end + 1, step):\n                    if not (min_val <= v <= max_val):\n                        raise ValueError(\"Value out of range\")\n                    res.add(v)\n            elif '-' in item:\n                s_str, e_str = item.split('-')\n                start = parse_val(s_str, names)\n                end = parse_val(e_str, names)\n                if start > end:\n                    raise ValueError(\"Range start cannot be greater than end\")\n                for v in range(start, end + 1):\n                    if not (min_val <= v <= max_val):\n                        raise ValueError(\"Value out of range\")\n                    res.add(v)\n            elif item == '*':\n                for v in range(min_val, max_val + 1):\n                    res.add(v)\n            else:\n                v = parse_val(item, names)\n                if not (min_val <= v <= max_val):\n                    raise ValueError(\"Value out of range\")\n                res.add(v)\n        return res\n\n    # Parse each field into sets of valid integers\n    min_set = parse_field(parts[0], 0, 59)\n    hour_set = parse_field(parts[1], 0, 23)\n    day_set = parse_field(parts[2], 1, 31)\n    month_set = parse_field(parts[3], 1, 12, month_names)\n    # Weekday range is 0-7, but 0 and 7 both map to Sunday\n    weekday_set_raw = parse_field(parts[4], 0, 7, weekday_names)\n    weekday_set = {v % 7 for v in weekday_set_raw}\n\n    day_is_any = (parts[2] == '*')\n    weekday_is_any = (parts[4] == '*')\n\n    # Pre-sort for efficient iteration\n    sorted_months = sorted(list(month_set))\n    sorted_hours = sorted(list(hour_set))\n    sorted_mins = sorted(list(min_set))\n\n    # Search for the next valid datetime\n    for y in range(after.year, after.year + 11):\n        for m in sorted_months:\n            if y == after.year and m < after.month:\n                continue\n            \n            for d in range(1, 32):\n                if y == after.year and m == after.month and d < after.day:\n                    continue\n                \n                try:\n                    dt_day = datetime(y, m, d)\n                except ValueError:\n                    continue # Date doesn't exist (e.g., Feb 30)\n\n                # Check if the day matches the day and weekday criteria\n                if day_is_any and weekday_is_any:\n                    is_valid_day = True\n                elif day_is_any:\n                    is_valid_day = (dt_day.weekday() + 1) % 7 in weekday_set\n                elif weekday_is_any:\n                    is_valid_day = d in day_set\n                else:\n                    is_valid_day = (d in day_set or (dt_day.weekday() + 1) % 7 in weekday_set)\n                \n                if not is_valid_day:\n                    continue\n\n                for h in sorted_hours:\n                    if y == after.year and m == after.month and d == after.day and h < after.hour:\n                        continue\n                    for mi in sorted_mins:\n                        if y == after.year and m == after.month and d == after.day and h == after.hour and mi < after.minute:\n                            continue\n                        \n                        res = datetime(y, m, d, h, mi)\n                        if res > after:\n                            return res\n    return None\n```",
+  "thinking": "*   Function: `next_run(expression: str, after: datetime) -> datetime | None`\n    *   `expression`: Cron-like expression with 5 fields: min, hour, day, month, weekday.\n    *   `after`: Naive `datetime` object.\n    *   Return: Next naive `datetime` (seconds and microseconds = 0) strictly after `after`.\n    *   Limit: Year cannot exceed `after.year + 10`. Return `None` if not found.\n    *   Standard library only.\n    *   Constraints: No files, network, subprocess, or `sys.stdin`.\n    *   Specific field rules:\n        *   Minute: 0-59\n        *   Hour: 0-23\n        *   Day: 1-31\n        *   Month: 1-12 (also JAN-DEC)\n        *   Weekday: 0-7 (0, 7 = Sun, 1 = Mon, ..., 6 = Sat) (also SUN-SAT)\n    *   Field syntax:\n        *   `,` separated items.\n        *   `*`: All values in range.\n        *   `*/n`: Every $n$-th value from minimum.\n        *   `a`: Single value.\n        *   `a-b`: Range from $a$ to $b$ inclusive ($a \\le b$).\n        *   `a-b/n`: Every $n$-th value from $a$ to $b$ inclusive.\n        *   Names (JAN-DEC, SUN-SAT) are case-insensitive and can be in ranges.\n    *   Day and Weekday Relationship:\n        *   Both `*` (exactly `*`): Every day.\n        *   One `*` (exactly `*`): Only the other one.\n        *   Neither `*` (exactly `*`): Either Day OR Weekday.\n    *   Must be efficient. 1-minute increments are too slow.\n\n    *   `MINS`: 0-59\n    *   `HOURS`: 0-23\n    *   `DAYS`: 1-31\n    *   `MONTHS`: 1-12\n    *   `WEEKDAYS`: 0-6 (Map 7 to 0)\n\n    Need to map names to numbers:\n    *   MONTHS_NAMES = {\"JAN\": 1, \"FEB\": 2, \"MAR\": 3, \"APR\": 4, \"MAY\": 5, \"JUN\": 6, \"JUL\": 7, \"AUG\": 8, \"SEP\": 9, \"OCT\": 10, \"NOV\": 11, \"DEC\": 12}\n    *   WEEKDAYS_NAMES = {\"SUN\": 0, \"MON\": 1, \"TUE\": 2, \"WED\": 3, \"THU\": 4, \"FRI\": 5, \"SAT\": 6}\n\n    ```python\n    def parse_field(field, min_val, max_val, name_map=None):\n        if not field:\n            raise ValueError(\"Empty item\")\n        \n        items = field.split(',')\n        result_set = set()\n        \n        for item in items:\n            if not item:\n                raise ValueError(\"Empty item\")\n            \n            if '/' in item:\n                range_part, step_part = item.split('/')\n                if not step_part.isdigit():\n                    raise ValueError(\"Invalid step\")\n                step = int(step_part)\n                if step <= 0:\n                    raise ValueError(\"Step must be positive\")\n                \n                # Determine the range for the range_part\n                if range_part == '*':\n                    start, end = min_val, max_val\n                elif '-' in range_part:\n                    s_str, e_str = range_part.split('-')\n                    start = parse_value(s_str, name_map)\n                    end = parse_value(e_str, name_map)\n                else:\n                    raise ValueError(\"Invalid range part for step\")\n                \n                if start > end:\n                    raise ValueError(\"Range start > end\")\n                \n                for v in range(start, end + 1, step):\n                    if not (min_val <= v <= max_val):\n                        raise ValueError(\"Value out of range\")\n                    result_set.add(v)\n            \n            elif '-' in item:\n                s_str, e_str = item.split('-')\n                start = parse_value(s_str, name_map)\n                end = parse_value(e_str, name_map)\n                if start > end:\n                    raise ValueError(\"Range start > end\")\n                for v in range(start, end + 1):\n                    if not (min_val <= v <= max_val):\n                        raise ValueError(\"Value out of range\")\n                    result_set.add(v)\n            \n            elif item == '*':\n                for v in range(min_val, max_val + 1):\n                    result_set.add(v)\n            \n            else:\n                v = parse_value(item, name_map)\n                if not (min_val <= v <= max_val):\n                    raise ValueError(\"Value out of range\")\n                result_set.add(v)\n                \n        return result_set\n\n    def parse_value(val_str, name_map):\n        if name_map and val_str.upper() in name_map:\n            return name_map[val_str.upper()]\n        if val_str.isdigit():\n            return int(val_str)\n        raise ValueError(\"Invalid value\")\n    ```\n\n    *   Minute: `set(0..59)`\n    *   Hour: `set(0..23)`\n    *   Day: `set(1..31)`\n    *   Month: `set(1..12)`\n    *   Weekday: `set(0..6)`\n\n    Wait, let's refine the `*` rule for Day and Weekday.\n    The rule is: \"exactly `*` (no step, no commas)\".\n    So I should track if the original field was just `*`.\n\n    ```python\n    # Parse 5 fields\n    fields = expression.strip().split()\n    if len(fields) != 5:\n        raise ValueError(\"Wrong number of fields\")\n    \n    # Special check for *\n    day_is_any = (fields[2] == '*')\n    weekday_is_any = (fields[4] == '*')\n    \n    # Map 7 to 0 for weekday\n    # If the user provides \"7\", it's treated as 0.\n    # But the parsing logic needs to handle this.\n    ```\n\n    Wait, the weekday rule \"7 is 0\" means if the user writes \"7\", \"5-7\", or \"*/n\" starting at 0 and potentially including 7?\n    Wait, the range is 0-7. If we normalize everything to 0-6, then:\n    - \"7\" becomes \"0\".\n    - \"5-7\" becomes {5, 6, 0}.\n    - \"*/2\" (range 0-7) is 0, 2, 4, 6.\n    - \"1-7/3\" is 1, 4, 7. But 7 is 0. So {1, 4, 0}.\n\n    Let's re-read: \"曜日 0〜7（0 と 7 はどちらも日曜、1 が月曜、…、6 が土曜）... 曜日の 7 は 0（日曜）と同じ。5-7 は {5, 6, 0}。\"\n    This means the \"range\" of values for weekday is 0 to 7, but we map any 7 to 0.\n    Correct. So for weekdays:\n    - Range is 0-7.\n    - After parsing the set of values, map any 7 to 0.\n    - The final set of weekdays will be a subset of {0, 1, 2, 3, 4, 5, 6}.\n\n    Wait, let's reconsider the \"Day or Weekday\" logic:\n    - If `day_is_any` and `weekday_is_any`: Day is any day that exists in the month.\n    - If `day_is_any` and not `weekday_is_any`: Day must match `weekday_set`.\n    - If not `day_is_any` and `weekday_is_any`: Day must match `day_set`.\n    - If not `day_is_any` and not `weekday_is_any`: Day must match `day_set` OR `weekday_set`.\n\n    *   Current date: `after`.\n    *   Target: `next_datetime > after` with `sec=0, microsec=0`.\n    *   If `after` has `sec > 0` or `microsec > 0`, the earliest candidate is `after.replace(second=0, microsecond=0)`. But the return value must be strictly *after* `after`.\n    *   Actually, a simpler way:\n        Start with `candidate = after.replace(second=0, microsecond=0)`.\n        If `candidate <= after`, add 1 minute: `candidate += timedelta(minutes=1)`.\n        Then, we need to find the next `candidate` that satisfies the cron expression.\n\n    *   To avoid 1-minute increments:\n        1.  Check current month. If no more valid days in current month, move to the first valid day of the next valid month.\n        2.  For a specific month and day:\n            Check if the day is valid (exists in month AND (day_set or weekday_set match)).\n            If valid, find the next valid hour.\n            If valid hour, find the next valid minute.\n\n    *   Wait, it's easier to iterate through the components:\n        - Year: `after.year` to `after.year + 10`\n        - Month: `1` to `12` (only those in `month_set`)\n        - Day: `1` to `31` (only those in `day_set` or `weekday_set`, and must exist in month)\n        - Hour: `0` to `23` (only those in `hour_set`)\n        - Minute: `0` to `59` (only those in `min_set`)\n\n    *   Since the search space is small (10 years), we can iterate through:\n        `Year -> Month -> Day -> Hour -> Minute`\n        But we only need to iterate through the values *present* in the sets.\n\n    *   Refined Iteration:\n        1.  `year = after.year`\n        2.  `months = sorted(list(month_set))`\n        3.  For `y` from `after.year` to `after.year + 10`:\n            For `m` in `months`:\n                If `y == after.year` and `m < after.month`: continue\n                For `d` from 1 to 31:\n                    If `y == after.year` and `m == after.month` and `d < after.day`: continue\n                    If not `is_valid_day(y, m, d, day_set, weekday_set, day_is_any, weekday_is_any)`: continue\n                    For `h` in `sorted(list(hour_set))`:\n                        If `y == after.year` and `m == after.month` and `d == after.day` and `h < after.hour`: continue\n                        For `min` in `sorted(list(min_set))`:\n                            If `y == after.year` and `m == after.month` and `d == after.day` and `h == after.hour` and `min < after.minute`: continue\n                            \n                            `candidate = datetime(y, m, d, h, min)`\n                            If `candidate > after`:\n                                return `candidate`\n\n        Actually, to be even faster, we only iterate through `y`, `m` (in `month_set`), `d` (1-31), `h` (in `hour_set`), and `min` (in `min_set`).\n\n    ```python\n    def is_valid_day(y, m, d, day_set, weekday_set, day_is_any, weekday_is_any):\n        # Check if d is a valid day for month m in year y\n        if d < 1 or d > 31: return False\n        try:\n            dt = datetime(y, m, d)\n        except ValueError:\n            return False\n        \n        # Cron day/weekday logic\n        if day_is_any and weekday_is_any:\n            return True\n        if day_is_any:\n            return dt.weekday() in weekday_set # dt.weekday() is 0=Mon...6=Sun, wait.\n            # Our weekday_set: 0=Sun, 1=Mon...6=Sat\n            # datetime.weekday(): 0=Mon, 6=Sun\n            # datetime.isoweekday(): 1=Mon, 7=Sun\n            # Let's use: (dt.weekday() + 1) % 7 for 0=Sun, 1=Mon...6=Sat\n        if weekday_is_any:\n            return d in day_set\n        if d in day_set or (dt.weekday() + 1) % 7 in weekday_set:\n            return True\n        return False\n    ```\n    Wait, let's double check the `(dt.weekday() + 1) % 7` logic:\n    - `dt.weekday()`: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6\n    - Mon: (0+1)%7 = 1\n    - Sat: (5+1)%7 = 6\n    - Sun: (6+1)%7 = 0\n    Correct.\n\n    \"曜日の 7 は 0（日曜）と同じ。5-7 は {5, 6, 0}。\"\n    My `parse_field` for weekday:\n    ```python\n    def parse_weekday_field(field):\n        # range 0-7\n        # ... (parse normally) ...\n        # then:\n        res = set()\n        for v in result_set:\n            res.add(v % 7)\n        return res\n    ```\n    Example: `5-7` -> `{5, 6, 7}` -> `v % 7` -> `{5, 6, 0}`. Correct.\n    Example: `*/2` (0-7) -> `{0, 2, 4, 6}` -> `{0, 2, 4, 6}`. Correct.\n\n    - `expression.strip().split()` handles multiple spaces/tabs.\n    - `ValueError` for:\n        - Wrong number of fields.\n        - Empty item in `,` list.\n        - Step `n <= 0`.\n        - Range `a > b`.\n        - Value out of range.\n        - Unknown name.\n        - Non-digit (where expected).\n        - Non-`a-b/n`, `a-b`, `*/n`, `*`, `a` forms.\n        - `?`, `L`, `@daily`, etc. (these will naturally be caught by the `if/elif` structure).\n\n    Wait, the specification says: \"a/n の形（範囲を書かずに刻みを付ける形）は不可\".\n    My `parse_field` should handle this:\n    ```python\n    if '/' in item:\n        range_part, step_part = item.split('/')\n        if range_part == '*':\n            # OK: */n\n        elif '-' in range_part:\n            # OK: a-b/n\n        else:\n            # Not OK: a/n\n            raise ValueError(\"a/n is not allowed\")\n    ```\n\n    - `datetime(2026, 10, 9, 17, 50)` for `*/15 9-17 * * MON-FRI`\n    - `month_set = {1..12}`, `day_set = {1..31}`, `weekday_set = {1,2,3,4,5}`, `hour_set = {9,10..17}`, `min_set = {0,15,30,45}`\n    - `day_is_any = True`, `weekday_is_any = False`\n    - `is_valid_day` will check `(dt.weekday() + 1) % 7 in {1,2,3,4,5}`\n    - 2026-10-09 is Friday. `(4+1)%7 = 5`. `5` is in `{1,2,3,4,5}`.\n    - For 2026-10-09, hour 17, min 50:\n        - Next min is `None` (last min is 45).\n        - Next hour: `hour_set` ends at 17.\n        - Next day: 2026-10-10 is Saturday (6). Not in `weekday_set`.\n        - 2026-10-11 is Sunday (0). Not in `weekday_set`.\n        - 2026-10-12 is Monday (1). In `weekday_set`.\n        - Next hour is 9.\n        - Next min is 0.\n        - Result: `datetime(2026, 10, 12, 9, 0)`.\n\n    - Let's re-verify \"7 is 0\".\n      - \"曜日 0〜7（0 と 7 はどちらも日曜）\"\n      - My `parse_field` uses `min_val=0, max_val=7`.\n      - If the user puts `7`, `v % 7` makes it `0`.\n      - If the user puts `0`, `v % 7` makes it `0`.\n      - If the user puts `0-7`, `v % 7` makes it `{0, 1, 2, 3, 4, 5, 6}`.\n      - If the user puts `7-7`, `v % 7` makes it `{0}`.\n      - This seems correct.\n\n    ```python\n    from datetime import datetime, timedelta\n\n    def next_run(expression, after):\n        # Parse fields\n        parts = expression.strip().split()\n        if len(parts) != 5:\n            raise ValueError(\"Invalid expression\")\n        \n        # Month names and Weekday names\n        month_names = {\"JAN\":1,\"FEB\":2,\"MAR\":3,\"APR\":4,\"MAY\":5,\"JUN\":6,\"JUL\":7,\"AUG\":8,\"SEP\":9,\"OCT\":10,\"NOV\":11,\"DEC\":12}\n        weekday_names = {\"SUN\":0,\"MON\":1,\"TUE\":2,\"WED\":3,\"THU\":4,\"FRI\":5,\"SAT\":6}\n        \n        def parse_val(v, names):\n            if names and v.upper() in names:\n                return names[v.upper()]\n            if v.isdigit():\n                return int(v)\n            raise ValueError(\"Invalid value\")\n\n        def parse_field(field, min_val, max_val, names=None):\n            if not field: raise ValueError(\"Empty field\")\n            items = field.split(',')\n            res = set()\n            for item in items:\n                if not item: raise ValueError(\"Empty item\")\n                if '/' in item:\n                    range_p, step_p = item.split('/')\n                    if not step_p.isdigit(): raise ValueError(\"Invalid step\")\n                    step = int(step_p)\n                    if step <= 0: raise ValueError(\"Step must be > 0\")\n                    if range_p == '*':\n                        start, end = min_val, max_val\n                    elif '-' in range_p:\n                        s_str, e_str = range_p.split('-')\n                        start = parse_val(s_str, names)\n                        end = parse_val(e_str, names)\n                        if start > end: raise ValueError(\"Range start > end\")\n                    else:\n                        raise ValueError(\"Invalid step format\")\n                    for v in range(start, end + 1, step):\n                        if not (min_val <= v <= max_val): raise ValueError(\"Out of range\")\n                        res.add(v)\n                elif '-' in item:\n                    s_str, e_str = item.split('-')\n                    start = parse_val(s_str, names)\n                    end = parse_val(e_str, names)\n                    if start > end: raise ValueError(\"Range start > end\")\n                    for v in range(start, end + 1):\n                        if not (min_val <= v <= max_val): raise ValueError(\"Out of range\")\n                        res.add(v)\n                elif item == '*':\n                    for v in range(min_val, max_val + 1):\n                        res.add(v)\n                else:\n                    v = parse_val(item, names)\n                    if not (min_val <= v <= max_val): raise ValueError(\"Out of range\")\n                    res.add(v)\n            return res\n\n        min_set = parse_field(parts[0], 0, 59)\n        hour_set = parse_field(parts[1], 0, 23)\n        day_set = parse_field(parts[2], 1, 31)\n        month_set = parse_field(parts[3], 1, 12, month_names)\n        weekday_set_raw = parse_field(parts[4], 0, 7, weekday_names)\n        weekday_set = {v % 7 for v in weekday_set_raw}\n        \n        day_is_any = (parts[2] == '*')\n        weekday_is_any = (parts[4] == '*')\n        \n        # Search\n        for y in range(after.year, after.year + 11):\n            # Optimize: only iterate through valid months\n            for m in sorted(list(month_set)):\n                if y == after.year and m < after.month:\n                    continue\n                \n                # Optimize: only iterate through days 1-31\n                for d in range(1, 32):\n                    if y == after.year and m == after.month and d < after.day:\n                        continue\n                    \n                    # Check if day is valid for this month/year\n                    try:\n                        dt_day = datetime(y, m, d)\n                    except ValueError:\n                        continue\n                    \n                    # Cron day/weekday rule\n                    if day_is_any and weekday_is_any:\n                        is_valid = True\n                    elif day_is_any:\n                        is_valid = (dt_day.weekday() + 1) % 7 in weekday_set\n                    elif weekday_is_any:\n                        is_valid = d in day_set\n                    else:\n                        is_valid = (d in day_set or (dt_day.weekday() + 1) % 7 in weekday_set)\n                    \n                    if not is_valid:\n                        continue\n                    \n                    # Now check hours and minutes\n                    for h in sorted(list(hour_set)):\n                        if y == after.year and m == after.month and d == after.day and h < after.hour:\n                            continue\n                        for mi in sorted(list(min_set)):\n                            if y == after.year and m == after.month and d == after.day and h == after.hour and mi < after.minute:\n                                continue\n                            \n                            res = datetime(y, m, d, h, mi)\n                            if res > after:\n                                return res\n        return None\n    ```\n\n    *   `after` is naive: Checked.\n    *   `tzinfo` absent: Checked.\n    *   `year + 10` limit: Checked.\n    *   `after` seconds/microseconds:\n        - If `after = datetime(2026, 10, 8, 12, 0, 30)`, then `datetime(2026, 10, 8, 12, 0, 0)` is NOT `> after`.\n        - So the loop will correctly find the next valid `datetime(y, m, d, h, mi)`.\n        - If `after = datetime(2026, 10, 8, 12, 0, 0)`, the next valid `mi` must be `> 0` if `h` is 12 and `d` is 8.\n        - This is correctly handled by `if res > after`.\n    *   Empty field/item: Handled.\n    *   Invalid characters (`?`, `L`, etc.): Handled by `parse_val` and `if/elif` chain.\n    *   `a > b` range: Handled.\n    *   `n = 0` step: Handled.\n    *   `a/n` format: Handled.\n    *   Wait, one detail: \"曜日 0〜7（0 と 7 はどちらも日曜、1 が月曜、…、6 が土曜）\".\n        If I use `min_val=0, max_val=7` and then `v % 7`, it correctly maps both 0 and 7 to 0.\n        Is `7` allowed as a single value? Yes.\n        Is `7` allowed in a range like `5-7`? Yes.\n        Is `*/2` over `0-7` correct? `0, 2, 4, 6` $\\to$ `0, 2, 4, 6`. Correct.\n        Wait, what about `1-7/3`? `1, 4, 7` $\\to$ `1, 4, 0`. Correct.\n\n    Wait, the `is_valid_day` logic:\n    - `day_is_any = (parts[2] == '*')`\n    - `weekday_is_any = (parts[4] == '*')`\n    - If `day_is_any` and `weekday_is_any`, it's everyday.\n    - If `day_is_any` (and not `weekday_is_any`), it's any day that matches `weekday_set`.\n    - If `weekday_is_any` (and not `day_is_any`), it's any day that matches `day_set`.\n    - If neither is any, it's any day that matches `day_set` OR `weekday_set`.\n    This exactly matches the spec: \"両方とも無指定なら毎日。片方だけ無指定なら、もう片方のフィールドに合う日だけ。両方とも指定があるときは、「日」に合う か 「曜日」に合う日（どちらか一方でよい）。\"\n\n    Wait, I should ensure the return value is a `datetime | None`.\n    Wait, Python 3.12 allows `datetime | None` as a type hint.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 1240,
+  "completion_tokens": 7753,
+  "ttft_s": 3.158,
+  "t_first_content_s": 221.478,
+  "wall_s": 271.971,
+  "load_s": 0.001,
+  "server_decode_tok_s": 28.83,
+  "server_prefill_tok_s": 571.53,
+  "server_timings": {
+    "total_duration": 271970873192,
+    "load_duration": 901680,
+    "prompt_eval_count": 1240,
+    "prompt_eval_duration": 2169622000,
+    "eval_count": 7753,
+    "eval_duration": 268919114000
+  },
+  "delta_chunks": 6628,
+  "wall_decode_tok_s": 28.84,
+  "thinking_chars": 19444,
+  "content_chars": 5222,
+  "thinking_tokens_est": 6112,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 271.97,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 26,
+    "total": 26,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_every_minute",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_same_minute_is_excluded",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fixed_minute_wraps_hour",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hour_range_wraps_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_from_minimum",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_range_with_step",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists_and_duplicates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_month_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_names",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sunday_as_seven",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_day_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_weekday_only_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_both_restricted_means_or",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_step_in_day_field_is_restricted",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leap_day",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_impossible_dates_return_none",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_year_boundary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_leading_zeros_tabs_and_outer_spaces",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_match_time_boundaries",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_field_count",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_syntax",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_names_and_extensions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_naive_datetime",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_far_answers_are_fast",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_none_is_fast",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.03,
+    "stderr_tail": ""
+  }
+}

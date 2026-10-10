@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "extra",
+  "item": "json1",
+  "run": 1,
+  "prompt": "次のメールから注文の情報を取り出し、JSON で答えてください。\n\nメール:\n\"\"\"\n件名: 追加注文のお願い\n\nいつもお世話になっております。株式会社みどり商会の佐藤です。\n先日ご案内いただいた業務用コーヒー豆（品番 KB-204）を 12 袋お願いします。\n前回お願いした紅茶（品番 KB-110）は、今回は不要です。\n納品は 11 月 5 日の午前中を希望します。\nお支払いはいつもどおり請求書でお願いいたします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"company\": 注文した会社の名前（文字列）\n  - \"contact\": 担当者の姓（文字列）\n  - \"product_code\": 今回注文する商品の品番（文字列）\n  - \"quantity\": 今回注文する数（整数）\n  - \"delivery_date\": 希望の納品日（\"YYYY-MM-DD\" の形の文字列。年は 2026 年とする）\n  - \"payment\": 支払い方法。\"請求書\"、\"クレジットカード\"、\"代金引換\" のどれか（文字列）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 518,
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T12:31:13+09:00",
+  "finished_at": "2026-10-08T12:31:21+09:00",
+  "content": "```json\n{\n  \"company\": \"株式会社みどり商会\",\n  \"contact\": \"佐藤\",\n  \"product_code\": \"KB-204\",\n  \"quantity\": 12,\n  \"delivery_date\": \"2026-11-05\",\n  \"payment\": \"請求書\"\n}\n```",
+  "thinking": "Thinking Process:\n\n1.  **Analyze the Request:** The goal is to extract specific order information from the provided email and format it into a single JSON object with six mandatory keys.\n2.  **Identify the Keys and Constraints:**\n    *   `company`: The ordering company name (String).\n    *   `contact`: The contact person's last name (String).\n    *   `product_code`: The product code for *the* primary item being ordered (String).\n    *   `quantity`: The quantity of the primary item (Integer).\n    *   `delivery_date`: Desired delivery date (String format \"YYYY-MM-DD\", Year must be 2026).\n    *   `payment`: Payment method (\"請求書\", \"クレジットカード\", \"代金引換\") (String).\n    *   Output must be *only* the JSON object.\n\n3.  **Analyze the Email Content:**\n    *   *From/Sender:* 株式会社みどり商会の佐藤です。\n        *   `company`: 株式会社みどり商会\n        *   `contact`: 佐藤\n    *   *Product/Order:* 業務用コーヒー豆（品番 KB-204）を 12 袋お願いします。\n        *   `product_code`: KB-204 (This is the item being ordered this time)\n        *   `quantity`: 12\n    *   *Product/Exclusion:* 前回お願いした紅茶（品番 KB-110）は、今回は不要です。 (Ignore this)\n    *   *Delivery:* 納品は 11 月 5 日の午前中を希望します。\n        *   `delivery_date`: 11月5日。Year must be 2026. -> \"2026-11-05\"\n    *   *Payment:* お支払いはいつもどおり請求書でお願いいたします。\n        *   `payment`: 請求書\n\n4.  **Handle Ambiguity/Multiple Items (Crucial Step):**\n    *   The email orders one specific item: コーヒー豆 (KB-204, 12袋)。\n    *   Although the prompt asks for `product_code` and `quantity` (singular), it clearly refers to the *main* item being ordered.\n    *   The request must consolidate the key information for the current order.\n\n5.  **Construct the JSON Object:**\n    *   \"company\": \"株式会社みどり商会\"\n    *   \"contact\": \"佐藤\"\n    *   \"product_code\": \"KB-204\"\n    *   \"quantity\": 12\n    *   \"delivery_date\": \"2026-11-05\"\n    *   \"payment\": \"請求書\"\n\n6.  **Final Review:** Check against formatting rules (JSON only, correct types, specific date format, specific payment options). The structure is correct. (Self-Correction: Ensure integer for quantity, string for others.)",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 289,
+  "completion_tokens": 734,
+  "ttft_s": 0.24,
+  "t_first_content_s": 7.307,
+  "wall_s": 8.158,
+  "load_s": 0.001,
+  "server_decode_tok_s": 92.27,
+  "server_prefill_tok_s": 2197.37,
+  "server_timings": {
+    "total_duration": 8157614065,
+    "load_duration": 969000,
+    "prompt_eval_count": 289,
+    "prompt_eval_duration": 131520999,
+    "eval_count": 734,
+    "eval_duration": 7955218000
+  },
+  "delta_chunks": 625,
+  "wall_decode_tok_s": 92.7,
+  "thinking_chars": 2033,
+  "content_chars": 158,
+  "thinking_tokens_est": 681,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 8.157,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "fenced",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "company": {
+        "ok": true,
+        "got": "株式会社みどり商会"
+      },
+      "contact": {
+        "ok": true,
+        "got": "佐藤"
+      },
+      "product_code": {
+        "ok": true,
+        "got": "KB-204"
+      },
+      "quantity": {
+        "ok": true,
+        "got": 12
+      },
+      "delivery_date": {
+        "ok": true,
+        "got": "2026-11-05"
+      },
+      "payment": {
+        "ok": true,
+        "got": "請求書"
+      }
+    },
+    "extra_keys": []
+  }
+}

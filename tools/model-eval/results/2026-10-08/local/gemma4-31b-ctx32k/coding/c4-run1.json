@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "coding",
+  "item": "c4",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 C4: 厳密な JSON パーサ\n\n関数 `parse_json(text: str) -> object` を書いてください。RFC 8259 の文法に厳密に従って `text` を 1 つの JSON の値として読み、Python の値に変換します。標準ライブラリの `json` モジュール（`json.loads`、`json.JSONDecoder` など）は使わないでください（使った答えは 0 点）。\n\n### 文法\n\n- `text` 全体が「空白（0 個以上）、値 1 つ、空白（0 個以上）」でなければならない。それ以外（空の文字列、空白だけ、値の前後の余計な文字、値が 2 つ）は `ValueError`。\n- 空白は半角スペース、`\\t`、`\\n`、`\\r` の 4 種類だけ。`\\f`、`\\v`、ノーブレークスペース、先頭の BOM（U+FEFF）は空白ではなく、`ValueError`。\n- 値は、オブジェクト、配列、文字列、数、`true`、`false`、`null` のいずれか。トップレベルの値がオブジェクトや配列でなくてもよい（`\"abc\"` や `42` だけでも正しい）。\n- リテラルは `true`、`false`、`null` の小文字だけ。`True`、`NULL`、`nul` は `ValueError`。`NaN`、`Infinity`、`-Infinity` も `ValueError`。\n- オブジェクト `{ ... }` は Python の `dict`。キーは必ず文字列。`,` で区切り、末尾の余計な `,`（`{\"a\":1,}`）や空のメンバー（`{,}`）は `ValueError`。**同じキーが 2 回出てきたら `ValueError`**（エスケープを解いたあとの文字列として同じなら同じキー。`{\"a\":1,\"\\u0061\":2}` は `ValueError`）。\n- 配列 `[ ... ]` は Python の `list`。末尾の余計な `,` や空の要素（`[1,,2]`、`[,1]`）は `ValueError`。\n- 文字列は `\"` で囲む（`'` は不可）。中で使えるエスケープは `\\\"` `\\\\` `\\/` `\\b` `\\f` `\\n` `\\r` `\\t` と `\\uXXXX`（16 進 4 桁。大文字小文字どちらも可）だけ。それ以外のエスケープ（`\\a`、`\\x41`、`\\'`、`\\U0001F600`、桁の足りない `\\u12`）は `ValueError`。\n  - 文字列の中にエスケープされていない制御文字（U+0000〜U+001F）があれば `ValueError`。U+007F 以降の文字（日本語や絵文字）はそのまま書いてよい。\n  - `\\uD83D\\uDE00` のように上位サロゲート（U+D800〜U+DBFF）の直後に下位サロゲート（U+DC00〜U+DFFF）の `\\u` エスケープが続くときは、合わせて 1 文字（この例では U+1F600）にする。下位サロゲートだけ、上位サロゲートの直後に下位サロゲートのエスケープが続かない、という場合は `ValueError`。`\\u0000` は許される（長さ 1 の文字列 `\"\\x00\"`）。\n- 数は `-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?` の形だけ。先頭の `0` に数字が続くもの（`01`）、`+1`、`.5`、`1.`、`1e`、`0x10`、`1_000` は `ValueError`。小数部か指数部があれば Python の `float(その文字列)` と同じ値（`1e400` は `inf`）、どちらも無ければ `int`（桁数に上限はなく、正確な値。`-0` は `int` の `0`）。\n- 入れ子の深さは最大 50,000（`[[[[...]]]]` のような深い入れ子でも、正しく値を返すこと）。`text` の長さは最大 1,000,000 文字で、その長さでも十分速く動くこと（たとえば、読み進めるたびに文字列を切り出す（`text = text[1:]`）作りでは間に合わない）。\n\n例:\n- `parse_json(' {\"a\": [1, 2.5, \"x\\\\ny\"], \"b\": {\"c\": null, \"d\": true}} ')` → `{\"a\": [1, 2.5, \"x\\ny\"], \"b\": {\"c\": None, \"d\": True}}`\n- `parse_json('\"\\\\u3042\\\\uD83D\\\\uDE00\"')` → `\"あ😀\"`\n- `parse_json('[1, 2,]')` → `ValueError` を送出",
+  "prompt_chars": 2290,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:19:36+09:00",
+  "finished_at": "2026-10-08T14:23:31+09:00",
+  "content": "```python\nimport sys\n\n# Increase recursion depth to handle deeply nested JSON structures\nsys.setrecursionlimit(100000)\n# Disable the integer string conversion limit to handle very large numbers\nif hasattr(sys, 'set_int_max_str_digits'):\n    sys.set_int_max_str_digits(0)\n\ndef parse_json(text: str) -> object:\n    class JSONParser:\n        def __init__(self, text):\n            self.text = text\n            self.pos = 0\n            self.length = len(text)\n\n        def skip_whitespace(self):\n            while self.pos < self.length and self.text[self.pos] in ' \\t\\n\\r':\n                self.pos += 1\n\n        def parse_value(self):\n            self.skip_whitespace()\n            if self.pos >= self.length:\n                raise ValueError(\"Unexpected end of input\")\n\n            char = self.text[self.pos]\n            if char == '{':\n                return self.parse_object()\n            elif char == '[':\n                return self.parse_array()\n            elif char == '\"':\n                return self.parse_string()\n            elif char == '-' or '0' <= char <= '9':\n                return self.parse_number()\n            elif char == 't':\n                return self.parse_literal('true', True)\n            elif char == 'f':\n                return self.parse_literal('false', False)\n            elif char == 'n':\n                return self.parse_literal('null', None)\n            else:\n                raise ValueError(f\"Unexpected character {char!r}\")\n\n        def parse_literal(self, expected, value):\n            if self.text.startswith(expected, self.pos):\n                self.pos += len(expected)\n                return value\n            raise ValueError(f\"Expected {expected!r}\")\n\n        def parse_string(self):\n            self.pos += 1  # Skip opening quote\n            res = []\n            while self.pos < self.length:\n                char = self.text[self.pos]\n                if char == '\"':\n                    self.pos += 1\n                    return \"\".join(res)\n                elif char == '\\\\':\n                    self.pos += 1\n                    if self.pos >= self.length:\n                        raise ValueError(\"Unterminated escape sequence\")\n                    esc = self.text[self.pos]\n                    self.pos += 1\n                    if esc == '\"': res.append('\"')\n                    elif esc == '\\\\': res.append('\\\\')\n                    elif esc == '/': res.append('/')\n                    elif esc == 'b': res.append('\\b')\n                    elif esc == 'f': res.append('\\f')\n                    elif esc == 'n': res.append('\\n')\n                    elif esc == 'r': res.append('\\r')\n                    elif esc == 't': res.append('\\t')\n                    elif esc == 'u':\n                        if self.pos + 4 > self.length:\n                            raise ValueError(\"Incomplete \\u escape\")\n                        hex_val = self.text[self.pos : self.pos + 4]\n                        self.pos += 4\n                        try:\n                            cp = int(hex_val, 16)\n                        except ValueError:\n                            raise ValueError(\"Invalid hex in \\u escape\")\n                        \n                        if 0xD800 <= cp <= 0xDBFF:\n                            # High surrogate: must be followed by \\uLow\n                            if self.pos + 6 > self.length or self.text[self.pos : self.pos + 2] != '\\\\u':\n                                raise ValueError(\"High surrogate not followed by low surrogate\")\n                            self.pos += 2\n                            hex_val2 = self.text[self.pos : self.pos + 4]\n                            self.pos += 4\n                            try:\n                                cp2 = int(hex_val2, 16)\n                            except ValueError:\n                                raise ValueError(\"Invalid hex in low surrogate escape\")\n                            if not (0xDC00 <= cp2 <= 0xDFFF):\n                                raise ValueError(\"Invalid low surrogate\")\n                            res.append(chr(0x10000 + (cp - 0xD800) * 0x400 + (cp2 - 0xDC00)))\n                        elif 0xDC00 <= cp <= 0xDFFF:\n                            raise ValueError(\"Low surrogate without high surrogate\")\n                        else:\n                            res.append(chr(cp))\n                    else:\n                        raise ValueError(f\"Invalid escape sequence \\\\{esc}\")\n                elif ord(char) <= 0x1F:\n                    raise ValueError(\"Unescaped control character\")\n                else:\n                    res.append(char)\n                    self.pos += 1\n            raise ValueError(\"Unterminated string\")\n\n        def parse_number(self):\n            start = self.pos\n            if self.text[self.pos] == '-':\n                self.pos += 1\n            \n            if self.pos >= self.length:\n                raise ValueError(\"Unexpected end of number\")\n            \n            if self.text[self.pos] == '0':\n                self.pos += 1\n                if self.pos < self.length and '0' <= self.text[self.pos] <= '9':\n                    raise ValueError(\"Leading zero not allowed\")\n            elif '1' <= self.text[self.pos] <= '9':\n                while self.pos < self.length and '0' <= self.text[self.pos] <= '9':\n                    self.pos += 1\n            else:\n                raise ValueError(\"Invalid number format\")\n\n            has_float = False\n            if self.pos < self.length and self.text[self.pos] == '.':\n                has_float = True\n                self.pos += 1\n                if self.pos >= self.length or not ('0' <= self.text[self.pos] <= '9'):\n                    raise ValueError(\"Fractional part must start with a digit\")\n                while self.pos < self.length and '0' <= self.text[self.pos] <= '9':\n                    self.pos += 1\n\n            if self.pos < self.length and self.text[self.pos] in 'eE':\n                has_float = True\n                self.pos += 1\n                if self.pos < self.length and self.text[self.pos] in '+-':\n                    self.pos += 1\n                if self.pos >= self.length or not ('0' <= self.text[self.pos] <= '9'):\n                    raise ValueError(\"Exponent must contain digits\")\n                while self.pos < self.length and '0' <= self.text[self.pos] <= '9':\n                    self.pos += 1\n            \n            num_str = self.text[start:self.pos]\n            return float(num_str) if has_float else int(num_str)\n\n        def parse_array(self):\n            self.pos += 1  # Skip [\n            self.skip_whitespace()\n            if self.pos < self.length and self.text[self.pos] == ']':\n                self.pos += 1\n                return []\n            \n            res = []\n            while True:\n                res.append(self.parse_value())\n                self.skip_whitespace()\n                if self.pos < self.length and self.text[self.pos] == ']':\n                    self.pos += 1\n                    return res\n                if self.pos < self.length and self.text[self.pos] == ',':\n                    self.pos += 1\n                    self.skip_whitespace()\n                    if self.pos < self.length and self.text[self.pos] == ']':\n                        raise ValueError(\"Trailing comma in array\")\n                else:\n                    raise ValueError(\"Expected , or ] in array\")\n\n        def parse_object(self):\n            self.pos += 1  # Skip {\n            self.skip_whitespace()\n            if self.pos < self.length and self.text[self.pos] == '}':\n                self.pos += 1\n                return {}\n            \n            res = {}\n            while True:\n                self.skip_whitespace()\n                if self.pos >= self.length or self.text[self.pos] != '\"':\n                    raise ValueError(\"Object key must be a string\")\n                \n                key = self.parse_string()\n                if key in res:\n                    raise ValueError(f\"Duplicate key: {key!r}\")\n                \n                self.skip_whitespace()\n                if self.pos >= self.length or self.text[self.pos] != ':':\n                    raise ValueError(\"Expected : after key\")\n                self.pos += 1\n                \n                val = self.parse_value()\n                res[key] = val\n                \n                self.skip_whitespace()\n                if self.pos < self.length and self.text[self.pos] == '}':\n                    self.pos += 1\n                    return res\n                if self.pos < self.length and self.text[self.pos] == ',':\n                    self.pos += 1\n                    self.skip_whitespace()\n                    if self.pos < self.length and self.text[self.pos] == '}':\n                        raise ValueError(\"Trailing comma in object\")\n                else:\n                    raise ValueError(\"Expected , or } in object\")\n\n    parser = JSONParser(text)\n    result = parser.parse_value()\n    parser.skip_whitespace()\n    if parser.pos < parser.length:\n        raise ValueError(\"Extra data after JSON value\")\n    return result\n```",
+  "thinking": "*   Input: `text: str`\n    *   Output: Python object (dict, list, str, int, float, bool, None)\n    *   Strict adherence to RFC 8259.\n    *   Whitespace: only space, `\\t`, `\\n`, `\\r`.\n    *   Structure: `whitespace` + `one value` + `whitespace`.\n    *   Literals: `true`, `false`, `null` (case-sensitive, lowercase).\n    *   Objects: `{}` (dict), keys must be strings, no trailing commas, no empty members, *no duplicate keys*.\n    *   Arrays: `[]` (list), no trailing commas, no empty elements.\n    *   Strings: `\"` delimiters, specific escapes (`\\\"`, `\\\\`, `\\/`, `\\b`, `\\f`, `\\n`, `\\r`, `\\t`, `\\uXXXX`), no unescaped control characters (U+0000-001F).\n    *   Unicode: `\\uXXXX` with surrogate pair handling (UTF-16).\n    *   Numbers: `-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?`. No leading zeros (except 0), no `+` sign, no `.5`, no `1.`, no `1e`, no hex, no underscores.\n    *   Constraints: Depth max 50,000. Text length max 1,000,000. Efficiency (avoid `text = text[1:]`).\n    *   Errors: `ValueError` for all violations.\n\n    *   Since `text[1:]` is slow, use a pointer (index) to track the current position in the string.\n    *   To handle the recursion depth limit (50,000), `sys.setrecursionlimit` might be needed, or use an iterative approach. However, the specification mentions \"deep nesting\", suggesting we should be careful. 50k is quite deep for Python's default (usually 1000).\n    *   The pointer approach: `self.pos` tracking index.\n\n    *   `skip_whitespace()`: Move `pos` past ` `, `\\t`, `\\n`, `\\r`.\n    *   `parse_value()`: Dispatch based on the current character.\n    *   `parse_object()`: Handle `{`, keys, values, commas, duplicates.\n    *   `parse_array()`: Handle `[`, values, commas.\n    *   `parse_string()`: Handle `\"`, escapes, surrogates, control chars.\n    *   `parse_number()`: Match the number regex, convert to `int` or `float`.\n    *   `parse_literal()`: Match `true`, `false`, `null`.\n\n    *   Regex for number: `-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?`\n    *   Manual parsing:\n        *   Check optional `-`.\n        *   Check digits (handle leading 0).\n        *   Check optional `.` then digits.\n        *   Check optional `e`/`E`, optional `+/-`, then digits.\n    *   Convert to `int` if no `.` or `e`/`E`. Otherwise `float`.\n\n    *   Starts with `\"`.\n    *   Loop until `\"`.\n    *   If `\\`:\n        *   Next char: `\"` `\\` `/` `b` `f` `n` `r` `t` $\\rightarrow$ corresponding Python char.\n        *   Next char: `u`:\n            *   Read 4 hex digits. If invalid, `ValueError`.\n            *   Convert to codepoint.\n            *   If codepoint is high surrogate (U+D800-DBFF):\n                *   Must be followed by `\\u` and a low surrogate (U+DC00-DFFF).\n                *   Combine: `(high - 0xD800) * 0x400 + (low - 0xDC00) + 0x10000`.\n            *   If codepoint is low surrogate (U+DC00-DFFF) without preceding high surrogate: `ValueError`.\n        *   Any other char after `\\`: `ValueError`.\n    *   Control characters (U+0000-001F) not escaped: `ValueError`.\n    *   Closing `\"` missing: `ValueError`.\n\n    *   Max depth 50,000.\n    *   `sys.setrecursionlimit(60000)` should be safe for a 50,000 depth call stack on most systems, though memory might be an issue.\n    *   Wait, let's check the time/memory limit implicitly. A manual stack (iterative) is safer but harder to implement for JSON. Given the prompt says \"deeply nested...正しく値を返すこと\", let's try increasing the recursion limit.\n\n    *   `{` $\\rightarrow$ `parse_object()`.\n    *   `[` $\\rightarrow$ `parse_array()`.\n    *   `\"` $\\rightarrow$ `parse_string()`.\n    *   `-` or digit $\\rightarrow$ `parse_number()`.\n    *   `t` $\\rightarrow$ `true`.\n    *   `f` $\\rightarrow$ `false`.\n    *   `n` $\\rightarrow$ `null`.\n    *   Anything else $\\rightarrow$ `ValueError`.\n\n    *   `parse_json(text)` function.\n    *   Internal class or closure to maintain state (`pos`).\n    *   Use `sys.setrecursionlimit`.\n\n    *   Empty string/Whitespace only: `parse_value` will fail or `pos` won't move.\n    *   Multiple values: `skip_whitespace` after `parse_value`, if `pos < len(text)`, `ValueError`.\n    *   Trailing comma: `parse_array`/`parse_object` must check if the next char is `]` or `}` after a comma.\n    *   Duplicate keys: Use a `set` to track keys in the current object.\n    *   Surrogates: `\\uD83D\\uDE00` $\\rightarrow$ `\\U0001F600`.\n    *   Forbidden: `\\f` (form feed) in whitespace, but allowed in strings via `\\f`.\n    *   Forbidden: `\\v` (vertical tab) in whitespace.\n\n    *   `sys.setrecursionlimit` might be a problem if the platform has small stack size. But for a coding challenge, it's usually the intended way or you use an explicit stack.\n    *   Explicit stack for JSON:\n        *   Push a \"frame\" (e.g., `['object', {}, current_key]`).\n        *   When a value is parsed, pop the frame and update the parent.\n        *   This is complex. Let's try `sys.setrecursionlimit` first.\n\n    *   `-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?`\n    *   Check for `-`.\n    *   Integer part:\n        *   If `0`, then next must not be digit.\n        *   If `1-9`, then any number of digits.\n    *   Fraction part:\n        *   If `.`, then must be followed by at least one digit.\n    *   Exponent part:\n        *   If `e` or `E`, then optional `+` or `-`, then must be followed by at least one digit.\n    *   Conversion: If no `.` and no `e/E`, `int()`. Else `float()`.\n\n    *   `\\uXXXX` where `XXXX` are 4 hex digits.\n    *   `high = 0xD800` to `0xDBFF`.\n    *   `low = 0xDC00` to `0xDFFF`.\n    *   Valid: `\\uHigh\\uLow`.\n    *   Invalid: `\\uLow` (not preceded by `\\uHigh`), `\\uHigh` (not followed by `\\uLow`).\n    *   Wait, RFC 8259 says: \"The sequence \\uXXXX is replaced by the character... if the character is a high surrogate, it must be followed by a low surrogate...\".\n\n    *   Use `while self.pos < len(self.text) and self.text[self.pos] in ' \\t\\n\\r': self.pos += 1`.\n\n    *   `parse_json` function.\n    *   Inside, a `JSONParser` class.\n    *   `sys.setrecursionlimit(100000)`.\n\n    *   `\\uXXXX` handling.\n    *   Surrogate pair: `\\uD83D\\uDE00` -> `U+1F600`.\n    *   Check: `\\uD83D` is high surrogate. Now check if the next part of the string is `\\u` followed by 4 hex digits and those digits form a low surrogate.\n\n    *   `text = \" \"` $\\rightarrow$ `skip_whitespace()`, `pos` becomes 1. `parse_value()` fails because `pos == len(text)`. `ValueError` raised.\n    *   `text = \"\"` $\\rightarrow$ `parse_value()` fails. `ValueError` raised.\n    *   `text = \"1 2\"` $\\rightarrow$ `parse_value()` reads `1`, `skip_whitespace()` moves to index 2, `pos < len(text)` is true, `ValueError` raised.\n\n    *   Keys must be strings.\n    *   No trailing comma: `{\"a\": 1,}` $\\rightarrow$ after `1`, check for `,`. If `,` found, must parse another key-value pair. If `}` found, then it's a trailing comma.\n    *   Duplicate keys: `set()` of keys.\n\n    *   Max 50,000 depth. `sys.setrecursionlimit(100000)` should be sufficient.\n\n    *   `\\uXXXX` takes 6 chars in the string.\n    *   If `\\uXXXX` is high surrogate, we need another `\\uXXXX`.\n    *   Ensure the second `\\uXXXX` is actually present and is a low surrogate.\n\n    *   \"The sequence \\uXXXX is replaced by the character... if the character is a high surrogate, it must be followed by a low surrogate... If the character is a low surrogate, it must be preceded by a high surrogate...\"\n    *   This means `\\uLow` alone is a `ValueError`. `\\uHigh` alone is a `ValueError`.\n\n    ```python\n    def parse_string(self):\n        self.pos += 1  # skip opening \"\n        res = []\n        while self.pos < len(self.text):\n            char = self.text[self.pos]\n            if char == '\"':\n                self.pos += 1\n                return \"\".join(res)\n            elif char == '\\\\':\n                self.pos += 1\n                if self.pos >= len(self.text): raise ValueError()\n                esc = self.text[self.pos]\n                self.pos += 1\n                if esc == '\"': res.append('\"')\n                elif esc == '\\\\': res.append('\\\\')\n                elif esc == '/': res.append('/')\n                elif esc == 'b': res.append('\\b')\n                elif esc == 'f': res.append('\\f')\n                elif esc == 'n': res.append('\\n')\n                elif esc == 'r': res.append('\\r')\n                elif esc == 't': res.append('\\t')\n                elif esc == 'u':\n                    if self.pos + 4 > len(self.text): raise ValueError()\n                    hex_val = self.text[self.pos:self.pos+4]\n                    self.pos += 4\n                    try:\n                        cp = int(hex_val, 16)\n                    except ValueError:\n                        raise ValueError()\n                    if 0xD800 <= cp <= 0xDBFF:\n                        if self.pos >= len(self.text) or self.text[self.pos] != '\\\\':\n                            raise ValueError()\n                        self.pos += 1\n                        if self.pos + 4 > len(self.text) or self.text[self.pos:self.pos+4].find('u') != -1: # Wait, this is wrong.\n                            # need to check if next is '\\u'\n                            pass\n                        # Correction:\n                        if self.pos + 4 > len(self.text) or self.text[self.pos] != 'u':\n                            raise ValueError()\n                        self.pos += 1\n                        hex_val2 = self.text[self.pos:self.pos+4]\n                        self.pos += 4\n                        try:\n                            cp2 = int(hex_val2, 16)\n                        except ValueError:\n                            raise ValueError()\n                        if not (0xDC00 <= cp2 <= 0xDFFF):\n                            raise ValueError()\n                        res.append(chr(0x10000 + (cp - 0xD800) * 0x400 + (cp2 - 0xDC00))\n                    elif 0xDC00 <= cp <= 0xDFFF:\n                        raise ValueError()\n                    else:\n                        res.append(chr(cp))\n                else:\n                    raise ValueError()\n            elif ord(char) <= 0x1F:\n                raise ValueError()\n            else:\n                res.append(char)\n                self.pos += 1\n        raise ValueError()\n    ```\n\n    *   Integers: `0` or `[1-9][0-9]*`.\n    *   Fraction: `(\\.[0-9]+)?`.\n    *   Exponent: `([eE][+-]?[0-9]+)?`.\n    *   Example: `-0` is allowed. `01` is not. `+1` is not.\n\n    ```python\n    def parse_number(self):\n        start = self.pos\n        if self.text[self.pos] == '-':\n            self.pos += 1\n        if self.pos >= len(self.text): raise ValueError()\n        if self.text[self.pos] == '0':\n            self.pos += 1\n            if self.pos < len(self.text) and '0' <= self.text[self.pos] <= '9':\n                raise ValueError() # Leading zero\n        elif '1' <= self.text[self.pos] <= '9':\n            while self.pos < len(self.text) and '0' <= self.text[self.pos] <= '9':\n                self.pos += 1\n        else:\n            raise ValueError()\n\n        has_float = False\n        if self.pos < len(self.text) and self.text[self.pos] == '.':\n            has_float = True\n            self.pos += 1\n            if self.pos >= len(self.text) or not ('0' <= self.text[self.pos] <= '9'):\n                raise ValueError()\n            while self.pos < len(self.text) and '0' <= self.text[self.pos] <= '9':\n                self.pos += 1\n\n        if self.pos < len(self.text) and self.text[self.pos] in 'eE':\n            has_float = True\n            self.pos += 1\n            if self.pos < len(self.text) and self.text[self.pos] in '+-':\n                self.pos += 1\n            if self.pos >= len(self.text) or not ('0' <= self.text[self.pos] <= '9'):\n                raise ValueError()\n            while self.pos < len(self.text) and '0' <= self.text[self.pos] <= '9':\n                self.pos += 1\n        \n        s = self.text[start:self.pos]\n        return float(s) if has_float else int(s)\n    ```\n\n    *   `True`, `False`, `None` (from `true`, `false`, `null`).\n    *   `parse_literal(self, expected)` function.\n\n    *   `parse_array()`:\n        *   `[`\n        *   If next is `]`, return `[]`.\n        *   While True:\n            *   `value = parse_value()`\n            *   If next is `]`, return `list`.\n            *   If next is `,`, continue.\n            *   Else, `ValueError`.\n    *   `parse_object()`:\n        *   `{`\n        *   If next is `}`, return `{}`.\n        *   While True:\n            *   `key = parse_string()` (must be a string)\n            *   Check for `:`.\n            *   `value = parse_value()`\n            *   If next is `}`, return `dict`.\n            *   If next is `,`, continue.\n            *   Else, `ValueError`.\n\n    *   `sys.setrecursionlimit` is global. If the tester calls `parse_json` multiple times, it's fine.\n\n    *   `\\uXXXX` handling: Let's refine.\n\n    ```python\n    def handle_unicode(self):\n        if self.pos + 4 > len(self.text): raise ValueError()\n        hex_val = self.text[self.pos : self.pos + 4]\n        self.pos += 4\n        try:\n            cp = int(hex_val, 16)\n        except ValueError:\n            raise ValueError()\n        \n        if 0xD800 <= cp <= 0xDBFF:\n            # High surrogate: must be followed by \\uLow\n            if self.pos + 6 > len(self.text) or self.text[self.pos:self.pos+2] != '\\\\u':\n                raise ValueError()\n            self.pos += 2\n            hex_val2 = self.text[self.pos : self.pos + 4]\n            self.pos += 4\n            try:\n                cp2 = int(hex_val2, 16)\n            except ValueError:\n                raise ValueError()\n            if not (0xDC00 <= cp2 <= 0xDFFF):\n                raise ValueError()\n            return chr(0x10000 + (cp - 0xD800) * 0x400 + (cp2 - 0xDC00))\n        elif 0xDC00 <= cp <= 0xDFFF:\n            # Low surrogate alone\n            raise ValueError()\n        else:\n            return chr(cp)\n    ```\n\n    *   `text` max 1,000,000 chars.\n    *   Python's `int(s)` and `float(s)` on very large strings can be slow. But JSON numbers are generally not *that* large in digits. Wait, Python 3.10.7+ has a limit on the number of digits for `int` to prevent DoS (default 4300 digits).\n    *   `sys.set_int_max_str_digits(0)` can disable this limit.\n\n    *   Use a helper class to encapsulate the pointer and text.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 1325,
+  "completion_tokens": 6695,
+  "ttft_s": 3.441,
+  "t_first_content_s": 158.051,
+  "wall_s": 235.4,
+  "load_s": 0.001,
+  "server_decode_tok_s": 28.85,
+  "server_prefill_tok_s": 565.66,
+  "server_timings": {
+    "total_duration": 235399050946,
+    "load_duration": 1145991,
+    "prompt_eval_count": 1325,
+    "prompt_eval_duration": 2342383000,
+    "eval_count": 6695,
+    "eval_duration": 232066022000
+  },
+  "delta_chunks": 5922,
+  "wall_decode_tok_s": 28.86,
+  "thinking_chars": 14258,
+  "content_chars": 9123,
+  "thinking_tokens_est": 4083,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 235.399,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.0,
+    "all_passed": false,
+    "passed": 0,
+    "total": 23,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": "(unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (line 73)",
+    "cases": [
+      {
+        "name": "case_literals",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_integers",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_floats_and_types",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_negative_zero_and_extreme_exponents",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_simple_strings",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_string_escapes",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_surrogate_pairs",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_lone_surrogates_are_errors",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_bad_escapes_and_control_characters",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_empty_containers",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_nested_document",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_whitespace_rules",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_empty_and_trailing_input",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_bad_literals",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_bad_numbers",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_bad_container_syntax",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_duplicate_keys_are_errors",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_values_adjacent_to_literals",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_top_level_scalars_with_whitespace",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_many_small_values",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_long_string_with_escapes",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_large_random_document",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      },
+      {
+        "name": "case_deep_nesting",
+        "ok": false,
+        "error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)"
+      }
+    ],
+    "import_error": "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 11-12: truncated \\uXXXX escape (solution.py, line 73)",
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.04,
+    "stderr_tail": ""
+  }
+}

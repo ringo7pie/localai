@@ -1,0 +1,136 @@
+{
+  "model": "sonnet",
+  "suite": "coding",
+  "item": "c6",
+  "run": 1,
+  "content": "```python\n_FULL_MASK = 0x1FF\n\n\ndef _build_units():\n    units = []\n    for row in range(9):\n        units.append([row * 9 + col for col in range(9)])\n    for col in range(9):\n        units.append([row * 9 + col for row in range(9)])\n    for box_row in range(3):\n        for box_col in range(3):\n            units.append(\n                [\n                    (box_row * 3 + dr) * 9 + (box_col * 3 + dc)\n                    for dr in range(3)\n                    for dc in range(3)\n                ]\n            )\n    return units\n\n\n_UNITS = _build_units()\n\n\ndef _build_peers():\n    peers = []\n    for cell in range(81):\n        related = set()\n        for unit in _UNITS:\n            if cell in unit:\n                related.update(unit)\n        related.discard(cell)\n        peers.append(sorted(related))\n    return peers\n\n\n_PEERS = _build_peers()\n\n\ndef _propagate(cands):\n    \"\"\"候補のビットマスクを不動点まで絞る。矛盾したら False を返す。\"\"\"\n    done = [False] * 81\n    pending = list(range(81))\n    while True:\n        # 候補が 1 つのマス（naked single）を確定し、同じ行・列・ブロックから除く\n        while pending:\n            cell = pending.pop()\n            mask = cands[cell]\n            if mask == 0:\n                return False\n            if mask & (mask - 1) or done[cell]:\n                continue\n            done[cell] = True\n            for peer in _PEERS[cell]:\n                other = cands[peer]\n                if other & mask:\n                    other &= ~mask\n                    if other == 0:\n                        return False\n                    cands[peer] = other\n                    pending.append(peer)\n        # 行・列・ブロックの中で 1 か所にしか入らない数字（hidden single）を確定する\n        for unit in _UNITS:\n            seen_once = 0\n            seen_twice = 0\n            for cell in unit:\n                mask = cands[cell]\n                seen_twice |= seen_once & mask\n                seen_once |= mask\n            if seen_once != _FULL_MASK:\n                return False\n            singles = seen_once & ~seen_twice\n            if singles:\n                for cell in unit:\n                    current = cands[cell]\n                    forced = current & singles\n                    if forced and forced != current:\n                        if forced & (forced - 1):\n                            return False\n                        cands[cell] = forced\n                        pending.append(cell)\n        if not pending:\n            return True\n\n\ndef _search(cands, solutions, limit):\n    if not _propagate(cands):\n        return\n    best_cell = -1\n    best_count = 10\n    for cell in range(81):\n        count = cands[cell].bit_count()\n        if 1 < count < best_count:\n            best_count = count\n            best_cell = cell\n            if count == 2:\n                break\n    if best_cell == -1:\n        solutions.append(cands)\n        return\n    mask = cands[best_cell]\n    while mask:\n        bit = mask & -mask\n        mask ^= bit\n        child = cands[:]\n        child[best_cell] = bit\n        _search(child, solutions, limit)\n        if len(solutions) >= limit:\n            return\n\n\ndef solve_sudoku(grid: str) -> str:\n    if not isinstance(grid, str) or len(grid) != 81:\n        raise ValueError(\"grid must be a string of length 81\")\n    allowed = \"123456789.\"\n    for ch in grid:\n        if ch not in allowed:\n            raise ValueError(\"grid contains an invalid character\")\n\n    # 確定しているマスどうしの矛盾を調べる\n    for unit in _UNITS:\n        seen = 0\n        for cell in unit:\n            ch = grid[cell]\n            if ch != \".\":\n                bit = 1 << (int(ch) - 1)\n                if seen & bit:\n                    raise ValueError(\"given digits conflict\")\n                seen |= bit\n\n    cands = [_FULL_MASK] * 81\n    for cell in range(81):\n        ch = grid[cell]\n        if ch != \".\":\n            cands[cell] = 1 << (int(ch) - 1)\n\n    solutions = []\n    _search(cands, solutions, 2)\n    if not solutions:\n        raise ValueError(\"no solution\")\n    if len(solutions) > 1:\n        raise ValueError(\"multiple solutions\")\n    solved = solutions[0]\n    return \"\".join(str(mask.bit_length()) for mask in solved)\n```",
+  "wall_s": 48.162,
+  "usage": {
+    "subagent_tokens": 34896
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 2,
+  "tool_uses_note": "raw の 2 は問題文 1 ファイルの Read と結果を返す SubagentHandback。答えの検索・実行のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 20,
+    "total": 20,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_bad_length",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflicting_givens",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_conflict_inside_an_otherwise_full_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_already_solved",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_blank",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_puzzle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_generated_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_cell_without_candidates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_and_nearly_empty_have_many_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exactly_two_solutions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_underdetermined_hard_puzzles",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_unsolvable_without_direct_conflict",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2012",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_inkala_2010_and_escargot",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_easter_monster",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_a",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_b",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_seventeen_clues_royle",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_hard_puzzles_in_sequence",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.16,
+    "stderr_tail": ""
+  },
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:38:36+09:00"
+}

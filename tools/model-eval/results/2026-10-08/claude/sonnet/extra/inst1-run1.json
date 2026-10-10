@@ -1,0 +1,52 @@
+{
+  "model": "sonnet",
+  "suite": "extra",
+  "item": "inst1",
+  "run": 1,
+  "content": "- 好きな映画をゆっくり観ます。\n- 読みかけの本を読み進めます。\n- 家族でボードゲームをします。\n- 温かい料理やお菓子を作ります。\n- 部屋の整理や模様替えも楽しいです。\n以上",
+  "wall_s": 10.84,
+  "usage": {
+    "subagent_tokens": 26024
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "inst",
+    "score": 1.0,
+    "passed": 5,
+    "total": 5,
+    "all_passed": true,
+    "checks": [
+      {
+        "id": "bullet_count",
+        "label": "「- 」の箇条書きがちょうど 5 個",
+        "ok": true
+      },
+      {
+        "id": "max_line_chars",
+        "label": "どの行も 25 文字以内",
+        "ok": true
+      },
+      {
+        "id": "bullet_endings",
+        "label": "箇条書きの末尾が「です。」「ます。」",
+        "ok": true
+      },
+      {
+        "id": "last_line",
+        "label": "最後の行が「以上」だけ",
+        "ok": true
+      },
+      {
+        "id": "no_latin",
+        "label": "アルファベットを使わない",
+        "ok": true
+      }
+    ]
+  },
+  "batch_size": 3,
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:38:36+09:00"
+}

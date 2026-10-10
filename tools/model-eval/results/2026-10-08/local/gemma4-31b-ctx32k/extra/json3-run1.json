@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-ctx32k",
+  "label": "gemma4:31b-ctx32k",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-ctx32k",
+  "slug": "gemma4-31b-ctx32k",
+  "suite": "extra",
+  "item": "json3",
+  "run": 1,
+  "prompt": "次の社内の問い合わせから情報を取り出し、JSON で答えてください。\n\n問い合わせ:\n\"\"\"\nお疲れさまです。経理部の田中です。\n今朝 9 時ごろから、経費精算システムにログインできなくなりました。\n画面には「エラーコード E-503」と表示されます。\n同じ部署のほかの 4 人も同じ症状で、全員が作業を止めています。\n月末の締めが明後日なので、至急対応をお願いします。\n\"\"\"\n\n出力の形式:\n- 次の 6 つの鍵を持つ JSON オブジェクトを 1 つだけ出力する。\n  - \"department\": 問い合わせた人の部署（文字列）\n  - \"reporter\": 問い合わせた人の姓（文字列）\n  - \"system\": 不具合が起きているシステムの名前（文字列）\n  - \"error_code\": 表示されたエラーコード（文字列。例 \"X-100\"）\n  - \"affected_users\": 症状が出ている人数。問い合わせた本人も含める（整数）\n  - \"priority\": 緊急度。\"高\"、\"中\"、\"低\" のどれか（文字列）\n- JSON のほかには何も書かない。",
+  "prompt_chars": 492,
+  "request": {
+    "model": "gemma4:31b-ctx32k",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 8192
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-08T14:41:16+09:00",
+  "finished_at": "2026-10-08T14:41:33+09:00",
+  "content": "```json\n{\n  \"department\": \"経理部\",\n  \"reporter\": \"田中\",\n  \"system\": \"経費精算システム\",\n  \"error_code\": \"E-503\",\n  \"affected_users\": 5,\n  \"priority\": \"高\"\n}\n```",
+  "thinking": "*   Input: An internal inquiry email/message.\n    *   Task: Extract specific information and output it as a JSON object.\n    *   Required JSON keys:\n        *   `department`: Department of the reporter.\n        *   `reporter`: Surname of the reporter.\n        *   `system`: Name of the malfunctioning system.\n        *   `error_code`: The error code displayed.\n        *   `affected_users`: Number of affected users (including the reporter).\n        *   `priority`: Priority (\"高\", \"中\", \"低\").\n    *   Constraint: Output *only* the JSON object, nothing else.\n\n    *   \"お疲れさまです。経理部の田中です。\" -> Department: 経理部, Reporter: 田中\n    *   \"今朝 9 時ごろから、経費精算システムにログインできなくなりました。\" -> System: 経費精算システム\n    *   \"画面には「エラーコード E-503」と表示されます。\" -> Error Code: E-503\n    *   \"同じ部署のほかの 4 人も同じ症状で、全員が作業を止めています。\" -> Affected users: 1 (reporter) + 4 = 5.\n    *   \"月末の締めが明後日なので、至急対応をお願いします。\" -> Priority: \"高\" (due to \"至急\" and deadline \"明後日\").\n\n    *   `department`: \"経理部\"\n    *   `reporter`: \"田中\"\n    *   `system`: \"経費精算システム\"\n    *   `error_code`: \"E-503\"\n    *   `affected_users`: 5\n    *   `priority`: \"高\"\n\n    *   Ensure it's valid JSON.\n    *   Ensure no markdown commentary or extra text.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 276,
+  "completion_tokens": 482,
+  "ttft_s": 1.043,
+  "t_first_content_s": 14.649,
+  "wall_s": 16.993,
+  "load_s": 0.001,
+  "server_decode_tok_s": 30.02,
+  "server_prefill_tok_s": 522.16,
+  "server_timings": {
+    "total_duration": 16992244123,
+    "load_duration": 944868,
+    "prompt_eval_count": 276,
+    "prompt_eval_duration": 528571000,
+    "eval_count": 482,
+    "eval_duration": 16054917000
+  },
+  "delta_chunks": 402,
+  "wall_decode_tok_s": 30.22,
+  "thinking_chars": 1163,
+  "content_chars": 148,
+  "thinking_tokens_est": 428,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 16.992,
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "fenced",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "department": {
+        "ok": true,
+        "got": "経理部"
+      },
+      "reporter": {
+        "ok": true,
+        "got": "田中"
+      },
+      "system": {
+        "ok": true,
+        "got": "経費精算システム"
+      },
+      "error_code": {
+        "ok": true,
+        "got": "E-503"
+      },
+      "affected_users": {
+        "ok": true,
+        "got": 5
+      },
+      "priority": {
+        "ok": true,
+        "got": "高"
+      }
+    },
+    "extra_keys": []
+  }
+}

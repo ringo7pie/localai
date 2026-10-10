@@ -1,0 +1,53 @@
+{
+  "model": "opus",
+  "suite": "extra",
+  "item": "json2",
+  "run": 1,
+  "content": "{\"name\": \"山田花子\", \"event_date\": \"2026-10-24\", \"participants\": 3, \"has_allergy\": true, \"needs_parking\": false, \"phone\": \"090-1234-5678\"}",
+  "wall_s": 8.407,
+  "usage": {
+    "subagent_tokens": 25981
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 1,
+  "tool_uses_note": "raw の 1 は結果を返す SubagentHandback 呼び出し。計算・検索のツールは使っていない",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "json",
+    "score": 1.0,
+    "all_passed": true,
+    "parse_mode": "strict",
+    "matched": 6,
+    "total": 6,
+    "fields": {
+      "name": {
+        "ok": true,
+        "got": "山田花子"
+      },
+      "event_date": {
+        "ok": true,
+        "got": "2026-10-24"
+      },
+      "participants": {
+        "ok": true,
+        "got": 3
+      },
+      "has_allergy": {
+        "ok": true,
+        "got": true
+      },
+      "needs_parking": {
+        "ok": true,
+        "got": false
+      },
+      "phone": {
+        "ok": true,
+        "got": "090-1234-5678"
+      }
+    },
+    "extra_keys": []
+  },
+  "batch_size": 3,
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-08T13:39:17+09:00"
+}
