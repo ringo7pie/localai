@@ -1,0 +1,48 @@
+[Unit]
+Description=Strata (RVN-Qwen3.8-Flash-Next IQ3_S, OpenAI-compatible API, port 8082)
+# コード向け版（strata-coder.service）・公式版（strata-official.service）と同じ engine で動き、RAM と VRAM を
+# 取り合うので同時には載せない。Conflicts= により、こちらを start すると systemd がほかの 2 つを止める（逆も同じ）。
+# 止める順番を決める After= は、ほかの 2 つの側にだけ書く（こちらにも書くと順序が輪になる）。
+Conflicts=strata-coder.service strata-official.service
+# Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。起動前に Ollama のモデルを降ろすこと
+# （エキスパートのキャッシュは起動時の空き VRAM で決まる）。ComfyUI / Hunyuan3D / Pixal3D とも RAM と VRAM を取り合う。
+After=network.target
+# 読み込みに数分かかるので、失敗の繰り返しは 30 分に 3 回までにする（既定の 10 秒に 5 回では止まらない）。
+StartLimitIntervalSec=1800
+StartLimitBurst=3
+
+[Service]
+Type=simple
+# インストール先に合わせて書き換える。既定は tools/strata をこのパスに置いた場合。
+WorkingDirectory=%h/Proj/localai/tools/strata
+# STRATA_MAX_CONTEXT・STRATA_REASONING_BUDGET_TOKENS・STRATA_EXTRA_ARGS・STRATA_API_KEY などを読む。先頭の "-" はファイルが無くても
+# エラーにしない意味（comfyui.service の EnvironmentFile と同じ型）。
+EnvironmentFile=-%h/.config/strata/strata.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=%h/Proj/localai/tools/strata/run-strata serve
+# 上流のサーバーは engine の読み込みが終わってから待受を始める。API が応答するまで start を終えない
+# （systemctl --user start strata が戻った時点で使える）。TimeoutStartSec より少し短くする。
+ExecStartPost=%h/Proj/localai/tools/strata/run-strata wait-ready --timeout 880
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+# SIGTERM で上流のサーバーが engine に QUIT を送り、固定した RAM を返してから終わる。
+TimeoutStopSec=120
+# engine はエキスパートの RAM 複製を cudaHostRegister で固定し、残りを mlock で留める（docs/INSTALL.md:101）。
+# user ユニットでは systemd --user 自身の上限（この機体では 7.8 GiB）より上げられない。README の「memlock の扱い」。
+LimitMEMLOCK=infinity
+# RAM の安全弁。上限に当たったサービスだけがカーネルに落とされ、デスクトップは巻き込まれない。
+# 値は 2026-10-07 の実測で決めた（README の「実機試験の結果」）。
+# - 落とせない分は約 43.5 GiB: ページロックした RAM 複製 40.56 GiB を含む shmem 41.5 + anon 1.5 + kernel 0.4。
+#   残りは GGUF を読んだときの page cache で、上限まで溜まるが捨てられる。
+# - MemoryHigh=50G は page cache を約 6.5 GiB に抑え、機体に 12 GiB 以上を残す。54G では起動が 57 秒と速いが
+#   cgroup が 54 GiB に張り付く。46G では起動が 80 秒に延びる。
+# - MemoryMax=58G は 2026-10-09 の利用者の指示で 54G から上げた（KV キャッシュを fp16 にする計測で、GPU から外れた
+#   エキスパートの分だけ RAM 複製が増えるため）。機体の RAM 62.5 GiB に対して残りは約 4.5 GiB なので、ふだんの
+#   歯止めは MemoryHigh=50G が担う。engine は memory.max を見て RAM 複製の量を決める（空きから 4 GiB を残す。
+#   src/core/expert_source.cpp:239-325）ので、下げると複製しきれない分をファイルから読み、遅くなる。
+MemoryHigh=50G
+MemoryMax=58G
+
+[Install]
+WantedBy=default.target

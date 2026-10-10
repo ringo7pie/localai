@@ -1,0 +1,10 @@
+# strata の仮想環境・上流ソース（Strata 本体・llama.cpp・build/・engine/）・モデル（約 89 GB）・
+# serve が書くサーバー設定・ログ。いずれも大きいか絶対パスを埋め込むため持ち運べない。
+# 再作成: tools/strata/setup-server.sh
+.venv/
+vendor/
+models/
+run/
+logs/
+*.log
+*.egg-info/

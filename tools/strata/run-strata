@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# stra CLI の起動スクリプト。venv の python を経由して stra.cli を呼ぶ。
+#   run-strata serve          Strata の OpenAI 互換サーバーを 0.0.0.0:8082（coder は 8083、official は 8084）で起動する（exec）
+#   run-strata doctor         動作環境を点検する
+#   run-strata fetch-models   モデル（結合済み GGUF と pack/）を取得する
+#   run-strata build-pack     pack を手元で作る（--model coder / official。HF に pack が無いため）
+#   run-strata wait-ready     API が応答するまで待つ（strata.service の ExecStartPost）
+#   どれも --model rvn（既定、汎用版 8082）| coder（コード向け版 8083）| official（公式版・非 abliterated 8084）で対象を選ぶ
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON="$HERE/.venv/bin/python"
+if [ ! -x "$PYTHON" ]; then
+  echo "venv が見つかりません: $PYTHON" >&2
+  echo "先に setup-server.sh を実行してください（$HERE/setup-server.sh）。" >&2
+  exit 1
+fi
+exec "$PYTHON" -m stra.cli "$@"

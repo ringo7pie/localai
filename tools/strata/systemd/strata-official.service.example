@@ -1,0 +1,48 @@
+[Unit]
+Description=Strata (Qwen3.8-Flash-Next IQ3_XXS official, not abliterated, OpenAI-compatible API, port 8084)
+# 汎用版（strata.service）・コード向け版（strata-coder.service）と同じ engine で動く公式版（非 abliterated）。
+# RAM と VRAM を取り合うので同時には載せない。Conflicts= により、こちらを start すると systemd が strata.service と
+# strata-coder.service を止める（逆も同じ）。
+Conflicts=strata.service strata-coder.service
+# Conflicts= だけでは止める順番が決まらない。2 つの間に順序の関係（After= か Before= のどちらか一方）があれば、
+# systemd は停止の job を起動の job より先に行う（systemd.unit の Conflicts=）。ほかの 2 つとの順序はこちらの側にだけ
+# 書く（strata-coder.service は After=strata.service を持つので、strata → strata-coder → strata-official の一方向になり、
+# 輪にならない）。これで、どれを start しても、ほかが RAM を返してから読み込む。
+# Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。起動前に Ollama のモデルを降ろすこと
+# （エキスパートのキャッシュは起動時の空き VRAM で決まる）。ComfyUI / Hunyuan3D / Pixal3D とも RAM と VRAM を取り合う。
+After=network.target strata.service strata-coder.service
+# 読み込みに数分かかるので、失敗の繰り返しは 30 分に 3 回までにする（既定の 10 秒に 5 回では止まらない）。
+StartLimitIntervalSec=1800
+StartLimitBurst=3
+
+[Service]
+Type=simple
+# インストール先に合わせて書き換える。既定は tools/strata をこのパスに置いた場合。
+WorkingDirectory=%h/Proj/localai/tools/strata
+# STRATA_MAX_CONTEXT・STRATA_REASONING_BUDGET_TOKENS・STRATA_EXTRA_ARGS・STRATA_API_KEY などを読む（strata.env・
+# strata-coder.env とは別のファイル）。先頭の "-" はファイルが無くてもエラーにしない意味。
+EnvironmentFile=-%h/.config/strata/strata-official.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=%h/Proj/localai/tools/strata/run-strata serve --model official
+# 上流のサーバーは engine の読み込みが終わってから待受を始める。API が応答するまで start を終えない
+# （systemctl --user start strata-official が戻った時点で使える）。TimeoutStartSec より少し短くする。
+ExecStartPost=%h/Proj/localai/tools/strata/run-strata wait-ready --model official --timeout 880
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+# SIGTERM で上流のサーバーが engine に QUIT を送り、固定した RAM を返してから終わる。
+TimeoutStopSec=120
+# engine はエキスパートの RAM 複製を cudaHostRegister で固定し、残りを mlock で留める（docs/INSTALL.md:101）。
+# user ユニットでは systemd --user 自身の上限（この機体では 7.8 GiB）より上げられない。README の「memlock の扱い」。
+LimitMEMLOCK=infinity
+# RAM の安全弁。上限に当たったサービスだけがカーネルに落とされ、デスクトップは巻き込まれない。
+# TODO: 実測で決める前の仮置き。汎用版（strata.service.example）と同じ値にしてある。エキスパートは見込み 39.97 GiB
+# （stra/config.py の OFFICIAL.expert_bytes）で、全部を RAM に写す通常のモードでも汎用版の落とせない分 約 43.5 GiB を
+# 大きくは超えないと見ているが、未計測。起動して cgroup の中身（anon・shmem・kernel）と起動時間を見てから直す
+# （README の「公式版（非 abliterated）IQ3_XXS」）。
+# MemoryMax=58G は 2026-10-09 の利用者の指示で 54G から上げた（汎用版 strata.service.example と同じ理由・同じ値）。
+MemoryHigh=50G
+MemoryMax=58G
+
+[Install]
+WantedBy=default.target
