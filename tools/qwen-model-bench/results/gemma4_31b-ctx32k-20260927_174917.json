@@ -1,0 +1,22 @@
+{
+  "model": "gemma4:31b-ctx32k",
+  "tokens_per_sec": 29.9,
+  "eval_count": 128,
+  "load_duration_sec": 13.6,
+  "total_elapsed_sec": 18,
+  "placement": {
+    "size_bytes": 19274326342,
+    "size_vram_bytes": 19274326342,
+    "gpu_percent": 100
+  },
+  "peaks": {
+    "vram_mib": 22373,
+    "ram_mib": 7342,
+    "swap_mib": 0,
+    "memory_pressure_full_max": 0.0,
+    "memory_pressure_full_mean": 0.0,
+    "samples": 18
+  },
+  "usable": true,
+  "reasons": []
+}

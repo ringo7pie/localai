@@ -1,0 +1,22 @@
+{
+  "model": "gemma4:e4b",
+  "tokens_per_sec": 81.5,
+  "eval_count": 128,
+  "load_duration_sec": 40.7,
+  "total_elapsed_sec": 113,
+  "placement": {
+    "size_bytes": 3485361765,
+    "size_vram_bytes": 3485361765,
+    "gpu_percent": 100
+  },
+  "peaks": {
+    "vram_mib": 5675,
+    "ram_mib": 7583,
+    "swap_mib": 0,
+    "memory_pressure_full_max": 0.0,
+    "memory_pressure_full_mean": 0.0,
+    "samples": 107
+  },
+  "usable": true,
+  "reasons": []
+}
