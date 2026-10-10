@@ -70,3 +70,9 @@ tools/qwen-model-bench/work/
 # gpu-watch-gui の電力較正データ。この機械の RAPL 実測値（CPU モデル・PL1・負荷段階ごとの
 # 電力点）を含み、機械ごとに作り直す値のため持ち運ばない。再作成は GUI の「電力を較正」ボタン。
 tools/gpu-watch-gui/state/
+
+# 手で落とした上流の配布物（ComfyUI の WTiVo など）。setup-server.sh が取り直せるので追跡しない。
+Downloads/
+
+# 3D 生成の出力メッシュ（数十 MB の生成物）。入力画像と問題文だけを追跡する。
+TestData/*.glb
