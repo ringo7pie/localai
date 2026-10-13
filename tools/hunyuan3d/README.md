@@ -4,14 +4,19 @@
 を、このリポジトリの A30 サーバー上で動かすための一式。固定コミット
 `f8db63096c8282cb27354314d896feba5ba6ff8a` を `vendor/Hunyuan3D-2` に取り込んで使う。
 
+> **公開版について。** このリポジトリは Hunyuan3D-2 の本体・重み・上流への当て物（`patches/`）を含まない。
+> 本体と重みは `setup-server.sh` が導入時に取得する。上流の使用許諾（Tencent Hunyuan 3D 2.0 Community License）は
+> EU・英国・韓国を対象外とするため、導入には許諾の確認（`--accept-tencent-license`）が要る。当て物を含めない
+> 理由と、そのために公開版で使えない機能は「上流への当て物」、許諾の要点と帰属表示は「ライセンスの地域制限」にある。
+
 ## ポートと入口ページの関係
 
 - **7860**: Hunyuan3D-2 の gradio UI（このツール）
 - 8080: 入口ページ（`tools/portal`。ここから 7860 へ飛べる）
 - 8081: Open WebUI（入口ページ導入時に 8080 から移動済み）
-- 8188: 将来の ComfyUI 用に予約
+- 8188: ComfyUI（`tools/comfyui`）
 
-サーバー IP は `<server-ip>`。起動後は `http://<server-ip>:7860` から使う。
+サーバー IP は `<server-ip>`（利用者の環境の値）。起動後は `http://<server-ip>:7860` から使う。
 
 ## Qwen（Ollama）との VRAM の取り合い
 
@@ -30,10 +35,13 @@ A30 の VRAM は 24576 MiB しかなく、Hunyuan3D と Qwen は**生成中は�
 1. **Qwen は載るが遅くなる。** Hunyuan3D が 5,365 MiB を占有した状態では、Qwen は GPU 配置 67%
    （残り 33% は CPU）で 14.8 tok/s。単独時の 23〜26 tok/s より約 4 割遅い。Open WebUI のチャットは
    使えるが、速度が要るときは `systemctl --user stop hunyuan3d` で止める。
-2. **3D 生成のたびに Qwen が VRAM から降りる。** Qwen を載せたまま生成すると VRAM が足りず、
-   実測で 23.7 秒後に CUDA out of memory になった。そのため `patches/0001-free-vram-before-generation.patch`
-   で上流の `_gen_shape` の先頭に「生成前に Ollama のモデルを降ろす」処理を入れてある。
-   Qwen は次のチャットで自動的に戻る（ロードに約 60 秒）。
+2. **3D 生成のときは、Qwen を VRAM から降ろしておく必要がある。** Qwen を載せたまま生成すると VRAM が足りず、
+   実測で 23.7 秒後に CUDA out of memory になった。
+   - `run-hunyuan3d serve` は、起動するときに Ollama のモデルを降ろす（公開版でも同じ）。
+   - 生成の**直前**に毎回自動で降ろす処理は、上流への当て物 0001 の機能で、**公開版には無い**
+     （「上流への当て物」を参照）。`serve` のあとに Qwen を使い、そのまま 3D 生成を始めると CUDA out of memory に
+     なるので、生成の前に `run-hunyuan3d free-vram`（下記）を実行する。当て物 0001 を当てた環境では
+     自動で降り、Qwen は次のチャットで自動的に戻る（ロードに約 60 秒）。
 
 切り替えを手で行う場合:
 
@@ -43,19 +51,57 @@ A30 の VRAM は 24576 MiB しかなく、Hunyuan3D と Qwen は**生成中は�
 
 ## 上流への当て物（patches/）
 
-上流は固定コミットで取り込んでいるので、当て物も結果が決まる。`setup-server.sh` が
-`patches/*.patch` を順に `git apply` する。既に当たっていれば触らない（冪等）。
+上流（`vendor/Hunyuan3D-2`）に当てる差分が 5 本ある。固定コミットに対する `git apply` 用の差分で、
+手元の `patches/*.patch` に置く。**公開版（このリポジトリの公開リポジトリと履歴）には含めない。**
 
-- `0001-free-vram-before-generation.patch` — 生成の直前に Ollama のモデルを降ろす（上記 2 の理由）
-- `0002-select-multiview-tab.patch` — MV モードで 4 枚の入力欄と例のギャラリーが表示されない不具合を直す。
-  上流は `gr.Tabs(selected='tab_img_prompt')` と `gr.Tabs(selected='tab_img_gallery')` を固定で指定しているが、
-  MV モードではその 2 つが `visible=False` になるため、非表示のタブが選択されたままになり中身が描画されない。
-  `MultiView Prompt` タブに `id='tab_mv_prompt'` を付け、選択先を MV モードで切り替える
-- `0003-help-tooltips-and-glossary.patch` — 画面の説明表示（下記）を注入する
-- `0004-show-failing-parameters.patch` — 生成・書き出しが失敗したときに、どのパラメータが疑わしいか
-  を表示する（下記「生成に失敗したときの読み方」）
-- `0005-save-load-presets.patch` — 画面の設定（パラメータ）に名前を付けて保存し、あとから読み込む
-  （下記「設定の保存・読み込み」）
+### 公開版に含めない理由
+
+当て物は上流のコードの行を含む差分で、Tencent Hunyuan 3D 2.0 Community License でいう派生物（Works）に
+あたる。この許諾は配布を EU・英国・韓国を除く地域（Territory）に限る（「ライセンスの地域制限」）。
+GitHub は閲覧・取得できる地域を絞れないため、当て物は公開リポジトリにも履歴にも載せない。
+`tools/hunyuan3d/patches/` は `.gitignore` に入れてあり、手元のファイルはそのまま残る。
+
+### 公開版で使えない機能
+
+`setup-server.sh` は `patches/` に当て物が無ければ当て物の工程を飛ばす。そのとき上流は固定コミットの
+ままで、次の機能は無い。
+
+| 当て物 | 内容 | 公開版（当て物なし）の状態 |
+|---|---|---|
+| `0001-free-vram-before-generation` | 生成の直前に Ollama のモデルを降ろす（上記 2 の理由） | 生成前に自動で降りない。`serve` の起動時の解放と、手で実行する `run-hunyuan3d free-vram` だけ |
+| `0002-select-multiview-tab` | MV モードで 4 枚の入力欄と例のギャラリーが表示されない不具合を直す | 不具合が残る（下記） |
+| `0003-help-tooltips-and-glossary` | 画面の説明表示（日本語のマウスオーバーと専門用語の用語集。「画面の説明表示」） | 説明は出ない。上流の英語ラベルのまま |
+| `0004-show-failing-parameters` | 失敗したときに、疑わしいパラメータを表示する（「生成に失敗したときの読み方」） | 上流の Gradio 標準のエラー表示のまま |
+| `0005-save-load-presets` | 画面の設定に名前を付けて保存・読み込みする（「設定の保存・読み込み」） | 設定の保存・読み込みは無い |
+
+`0002` は上流の不具合の修正である。上流は `gr.Tabs(selected='tab_img_prompt')` と
+`gr.Tabs(selected='tab_img_gallery')` を固定で指定しているが、MV モードではその 2 つが `visible=False`
+になるため、非表示のタブが選択されたままになり中身が描画されない。**当て物なしの公開版では、MV
+モード（このツールの構成）で 4 枚の入力欄と例のギャラリーが見えない。** 手元で直すには、
+`vendor/Hunyuan3D-2/gradio_app.py` の `MultiView Prompt` タブに `id='tab_mv_prompt'` を付け、2 か所の
+`selected` を MV モードのときだけ MV 用のタブ（`tab_mv_prompt` と `tab_mv_gallery`）にする。
+**直した内容は当て物にして `patches/` に置くこと**（`setup-server.sh` は再実行のたびに上流を固定
+コミットへ戻すため、手編集のままだと消える。下記）。
+
+`hy3d/help_texts.py`・`hy3d/errors.py`・`hy3d/presets.py` は、0003 / 0004 / 0005 が画面へ組み込む
+自作のモジュール。当て物が無い環境ではどこからも import されない。
+
+### 手元で当て物を使う
+
+`tools/hunyuan3d/patches/` に `NNNN-名前.patch`（固定コミットに対する差分）を置くと、`setup-server.sh` が
+番号順に `git apply` する。`patches/` は `.gitignore` 済みなので、置いても公開リポジトリには載らない。
+
+1. `tools/hunyuan3d/patches/` を作り、当て物を置く（自分で作るか、手元に残っているものを戻す）
+2. `tools/hunyuan3d/setup-server.sh --accept-tencent-license` を実行する。導入済みなら、上流を固定コミットへ
+   戻してから当て物を当て直す
+3. `systemctl --user restart hunyuan3d`
+
+- 当て物があるとき、`setup-server.sh` は当てる前に上流を固定コミットへ戻す（`git checkout -- .`）。
+  **`vendor/Hunyuan3D-2` を手で編集していると、その編集は消える。** 戻す前に変更の一覧を表示する。
+  編集は必ず当て物にしてから実行する。当て物の作り方は
+  `knowledge/10-silver/resources/hunyuan3d-upstream.md` にある。
+- 当て物が当たると、試験（「試験」）のうち当て物の結果を確かめるものも走る（当たっていないと SKIP）。
+- **自分で作った当て物を第三者へ配布するときも、同じ地域制限（原文の §3）と Notice の同梱（§3.d）が掛かる。**
 
 ## 導入
 
@@ -63,11 +109,18 @@ A30 の VRAM は 24576 MiB しかなく、Hunyuan3D と Qwen は**生成中は�
 ネットワークを確認すること。**setup-server.sh はこの README を読んだ人が手で実行する**）。
 
 ```bash
-tools/hunyuan3d/setup-server.sh
+tools/hunyuan3d/setup-server.sh --accept-tencent-license
 ```
+
+`setup-server.sh` は、上流を取得する前に Tencent Hunyuan 3D 2.0 Community License の要約を表示する。
+`--accept-tencent-license`（または環境変数 `HY3D_ACCEPT_LICENSE=1`）が無いと、**終了コード 2 で止まり、
+上流の取得もモデルのダウンロードも行わない。** 付ける前に「ライセンスの地域制限」を読み、自分の利用が
+Territory の内側で、条件（月間アクティブユーザー・出力の使い方）に当たらないことを確かめること。
+許諾は、利用者がその条件を確認したうえで付けるもので、このスクリプトが代わりに同意するものではない。
 
 オプション:
 
+- `--accept-tencent-license`: 上記の許諾の確認（必須。`HY3D_ACCEPT_LICENSE=1` でも可）
 - `--no-texture`: ネイティブ拡張のビルドとテクスチャ用の重み（約18GB）取得を省略し、形状生成のみにする
 - `--skip-models`: 重みの取得を省略する（あとで `run-hunyuan3d fetch-models` を手で実行する）
 - `--no-autostart`: PC 起動時の自動起動を有効にしない
@@ -97,7 +150,7 @@ systemctl --user stop hunyuan3d
 ## 4 枚の画像の撮り方（mv モード）
 
 `tencent/Hunyuan3D-2mv` を使っているため、gradio UI には front / back / left / right の
-4 枚の入力欄が出る。
+4 枚の入力欄が出る（公開版では上流の不具合で出ない。「上流への当て物」の `0002`）。
 
 - 正面・背面・左・右の 4 方向を、対象物を回転させずカメラを回して撮る（同一光源・同一距離が望ましい）
 - 背景は黒か単色にする（背景が複雑だと形状推定の精度が落ちる）
@@ -116,19 +169,46 @@ systemctl --user stop hunyuan3d
 
 ## ライセンスの地域制限
 
-**TENCENT HUNYUAN 3D 2.0 COMMUNITY LICENSE** に従う。EU・UK・韓国は使用許諾の対象外（日本は対象内）。
-月間アクティブユーザーが 100 万人を超える場合は Tencent へ別途ライセンス申請が必要。
+Hunyuan3D-2（コード・重み・出力）は **Tencent Hunyuan 3D 2.0 Community License Agreement** のもとで
+提供される。原文は上流リポジトリ直下の `LICENSE`（`setup-server.sh` の実行後は
+`tools/hunyuan3d/vendor/Hunyuan3D-2/LICENSE`）で、重みの配布元（Hugging Face の `tencent/Hunyuan3D-2mv`・
+`tencent/Hunyuan3D-2`）も同じ条件に従う。使用・複製・改変・配布した時点で、原文に同意したものとみなされる
+（原文の冒頭）。**以下は要点で、原文が優先する。法的な助言ではない。**
+
+- **地域**: 許諾は Territory（世界のうち、EU・英国（UK）・韓国を除く地域）に限られる（§1.l、§2）。
+  **EU・UK・韓国は対象外**（日本は対象内）。Territory の外では、Works・出力・結果を使用・複製・改変・
+  配布・表示してはならず、そうした使用は無許諾になる（§5.c）。配布も Territory 内に限る（§3 の柱書き）。
+- **月間アクティブユーザー**: Tencent Hunyuan 3D 2.0 のリリース日（2025-01-21）の時点で、前の暦月の
+  月間アクティブユーザー（利用者の全製品・サービスの合計）が **100 万人を超える**場合は、Tencent へ別途
+  ライセンスを申請する必要があり、許諾されるまで権利を行使できない（§4。申請先は原文にある）。
+- **出力の使い方**: Works や出力・結果を、**他の AI モデルの改善に使ってはならない**（§5.b。Tencent
+  Hunyuan 3D 2.0 とその派生モデルは除く）。蒸留や合成データでの学習も、派生モデル（Model Derivatives）に
+  あたるため同じ扱いになる（§1.g）。Tencent は出力に対する権利を主張せず、出力と、その後の使い方の責任は
+  利用者が負う（§6.d）。
+- **許容される使用のポリシー**: 法令と、原文の Exhibit A（Acceptable Use Policy）に従う（§5.a）。
+- **配布するとき**: Works を第三者へ配布するときは、原文の写しを添え（§3.a）、改変したファイルに変更した旨を
+  明記し（§3.b）、後述の Notice を含む「Notice」テキストファイルを同梱する（§3.d）。
+- **サービスとして第三者へ提供するとき**: 実際の提供者の正式名称を利用者へ明示し、Tencent は提携・後援・
+  推奨をしていないと明記する。Tencent の名称やロゴを、誤解を招く形で使ってはならない（§3.e）。
+
+### 帰属表示（Notice）
+
+> Tencent Hunyuan 3D 2.0 is licensed under the Tencent Hunyuan 3D 2.0 Community License Agreement, Copyright © 2025 Tencent. All Rights Reserved. The trademark rights of “Tencent Hunyuan” are owned by Tencent or its affiliate.
+
+上の文言は、上流の `LICENSE` の §3.d にある Notice を原文のまま写したもの。このリポジトリは Tencent と
+提携しておらず、Tencent の後援・承認を受けていない。このリポジトリ自身のライセンスと、第三者のソフトウェア・
+モデルの扱いは、リポジトリ直下の `NOTICE.md` にある。
 
 ## 低 VRAM モード（HY3D_LOW_VRAM）
 
 上流の `--low_vram_mode` は VRAM を RAM と引き換える設定（推論に使わないパイプラインを
-都度 CPU 側へ退避する）。VRAM は節約できるが、この機体（RAM 31GiB）では過去に RAM を
+都度 CPU 側へ退避する）。VRAM は節約できるが、RAM 31GiB の機体では過去に RAM を
 食い潰してデスクトップごとハングしたことがある。**既定は On**（VRAM 優先の安全側）。
 
 切り替え方は 3 通りあり、優先順位は `serve` の CLI フラグ → 環境変数 → 既定値（On）。
 
 1. **入口ページのスイッチ**（`tools/portal`、8080 番）— `~/.config/hunyuan3d/hunyuan3d.env` の
-   `HY3D_LOW_VRAM` を書き換える想定（このファイルの所有者は入口ページと同じ `mt`）
+   `HY3D_LOW_VRAM` を書き換える想定（このファイルの所有者は入口ページと同じ、サービスを動かす利用者）
 2. **env ファイルを直接編集**: `~/.config/hunyuan3d/hunyuan3d.env` の `HY3D_LOW_VRAM` を
    `1`（On）/ `0`（Off）にして `systemctl --user restart hunyuan3d`
 3. **手動起動時のフラグ**: `run-hunyuan3d serve --low-vram` / `run-hunyuan3d serve --no-low-vram`
@@ -159,7 +239,9 @@ systemctl --user stop hunyuan3d
 `--texgen_model_path` を渡さない）。ネイティブ拡張（`custom_rasterizer` / `differentiable_renderer`）は
 テクスチャ生成にのみ使うので、形状生成だけなら未ビルドでも動く。
 
-## 画面の説明表示
+## 画面の説明表示（当て物 0003。公開版には無い）
+
+> 手元で当て物 0003 を当てた環境でだけ使える機能。公開版（当て物なし）では画面は上流のまま。
 
 `patches/0003-help-tooltips-and-glossary.patch` が、上流の `gradio_app.py` の並び・動作・英語ラベルは
 変えずに、次の 2 つを後付けで注入する。
@@ -173,9 +255,13 @@ systemctl --user stop hunyuan3d
 説明文と用語集のデータは `hy3d/help_texts.py`（torch も gradio も import しない純粋なデータ）に
 持ち、`gradio_app.py` からは `gr.Blocks(head=...)` 経由で JSON として画面へ埋め込む。外部 CDN は
 使わない。データの追加・訂正は `hy3d/help_texts.py` の `TOOLTIPS` / `GLOSSARY` を編集し、
-`tests/test_units.py` の `test_all_widget_labels_have_tooltips` で説明の付け忘れを検出する。
+`tests/test_units.py` の `test_all_widget_labels_have_tooltips` で説明の付け忘れを検出する
+（この試験は上流の `gradio_app.py` だけがあれば走る）。
 
-## 生成に失敗したときの読み方
+## 生成に失敗したときの読み方（当て物 0004。公開版には無い）
+
+> 手元で当て物 0004 を当てた環境でだけ使える機能。公開版（当て物なし）では、失敗は上流の Gradio 標準の
+> エラー表示のまま。VRAM の目安は下の分類（CUDA out of memory / システムメモリ不足）を手で読み替える。
 
 `patches/0004-show-failing-parameters.patch` が、`Gen Shape` / `Gen Textured Shape` / `Transform`
 （書き出し）のいずれかが失敗したとき、`stats`（Mesh Statistic タブ）ではなく **Generated Mesh /
@@ -200,7 +286,9 @@ Exporting Mesh タブの出力欄**に、どのパラメータが疑わしいか
 - 表示には、その生成で使った設定一覧（あとから何の値で失敗したか分かるように）と、元の例外の全文を
   `<details>` で折りたたんで含める。例外の文字列は `html.escape` している。
 
-## 設定の保存・読み込み
+## 設定の保存・読み込み（当て物 0005。公開版には無い）
+
+> 手元で当て物 0005 を当てた環境でだけ使える機能。公開版（当て物なし）には、設定を保存・読み込む欄が無い。
 
 `patches/0005-save-load-presets.patch` が、画面の左列（Advanced Options / Export タブの下）に
 **「設定の保存・読み込み」**という `gr.Accordion`（既定は閉じる）を足す。上流の既存の並び・動作・
@@ -223,12 +311,13 @@ Exporting Mesh タブの出力欄**に、どのパラメータが疑わしいか
   設定名に使えない文字は `/ \ : * ? " < > |` の 9 つと制御文字だけで、それ以外（全角の括弧や
   かぎ括弧、全角空白など）は自由に使える。「高精細（試し）」のような自然な日本語の名前を
   そのまま付けられるようにするため、許可制ではなく禁止制にしてある。禁止する文字は
-  Windows / SMB がファイル名に使えないものに合わせた（この `presets/` は git で追跡し、
-  リモートが CIFS マウント（`/mnt/nas`）にあるため、Windows で無効な名前だと push で困る）。
+  Windows / SMB がファイル名に使えないものに合わせた（`presets/` を Windows や SMB 共有に置いたり
+  git で別の PC へ持って行ったりしても、Windows で無効な名前で困らないようにするため）。
   あわせて、64 文字以内、`..` と先頭の `.`、末尾の半角空白と `.` も弾く。
-- 保存先は `tools/hunyuan3d/presets/<名前>.json`。**`.gitignore` には入れていないので git で
-  追跡される**（重みや出力と違って小さく、あなたが作る資産なので、消えては困る・他の PC へ
-  持って行きたいため）
+- 保存先は `tools/hunyuan3d/presets/<名前>.json`。`.gitignore` には入れていない（重みや出力と違って
+  小さく、あなたが作る資産なので、消えては困る・他の PC へ持って行きたいため）。**公開リポジトリの
+  作業コピーで `presets/` を push すると、設定名がそのまま公開される。** 公開したくない名前を付けた
+  ときは、`presets/` を自分の `.git/info/exclude` に書いて追跡から外す。
 
 ## 試験
 
@@ -236,6 +325,19 @@ Exporting Mesh タブの出力欄**に、どのパラメータが疑わしいか
 
 ```bash
 tools/hunyuan3d/.venv/bin/python -m pytest tools/hunyuan3d/tests/test_units.py -q
+# venv が無い公開版の作業コピーでも、hy3d は標準ライブラリだけなので uv の一時環境で走る
+uvx --with pytest pytest tools/hunyuan3d/tests/test_units.py -q
+```
+
+上流の `gradio_app.py` を読む試験は、上流（`vendor/Hunyuan3D-2`）が取得されていなければ SKIP になる。
+当て物の結果（説明表示・失敗の診断・設定の保存と読み込みの組み込み）を確かめる試験は、当て物が当たって
+いなければ SKIP になる（公開版には当て物が無いので、普通の状態）。失敗にはならない。
+
+公開版の状態（上流が無い）を再現して全体を流すときは、環境変数 `HY3D_TEST_VENDOR_DIR` に存在しない
+パスを渡す。当て物の無い上流を置いたディレクトリを渡せば、「上流はあるが当て物は無い」状態になる:
+
+```bash
+HY3D_TEST_VENDOR_DIR=/存在しないパス tools/hunyuan3d/.venv/bin/python -m pytest tools/hunyuan3d/tests/test_units.py -q
 ```
 
 実機試験（4 ビュー → GLB まで実際に通す。GPU と重みを使い数分かかる。

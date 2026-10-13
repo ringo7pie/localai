@@ -11,7 +11,7 @@ LAN 内のローカル Qwen へ移すための連携層。
 | 呼び方 | 何をするか | この環境での実体 |
 |---|---|---|
 | **クラウド** | 要求整理、設計、タスク分解、合格条件、レビューと判断 | Claude Code 2.1.278 / Codex（ChatGPT デスクトップ版同梱） |
-| **作業 PC** | ソース検索、部分読み取り、編集、ビルド、テスト | この PC（this-host）。OpenCode 1.18.31 + この連携層 |
+| **作業 PC** | ソース検索、部分読み取り、編集、ビルド、テスト | この PC。OpenCode 1.18.31 + この連携層 |
 | **A30 サーバー** | 推論の実行 | この PC（同一ホスト）。Ollama 0.34.2 + `qwen3.8:27b` |
 
 ```
@@ -37,7 +37,7 @@ A30 サーバー上では、導入スクリプトを **1 回**走らせるだけ
 
 ```bash
 # いつ: 最初の 1 回だけ（再実行しても安全）
-/home/mt/Proj/localai/tools/local-ai-bridge/scripts/setup-server.sh --workspace /home/mt/Proj/localai
+~/Proj/localai/tools/local-ai-bridge/scripts/setup-server.sh --workspace ~/Proj/localai
 ```
 
 `setup-server.sh` がやること（`[1/7]`〜`[7/7]`）:
@@ -67,10 +67,10 @@ sudo が要る作業（ufw、linger、Ollama の drop-in）は `scripts/server-a
 
 ```bash
 curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.31 --no-modify-path
-cd /home/mt/Proj/localai/tools/local-ai-bridge
-/home/mt/.local/bin/uv venv --python 3.12 .venv
-/home/mt/.local/bin/uv pip install --python .venv/bin/python -r requirements.lock.txt
-/home/mt/.local/bin/uv pip install --python .venv/bin/python -e .
+cd ~/Proj/localai/tools/local-ai-bridge
+~/.local/bin/uv venv --python 3.12 .venv
+~/.local/bin/uv pip install --python .venv/bin/python -r requirements.lock.txt
+~/.local/bin/uv pip install --python .venv/bin/python -e .
 mkdir -p ~/.config/local-ai-bridge
 cp config/bridge.toml.example ~/.config/local-ai-bridge/bridge.toml
 chmod 600 ~/.config/local-ai-bridge/bridge.toml

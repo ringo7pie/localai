@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 他の PC（macOS / Linux / WSL2）で実行する。local-ai-bridge をその PC に導入し、
-# SSH トンネル越しに A30 サーバー（既定 <server-ip>）の Ollama を使える状態にする。
+# SSH トンネル越しに A30 サーバー（--server-ip か環境変数 LOCALAI_SERVER_HOST で指定）の Ollama を使える状態にする。
 #
 # 1 回の実行で [1/7]〜[7/7] を全部済ませる。再実行しても既にあるものは触らず
 # 「既にあります」と表示する（冪等）。
@@ -9,8 +9,10 @@
 #       実行しないこと（[2/7] でサーバー側の ~/.ssh/authorized_keys を書き換える）。
 set -euo pipefail
 
-server_ip="<server-ip>"
-server_user="mt"
+# サーバーの IP は --server-ip か環境変数 LOCALAI_SERVER_HOST で必ず指定する（既定値は持たない）。
+# SSH ユーザーは --server-user か環境変数 LOCALAI_SERVER_USER。無ければこの PC のユーザー名。
+server_ip="${LOCALAI_SERVER_HOST:-}"
+server_user="${LOCALAI_SERVER_USER:-$(id -un)}"
 install_dir="$HOME/local-ai-bridge"
 allowed_roots=()
 skip_server=false
@@ -20,8 +22,9 @@ print_usage() {
   cat <<EOF
 使い方: $(basename -- "$0") [オプション]
 
-  --server-ip IP        A30 サーバーの IP（既定: <server-ip>）
-  --server-user USER    A30 サーバーの SSH ユーザー名（既定: mt）
+  --server-ip IP        A30 サーバーの IP（必須。環境変数 LOCALAI_SERVER_HOST でも指定できる）
+  --server-user USER    A30 サーバーの SSH ユーザー名
+                        （既定: 環境変数 LOCALAI_SERVER_USER、無ければこの PC のユーザー名）
   --install-dir DIR     local-ai-bridge の導入先（既定: \$HOME/local-ai-bridge）
   --allowed-root DIR    許可ルート（複数可。既定: \$HOME/Proj）
   --skip-server         サーバーへの鍵登録を行わず、手動コマンドの表示だけにする
@@ -29,8 +32,8 @@ print_usage() {
   -h, --help            この説明を表示して終了
 
 例:
-  $(basename -- "$0")
-  $(basename -- "$0") --server-ip <server-ip> --allowed-root \$HOME/Proj --allowed-root \$HOME/work
+  $(basename -- "$0") --server-ip 192.168.1.10
+  $(basename -- "$0") --server-ip 192.168.1.10 --server-user alice --allowed-root \$HOME/Proj --allowed-root \$HOME/work
 EOF
 }
 
@@ -75,6 +78,12 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+if [ -z "$server_ip" ]; then
+  echo "サーバーの IP が未指定です。--server-ip か環境変数 LOCALAI_SERVER_HOST で指定してください。" >&2
+  print_usage >&2
+  exit 2
+fi
 
 if [ "${#allowed_roots[@]}" -eq 0 ]; then
   allowed_roots=("$HOME/Proj")

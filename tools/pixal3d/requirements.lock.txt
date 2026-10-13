@@ -21,7 +21,7 @@
 #     ネイティブ拡張なので setup-server.sh の [6/10] で個別にビルドする（このファイルには含めない）
 #
 # 各バージョンは 2026-09-22 に venv で実際に動いていたもの
-# （runuser -u mt -- env HOME=/home/mt PATH=/home/mt/.local/bin:/usr/bin:/bin
+# （runuser -u <user> -- env HOME=/home/<user> PATH=/home/<user>/.local/bin:/usr/bin:/bin
 #   uv pip freeze --python .venv/bin/python で確認。インストールは一切していない）。
 pillow==12.0.0
 imageio==2.37.2

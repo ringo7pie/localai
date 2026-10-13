@@ -13,7 +13,7 @@
 - 7860 / 7861: Hunyuan3D / Pixal3D（VRAM を取り合う。同時に生成しないこと）
 - 8080: 入口ページ（`tools/portal`）
 
-サーバー IP は `<server-ip>`。起動後は `http://<server-ip>:8188` → 左の Workflows → `PixelArtistry`。
+サーバー IP は `<server-ip>`（例: 192.168.1.10）。起動後は `http://<server-ip>:8188` → 左の Workflows → `PixelArtistry`。
 
 ## 固定している版
 

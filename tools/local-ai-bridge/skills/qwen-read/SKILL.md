@@ -21,10 +21,10 @@ git -C "$PWD" rev-parse --show-toplevel
 
 ## 2. 許可ルートの確認
 
-`qwen-worker` の許可ルート（`allowed_roots`）は `/home/mt/.config/qwen-worker/config.toml` で決まっており、
+`qwen-worker` の許可ルート（`allowed_roots`）は `~/.config/qwen-worker/config.toml` で決まっており、
 現在の設定値は次の 1 つだけ。
 
-- `/home/mt/Proj`
+- `~/Proj`
 
 project_root がこの配下に無いなら、`qwen_research` は呼ばずに `qwen_status` を呼んで
 接続先・許可ルートの案内をそのまま出し、**ここで終わる**。

@@ -6,7 +6,7 @@
 終わると消える。止めたいときは対象タスクを `cancel` する。
 
 ```bash
-BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
+BRIDGE=~/Proj/localai/tools/local-ai-bridge
 
 # 状態を見る
 $BRIDGE/run-local-ai-task list --limit 10
@@ -122,12 +122,12 @@ MCP には載せていない。適用は人が起動する。
 
 ```bash
 # 一覧
-git -C /home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest worktree list
+git -C ~/Proj/localai/tools/local-ai-bridge/fixtures/selftest worktree list
 
 # 個別に外す
-git -C /home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest worktree remove --force \
+git -C ~/Proj/localai/tools/local-ai-bridge/fixtures/selftest worktree remove --force \
     ~/.local/state/local-ai-bridge/worktrees/task_xxxxxxxx
-git -C /home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest worktree prune
+git -C ~/Proj/localai/tools/local-ai-bridge/fixtures/selftest worktree prune
 ```
 
 ## よくある詰まり

@@ -8,7 +8,7 @@ set -euo pipefail
 pc_name="${1:?PC名を指定してください}"
 key_source="${2:?公開鍵ファイル（または -）を指定してください}"
 
-worker="/home/mt/.local/share/qwen-worker/run-qwen-worker"
+worker="$HOME/.local/share/qwen-worker/run-qwen-worker"
 auth_dir="$HOME/.ssh"
 auth_file="$auth_dir/authorized_keys"
 

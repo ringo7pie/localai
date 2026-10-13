@@ -69,7 +69,7 @@ VRAM_WAIT_SECONDS = 60
 
 # 低 VRAM モード（--low_vram 相当）の切り替え。VRAM を RAM と引き換える設定。
 # env ファイルのパスと変数名は tools/portal（入口ページ）と必ず一致させる。変えないこと。
-# 入口ページが mt としてこのファイルを書き換える想定なので、px3d 側は読むだけにする。
+# 入口ページが同じユーザーとしてこのファイルを書き換える想定なので、px3d 側は読むだけにする。
 LOW_VRAM_ENV_FILE = Path.home() / ".config" / "pixal3d" / "pixal3d.env"
 LOW_VRAM_ENV_VAR = "PIXAL3D_LOW_VRAM"
 LOW_VRAM_DEFAULT = True

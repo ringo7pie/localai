@@ -1,6 +1,6 @@
 # 他の PC から qwen-worker を使う
 
-ローカル Qwen のワーカーは **サーバ機（`this-host` / `<server-ip>`）の上だけ**で動く。
+ローカル Qwen のワーカーは **サーバ機（IP は `<server-ip>`。例: 192.168.1.10）の上だけ**で動く。
 他の PC は SSH でそこに繋ぎ、標準入出力で MCP をやり取りするだけ。
 他の PC に Python も Ollama も入れる必要はない。
 
@@ -9,18 +9,18 @@
  ┌────────────────────┐                 ┌──────────────────────────┐
  │ Claude Code / Codex│  ssh -T (鍵)    │ run-qwen-worker (stdio)  │
  │   mcp: qwen-worker ┼────────────────►│   └ Qwen3.8-27B (Ollama) │
- │ エクスプローラ     │  SMB \\…\mt     │ /home/mt/Proj/...        │
+ │ エクスプローラ     │  SMB \\…\<user>  │ /home/<user>/Proj/...    │
  └────────────────────┘                 └──────────────────────────┘
 ```
 
 ## 1. セットアップ
 
-サーバの共有 `\\<server-ip>\mt\.local\share\qwen-worker\remote\` からスクリプトを取る。
+サーバの共有 `\\<server-ip>\<user>\.local\share\qwen-worker\remote\` からスクリプトを取る。
 
 ### Windows
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File setup-remote.ps1
+powershell -ExecutionPolicy Bypass -File setup-remote.ps1 -ServerIp <server-ip> [-ServerUser <user>]
 ```
 
 事前に「設定 → アプリ → オプション機能」で **OpenSSH クライアント**を入れておく。
@@ -28,10 +28,10 @@ powershell -ExecutionPolicy Bypass -File setup-remote.ps1
 ### macOS / Linux
 
 ```bash
-bash setup-remote.sh [ホストIP] [--skip-server]
+bash setup-remote.sh <ホストIP> [--server-user <user>] [--skip-server]
 ```
 
-ホストIP は省略時 `<server-ip>`。
+ホストIP は必須（環境変数 `LOCALAI_SERVER_HOST` でも指定できる）。サーバーの SSH ユーザーは `--server-user`（Windows は `-ServerUser`）か環境変数 `LOCALAI_SERVER_USER`、省略時はこの PC のユーザー名。
 
 どちらも **1 回実行で、鍵・ssh config・MCP 登録・サーバー側の鍵受け入れ・疎通確認まで終わる**。
 順にやること:
@@ -56,12 +56,12 @@ bash setup-remote.sh [ホストIP] [--skip-server]
 
 ```powershell
 # Windows
-Get-Content $HOME\.ssh\qwen-worker.pub | ssh mt@<server-ip> 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <あなたのPC名> -'
+Get-Content $HOME\.ssh\qwen-worker.pub | ssh <user>@<server-ip> 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <あなたのPC名> -'
 ```
 
 ```bash
 # macOS / Linux
-ssh mt@<server-ip> 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <あなたのPC名> -' < ~/.ssh/qwen-worker.pub
+ssh <user>@<server-ip> 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <あなたのPC名> -' < ~/.ssh/qwen-worker.pub
 ```
 
 この鍵は **`run-qwen-worker` を起動することしかできない**。
@@ -103,15 +103,15 @@ setup-remote.ps1 は `--%` で渡すので新規作成では起きない。
 
 | あなたの PC で開くとき | ワーカーに渡すとき |
 |---|---|
-| `\\<server-ip>\mt\Proj\localai` | `/home/mt/Proj/localai` |
-| `/Volumes/mt/Proj/localai` (mac) | `/home/mt/Proj/localai` |
-| `Z:\Proj\localai` (割り当て済みドライブ) | `/home/mt/Proj/localai` |
+| `\\<server-ip>\<user>\Proj\localai` | `/home/<user>/Proj/localai` |
+| `/Volumes/<user>/Proj/localai` (mac) | `/home/<user>/Proj/localai` |
+| `Z:\Proj\localai` (割り当て済みドライブ) | `/home/<user>/Proj/localai` |
 
-許可ルートは `/home/mt/Proj` 配下のみ。外を指すと `blocked` が返る。
+許可ルートは `/home/<user>/Proj` 配下のみ。外を指すと `blocked` が返る。
 
 成果物（差分・全対話・計測値）はサーバの
-`/home/mt/.local/state/qwen-worker/tasks/<task_id>/` に出る。
-SMB では `\\<server-ip>\mt\.local\state\qwen-worker\tasks\<task_id>\`。
+`/home/<user>/.local/state/qwen-worker/tasks/<task_id>/` に出る。
+SMB では `\\<server-ip>\<user>\.local\state\qwen-worker\tasks\<task_id>\`。
 ただし **400 行以下の差分は結果の `diff_text` に本文が入る**ので、
 たいていはファイルを開かずにレビューできる。
 
@@ -121,7 +121,7 @@ SMB では `\\<server-ip>\mt\.local\state\qwen-worker\tasks\<task_id>\`。
 ## ローカル Qwen への委譲（qwen-worker MCP。管理対象: この節のみ）
 - 通常のコード調査・局所的な実装は `qwen_research` / `qwen_implement` へ委譲する
 - 1 タスクに目的・範囲・制約・完了条件を明示する。親の会話全体は渡さない
-- パスはサーバ側の絶対パス（`/home/mt/Proj/...`）で渡す。SMB パスは使わない
+- パスはサーバ側の絶対パス（`/home/<user>/Proj/...`）で渡す。SMB パスは使わない
 - 同じ調査・実装を親が最初から重複実行しない。Qwen の根拠と差分を親が確認する
 - 差分の適用とビルド・テストは親が既存の承認・権限制御に従って行う。ワーカーは適用しない
 - Qwen が書いたテストだけで判断しない。既存テストと完了条件も確認する

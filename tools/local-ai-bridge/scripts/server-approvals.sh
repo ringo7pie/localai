@@ -13,6 +13,12 @@ OLLAMA_OVERRIDE_FILE="$OLLAMA_OVERRIDE_DIR/override.conf"
 
 UNKNOWN="未取得（sudo が要る）"
 
+# ufw-8080 で許可する LAN。環境変数 LOCALAI_LAN_CIDR で指定する（例: 192.168.1.0/24）。
+# 未指定のままでは ufw-8080 を適用しない。
+LAN_CIDR="${LOCALAI_LAN_CIDR:-<lan-cidr>}"
+# linger の対象は、このスクリプトを実行しているユーザー
+USER_NAME="$(id -un)"
+
 usage() {
   cat <<'EOF'
 使い方: server-approvals.sh [--show] | --apply <項目> | -h
@@ -24,7 +30,8 @@ usage() {
 
 利用可能な項目:
   ufw-8080       LAN <lan-cidr> からだけ 8080 を開ける
-  linger         ユーザー mt がログアウト後もユーザーサービスを残す
+                 （<lan-cidr> は環境変数 LOCALAI_LAN_CIDR で指定する。例: 192.168.1.0/24）
+  linger         実行したユーザーがログアウト後もユーザーサービスを残す
   ollama-dropin  ollama.service に 4 つの Environment を足して再始動
   close-signup   Open WebUI の新規登録を閉じる（sudo 不要）
 
@@ -72,7 +79,7 @@ linger_current() {
     echo "（loginctl コマンドが無い）"
     return 0
   fi
-  state_output="$(loginctl show-user mt 2>/dev/null)" || state_output=""
+  state_output="$(loginctl show-user "$USER_NAME" 2>/dev/null)" || state_output=""
   if [ -z "$state_output" ]; then
     echo "$UNKNOWN"
     return 0
@@ -117,19 +124,19 @@ openwebui_signup_current() {
 
 describe_ufw_8080() {
   echo "項目: ufw-8080"
-  echo "何を変えるか: LAN (<lan-cidr>) からだけ 8080 を開ける（ufw のルール追加）"
-  echo "コマンド:   sudo ufw allow from <lan-cidr> to any port 8080 proto tcp comment 'Open WebUI'"
+  echo "何を変えるか: LAN ($LAN_CIDR) からだけ 8080 を開ける（ufw のルール追加）"
+  echo "コマンド:   sudo ufw allow from $LAN_CIDR to any port 8080 proto tcp comment 'Open WebUI'"
   echo "影響:     Open WebUI が LAN の他の PC から見える"
-  echo "戻し方:   sudo ufw delete allow from <lan-cidr> to any port 8080 proto tcp"
+  echo "戻し方:   sudo ufw delete allow from $LAN_CIDR to any port 8080 proto tcp"
   echo "今の状態: $(ufw_current)"
 }
 
 describe_linger() {
   echo "項目: linger"
-  echo "何を変えるか: ユーザー mt がログアウト後も systemd --user の動作を継続する"
-  echo "コマンド:   sudo loginctl enable-linger mt"
+  echo "何を変えるか: ユーザー $USER_NAME がログアウト後も systemd --user の動作を継続する"
+  echo "コマンド:   sudo loginctl enable-linger $USER_NAME"
   echo "影響:     ログアウト後も systemd --user の open-webui が動き続ける"
-  echo "戻し方:   sudo loginctl disable-linger mt"
+  echo "戻し方:   sudo loginctl disable-linger $USER_NAME"
   echo "今の状態: $(linger_current)"
 }
 
@@ -176,14 +183,24 @@ BLOCK
 
 # ---------------------------------------------------------------- 適用処理
 
+# LOCALAI_LAN_CIDR が数字・ドット・スラッシュだけの値でなければ止める
+require_lan_cidr() {
+  case "$LAN_CIDR" in
+    ""|*[!0-9./]*)
+      echo "中止: 環境変数 LOCALAI_LAN_CIDR に LAN のネットワークアドレスを指定してください（例: 192.168.1.0/24）" >&2
+      exit 2
+      ;;
+  esac
+}
+
 apply_ufw_8080() {
-  sudo ufw allow from <lan-cidr> to any port 8080 proto tcp comment 'Open WebUI'
+  sudo ufw allow from "$LAN_CIDR" to any port 8080 proto tcp comment 'Open WebUI'
   echo "適用しました。確認: ufw status"
 }
 
 apply_linger() {
-  sudo loginctl enable-linger mt
-  echo "適用しました。確認: loginctl show-user mt"
+  sudo loginctl enable-linger "$USER_NAME"
+  echo "適用しました。確認: loginctl show-user $USER_NAME"
 }
 
 apply_ollama_dropin() {
@@ -331,6 +348,7 @@ if [ $# -gt 0 ]; then
       apply_item="$2"
       case "$apply_item" in
         ufw-8080)
+          require_lan_cidr
           describe_ufw_8080
           echo
           if prompt_yes; then

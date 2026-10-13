@@ -1,5 +1,5 @@
 # qwen-worker の設定雛形。tools/qwen-worker/setup-server.sh が ~/.config/qwen-worker/config.toml として複製する。
-# 値はこの A30 サーバー（this-host）の実設定と同じ。別の環境では allowed_roots とパスを見直すこと。
+# 値はこの A30 サーバーの実設定と同じ。別の環境では allowed_roots とパスを見直すこと。
 
 # qwen-worker 設定
 # このファイルは人間が編集する。ワーカーは起動時に読むだけで書き換えない。
@@ -9,8 +9,10 @@
 
 # 許可ルート。ここに無いパスは project_root として受け付けない。
 # モデルが指定したパスだけを根拠にアクセスは許可しない。
+# setup-server.sh が @REPO_ROOT@ をこの clone の絶対パスにして置く。ほかのプロジェクトも渡すときは、
+# その親ディレクトリ（実在するディレクトリ）をここに足す。
 allowed_roots = [
-  "/home/mt/Proj",
+  "@REPO_ROOT@",
 ]
 
 # 読み込み・複製の対象から常に外すパターン（秘密情報）

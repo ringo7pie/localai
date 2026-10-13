@@ -1,6 +1,6 @@
 # このリポジトリ固有の設計調整点
 
-構造の定義は `/home/mt/.claude/templates/knowledge-design.md`。
+構造の定義は `~/.claude/templates/knowledge-design.md`。
 このファイルには、テンプレートからずらした点とその理由だけを書く。
 ずらしていなければ「なし」と書く。
 

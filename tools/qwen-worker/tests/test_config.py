@@ -36,6 +36,19 @@ repeat_penalty   = 1.0
 """
 
 
+def test_allowed_roots_expand_tilde(tmp_path: Path, monkeypatch) -> None:
+    """allowed_roots の ~/ を、読み込み側が HOME に展開することを固定する。"""
+    home = tmp_path / "home"
+    (home / "Proj").mkdir(parents=True)
+    monkeypatch.setenv("HOME", str(home))
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(_BASE_TOML.format(root="~/Proj"), encoding="utf-8")
+
+    config = load_config(config_path)
+
+    assert config.allowed_roots == ((home / "Proj").resolve(),)
+
+
 def test_web_settings_default_when_section_missing(tmp_path: Path) -> None:
     config_path = tmp_path / "config.toml"
     config_path.write_text(_BASE_TOML.format(root=tmp_path), encoding="utf-8")

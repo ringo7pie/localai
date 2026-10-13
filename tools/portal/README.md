@@ -1,6 +1,6 @@
 # portal
 
-サーバー（<server-ip>）の 8080 番を「サービスの入口ページ」にする。Open WebUI・Strata（汎用版と、
+サーバー（`<server-ip>`。例: 192.168.1.10）の 8080 番を「サービスの入口ページ」にする。Open WebUI・Strata（汎用版と、
 コード向けの Strata Flash-Next Coder、公式量子化版の Strata 公式版）・Hunyuan3D・Pixal3D・ComfyUI へのリンクと、GPU（VRAM）の使用状況を 1 画面にまとめる。標準ライブラリだけで動く Python サーバー
 （`portal.py`）と、1 ファイル完結の `index.html` で構成する。
 
@@ -123,8 +123,9 @@ Strata（汎用版・Coder 版・公式版とも）は Qwen（Ollama。`qwen3.8:
   `/api/ps` に到達できず確認できなかったこと）。VRAM が足りなければ Strata の起動が失敗するおそれがある。
 - Strata が停止中（`stopped`）のときだけ降ろす。すでに稼働中・起動中の Strata への start は何も起こらないので、
   無関係な Qwen の応答を途中で切らない。未導入（409）・他のサービスの停止に失敗した（起動中止）ときも降ろさない。
-- 対象は Strata の 3 つだけにしている（`OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official")`）。Hunyuan3D は生成の直前に
-  自分で降ろす（`knowledge/10-silver/areas/hunyuan3d.md`）。Pixal3D・ComfyUI は、これまでの動作（画面の警告を見て
+- 対象は Strata の 3 つだけにしている（`OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official")`）。Hunyuan3D は、上流への当て物 0001 を
+  当てた環境では生成の直前に自分で降ろす（当て物は公開版に含まない。公開版では `serve` の起動時と、手で実行する
+  `run-hunyuan3d free-vram` だけ。`knowledge/10-silver/areas/hunyuan3d.md`）。Pixal3D・ComfyUI は、これまでの動作（画面の警告を見て
   利用者が降ろす）を変えないため含めていない。増やすときはこのタプルと、`index.html` の同名の配列に足す
   （試験で一致を確認している）。
 - 画面側は、降ろされるモデルがあるとき、起動ボタンの確認ダイアログに「Ollama のモデル（…）を VRAM から降ろして
@@ -255,7 +256,7 @@ curl -X POST -H "X-Portal-Request: 1" http://<server-ip>:8080/api/memory/pixal3d
 
 ## 導入コマンド
 
-サーバー上で **mt ユーザーとして**実行する（root では動かない。理由は下記）。
+サーバー上で **サービスを動かす一般ユーザーとして**実行する（root では動かない。理由は下記）。
 
 ```bash
 cd ~/Proj/localai/tools/portal

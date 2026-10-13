@@ -15,6 +15,10 @@ torch も gradio も import しない。`hy3d.config` の import のみ許可す
         "saved_at": "<ISO8601>",
         "settings": {...}
     }
+
+この保存・読み込みを画面へ出すのは、上流への当て物 0005（save-load-presets）。当て物は
+Tencent Hunyuan 3D 2.0 Community License の地域制限のため公開版に含まない。当て物が無い環境では
+どこからも import されない。
 """
 
 from __future__ import annotations
@@ -120,8 +124,8 @@ def validate_preset_name(name: str) -> str | None:
         return "改行やタブなどの制御文字は使えません"
     # 使える文字を絞り込むのではなく、危ない文字だけを弾く。全角の括弧やスペース、「」・
     # なども普通に使いたいため（許可制にすると「高精細（試し）」のような自然な名前が通らない）。
-    # 弾く文字は Windows / SMB で使えないものに合わせる。この presets/ は git で追跡し、
-    # リモートが CIFS マウント（/mnt/nas）なので、Windows で無効な名前だと push で困る。
+    # 弾く文字は Windows / SMB で使えないものに合わせる。presets/ を Windows や SMB 共有（CIFS）に
+    # 置いたり git で別の PC へ持って行ったりしても、Windows で無効な名前で困らないようにするため。
     invalid_chars = sorted({ch for ch in name if ch in _FORBIDDEN_CHARS})
     if invalid_chars:
         return (

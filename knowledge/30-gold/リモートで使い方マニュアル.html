@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ローカル Qwen を他の PC から使う</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#EDF0F1; --surface:#FFFFFF; --surface-2:#E3E9EB; --surface-3:#D9E1E4;
@@ -18,8 +15,8 @@
   --bad:#93222D; --bad-soft:#F2D7DA; --bad-bar:#B8434F;
   --term-bg:#101E26; --term-ink:#D9E6EC; --term-dim:#7D97A3; --term-line:#243A45; --term-cue:#63B6D4;
   --win:#4B3A8F; --win-soft:#E2DDF3; --mac:#6A4E1E; --mac-soft:#F0E7D2; --lin:#1D5A63; --lin-soft:#D6EBEE;
-  --f-body:"IBM Plex Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-body:"IBM Plex Sans JP","Hiragino Sans","Noto Sans CJK JP","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -139,7 +136,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 
 <header class="top">
   <h1>ローカル Qwen を他の PC から使う</h1>
-  <p class="lede">A30 サーバー（<code>this-host</code> / <server-ip>）のローカル Qwen3.8-27B を、LAN 内の<b>別の PC</b>の Claude Code・Codex・ブラウザから使うための、<b>その PC 側だけ</b>の設定と使い方。サーバー側の操作はこの文書には出てこない。サーバーの管理は <code>サーバーでの使い方マニュアル.html</code> を見ること。</p>
+  <p class="lede">A30 サーバー（<code>&lt;server-ip&gt;</code>）のローカル Qwen3.8-27B を、LAN 内の<b>別の PC</b>の Claude Code・Codex・ブラウザから使うための、<b>その PC 側だけ</b>の設定と使い方。サーバー側の操作はこの文書には出てこない。サーバーの管理は <code>サーバーでの使い方マニュアル.html</code> を見ること。</p>
   <p class="meta">作成 2026-09-21 / 更新 2026-09-21（第 4 版: サーバー側の説明を「サーバーでの使い方マニュアル.html」へ分離。設定は他の PC 側の 1 スクリプトで完了する形に）/ NVIDIA A30 24GiB / Ollama 0.34.2 / qwen3.8:27b (Q4_K_M) / OpenCode 1.18.31</p>
 </header>
 
@@ -229,7 +226,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 
 <figure>
 <div class="srvbox">
-  <div class="srvtitle">A30 サーバー &nbsp;this-host&nbsp; <server-ip></div>
+  <div class="srvtitle">A30 サーバー &nbsp;&lt;server-ip&gt;</div>
   <div class="svcs">
     <div class="svc"><span class="n">qwen-worker</span><span class="a">MCP stdio（SSH 経由）</span></div>
     <div class="svc"><span class="n">OpenCode + 連携層</span><span class="a">同一ホストなら直結</span></div>
@@ -258,8 +255,8 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <table>
 <tr><th>名前</th><th>アドレス</th><th>公開範囲</th><th>認証</th></tr>
 <tr><td>Ollama API</td><td><code>127.0.0.1:11434</code></td><td><span class="pill p-ok">ループバックのみ</span></td><td>なし（だから公開しない）</td></tr>
-<tr><td>SSH</td><td><code><server-ip>:22</code></td><td>LAN</td><td>公開鍵。qwen-worker 用は<b>強制コマンド付き</b></td></tr>
-<tr><td>Open WebUI</td><td><code><server-ip>:8080</code></td><td>LAN（<b>ufw 未設定で到達不可</b>）</td><td>アカウント（初回登録者が管理者）</td></tr>
+<tr><td>SSH</td><td><code>&lt;server-ip&gt;:22</code></td><td>LAN</td><td>公開鍵。qwen-worker 用は<b>強制コマンド付き</b></td></tr>
+<tr><td>Open WebUI</td><td><code>&lt;server-ip&gt;:8080</code></td><td>LAN（<b>ufw 未設定で到達不可</b>）</td><td>アカウント（初回登録者が管理者）</td></tr>
 </table>
 
 <div class="warn">
@@ -291,30 +288,30 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <li>
 <h4>他の PC で設定スクリプトを走らせる</h4>
 <p>スクリプトは <b>A30 サーバーの</b> <code>~/.local/share/qwen-worker/remote/</code> にある。
-Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってくる。</p>
+Samba 共有 <code>\\&lt;server-ip&gt;\&lt;user&gt;</code> か <code>scp</code> で取ってくる。</p>
 
 <div class="oshead os-win">他の PC（Windows PowerShell）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
 <div class="term"><span class="c"># 前提: Windows 標準の OpenSSH クライアント</span>
 <span class="c"># 「設定 &gt; アプリ &gt; オプション機能 &gt; OpenSSH クライアント」で入る</span>
 
 <span class="c"># スクリプトを取ってくる（どちらか）</span>
-<span class="p">PS&gt;</span> copy \\<server-ip>\mt\.local\share\qwen-worker\remote\setup-remote.ps1 .
-<span class="p">PS&gt;</span> scp mt@<server-ip>:.local/share/qwen-worker/remote/setup-remote.ps1 .
+<span class="p">PS&gt;</span> copy \\&lt;server-ip&gt;\&lt;user&gt;\.local\share\qwen-worker\remote\setup-remote.ps1 .
+<span class="p">PS&gt;</span> scp &lt;user&gt;@&lt;server-ip&gt;:.local/share/qwen-worker/remote/setup-remote.ps1 .
 
 <span class="c"># 実行</span>
-<span class="p">PS&gt;</span> powershell -ExecutionPolicy Bypass -File .\setup-remote.ps1 -ServerIp <server-ip></div>
+<span class="p">PS&gt;</span> powershell -ExecutionPolicy Bypass -File .\setup-remote.ps1 -ServerIp &lt;server-ip&gt;</div>
 
 <div class="oshead os-mac">他の PC（macOS）</div>
 <div class="oshead os-lin">他の PC（Linux / WSL2）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
-<div class="term"><span class="p">$</span> scp mt@<server-ip>:.local/share/qwen-worker/remote/setup-remote.sh .
-<span class="p">$</span> bash setup-remote.sh <server-ip></div>
+<div class="term"><span class="p">$</span> scp &lt;user&gt;@&lt;server-ip&gt;:.local/share/qwen-worker/remote/setup-remote.sh .
+<span class="p">$</span> bash setup-remote.sh &lt;server-ip&gt;</div>
 
 <p>スクリプトは 1 回の実行で次の 5 段階を全部行う（いずれも<b>再実行しても重複しない</b>）:</p>
 <ul>
   <li>[1/5] 専用鍵 <code>~/.ssh/qwen-worker</code> を作る（パスフレーズ無し。既にあれば再利用。パスフレーズ付きなら直し方を表示）</li>
   <li>[2/5] <code>~/.ssh/config</code> に <code>Host qwen-worker</code> の節を足す（既にあれば触らない）</li>
   <li>[3/5] <code>claude</code> / <code>codex</code> があれば MCP 登録し、タイムアウトを合わせる</li>
-  <li>[4/5] サーバーへ公開鍵を登録する。ssh 経由でサーバーの <code>add-remote-key.sh</code> を呼ぶ。このとき<b>サーバーのログインパスワード（mt のパスワード）を 1 回聞かれる</b>。スクリプトはパスワードを受け取らない・保存しない</li>
+  <li>[4/5] サーバーへ公開鍵を登録する。ssh 経由でサーバーの <code>add-remote-key.sh</code> を呼ぶ。このとき<b>サーバーのログインパスワード（&lt;user&gt; のパスワード）を 1 回聞かれる</b>。スクリプトはパスワードを受け取らない・保存しない</li>
   <li>[5/5] <code>ssh -n -T qwen-worker</code> で疎通確認。<code>claude</code> があれば <code>claude mcp get qwen-worker</code> の結果も表示。接続 NG なら原因の見方を表示して終了コード 1</li>
 </ul>
 <div class="note">
@@ -360,8 +357,8 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 
 <div class="oshead os-lin">他の PC の ~/.ssh/config に書く <span class="when">｜ いつ: スクリプトを使わず手で設定するときだけ</span></div>
 <div class="term">Host qwen-worker
-    HostName <server-ip>
-    User mt
+    HostName &lt;server-ip&gt;
+    User &lt;user&gt;
     IdentityFile ~/.ssh/qwen-worker
     IdentitiesOnly yes
     RequestTTY no</div>
@@ -387,16 +384,16 @@ Samba 共有 <code>\\<server-ip>\mt</code> か <code>scp</code> で取ってく�
 <div class="bad">
   <b>渡すパスは「A30 サーバー側の絶対パス」</b>
   <code>project_root</code> や <code>allowed_read_paths</code> には
-  <code>/home/mt/Proj/xxx</code> のような<b>サーバー上のパス</b>を渡す。
-  <code>\\<server-ip>\mt\Proj\xxx</code> のような SMB パスや、
+  <code>~/Proj/xxx</code> のような<b>サーバー上のパス</b>を渡す。
+  <code>\\&lt;server-ip&gt;\&lt;user&gt;\Proj\xxx</code> のような SMB パスや、
   手元の PC のドライブレターは受け付けない。
 </div>
 
 <table>
 <tr><th>あなたが見ているパス</th><th>qwen-worker へ渡すパス</th></tr>
-<tr><td><code>\\<server-ip>\mt\Proj\localai</code>（Windows の共有）</td><td><code>/home/mt/Proj/localai</code></td></tr>
-<tr><td><code>Z:\Proj\localai</code>（ドライブ割り当て）</td><td><code>/home/mt/Proj/localai</code></td></tr>
-<tr><td><code>/Volumes/mt/Proj/localai</code>（macOS のマウント）</td><td><code>/home/mt/Proj/localai</code></td></tr>
+<tr><td><code>\\&lt;server-ip&gt;\&lt;user&gt;\Proj\localai</code>（Windows の共有）</td><td><code>~/Proj/localai</code></td></tr>
+<tr><td><code>Z:\Proj\localai</code>（ドライブ割り当て）</td><td><code>~/Proj/localai</code></td></tr>
+<tr><td><code>/Volumes/&lt;user&gt;/Proj/localai</code>（macOS のマウント）</td><td><code>~/Proj/localai</code></td></tr>
 </table>
 
 <p><code>qwen_status</code> を呼ぶと、そのホストのパスと SMB 共有の対応表が返る。迷ったらこれを見る。</p>
@@ -431,13 +428,13 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <h4>導入スクリプトを 1 回走らせる（最初の 1 回だけ）</h4>
 
 <div class="oshead os-lin">他の PC（macOS / Linux / WSL2）で打つ <span class="when">｜ いつ: 最初の 1 回だけ</span></div>
-<div class="term"><span class="p">$</span> scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
-<span class="p">$</span> bash setup-workpc.sh --server-ip <server-ip></div>
+<div class="term"><span class="p">$</span> scp &lt;user&gt;@&lt;server-ip&gt;:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+<span class="p">$</span> bash setup-workpc.sh --server-ip &lt;server-ip&gt;</div>
 
 <div class="oshead os-win">他の PC（Windows PowerShell）で打つ <span class="when">｜ いつ: 最初の 1 回だけ。WSL2 が要る</span></div>
-<div class="term"><span class="p">PS&gt;</span> scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
-<span class="p">PS&gt;</span> scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.ps1 .
-<span class="p">PS&gt;</span> powershell -ExecutionPolicy Bypass -File .\setup-workpc.ps1 -ServerIp <server-ip></div>
+<div class="term"><span class="p">PS&gt;</span> scp &lt;user&gt;@&lt;server-ip&gt;:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+<span class="p">PS&gt;</span> scp &lt;user&gt;@&lt;server-ip&gt;:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.ps1 .
+<span class="p">PS&gt;</span> powershell -ExecutionPolicy Bypass -File .\setup-workpc.ps1 -ServerIp &lt;server-ip&gt;</div>
 
 <p>スクリプトがやること:
 [1/7] トンネル専用鍵 <code>~/.ssh/a30-tunnel</code> を作る。
@@ -491,9 +488,9 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <div class="oshead os-lin">他の PC（bash / PowerShell）で打つ <span class="when">｜ いつ: 最初の 1 回だけ（パスワード 1 回）</span></div>
 <div class="term"><span class="c"># ssh がサーバーのログインパスワードを 1 回聞く。AAAA... は自分のトンネル用公開鍵に置き換える</span>
 <span class="c"># bash（macOS / Linux / WSL2）</span>
-<span class="p">$</span> echo 'restrict,port-forwarding,permitopen="127.0.0.1:11434",command="echo tunnel-only" ssh-ed25519 AAAA... work-pc-01-tunnel' | ssh mt@<server-ip> 'cat &gt;&gt; ~/.ssh/authorized_keys'
+<span class="p">$</span> echo 'restrict,port-forwarding,permitopen="127.0.0.1:11434",command="echo tunnel-only" ssh-ed25519 AAAA... work-pc-01-tunnel' | ssh &lt;user&gt;@&lt;server-ip&gt; 'cat &gt;&gt; ~/.ssh/authorized_keys'
 <span class="c"># PowerShell（&lt;&lt;&lt; は使えないのでパイプで渡す）</span>
-<span class="p">PS&gt;</span> 'restrict,port-forwarding,permitopen="127.0.0.1:11434",command="echo tunnel-only" ssh-ed25519 AAAA... work-pc-01-tunnel' | ssh mt@<server-ip> 'cat &gt;&gt; ~/.ssh/authorized_keys'</div>
+<span class="p">PS&gt;</span> 'restrict,port-forwarding,permitopen="127.0.0.1:11434",command="echo tunnel-only" ssh-ed25519 AAAA... work-pc-01-tunnel' | ssh &lt;user&gt;@&lt;server-ip&gt; 'cat &gt;&gt; ~/.ssh/authorized_keys'</div>
 
 <ul>
   <li><code>restrict</code> — pty・エージェント転送・X11 転送などをまとめて落とす</li>
@@ -510,7 +507,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 <h4>他の PC：トンネルを張る</h4>
 
 <div class="oshead os-win">他の PC（Windows PowerShell）で打つ <span class="when">｜ いつ: 使うたび（トンネルが要る間）</span></div>
-<div class="term"><span class="p">PS&gt;</span> ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 mt@<server-ip>
+<div class="term"><span class="p">PS&gt;</span> ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 &lt;user&gt;@&lt;server-ip&gt;
 
 <span class="c"># 別の窓で確認</span>
 <span class="p">PS&gt;</span> curl.exe http://127.0.0.1:11434/api/version
@@ -518,7 +515,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 
 <div class="oshead os-mac">他の PC（macOS）</div>
 <div class="oshead os-lin">他の PC（Linux / WSL2）で打つ <span class="when">｜ いつ: 使うたび（トンネルが要る間）</span></div>
-<div class="term"><span class="p">$</span> ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 mt@<server-ip>
+<div class="term"><span class="p">$</span> ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 &lt;user&gt;@&lt;server-ip&gt;
 
 <span class="p">$</span> curl -s http://127.0.0.1:11434/api/version
 <span class="o">  {"version":"0.34.2"}</span></div>
@@ -622,7 +619,7 @@ A30 側にワークスペース全体を複製する必要はない。</p>
 
 <ol class="steps">
 <li><h4>ブラウザで開く</h4>
-<div class="term">http://<server-ip>:8080</div></li>
+<div class="term">http://&lt;server-ip&gt;:8080</div></li>
 <li><h4>最初のアカウントを作る</h4>
 <p><b>最初に登録した人が管理者になる。</b>そのため、こちらでは作っていない。</p></li>
 </ol>

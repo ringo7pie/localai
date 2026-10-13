@@ -14,7 +14,7 @@ from .errors import BridgeError, DuplicateRequestError
 EXAMPLES = """\
 使用例:
   # 0. 作業場所を登録する（[registration] allowed_roots 配下の Git リポジトリだけ登録できる）
-  local-ai-task workspace add /home/mt/Proj/localai/tools/example --id example \\
+  local-ai-task workspace add ~/Proj/localai/tools/example --id example \\
       --verify pytest --cmd "python3 -m pytest -q" --default-verify pytest
 
   # 1. 前提の点検

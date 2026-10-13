@@ -146,6 +146,43 @@ command = ["true"]
         cfg.workspace("demo").profile("missing")
 
 
+def test_config_expands_tilde_paths(tmp_path, monkeypatch):
+    """bridge.toml.example は ~/ で書いてある。読み込み側が HOME に展開することを固定する。"""
+    home = tmp_path / "home"
+    repo = home / "Proj" / "repo"
+    (home / "bin").mkdir(parents=True)
+    repo.mkdir(parents=True)
+    binary = home / "bin" / "opencode"
+    binary.write_text("#!/bin/sh\n", encoding="utf-8")
+    binary.chmod(0o755)
+    monkeypatch.setenv("HOME", str(home))
+    config_file = tmp_path / "bridge.toml"
+    config_file.write_text(
+        """
+[ollama]
+model = "m"
+[opencode]
+binary = "~/bin/opencode"
+profile_dir = "~/state/profile"
+config_source = "~/Proj/opencode.json"
+[state]
+root = "~/state"
+[workspace.demo]
+path = "~/Proj/repo"
+[registration]
+allowed_roots = ["~/Proj"]
+""",
+        encoding="utf-8",
+    )
+    cfg = config_module.load(config_file)
+    assert cfg.opencode_binary == binary
+    assert cfg.opencode_profile_dir == home / "state" / "profile"
+    assert cfg.opencode_config_source == home / "Proj" / "opencode.json"
+    assert cfg.state_root == home / "state"
+    assert cfg.workspace("demo").path == repo.resolve()
+    assert cfg.registration_roots == ((home / "Proj").resolve(),)
+
+
 # --- worktree --------------------------------------------------------
 def test_dirty_workspace_waits_by_default(tmp_path):
     repo = _make_repo(tmp_path)

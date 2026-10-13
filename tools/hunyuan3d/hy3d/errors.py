@@ -7,6 +7,10 @@ torch なしでも走らせるため。`hy3d.config` の import は可）。
 元の例外をそのまま見せる。効きの順序（cuda_oom / host_oom とも）は実測に基づく。
 根拠は tools/hunyuan3d/README.md と knowledge/10-silver/areas/hunyuan3d.md、
 2026-09-24 の追加検証（Number of Chunks・Target Face Number）による。
+
+この診断を画面へ出すのは、上流への当て物 0004（show-failing-parameters）。当て物は
+Tencent Hunyuan 3D 2.0 Community License の地域制限のため公開版に含まない。当て物が無い環境では
+どこからも import されない（公開版の失敗表示は上流の Gradio 標準のエラーのまま）。
 """
 
 from __future__ import annotations

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import getpass
 import json
 import logging
 import socket
@@ -60,6 +61,14 @@ server = MCPServer(
 )
 
 
+def _home_share_name() -> str:
+    """ホームの SMB 共有名。Samba の [homes] は共有名がユーザー名になる。"""
+    try:
+        return getpass.getuser()
+    except (KeyError, OSError):
+        return "<user>"
+
+
 def _host_info() -> dict[str, Any]:
     """このワーカーが動いているホストの情報。
 
@@ -71,12 +80,13 @@ def _host_info() -> dict[str, Any]:
     address: str | None = None
     try:
         # UDP ソケットの接続先は実際には送信しない。経路選択で自分の LAN 側 IP が分かる。
+        # 接続先は RFC 5737 の文書用アドレス（192.0.2.0/24）。既定経路の側の IP が返る。
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
-            probe.connect(("192.168.8.1", 9))
+            probe.connect(("192.0.2.1", 9))
             address = probe.getsockname()[0]
     except OSError:
         address = None
-    smb_root = f"\\\\{address or hostname}\\mt"
+    smb_root = f"\\\\{address or hostname}\\{_home_share_name()}"
     return {
         "hostname": hostname,
         "lan_address": address,
@@ -84,7 +94,7 @@ def _host_info() -> dict[str, Any]:
         "smb_share_of_home": smb_root,
         "tasks_dir_via_smb": smb_root + "\\.local\\state\\qwen-worker\\tasks",
         "note": (
-            "project_root / allowed_*_paths はこのホスト上の絶対パス（例 /home/mt/Proj/xxx）で渡す。"
+            "project_root / allowed_*_paths はこのホスト上の絶対パス（例 /home/<user>/Proj/xxx）で渡す。"
             "SMB パスや他 PC 側のマウントパスは受け付けない。"
         ),
     }
@@ -312,7 +322,7 @@ _MODEL_DESCRIPTION = (
         "Qwen 自身が検索と読み取りを繰り返し、根拠となるファイルと行番号を付けて返す。"
         "目的・範囲・完了条件を明示すること。親の会話全体は渡さないこと。"
         "project_root と allowed_read_paths は、ワーカーが動いているホスト上の絶対パス"
-        "（例 /home/mt/Proj/xxx）。他の PC から使うときも SMB パスではなくこのホスト側のパスで渡す。"
+        "（例 /home/<user>/Proj/xxx）。他の PC から使うときも SMB パスではなくこのホスト側のパスで渡す。"
         + _MODEL_DESCRIPTION
     ),
 )
@@ -346,7 +356,7 @@ def qwen_research(
         "（短ければ diff_text に本文、常に diff_path にファイル）。"
         "差分の適用・コミット・テスト実行は行わない。親が確認してから親の権限で行うこと。"
         "project_root と allowed_*_paths は、ワーカーが動いているホスト上の絶対パス"
-        "（例 /home/mt/Proj/xxx）。他の PC から使うときも SMB パスではなくこのホスト側のパスで渡す。"
+        "（例 /home/<user>/Proj/xxx）。他の PC から使うときも SMB パスではなくこのホスト側のパスで渡す。"
         + _MODEL_DESCRIPTION
     ),
 )

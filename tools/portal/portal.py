@@ -156,7 +156,8 @@ SERVICES_BY_KEY = {service["key"]: service for service in SERVICES}
 GPU_EXCLUSIVE_KEYS = ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official")
 
 # 起動する前に、Ollama に載っているモデルを VRAM から降ろすサービス。Strata（汎用版・Coder 版・公式版とも）は
-# VRAM を大きく使い、Qwen（実測 22 GiB）と同居できない。Hunyuan3D は生成の直前に自分で降ろす（knowledge の hunyuan3d.md）。
+# VRAM を大きく使い、Qwen（実測 22 GiB）と同居できない。Hunyuan3D は、当て物 0001 を当てた環境では生成の直前に
+# 自分で降ろす（当て物は公開版に含まない。knowledge の hunyuan3d.md）。
 # Pixal3D・ComfyUI は、これまでの動作（画面の警告で利用者が降ろす）を変えないため対象にしない。
 OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official")
 

@@ -179,7 +179,7 @@ OpenCode 自身が持つツール群を使うため、ここでの `web_search` 
 
 ### Claude Code
 ```
-qwen_research を使って、project_root=/home/mt/Proj/xxx、
+qwen_research を使って、project_root=/home/<user>/Proj/xxx、
 task="…"、allowed_read_paths=["src"]、acceptance_criteria=["…"] で調査して。
 ```
 
@@ -226,9 +226,9 @@ rm -rf ~/.local/share/qwen-worker ~/.config/qwen-worker ~/.local/state/qwen-work
 他 PC 側に Python も Ollama も要らない。コードもこのホスト側にあるものを触る。
 
 ```bash
-# 他の PC 側（配布物は remote/ にある。SMB \\<server-ip>\mt から取る）
-bash setup-remote.sh                                   # macOS / Linux
-powershell -ExecutionPolicy Bypass -File setup-remote.ps1   # Windows
+# 他の PC 側（配布物は remote/ にある。SMB \\<server-ip>\<user> から取る。<server-ip> の例: 192.168.1.10）
+bash setup-remote.sh <server-ip>                                   # macOS / Linux
+powershell -ExecutionPolicy Bypass -File setup-remote.ps1 -ServerIp <server-ip>   # Windows
 
 # このホスト側で鍵を受け入れる
 bash ~/.local/share/qwen-worker/remote/add-remote-key.sh <PC名> <公開鍵ファイル>
@@ -239,7 +239,7 @@ bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh <PC名>   # 取り�
 鍵には強制コマンドが付く。`run-qwen-worker` を起動する以外に使えない。
 
 ```
-command="/home/mt/.local/share/qwen-worker/run-qwen-worker",no-pty,no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-ed25519 AAAA... qwen-worker@<PC名>
+command="/home/<user>/.local/share/qwen-worker/run-qwen-worker",no-pty,no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-ed25519 AAAA... qwen-worker@<PC名>
 ```
 
 他 PC の MCP 登録は `-- ssh -T qwen-worker` の 1 行だけ。

@@ -559,7 +559,7 @@ def test_index_html_builds_links_from_location_hostname():
 
 def test_index_html_has_no_hardcoded_server_ip():
     html_text = INDEX_HTML.read_text(encoding="utf-8")
-    assert "<server-ip>" not in html_text
+    assert "192.168." not in html_text
 
 
 def test_index_html_references_service_action_endpoint():

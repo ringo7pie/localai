@@ -1,6 +1,6 @@
 # 追加の作業 PC を足す手順
 
-この文書は「A30 サーバー（this-host / <server-ip>）はそのまま、別の PC を作業 PC にする」
+この文書は「A30 サーバー（IP は `<server-ip>`。例: 192.168.1.10）はそのまま、別の PC を作業 PC にする」
 場合の手順。**この手順はまだ実機で検証していない**（別 PC が無いため）。
 未検証であることを承知のうえで使うこと。
 
@@ -29,20 +29,20 @@ SSH トンネルなら、ファイアウォールの変更も新しい待受ポ�
 
 ```bash
 # macOS / Linux / WSL2。いつ: 最初の 1 回だけ（再実行しても安全）
-scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+scp <user>@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
 bash setup-workpc.sh --server-ip <server-ip>
 ```
 
 ```powershell
 # Windows 11。WSL2 が要る（bridge 本体は fcntl を使うため Windows ネイティブでは動かない）
 # いつ: 最初の 1 回だけ。この Windows→WSL2 の経路は未検証
-scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
-scp mt@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.ps1 .
+scp <user>@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.sh .
+scp <user>@<server-ip>:Proj/localai/tools/local-ai-bridge/scripts/setup-workpc.ps1 .
 powershell -ExecutionPolicy Bypass -File .\setup-workpc.ps1 -ServerIp <server-ip>
 ```
 
 `setup-workpc.sh` がやること（`[1/7]`〜`[7/7]`）: トンネル専用鍵 `~/.ssh/a30-tunnel` → サーバーの `authorized_keys` に制限付きの 1 行を追記（§2 の行と同じ）→ `~/.ssh/config` に `Host a30-ollama` → トンネル起動ヘルパ `~/.local/bin/a30-tunnel`（`start|stop|status`）→ uv と OpenCode → 本体を `rsync` で複製し `.venv` と `bridge.toml` を作る → MCP 登録・スキル・委譲ルール → `doctor`。
-主な引数: `--server-ip`、`--server-user`、`--install-dir`（既定 `~/local-ai-bridge`）、`--allowed-root`（複数可）、`--skip-server`（サーバーへの鍵登録を表示だけにする）、`--no-rules`。
+主な引数: `--server-ip`（必須。環境変数 `LOCALAI_SERVER_HOST` でも指定できる）、`--server-user`（省略時は環境変数 `LOCALAI_SERVER_USER`、無ければこの PC のユーザー名）、`--install-dir`（既定 `~/local-ai-bridge`）、`--allowed-root`（複数可）、`--skip-server`（サーバーへの鍵登録を表示だけにする）、`--no-rules`。
 
 **使うたび**にやることは 1 つだけ: `a30-tunnel start`（トンネルを張る）。切るのは `a30-tunnel stop`、確認は `a30-tunnel status`。
 
@@ -69,7 +69,7 @@ restrict,port-forwarding,permitopen="127.0.0.1:11434",command="echo tunnel-only"
 ### Linux / macOS / WSL2
 
 ```bash
-ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 mt@<server-ip>
+ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 <user>@<server-ip>
 ```
 
 常駐させるなら `autossh` か systemd --user のユニットにする。
@@ -79,7 +79,7 @@ ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 mt@<server-ip>
 Windows 同梱の OpenSSH クライアントで同じことができる。
 
 ```powershell
-ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 mt@<server-ip>
+ssh -N -L 127.0.0.1:11434:127.0.0.1:11434 <user>@<server-ip>
 ```
 
 確認:

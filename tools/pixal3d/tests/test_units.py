@@ -1054,8 +1054,8 @@ def test_validate_preset_name_allows_natural_japanese_names() -> None:
 def test_validate_preset_name_rejects_windows_invalid_characters() -> None:
     """Windows / SMB で使えない文字を弾くこと。
 
-    presets/ は git で追跡し、リモートは CIFS マウント（/mnt/nas）にある。Windows で無効な
-    ファイル名だと push できなくなるため、この場で弾く。
+    presets/ は git で追跡し、リモートが Windows / SMB（CIFS）上にあっても push できるように、
+    Windows で無効なファイル名はこの場で弾く。
     """
     for name in ("a/b", "a\\b", "a:b", "a*b", "a?b", 'a"b', "a<b", "a>b", "a|b"):
         assert presets.validate_preset_name(name) is not None, name

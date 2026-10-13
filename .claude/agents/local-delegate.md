@@ -35,7 +35,7 @@ Bash で次を **1 回**実行する。`run` は 委譲 → 完了待ち → 6 �
 
 ```bash
 set -euo pipefail
-/home/mt/Proj/localai/tools/local-ai-bridge/run-local-ai-task run \
+~/Proj/localai/tools/local-ai-bridge/run-local-ai-task run \
   --workspace <workspace_id> --request-id <一意な id> \
   --goal "<goal>" \
   --scope "<allowed_scope…>" --forbid "<forbidden…>" --acceptance "<acceptance…>" \

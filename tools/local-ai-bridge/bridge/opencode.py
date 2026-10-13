@@ -189,7 +189,7 @@ class Profile:
         """XDG の差し替えでは隔離できない、HOME 直下から読まれる設定。
 
         opencode は $HOME/.opencode/opencode.json(c) を XDG とは別に読む
-        （実測: ログの "loading path=/home/mt/.opencode/opencode.json"）。
+        （実測: ログの "loading path=~/.opencode/opencode.json"）。
         存在すると実効設定が混ざるので、doctor で報告する。
         """
         home = Path(os.environ.get("HOME", str(Path.home())))

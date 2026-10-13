@@ -12,15 +12,15 @@ base_url = "http://127.0.0.1:11434"
 model = "qwen3.8:27b"
 
 [opencode]
-binary = "/home/mt/.opencode/bin/opencode"
+binary = "~/.opencode/bin/opencode"
 # 隔離プロファイルの置き場。ユーザーの通常設定 (~/.config/opencode) は触らない。
-profile_dir = "/home/mt/.local/state/local-ai-bridge/opencode-profile"
+profile_dir = "~/.local/state/local-ai-bridge/opencode-profile"
 # プロファイルへ流し込む設定の元ファイル（リポジトリ内で版管理する）。
-config_source = "/home/mt/Proj/localai/tools/local-ai-bridge/opencode-profile/opencode.json"
+config_source = "~/Proj/localai/tools/local-ai-bridge/opencode-profile/opencode.json"
 
 [state]
 # 台帳・作業ツリー・ログの置き場。共有 NAS 上に置かないこと（SQLite のロックが壊れる）。
-root = "/home/mt/.local/state/local-ai-bridge"
+root = "~/.local/state/local-ai-bridge"
 
 [limits]
 # 選定理由は README.ja.md の「予算の決め方」を見ること。
@@ -47,7 +47,7 @@ wait_for_task_max_sec    = 2000   # wait_for_task が 1 回でブロックする
 # ここに書いた workspace_id でしか作業しない。全ディレクトリを自動では許可しない。
 
 [workspace.selftest]
-path = "/home/mt/Proj/localai/tools/local-ai-bridge/fixtures/selftest"
+path = "~/Proj/localai/tools/local-ai-bridge/fixtures/selftest"
 default_verify = "unittest"
 
 [workspace.selftest.verify.unittest]
@@ -57,7 +57,7 @@ timeout_sec = 300
 
 # 例: 別のプロジェクトを足すとき
 # [workspace.localai]
-# path = "/home/mt/Proj/localai"
+# path = "~/Proj/localai"
 # default_verify = "sandbox"
 #
 # [workspace.localai.verify.sandbox]
@@ -69,4 +69,4 @@ timeout_sec = 300
 # CLI はここに列挙したルート配下の Git リポジトリだけを受け付ける
 # （モデルや依頼者が任意のパスを登録できないようにするため）。
 [registration]
-allowed_roots = ["/home/mt/Proj"]
+allowed_roots = ["~/Proj"]

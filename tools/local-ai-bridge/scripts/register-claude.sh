@@ -4,7 +4,7 @@
 # 再実行しても重複しない。既存の登録があれば入れ替える。
 set -euo pipefail
 
-CLAUDE_BIN="${CLAUDE_BIN:-/home/mt/.local/bin/claude}"
+CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 LAUNCHER="$HERE/run-local-ai-bridge"
 NAME="local-ai-bridge"

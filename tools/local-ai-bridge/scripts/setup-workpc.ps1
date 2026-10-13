@@ -2,7 +2,10 @@
 # local-ai-bridge を WSL2 の中に入れ、Windows 側の Claude Code / Codex から使えるようにする。
 #
 # 使い方: powershell -ExecutionPolicy Bypass -File setup-workpc.ps1
-#             [-ServerIp <server-ip>] [-ServerUser mt]
+#             -ServerIp <server-ip> [-ServerUser <user>]
+#             例: -ServerIp 192.168.1.10 -ServerUser alice
+#             -ServerIp は環境変数 LOCALAI_SERVER_HOST、-ServerUser は LOCALAI_SERVER_USER でも指定できる。
+#             -ServerUser を省略すると、この PC のユーザー名を使う。
 #             [-Distro <WSLディストリ名>] [-InstallDir ~/local-ai-bridge]
 #             [-SkipServer] [-NoRules]
 #
@@ -10,14 +13,22 @@
 #       本体導入は同じディレクトリの bash 版 setup-workpc.sh を WSL2 内で実行することに任せる。
 #       パスワードを扱わない。sudo / 管理者権限を使わない。
 param(
-    [string]$ServerIp   = "<server-ip>",
-    [string]$ServerUser = "mt",
+    [string]$ServerIp   = $env:LOCALAI_SERVER_HOST,
+    [string]$ServerUser = $env:LOCALAI_SERVER_USER,
     [string]$Distro     = "",
     [string]$InstallDir = "~/local-ai-bridge",
     [switch]$SkipServer,
     [switch]$NoRules
 )
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($ServerIp)) {
+    Write-Error "サーバーの IP が未指定です。-ServerIp か環境変数 LOCALAI_SERVER_HOST で指定してください。例: -ServerIp 192.168.1.10" -ErrorAction Continue
+    exit 2
+}
+if ([string]::IsNullOrWhiteSpace($ServerUser)) {
+    $ServerUser = $env:USERNAME
+}
 
 function Escape-DoubleQuotedBashValue {
     param([string]$sourceValue)

@@ -7,7 +7,7 @@ set -euo pipefail
 APPLY=false
 [ "${1:-}" = "--apply" ] && APPLY=true
 
-CLAUDE_BIN="${CLAUDE_BIN:-/home/mt/.local/bin/claude}"
+CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 CODEX_BIN="${CODEX_BIN:-/usr/lib/chatgpt/resources/codex}"
 STATE="${LOCAL_AI_BRIDGE_STATE:-$HOME/.local/state/local-ai-bridge}"
 CONFIG="${LOCAL_AI_BRIDGE_CONFIG:-$HOME/.config/local-ai-bridge/bridge.toml}"

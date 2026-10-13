@@ -20,7 +20,7 @@ abliteration をしていない公式の [Qwen3.8-Flash-Next IQ3_XXS](https://hu
 - **8084**: Strata の公式版（非 abliterated の IQ3_XXS。`run-strata serve --model official`、unit `strata-official`）
 - 8080 / 8081 / 8000 / 8188: 入口ページ / Open WebUI / （使用中）/ ComfyUI。上流の既定 8095 は使わない
 
-サーバー IP は `<server-ip>`。API は `http://<server-ip>:8082/v1`、モデル名は **`strata-flash-next:IQ3_S`**。
+サーバー IP は `<server-ip>`（例: 192.168.1.10）。API は `http://<server-ip>:8082/v1`、モデル名は **`strata-flash-next:IQ3_S`**。
 Coder は `http://<server-ip>:8083/v1`、モデル名は **`strata-flash-coder:IQ1_M`**。
 公式版は `http://<server-ip>:8084/v1`、モデル名は **`strata-official:IQ3_XXS`**。
 
@@ -163,7 +163,7 @@ strata --serve --pack models/RVN-Qwen3.8-Flash-Next-IQ3_S/pack
 sudo mkdir -p /etc/systemd/system/user@1000.service.d
 printf '[Service]\nLimitMEMLOCK=infinity\n' | sudo tee /etc/systemd/system/user@1000.service.d/memlock.conf
 # systemd-user の PAM（pam_limits）が上書きする場合に備えて、limits.d にも書く
-printf 'mt - memlock unlimited\n' | sudo tee /etc/security/limits.d/90-strata-memlock.conf
+printf '%s - memlock unlimited\n' "$USER" | sudo tee /etc/security/limits.d/90-strata-memlock.conf
 sudo systemctl daemon-reload
 # 反映: この利用者は Linger=yes なので、ログインし直しでは user@1000 は再起動されない。
 # 機体の再起動か、sudo systemctl restart user@1000.service（デスクトップのセッションも終わる）が要る。

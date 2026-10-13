@@ -60,7 +60,7 @@ def _presets_dir() -> Path:
 # 使える文字を絞り込むのではなく、危ない文字だけを弾く。全角の括弧やスペース、かぎ括弧なども
 # 普通に使いたいため（許可制にすると「高精細（試し）」のような自然な名前が通らない）。
 # 弾く文字は Windows / SMB で使えないものに合わせる。この presets/ は git で追跡し、
-# リモートが CIFS マウント（/mnt/nas）なので、Windows で無効な名前だと push で困る。
+# リモートが Windows / SMB（CIFS）上にあっても push できるようにするため。
 _FORBIDDEN_NAME_CHARS = '/\\:*?"<>|'
 _FORBIDDEN_NAME_CHARS_TEXT = " ".join(_FORBIDDEN_NAME_CHARS)
 

@@ -19,7 +19,7 @@
 - 8081: Open WebUI
 - 8188: 将来の ComfyUI 用に予約
 
-サーバー IP は `<server-ip>`。起動後は `http://<server-ip>:7861` から使う。
+サーバー IP は `<server-ip>`（例: 192.168.1.10）。起動後は `http://<server-ip>:7861` から使う。
 
 ## Hunyuan3D との排他
 
@@ -192,7 +192,7 @@ scale_i = H / 高さ_i
 かぎ括弧、全角空白など）は自由に使える。「高精細（試し）」のような自然な日本語の名前を
 そのまま付けられるようにするため、許可制ではなく禁止制にしてある。禁止する文字は
 Windows / SMB がファイル名に使えないものに合わせた（この `presets/` は git で追跡し、
-リモートが CIFS マウント（`/mnt/nas`）にあるため、Windows で無効な名前だと push で困る）。
+リモートが Windows / SMB（CIFS）上にあっても push できるようにするため）。
 あわせて、64 文字以内、`..` と先頭の `.`、末尾の半角空白と `.` も弾く。
 （`px3d/presets.py` の `validate_preset_name`。`preset_path` が解決済みパスの二重確認も行う。）
 
@@ -252,7 +252,7 @@ Pixal3D の `low_vram=True` は VRAM を RAM と引き換える設定（使わ�
 切り替え方は 3 通りあり、優先順位は `serve` の CLI フラグ → 環境変数 → 既定値（On）。
 
 1. **入口ページのスイッチ**（`tools/portal`、8080 番）— `~/.config/pixal3d/pixal3d.env` の
-   `PIXAL3D_LOW_VRAM` を書き換える想定（このファイルの所有者は入口ページと同じ `mt`）
+   `PIXAL3D_LOW_VRAM` を書き換える想定（このファイルの所有者は入口ページと同じユーザー）
 2. **env ファイルを直接編集**: `~/.config/pixal3d/pixal3d.env` の `PIXAL3D_LOW_VRAM` を
    `1`（On）/ `0`（Off）にして `systemctl --user restart pixal3d`
 3. **手動起動時のフラグ**: `run-pixal3d serve --low-vram` / `run-pixal3d serve --no-low-vram`

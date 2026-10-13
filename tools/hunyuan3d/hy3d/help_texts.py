@@ -7,6 +7,11 @@ torch も gradio も import しない。純粋なデータと、それを扱う�
 - knowledge/10-silver/areas/hunyuan3d.md（実測値）
 
 実行: このモジュール単体は import するだけで完結する（副作用なし）。
+
+このデータを画面へ注入するのは、上流への当て物 0003（help-tooltips-and-glossary）。当て物は
+Tencent Hunyuan 3D 2.0 Community License の地域制限のため公開版に含まない。当て物が無い環境では
+どこからも import されず、試験（tests/test_units.py）だけが参照する。tools/hunyuan3d/README.md の
+「ライセンスの地域制限」「上流への当て物」を参照。
 """
 
 from __future__ import annotations
@@ -130,7 +135,7 @@ TOOLTIPS: dict[str, str] = {
         "生成済みのメッシュを、File Type・Simplify Mesh・Target Face Number の設定で書き出し直します。"
         "実行後に Download ボタンが有効になります。"
     ),
-    # --- localai: 設定（パラメータ）の保存・読み込み（patches/0005-save-load-presets.patch） ---
+    # --- localai: 設定（パラメータ）の保存・読み込み（手元の当て物 0005-save-load-presets。公開版には含まない） ---
     "設定の保存・読み込み": (
         "画面の設定（Inference Steps・Guidance Scale・Seed・Octree Resolution・Remove Background・"
         "Number of Chunks・File Type・Simplify Mesh・Include Texture・Target Face Number・"

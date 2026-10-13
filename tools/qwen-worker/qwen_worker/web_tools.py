@@ -21,7 +21,7 @@ from urllib.parse import urljoin, urlparse
 
 _ALLOWED_SCHEMES = {"http", "https"}
 _REDIRECT_STATUSES = {301, 302, 303, 307, 308}
-_USER_AGENT = "qwen-worker/1 (local research tool; A30 this-host)"
+_USER_AGENT = "qwen-worker/1 (local research tool; A30)"
 _CONNECT_TIMEOUT_SEC = 10.0
 _MAX_RESPONSE_BYTES = 5 * 1024 * 1024
 _MAX_REDIRECTS = 3

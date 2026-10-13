@@ -6,9 +6,9 @@
 ## ufw は有効で、既定は拒否
 
 - **`ufw` が有効で、既定の方針は `deny (incoming)`。** 明示的に開けたポートだけが LAN から届く。
-- **LAN は 2 つある。`<lan-cidr>` と `<lan-cidr>`。** ルールは必ず両方に入れる。
+- **LAN は 2 つある。`<lan-cidr-1>` と `<lan-cidr-2>`（それぞれサブネットのネットワーク表記。例: 192.168.1.0/24 と 192.168.2.0/24）。** ルールは必ず両方に入れる。
   片方だけだと、もう一方のセグメントの PC から使えない。
-- サーバー自身の LAN IP は `<server-ip>`。
+- サーバー自身の LAN IP は `<server-ip>`（例: 192.168.1.10）。
 
 現在開いているポート（2026-09-27 時点）:
 
@@ -30,8 +30,8 @@ Hunyuan3D（ポート 7860）と Pixal3D（7861）は 2026-09-22 に導入した
 サービスの導入日より古いときは、この漏れを疑う。
 
 ```bash
-sudo ufw allow from <lan-cidr> to any port <ポート> proto tcp comment '<サービス名> (LAN)'
-sudo ufw allow from <lan-cidr> to any port <ポート> proto tcp comment '<サービス名> (LAN)'
+sudo ufw allow from <lan-cidr-1> to any port <ポート> proto tcp comment '<サービス名> (LAN)'
+sudo ufw allow from <lan-cidr-2> to any port <ポート> proto tcp comment '<サービス名> (LAN)'
 ```
 
 ## 「他の PC から見えない」ときの切り分け

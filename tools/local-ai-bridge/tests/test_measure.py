@@ -65,7 +65,7 @@ def _make_projects(root: Path) -> Path:
     親は 3 行（同じ message.id の重複 2 行 + 別の 1 行）。うち 1 行は時間窓の外。
     サブエージェントは 2 行で、片方が窓の外。
     """
-    project = root / "projects" / "-home-mt-Proj-localai"
+    project = root / "projects" / "-home-user-Proj-localai"
     project.mkdir(parents=True)
     parent = project / f"{SESSION}.jsonl"
     parent.write_text(
@@ -112,7 +112,7 @@ def test_window_uses_first_line_of_a_message(tmp_path):
 def test_session_id_selects_the_matching_transcript(tmp_path):
     parent = _make_projects(tmp_path)
     # 別プロジェクトに、より新しい無関係な記録があっても選ばれない。
-    other = tmp_path / "projects" / "-home-mt-Proj-other"
+    other = tmp_path / "projects" / "-home-user-Proj-other"
     other.mkdir(parents=True)
     (other / "99999999-0000-0000-0000-000000000000.jsonl").write_text(
         _line("msg_z", "2026-09-21T12:00:00.000Z", 9999), encoding="utf-8"
@@ -370,7 +370,7 @@ def test_list_subagents_json_output(tmp_path, capsys, monkeypatch):
 def test_last_minutes_cuts_the_window(tmp_path, capsys, monkeypatch):
     # --since の代わりに --last-minutes を使うと、「今」から N 分前より前の
     # ターンは窓の外になる。「今」は固定した時刻に差し替えて測る。
-    project = tmp_path / "projects" / "-home-mt-Proj-lastmin"
+    project = tmp_path / "projects" / "-home-user-Proj-lastmin"
     project.mkdir(parents=True)
     session = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
     parent = project / f"{session}.jsonl"

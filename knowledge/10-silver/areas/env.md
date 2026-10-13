@@ -47,7 +47,4 @@
   `OLLAMA_CONTEXT_LENGTH` で設定する。変更したら daemon-reload と restart が要る。
 - モデルの実体は /usr/share/ollama/.ollama/models。サービスは ollama ユーザーで動く。
 - sudo が要る操作（systemctl、/etc 配下の編集）は、root で起動した Claude か、ユーザーが手で行う。
-- リモート origin は /mnt/nas 配下の bare リポジトリ。/mnt/nas は //<nas>/<share> の
-  CIFS マウントで、マウントされていないと push / fetch が失敗する。
-- /mnt/nas は fstab の `x-systemd.automount` だが、`mnt-nas.automount` が `mount-start-limit-hit` で止まることがある。
-  復旧は sudo が要る（`systemctl reset-failed mnt-nas.automount` か `mount /mnt/nas`）。利用者が行う。
+- リモート origin はネットワーク共有上の bare リポジトリ。共有がマウントされていないと push / fetch が失敗する。

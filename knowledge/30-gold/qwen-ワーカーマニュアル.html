@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>qwen-worker — ローカル Qwen を親エージェントのワーカーにする</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#EDF0F1; --surface:#FFFFFF; --surface-2:#E3E9EB; --surface-3:#D9E1E4;
@@ -17,8 +14,8 @@
   --warn:#845407; --warn-soft:#F4E5C4; --warn-bar:#C28A22;
   --bad:#93222D; --bad-soft:#F2D7DA; --bad-bar:#B8434F;
   --term-bg:#101E26; --term-ink:#D9E6EC; --term-dim:#7D97A3; --term-line:#243A45; --term-cue:#63B6D4;
-  --f-body:"IBM Plex Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-body:"IBM Plex Sans JP","Hiragino Sans","Noto Sans CJK JP","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -107,7 +104,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
   <p class="lede">ローカルの Qwen3.8-27B を、Claude Code と Codex の<b>両方</b>から呼べる
   コード調査・実装ワーカーにする。親（クラウド AI）が設計とレビューを持ち、
   Qwen が調査・実装・テストコード作成を担当する。</p>
-  <p class="meta">構築日 2026-09-19 / NVIDIA A30 24GiB / Ollama 0.34.2 / qwen3.8:27b (Q4_K_M) / this-host <server-ip></p>
+  <p class="meta">構築日 2026-09-19 / NVIDIA A30 24GiB / Ollama 0.34.2 / qwen3.8:27b (Q4_K_M) / このサーバー &lt;server-ip&gt;</p>
 </header>
 
 <div class="bad">
@@ -165,7 +162,7 @@ Qwen 自身が検索・読み取り・編集を<b>要求し、その結果を見
 
 <table>
 <tr><th>項目</th><th>実測値</th></tr>
-<tr><td>実行ユーザー</td><td><code>mt</code> (uid=1000)。root ではない。<code>sudo</code> は端末が無く通らない</td></tr>
+<tr><td>実行ユーザー</td><td><code>&lt;user&gt;</code> (uid=1000)。root ではない。<code>sudo</code> は端末が無く通らない</td></tr>
 <tr><td>GPU</td><td>NVIDIA A30 / VRAM 24576 MiB / compute 8.0 / ドライバ 595.91.07</td></tr>
 <tr><td>RAM</td><td><b>31 GiB</b>（依頼文の 64GB とは異なる。<code>free -h</code> の実測）</td></tr>
 <tr><td>Ollama</td><td>0.34.2 / <code>ollama.service</code> は enabled かつ active / <code>127.0.0.1:11434</code> のみ待受</td></tr>
@@ -394,14 +391,14 @@ worktree は元リポジトリの <code>.git</code> 配下にメタデータを�
 <div class="term">
 <span class="c"># 調査</span><br>
 qwen_research で調べて。<br>
-&nbsp;&nbsp;project_root = /home/mt/Proj/xxx<br>
+&nbsp;&nbsp;project_root = ~/Proj/xxx<br>
 &nbsp;&nbsp;task = "認証トークンの検証がどこで行われているか特定して"<br>
 &nbsp;&nbsp;allowed_read_paths = ["src/auth", "src/middleware"]<br>
 &nbsp;&nbsp;acceptance_criteria = ["検証関数のファイルと行番号", "呼び出し元の一覧"]<br>
 <br>
 <span class="c"># 実装</span><br>
 qwen_implement で直して。<br>
-&nbsp;&nbsp;project_root = /home/mt/Proj/xxx<br>
+&nbsp;&nbsp;project_root = ~/Proj/xxx<br>
 &nbsp;&nbsp;task = "…"<br>
 &nbsp;&nbsp;allowed_write_paths = ["src/auth/token.py", "tests/test_token.py"]<br>
 &nbsp;&nbsp;constraints = ["公開 API を変えない"]<br>
@@ -491,7 +488,7 @@ rm -rf ~/.local/share/qwen-worker ~/.config/qwen-worker ~/.local/state/qwen-work
 
 <div class="bad">
 <b>sudo が要るため実行していない</b>
-このセッションは通常ユーザー <code>mt</code> で動いており、<code>sudo</code> はパスワード入力の端末が無く通らない。
+このセッションは通常ユーザー <code>&lt;user&gt;</code> で動いており、<code>sudo</code> はパスワード入力の端末が無く通らない。
 承認を迂回する手段は取っていない。
 </div>
 
@@ -521,8 +518,8 @@ rm -rf ~/.local/share/qwen-worker ~/.config/qwen-worker ~/.local/state/qwen-work
 <div class="flow">
   <div class="fstep"><div class="fwho">他の PC</div><div class="fwhat"><code>claude mcp add -s user qwen-worker -- ssh -T qwen-worker</code> の 1 行だけ登録する</div></div>
   <div class="fstep hl"><div class="fwho">ssh (22)</div><div class="fwhat">鍵に強制コマンドが付いており、<code>run-qwen-worker</code> の起動以外はできない</div></div>
-  <div class="fstep"><div class="fwho">このホスト</div><div class="fwhat">ワーカーが立ち上がり、<code>/home/mt/Proj/...</code> を読んで Qwen に投げる</div></div>
-  <div class="fstep"><div class="fwho">他の PC</div><div class="fwhat">要約・根拠・差分本文が返る。ファイルを開きたいときは SMB <code>\\<server-ip>\mt</code></div></div>
+  <div class="fstep"><div class="fwho">このホスト</div><div class="fwhat">ワーカーが立ち上がり、<code>~/Proj/...</code> を読んで Qwen に投げる</div></div>
+  <div class="fstep"><div class="fwho">他の PC</div><div class="fwhat">要約・根拠・差分本文が返る。ファイルを開きたいときは SMB <code>\\&lt;server-ip&gt;\&lt;user&gt;</code></div></div>
 </div>
 <figcaption>Ollama は LAN に出さない。外から見えるのは SSH（22）・Samba（445）・Open WebUI（8080）だけ。</figcaption>
 </figure>
@@ -539,7 +536,7 @@ bash ~/.local/share/qwen-worker/remote/remove-remote-key.sh &lt;PC名&gt;
 
 <p><code>authorized_keys</code> に書かれる行はこの形になる。</p>
 <div class="term">
-<span class="p">command="/home/mt/.local/share/qwen-worker/run-qwen-worker"</span>,<span class="p">no-pty</span>,no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-ed25519 AAAA... qwen-worker@&lt;PC名&gt;
+<span class="p">command="~/.local/share/qwen-worker/run-qwen-worker"</span>,<span class="p">no-pty</span>,no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-ed25519 AAAA... qwen-worker@&lt;PC名&gt;
 </div>
 
 <div class="ok">
@@ -549,7 +546,7 @@ SSH 越しに <code>qwen_status</code> と <code>qwen_implement</code> を実呼
 </div>
 
 <h3>他の PC 側のセットアップ</h3>
-<p>配布物は <code>~/.local/share/qwen-worker/remote/</code>。SMB <code>\\<server-ip>\mt\.local\share\qwen-worker\remote\</code> から取る。</p>
+<p>配布物は <code>~/.local/share/qwen-worker/remote/</code>。SMB <code>\\&lt;server-ip&gt;\&lt;user&gt;\.local\share\qwen-worker\remote\</code> から取る。</p>
 <table>
 <tr><th>ファイル</th><th>対象</th><th>やること</th></tr>
 <tr><td><code>setup-remote.sh</code></td><td>macOS / Linux</td><td>鍵作成 → ssh config → MCP 登録 → タイムアウト設定 → 公開鍵表示</td></tr>
@@ -559,15 +556,15 @@ SSH 越しに <code>qwen_status</code> と <code>qwen_implement</code> を実呼
 
 <div class="warn">
 <b>パスはこのホスト側の絶対パスで渡す</b>
-<code>project_root</code> と <code>allowed_*_paths</code> は <code>/home/mt/Proj/xxx</code> の形。
-<code>\\<server-ip>\mt\Proj\xxx</code> や <code>Z:\Proj\xxx</code> は受け付けない（許可ルートの検証で弾かれる）。
+<code>project_root</code> と <code>allowed_*_paths</code> は <code>~/Proj/xxx</code> の形。
+<code>\\&lt;server-ip&gt;\&lt;user&gt;\Proj\xxx</code> や <code>Z:\Proj\xxx</code> は受け付けない（許可ルートの検証で弾かれる）。
 </div>
 
 <table>
 <tr><th>他の PC で開くとき</th><th>ワーカーに渡すとき</th></tr>
-<tr><td><code>\\<server-ip>\mt\Proj\localai</code></td><td><code>/home/mt/Proj/localai</code></td></tr>
-<tr><td><code>/Volumes/mt/Proj/localai</code>（mac）</td><td><code>/home/mt/Proj/localai</code></td></tr>
-<tr><td><code>Z:\Proj\localai</code>（割り当て済みドライブ）</td><td><code>/home/mt/Proj/localai</code></td></tr>
+<tr><td><code>\\&lt;server-ip&gt;\&lt;user&gt;\Proj\localai</code></td><td><code>~/Proj/localai</code></td></tr>
+<tr><td><code>/Volumes/&lt;user&gt;/Proj/localai</code>（mac）</td><td><code>~/Proj/localai</code></td></tr>
+<tr><td><code>Z:\Proj\localai</code>（割り当て済みドライブ）</td><td><code>~/Proj/localai</code></td></tr>
 </table>
 
 <p>リモートの親が成果物ディレクトリを開かなくて済むよう、<b>400 行以下の差分は結果の <code>diff_text</code> に本文が入る</b>。
@@ -581,7 +578,7 @@ ChatGPT 風の画面で、アカウント・会話履歴・モデル切替・画
 
 <table>
 <tr><th>項目</th><th>値</th></tr>
-<tr><td>URL</td><td><code>http://<server-ip>:8080</code></td></tr>
+<tr><td>URL</td><td><code>http://&lt;server-ip&gt;:8080</code></td></tr>
 <tr><td>設定</td><td><code>~/.config/open-webui/open-webui.env</code></td></tr>
 <tr><td>ユニット</td><td><code>~/.config/systemd/user/open-webui.service</code></td></tr>
 <tr><td>データ</td><td><code>~/.local/share/open-webui/data</code>（webui.db ほか）</td></tr>

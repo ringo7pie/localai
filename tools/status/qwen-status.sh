@@ -13,6 +13,9 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 bridge_cli="$repo_root/tools/local-ai-bridge/run-local-ai-task"
 bridge_tasks="${XDG_STATE_HOME:-$HOME/.local/state}/local-ai-bridge/tasks"
 worker_state="${XDG_STATE_HOME:-$HOME/.local/state}/qwen-worker"
+# このサーバー自身の LAN 側 IP（既定経路の送信元アドレス）。取れなければ <server-ip> のまま表示する
+server_ip="$(ip -4 route get 192.0.2.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -1 || true)"
+server_ip="${server_ip:-<server-ip>}"
 watch_sec=0
 event_lines=3
 
@@ -135,7 +138,7 @@ show_hunyuan3d() {
     echo "未導入（$hunyuan_dir/setup-server.sh で入れる）"; return
   fi
   if ss -ltn 2>/dev/null | grep -q ':7860 '; then
-    echo "動作中（http://<server-ip>:7860）。この間 Qwen は VRAM に載せられない"
+    echo "動作中（http://${server_ip}:7860）。この間 Qwen は VRAM に載せられない"
   else
     echo "停止中（使うときだけ $hunyuan_dir/run-hunyuan3d serve で起動する。起動時に Qwen を VRAM から降ろす）"
   fi
@@ -155,10 +158,10 @@ show_pixal3d() {
     esac
   fi
   if ss -ltn 2>/dev/null | grep -q ':7861 '; then
-    echo "動作中（http://<server-ip>:7861）。低 VRAM モード: $low_vram"
+    echo "動作中（http://${server_ip}:7861）。低 VRAM モード: $low_vram"
     echo "この間 Qwen と Hunyuan3D は使えない（VRAM と RAM を占有する）"
   else
-    echo "停止中（入口ページ http://<server-ip>:8080 から起動する）。低 VRAM モード: $low_vram"
+    echo "停止中（入口ページ http://${server_ip}:8080 から起動する）。低 VRAM モード: $low_vram"
   fi
 }
 
@@ -167,12 +170,12 @@ show_webui() {
   local webui_port="8080"
   if grep -q -- "--port 8081" "$HOME/.config/systemd/user/open-webui.service" 2>/dev/null; then webui_port="8081"; fi
   if systemctl --user is-active open-webui >/dev/null 2>&1; then
-    echo "Open WebUI: 動作中（http://<server-ip>:$webui_port。LAN からの到達はサーバー側の許可次第）"
+    echo "Open WebUI: 動作中（http://${server_ip}:$webui_port。LAN からの到達はサーバー側の許可次第）"
   else
     echo "Open WebUI: 停止中か、この端末からは確認できない（systemctl --user が使えない ssh セッションなど）"
   fi
   if systemctl --user is-active portal >/dev/null 2>&1; then
-    echo "入口ページ: 動作中（http://<server-ip>:8080）"
+    echo "入口ページ: 動作中（http://${server_ip}:8080）"
   else
     echo "入口ページ: 未導入か停止中（$repo_root/tools/portal/setup-server.sh で入れる）"
   fi

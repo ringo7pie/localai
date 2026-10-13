@@ -1,17 +1,28 @@
 # 他の PC（Windows）で PowerShell から実行する。qwen-worker を SSH 越しに Claude Code / Codex へ登録する。
 #
-# 使い方:  powershell -ExecutionPolicy Bypass -File setup-remote.ps1 [-ServerIp <server-ip>] [-SkipServer]
+# 使い方:  powershell -ExecutionPolicy Bypass -File setup-remote.ps1 -ServerIp <server-ip> [-ServerUser <user>] [-SkipServer]
+#   例: -ServerIp 192.168.1.10 -ServerUser alice
+#   -ServerIp は環境変数 LOCALAI_SERVER_HOST、-ServerUser は LOCALAI_SERVER_USER でも指定できる。
+#   -ServerUser を省略すると、この PC のユーザー名を使う。
 #
 # 前提: Windows 標準の OpenSSH クライアント（ssh.exe, ssh-keygen.exe）。
 #       「設定 > アプリ > オプション機能 > OpenSSH クライアント」で入る。
 #       -SkipServer を指定すると、サーバ側の登録（手順4）と疎通確認（手順5）を
 #       スキップして、公開鍵と手で打つコマンドの表示だけで終わる。
 param(
-    [string]$ServerIp = "<server-ip>",
-    [string]$ServerUser = "mt",
+    [string]$ServerIp = $env:LOCALAI_SERVER_HOST,
+    [string]$ServerUser = $env:LOCALAI_SERVER_USER,
     [switch]$SkipServer
 )
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($ServerIp)) {
+    Write-Error "ホストIP が未指定です。-ServerIp か環境変数 LOCALAI_SERVER_HOST で指定してください。例: -ServerIp 192.168.1.10" -ErrorAction Continue
+    exit 2
+}
+if ([string]::IsNullOrWhiteSpace($ServerUser)) {
+    $ServerUser = $env:USERNAME
+}
 
 $sshDir  = Join-Path $HOME ".ssh"
 $keyFile = Join-Path $sshDir "qwen-worker"
@@ -118,7 +129,7 @@ if ($SkipServer) {
     Write-Host ""
     Write-Host "[4/5] -SkipServer 指定のためサーバへの登録と疎通確認をスキップします。"
     Write-Host "      手動登録: Get-Content $pubFile | ssh $ServerUser@$ServerIp 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh $pcName -'"
-    Write-Host "      または \\$ServerIp\mt の共有経由でファイルを渡して add-remote-key.sh に食わせる。"
+    Write-Host "      または \\$ServerIp\$ServerUser の共有経由でファイルを渡して add-remote-key.sh に食わせる。"
     Write-Host ""
     Get-Content "$pubFile"
     Write-Host ""

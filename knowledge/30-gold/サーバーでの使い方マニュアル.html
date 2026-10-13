@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ローカル Qwen をサーバーで使う・管理する</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#EDF0F1; --surface:#FFFFFF; --surface-2:#E3E9EB; --surface-3:#D9E1E4;
@@ -18,8 +15,8 @@
   --bad:#93222D; --bad-soft:#F2D7DA; --bad-bar:#B8434F;
   --term-bg:#101E26; --term-ink:#D9E6EC; --term-dim:#7D97A3; --term-line:#243A45; --term-cue:#63B6D4;
   --win:#4B3A8F; --win-soft:#E2DDF3; --mac:#6A4E1E; --mac-soft:#F0E7D2; --lin:#1D5A63; --lin-soft:#D6EBEE;
-  --f-body:"IBM Plex Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-body:"IBM Plex Sans JP","Hiragino Sans","Noto Sans CJK JP","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -139,7 +136,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 
 <header class="top">
   <h1>ローカル Qwen をサーバーで使う・管理する</h1>
-  <p class="lede">A30 サーバー（<code>this-host</code> / <server-ip>）<b>の上で</b>ローカル Qwen3.8-27B を使う・管理するための文書。他の PC からの接続を受け入れる側の作業（鍵の受け入れ・取り消し、資源、安全の境界、費用の実測）もここに置く。他の PC 側の設定は <code>リモートで使い方マニュアル.html</code> を見ること。</p>
+  <p class="lede">A30 サーバー（<code>&lt;server-ip&gt;</code>）<b>の上で</b>ローカル Qwen3.8-27B を使う・管理するための文書。他の PC からの接続を受け入れる側の作業（鍵の受け入れ・取り消し、資源、安全の境界、費用の実測）もここに置く。他の PC 側の設定は <code>リモートで使い方マニュアル.html</code> を見ること。</p>
   <p class="meta">作成 2026-09-21（「リモートで使い方マニュアル」第 3 版からサーバー側の章を分離）/ NVIDIA A30 24GiB / Ollama 0.34.2 / qwen3.8:27b (Q4_K_M) / OpenCode 1.18.31</p>
 </header>
 
@@ -231,7 +228,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 
 <figure>
 <div class="srvbox">
-  <div class="srvtitle">A30 サーバー &nbsp;this-host&nbsp; <server-ip></div>
+  <div class="srvtitle">A30 サーバー &nbsp;&lt;server-ip&gt;</div>
   <div class="svcs">
     <div class="svc"><span class="n">qwen-worker</span><span class="a">MCP stdio（SSH 経由）</span></div>
     <div class="svc"><span class="n">OpenCode + 連携層</span><span class="a">同一ホストなら直結</span></div>
@@ -260,8 +257,8 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <table>
 <tr><th>名前</th><th>アドレス</th><th>公開範囲</th><th>認証</th></tr>
 <tr><td>Ollama API</td><td><code>127.0.0.1:11434</code></td><td><span class="pill p-ok">ループバックのみ</span></td><td>なし（だから公開しない）</td></tr>
-<tr><td>SSH</td><td><code><server-ip>:22</code></td><td>LAN</td><td>公開鍵。qwen-worker 用は<b>強制コマンド付き</b></td></tr>
-<tr><td>Open WebUI</td><td><code><server-ip>:8080</code></td><td>LAN（<b>ufw 未設定で到達不可</b>）</td><td>アカウント（初回登録者が管理者）</td></tr>
+<tr><td>SSH</td><td><code>&lt;server-ip&gt;:22</code></td><td>LAN</td><td>公開鍵。qwen-worker 用は<b>強制コマンド付き</b></td></tr>
+<tr><td>Open WebUI</td><td><code>&lt;server-ip&gt;:8080</code></td><td>LAN（<b>ufw 未設定で到達不可</b>）</td><td>アカウント（初回登録者が管理者）</td></tr>
 </table>
 
 <div class="warn">
@@ -281,10 +278,10 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 最初の 1 回だけ（再実行しても安全）</span></div>
 <div class="term"><span class="c"># local-ai-bridge（OpenCode 経由で Qwen に実装を委譲し、テストまで回す）</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/setup-server.sh --workspace /home/mt/Proj/localai
+<span class="p">$</span> ~/Proj/localai/tools/local-ai-bridge/scripts/setup-server.sh --workspace ~/Proj/localai
 
 <span class="c"># qwen-worker（他の PC から SSH 越しに使わせる本体。Claude Code / Codex から直接呼ぶ MCP）</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/qwen-worker/setup-server.sh</div>
+<span class="p">$</span> ~/Proj/localai/tools/qwen-worker/setup-server.sh</div>
 
 <p>setup-server.sh（local-ai-bridge）がやること: [1/7] uv と python3 の確認 → [2/7] OpenCode 1.18.31 → [3/7] .venv → [4/7] ~/.config/local-ai-bridge/bridge.toml（allowed_roots を書く）→ [5/7] Claude Code / Codex への MCP 登録 → [6/7] スキル /qwen /qwen-read と委譲ルール → [7/7] --workspace のリポジトリを登録して doctor。引数: --allowed-root DIR、--workspace PATH、--mcp-scope local|user、--no-rules、--no-skills。検証プロファイル（テストコマンド）は付けないので、あとで 3-4 の workspace add --verify で足す。</p>
 
@@ -328,13 +325,13 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 委譲を 1 件流すたび</span></div>
 <div class="term"><span class="c"># 毎回打つのが面倒なら変数に入れる</span>
-BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
+BRIDGE=~/Proj/localai/tools/local-ai-bridge
 
 <span class="c"># 1. まず点検。ここが全部 OK になってから使う</span>
 <span class="p">$</span> $BRIDGE/run-local-ai-task doctor
 <span class="o">  [OK  ] ollama 接続: http://127.0.0.1:11434 version=0.34.2
   [OK  ] モデル: qwen3.8:27b digest=22130167c4c20e20 quant=Q4_K_M
-  [OK  ] opencode: /home/mt/.opencode/bin/opencode version=1.18.31
+  [OK  ] opencode: ~/.opencode/bin/opencode version=1.18.31
   [OK  ] 実効設定: enabled_providers=['ollama'] model=ollama/qwen3.8:27b ...
   [OK  ] 見えるモデル: ollama/qwen3.8:27b
   合計: OK 8 / NG 0 / 未取得 0</span>
@@ -420,7 +417,7 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 <code>[workspace.*]</code> を書く必要はない。</p>
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（新しいリポジトリを登録する）</span></div>
-<div class="term"><span class="p">$</span> $BRIDGE/run-local-ai-task workspace add /home/mt/Proj/myproject \
+<div class="term"><span class="p">$</span> $BRIDGE/run-local-ai-task workspace add ~/Proj/myproject \
     --id myproject \
     --verify pytest --cmd "python3 -m pytest -q" \
     --default-verify pytest
@@ -429,7 +426,7 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 <span class="p">$</span> $BRIDGE/run-local-ai-task workspace list
 
 <span class="c"># パスがどの workspace 配下か調べる（無ければ終了コード 1）</span>
-<span class="p">$</span> $BRIDGE/run-local-ai-task workspace which /home/mt/Proj/myproject/src
+<span class="p">$</span> $BRIDGE/run-local-ai-task workspace which ~/Proj/myproject/src
 
 <span class="c"># 登録の削除</span>
 <span class="p">$</span> $BRIDGE/run-local-ai-task workspace remove myproject</div>
@@ -442,7 +439,7 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 <div class="note">
   <b>なぜ許可ルートが要るのか</b>
   登録できるのは <code>~/.config/local-ai-bridge/bridge.toml</code> の
-  <code>[registration] allowed_roots = ["/home/mt/Proj"]</code>（<b>人が書く</b>）配下の
+  <code>[registration] allowed_roots = ["~/Proj"]</code>（<b>人が書く</b>）配下の
   <b>Git リポジトリだけ</b>。モデルや依頼者が任意のパスを登録先にできないようにするための制約。
   <code>--cmd</code> をシェル文字列でなく argv へ分解するのも同じ理由（<code>&amp;&amp;</code> や
   <code>|</code> や変数展開を効かせない）で、複数コマンドを走らせたいときは、それをまとめた
@@ -475,7 +472,7 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 <p>他の PC の利用者が <code>setup-remote.ps1</code> / <code>setup-remote.sh</code> を 1 回走らせる。
 スクリプトは <code>ssh</code> 経由でこのサーバーの <code>~/.local/share/qwen-worker/remote/add-remote-key.sh &lt;PC名&gt; -</code> を呼び、
 公開鍵を標準入力で渡す。
-このとき利用者にはサーバー（mt）のログインパスワードが 1 回求められる。
+このとき利用者にはサーバー（&lt;user&gt;）のログインパスワードが 1 回求められる。
 サーバー管理者が何かを打つ必要はない。
 他の PC 側の手順は「リモートで使い方マニュアル.html」にある。</p>
 </li>
@@ -523,23 +520,23 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 承認を得てから 1 回だけ（sudo が要る。未実行）</span></div>
 <div class="term"><span class="c"># まず表示だけ（何も変えない）。差分・影響・戻し方・今の状態が出る</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh
+<span class="p">$</span> ~/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh
 
 <span class="c"># 承認したら 1 項目ずつ。yes と答えたときだけ実行する。sudo のパスワードは sudo が聞く</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply ufw-8080
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply linger</div>
+<span class="p">$</span> ~/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply ufw-8080
+<span class="p">$</span> ~/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply linger</div>
 
 <h3>使い方</h3>
 
 <ol class="steps">
 <li><h4>ブラウザで開く</h4>
-<div class="term">http://<server-ip>:8080</div></li>
+<div class="term">http://&lt;server-ip&gt;:8080</div></li>
 <li><h4>最初のアカウントを作る</h4>
 <p><b>最初に登録した人が管理者になる。</b>そのため、こちらでは作っていない。</p></li>
 <li><h4>登録を閉じる</h4>
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 必要になったとき（登録を閉じる）</span></div>
 <div class="term"><span class="c"># sudo 不要。ENABLE_SIGNUP=true があれば false に置き換え、open-webui を再始動する</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply close-signup</div></li>
+<span class="p">$</span> ~/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply close-signup</div></li>
 </ol>
 
 <div class="note">
@@ -775,10 +772,10 @@ BRIDGE=/home/mt/Proj/localai/tools/local-ai-bridge
 
 <div class="oshead os-srv">A30 サーバーで打つ <span class="when">｜ いつ: 承認を得てから 1 回だけ（sudo が要る。未実行。先に実行中タスクを確認）</span></div>
 <div class="term"><span class="c"># 表示だけ。3 項目（ufw-8080 / linger / ollama-dropin）の差分・影響・戻し方・今の状態を出す。何も変えない</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh
+<span class="p">$</span> ~/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh
 
 <span class="c"># 承認したら 1 項目ずつ。ollama-dropin は実行中の委譲・読み込み中のモデルがあれば中止する（終了コード 3）</span>
-<span class="p">$</span> /home/mt/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply ollama-dropin
+<span class="p">$</span> ~/Proj/localai/tools/local-ai-bridge/scripts/server-approvals.sh --apply ollama-dropin
 <span class="c"># 適用後の確認はスクリプトが journalctl -u ollama の 'server config' 行を表示する。指定しただけで効いたと判断しない</span></div>
 
 <p>override.conf に足す行: OLLAMA_NUM_PARALLEL=1 / OLLAMA_MAX_LOADED_MODELS=1 / OLLAMA_MAX_QUEUE=64 / OLLAMA_NO_CLOUD=1（既存行は消さない）</p>

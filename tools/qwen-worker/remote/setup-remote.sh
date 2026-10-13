@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # 他の PC（macOS / Linux）で実行する。qwen-worker を SSH 越しに Claude Code / Codex へ登録する。
 #
-# 使い方:  bash setup-remote.sh [ホストIP] [--skip-server]   （ホストIP 省略時 <server-ip>）
+# 使い方:  bash setup-remote.sh <ホストIP> [--server-user USER] [--skip-server]
+#   例: bash setup-remote.sh 192.168.1.10 --server-user alice
+#   ホストIP は必須。環境変数 LOCALAI_SERVER_HOST でも指定できる。
+#   SSH ユーザーは --server-user か環境変数 LOCALAI_SERVER_USER。無ければこの PC のユーザー名。
 #
 # やること:
 #   1. 専用鍵 ~/.ssh/qwen-worker を作る（既にあれば再利用）
@@ -14,15 +17,22 @@
 #   パスワード・パスフレーズはこのスクリプトが受け取ったり保存したりしない。
 set -euo pipefail
 
-server_ip="<server-ip>"
+server_ip="${LOCALAI_SERVER_HOST:-}"
+server_user="${LOCALAI_SERVER_USER:-$(id -un)}"
 skip_server=0
-for arg in "$@"; do
-  case "$arg" in
-    --skip-server) skip_server=1 ;;
-    *) server_ip="$arg" ;;
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --skip-server) skip_server=1; shift ;;
+    --server-user) server_user="${2:?--server-user にはユーザー名が要る}"; shift 2 ;;
+    -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) server_ip="$1"; shift ;;
   esac
 done
-server_user="mt"
+if [ -z "$server_ip" ]; then
+  echo "ホストIP が未指定です。引数か環境変数 LOCALAI_SERVER_HOST で指定してください。" >&2
+  sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 2
+fi
 key_file="$HOME/.ssh/qwen-worker"
 pc_name="$(hostname -s 2>/dev/null || hostname)"
 
@@ -116,7 +126,7 @@ if [ "$skip_server" -eq 1 ]; then
   echo
   echo "[4/5] --skip-server 指定のためサーバへの登録と疎通確認をスキップします。"
   echo "      手動登録: ssh $server_user@$server_ip 'bash ~/.local/share/qwen-worker/remote/add-remote-key.sh $pc_name -' < $key_file.pub"
-  echo "      または Samba 共有 \\\\$server_ip\\mt からファイルを渡して add-remote-key.sh に食わせる。"
+  echo "      または Samba 共有 \\\\$server_ip\\$server_user からファイルを渡して add-remote-key.sh に食わせる。"
   echo
   cat "$key_file.pub"
   echo

@@ -51,7 +51,7 @@ VRAM_WAIT_SECONDS = 60
 # 低 VRAM モード（--low_vram_mode）の切り替え。VRAM を RAM と引き換える設定で、
 # この機体（RAM 31GiB）では過去に RAM を食い潰してデスクトップがハングしたことがある。
 # env ファイルのパスと変数名は tools/portal（入口ページ）と必ず一致させる。
-# 入口ページが mt としてこのファイルを書き換える想定なので、hy3d 側は読むだけにする。
+# 入口ページが、サービスを動かす利用者の権限でこのファイルを書き換える想定なので、hy3d 側は読むだけにする。
 LOW_VRAM_ENV_FILE = Path.home() / ".config" / "hunyuan3d" / "hunyuan3d.env"
 LOW_VRAM_ENV_VAR = "HY3D_LOW_VRAM"
 LOW_VRAM_DEFAULT = True

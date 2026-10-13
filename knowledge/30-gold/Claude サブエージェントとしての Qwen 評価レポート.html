@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Claude サブエージェントとしての Qwen 評価レポート</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#EDF0F1; --surface:#FFFFFF; --surface-2:#E3E9EB; --surface-3:#D9E1E4;
@@ -20,8 +17,8 @@
   --a:#2454B0; --a-soft:#DCE6F7; --a-bar:#3765C4;
   --b:#B35A00; --b-soft:#F6E0C8; --b-bar:#C2600A;
   --term-bg:#101E26; --term-ink:#D9E6EC; --term-dim:#7D97A3; --term-line:#243A45; --term-cue:#63B6D4;
-  --f-body:"IBM Plex Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-body:"IBM Plex Sans JP","Hiragino Sans","Noto Sans CJK JP","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -468,7 +465,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
   <li><code>tools/status/qwen-status-remote.sh</code>（<code>.ps1</code>、未 commit）</li>
   <li><code>~/.config/qwen-worker/config.toml</code>（<code>[profiles.standard]</code> の実効入力上限の値のみ引用）</li>
   <li><code>knowledge/10-silver/areas/env.md</code>（GPU・VRAM・モデルの制約）</li>
-  <li>メモ <code>delegation-wait-turns-are-the-cost.md</code>（<code>/home/mt/.claude/projects/-home-mt-Proj-localai/memory/</code>）</li>
+  <li>メモ <code>delegation-wait-turns-are-the-cost.md</code>（<code>~/.claude/projects/-home-&lt;user&gt;-Proj-localai/memory/</code>）</li>
 </ul>
 
 <footer>

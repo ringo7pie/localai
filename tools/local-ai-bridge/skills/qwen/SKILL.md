@@ -18,7 +18,7 @@ allowed-tools: mcp__local-ai-bridge__run_task, mcp__local-ai-bridge__wait_for_ta
 Bash で実行する。
 
 ```bash
-/home/mt/Proj/localai/tools/local-ai-bridge/run-local-ai-task workspace which "$PWD"
+~/Proj/localai/tools/local-ai-bridge/run-local-ai-task workspace which "$PWD"
 ```
 
 終了コードが 1 なら、このディレクトリは未登録。次のメッセージを出して**ここで終わる**（勝手に登録しない）。
@@ -47,7 +47,7 @@ workspace・goal・scope・forbidden・acceptance・mode・request_id を渡す�
 MCP に `run_task` が見当たらない（古い会話など）ときだけ、Bash で代わりに実行する。
 
 ```bash
-/home/mt/Proj/localai/tools/local-ai-bridge/run-local-ai-task run \
+~/Proj/localai/tools/local-ai-bridge/run-local-ai-task run \
   --workspace <workspace_id> --request-id <request_id> \
   --goal "<goal>" --scope "<scope>" --forbid "<forbidden>" --acceptance "<acceptance>" \
   --mode <mode> --max-wait 540
