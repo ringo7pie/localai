@@ -830,7 +830,10 @@ def section_appendix(summary: dict[str, Any]) -> str:
     details = "".join(f"<details><summary>{esc(name)}</summary><pre>{esc(text)}</pre></details>" for name, text in problems)
     missing = "".join(f"<li>{esc(line)}</li>" for line in summary.get("missing", []))
     invalid = "".join(f"<li>{esc(line)}</li>" for line in summary.get("claude_invalid_runs", []))
-    return (f'<h3>式</h3>{formula_block(summary)}'
+    # 出した問題の解説書（build_problem_guide.py が作る。同じ Documents/ にあるので相対リンクにする）
+    guide_name = f"AIモデル評価_出題内容_{summary['date']}.html"
+    guide_link = (f'<p>出した問題の解説は <a href="{esc(guide_name)}">Documents/{esc(guide_name)}</a></p>')
+    return (f'{guide_link}<h3>式</h3>{formula_block(summary)}'
             f'<h3>生データの場所</h3><table class="data kv"><tbody>{path_rows}</tbody></table>'
             + (f'<h3>足りない記録</h3><ul class="notes">{missing}</ul>' if missing else "")
             + (f'<h3>無効にした Claude の回（ツールを使った）</h3><ul class="notes">{invalid}</ul>' if invalid else "")

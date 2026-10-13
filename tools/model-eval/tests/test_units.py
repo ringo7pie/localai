@@ -6,7 +6,8 @@
 ランキングの式、Ollama / Strata のストリームの読み取り（偽のサーバー）、run_eval.py の run / grade-claude、
 summarize.py と build_report.py の生成のスモーク、KV キャッシュの比べ（cond_compare.py の判定・集計・HTML・engine ログの読み取り、
 run_kv_compare.sh の --dry-run）、コーディング性能の調査（run_eval.py の上限の上書き・英語の問題文・思考中停止のやり直し、
-cond_compare.py の条件の集計と判定・HTML、run_fix_compare.sh の --dry-run と偽の systemctl での本流）。
+cond_compare.py の条件の集計と判定・HTML、run_fix_compare.sh の --dry-run と偽の systemctl での本流）、
+出題内容の解説書（problem_guide.json と原文の照合、build_problem_guide.py の HTML のスモーク・色の検査）。
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import build_problem_guide
 import build_report
 import cond_compare
 import kv_compare
@@ -2426,3 +2428,260 @@ def test_run_fix_compare_refuses_to_run_with_a_leftover_kv_override(work_tmp):
     assert not [line for line in calls if "set-environment" in line]       # 外すのは利用者。このスクリプトは環境を変えない
     assert (work_tmp / "state" / "env-STRATA_EXTRA_ARGS").exists()
     assert not (root / "budget24k-ja").exists()                            # 基準も写さない
+
+
+# ------------------------------------------------------------------------------------------------ 出題内容の解説書（build_problem_guide.py）
+
+
+GUIDE_PATH = TOOL_DIR / "suites" / "problem_guide.json"
+REAL_SUMMARY_PATH = TOOL_DIR / "results" / common.DEFAULT_DATE / "summary.json"
+GUIDE_REQUIRED_KEYS = ("id", "title", "category", "one_line", "task", "example", "difficulty", "measures", "grading", "terms")
+
+
+def load_guide() -> dict:
+    return json.loads(GUIDE_PATH.read_text(encoding="utf-8"))
+
+
+def load_real_summary() -> dict:
+    return json.loads(REAL_SUMMARY_PATH.read_text(encoding="utf-8"))
+
+
+class _GuideParser(HTMLParser):
+    """解説書の HTML の検査用。タグと属性、見出しの文字、本文の文字を集める。"""
+
+    def __init__(self):
+        super().__init__()
+        self.tags: list[tuple[str, dict]] = []
+        self.text: list[str] = []
+        self.headings: list[str] = []
+        self._in_heading = False
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.append((tag, dict(attrs)))
+        self._in_heading = tag == "h3"
+
+    def handle_endtag(self, tag):
+        if tag == "h3":
+            self._in_heading = False
+
+    def handle_data(self, data):
+        self.text.append(data)
+        if self._in_heading:
+            self.headings.append(data)
+
+
+def parse_guide_html(html_text: str) -> _GuideParser:
+    parser = _GuideParser()
+    parser.feed(html_text)
+    parser.close()
+    return parser
+
+
+def test_problem_guide_has_all_16_problems_and_required_keys():
+    guide = load_guide()
+    ids = [problem["id"] for problem in guide["problems"]]
+    assert ids == ["math3d", *common.CODING_ITEMS, *common.EXTRA_ITEMS] and len(ids) == 16
+    assert set(guide["categories"]) == {"math3d", "coding", "inst", "needle", "json"}
+    for problem in guide["problems"]:
+        for key in GUIDE_REQUIRED_KEYS:
+            assert problem.get(key), f"{problem['id']}: {key} が無い"
+        assert problem["category"] == build_problem_guide.item_category(problem["id"])
+        assert 1 <= len(problem["example"]) <= 3 and 2 <= len(problem["difficulty"]) <= 4
+        assert problem["grading"]["summary"] and all(term["term"] and term["explain"] for term in problem["terms"])
+        assert all(example["input"] and example["output"] for example in problem["example"])
+    for key in ("lead", "exams", "scoring", "limit_terms", "color_note", "result_note"):
+        assert guide["overview"][key]
+    assert [exam["suite"] for exam in guide["overview"]["exams"]] == ["math3d", "coding", "extra"]
+    assert guide["appendix"]["v1"] and guide["appendix"]["closing"]
+
+
+def test_problem_guide_examples_appear_in_the_source_files():
+    # 具体例は原文（問題文と、採点の答え・正解の表）にある文字列だけを使う。原文に無い例は作らない
+    for problem in load_guide()["problems"]:
+        source = build_problem_guide.source_text(problem["id"])
+        for example in problem["example"]:
+            assert example["input"] in source, (problem["id"], example["input"])
+            assert example["output"] in source, (problem["id"], example["output"])
+
+
+def test_problem_guide_hidden_test_counts_match_tests_py():
+    guide = load_guide()
+    counts = {problem["id"]: problem["grading"]["case_total"] for problem in guide["problems"] if problem["id"] in common.CODING_ITEMS}
+    assert counts == {"c1": 25, "c2": 26, "c3": 25, "c4": 23, "c5": 24, "c6": 20}
+    for item, total in counts.items():
+        tests_text = (CODING_DIR / item / "tests.py").read_text(encoding="utf-8")
+        assert len(re.findall(r"^def case_", tests_text, flags=re.MULTILINE)) == total
+        problem = next(entry for entry in guide["problems"] if entry["id"] == item)
+        assert sum(entry["n"] for entry in problem["grading"]["cases"]) == total
+        assert str(total) in problem["grading"]["summary"]  # 本文にも同じ件数が書いてある
+
+
+def test_problem_guide_grading_follows_the_answer_files_and_3d_table():
+    guide = load_guide()
+    assert build_problem_guide.validate_guide(guide) == []
+    by_id = {problem["id"]: problem for problem in guide["problems"]}
+    for item in common.EXTRA_KINDS["inst"]:
+        labels = [check["label"] for check in json.loads((EXTRA_DIR / item / "answer.json").read_text("utf-8"))["checks"]]
+        assert by_id[item]["grading"]["items"] == labels and len(labels) == 5
+    for item in common.EXTRA_KINDS["json"]:
+        expected = json.loads((EXTRA_DIR / item / "answer.json").read_text("utf-8"))["expected"]
+        assert {entry["key"]: entry["expected"] for entry in by_id[item]["grading"]["fields"]} == expected
+    # 3D の正解は、実施モデル一覧の表と、集計（summary.json）の answer_key の両方と一致する
+    answer_key = load_real_summary()["suites"]["math3d"]["answer_key"]
+    parts = {part["key"]: part["answer"] for part in by_id["math3d"]["parts"]}
+    assert parts["q2"] == "1/2 < r ≤ √2/2（= 1/√2）" and parts["q3"] == "πr² + (4/3)πr³"
+    assert answer_key["q1"].split("。")[0] in parts["q1"] and "√(r²−t²)" in parts["q1"] and "√(r²−(1−t)²)" in parts["q1"]
+    assert answer_key["q2"] in parts["q2"] and answer_key["q3"] == parts["q3"]
+    assert answer_key["q4"].split("（")[0] in parts["q4"] and "r=0.6 で 4.1741" in parts["q4"]
+
+
+def test_validate_guide_detects_text_that_disagrees_with_the_source():
+    guide = load_guide()
+    assert build_problem_guide.validate_guide(guide) == []
+    broken = json.loads(json.dumps(guide))
+    by_id = {problem["id"]: problem for problem in broken["problems"]}
+    by_id["c4"]["grading"]["case_total"] = 22                                     # 隠しテストの件数
+    by_id["c1"]["example"][0]["input"] = 'split_words("a  b")'                    # 原文に無い具体例
+    by_id["math3d"]["parts"][2]["answer"] = "πr² + (2/3)πr³"                      # 3D の正解
+    by_id["inst1"]["grading"]["items"][1] = "どの行も 30 文字以内"                  # 採点の条件
+    by_id["json2"]["grading"]["fields"][2]["expected"] = 2                        # JSON の正解
+    by_id["needle2"]["one_line"] = "合言葉の文は、資料の前のほうにあります。"        # 合言葉の位置
+    by_id["c2"]["category"] = "inst"
+    del by_id["c5"]["measures"]
+    errors = "\n".join(build_problem_guide.validate_guide(broken))
+    for expected in ("c4: case_total 22", "c1: 具体例 1 の input が原文に無い", "math3d: (3) の正解", "inst1: grading.items",
+                     "json2: grading.fields", "needle2: 合言葉の位置 55%", "c2: category", "c5: 必須の鍵 measures"):
+        assert expected in errors, expected
+    # 問題の抜け・順序の違い
+    broken["problems"].pop()
+    assert any("問題の ID と順序が違う" in line for line in build_problem_guide.validate_guide(broken))
+
+
+def test_problem_guide_category_colors_are_distinct():
+    # dataviz スキルの検証（validate_palette.js --mode light）で通した順序。隣り合う種類が通常の視覚でも見分けられる（OKLab ΔE ≥ 15）
+    assert list(build_problem_guide.CATEGORY_COLORS.values()) == ["#eb6834", "#2a78d6", "#eda100", "#6250d6", "#e87ba4"]
+
+    def oklab(color: str) -> tuple[float, float, float]:
+        def linear(channel: int) -> float:
+            value = channel / 255
+            return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+        red, green, blue = (linear(int(color[index:index + 2], 16)) for index in (1, 3, 5))
+        cone_long = (0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue) ** (1 / 3)
+        cone_medium = (0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue) ** (1 / 3)
+        cone_short = (0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue) ** (1 / 3)
+        return (0.2104542553 * cone_long + 0.7936177850 * cone_medium - 0.0040720468 * cone_short,
+                1.9779984951 * cone_long - 2.4285922050 * cone_medium + 0.4505937099 * cone_short,
+                0.0259040371 * cone_long + 0.7827717662 * cone_medium - 0.8086757660 * cone_short)
+
+    colors = list(build_problem_guide.CATEGORY_COLORS.values())
+    for first, second in zip(colors, colors[1:]):
+        assert 100 * math.dist(oklab(first), oklab(second)) >= 15
+    # 緑と赤（正解・誤り）、灰（答えなし）と同じ色は種類に使わない
+    assert not {build_report.COLOR_OK, build_report.COLOR_NG, build_report.COLOR_NA} & set(colors)
+    assert len(set(colors)) == 5 and tuple(build_problem_guide.CATEGORY_COLORS) == build_problem_guide.CATEGORY_ORDER
+
+
+def test_problem_guide_html_is_self_contained_and_complete():
+    guide, summary = load_guide(), load_real_summary()
+    html_text = build_problem_guide.build_html(guide, summary)
+    parser = parse_guide_html(html_text)  # html.parser で最後まで読める
+    tags = [tag for tag, _attrs in parser.tags]
+    # 外部参照が無い（CSS・SVG はファイル内。相対リンクは元のレポートへの 1 本だけ）
+    assert not {"link", "script", "img", "iframe", "source", "video", "audio", "object", "embed"} & set(tags)
+    for _tag, attrs in parser.tags:
+        assert "src" not in attrs and "srcset" not in attrs
+    hrefs = [attrs["href"] for tag, attrs in parser.tags if tag == "a"]
+    report_link = f"AIモデル評価_{summary['date']}.html"
+    assert report_link in hrefs and all(href.startswith("#") or href == report_link for href in hrefs)
+    assert "http://" not in html_text and "https://" not in html_text and "url(" not in html_text and "@import" not in html_text
+    # 16 問のカードと見出し（元のレポートの表と同じ問 ID の表記）
+    ids = [attrs["id"] for tag, attrs in parser.tags if tag == "article"]
+    assert ids == [f"p-{problem['id']}" for problem in guide["problems"]] and len(ids) == 16
+    for problem in guide["problems"]:
+        assert build_problem_guide.heading_text(problem) in parser.headings
+        assert f'href="#p-{problem["id"]}"' in html_text  # 目次のリンク
+    for heading in ("C1 シェル風の単語分割", "C4 厳密な JSON パーサ", "inst3 朝ごはんの利点（3 行）", "json2 料理教室の申し込みから情報を取り出す"):
+        assert heading in parser.headings
+    # 5 種類の名前が文字で出ている（色だけで区別させない）。見出しの印が問題の数だけある
+    text = "".join(parser.text)
+    for category, entry in guide["categories"].items():
+        count = sum(1 for problem in guide["problems"] if problem["category"] == category)
+        assert text.count(entry["label"]) >= count + 1, category
+        assert f"{build_problem_guide.CATEGORY_COLORS[category]};--band" in html_text
+    # 各カードの節（やること・具体例・難しさ・力・採点・用語・結果・原文）と、全体像・補足・生データの節
+    for title in ("やること", "具体例", "何が難しいか", "何の力を見るか", "採点の仕方", "用語", "この問題の結果"):
+        assert html_text.count(f"<h4>{title}</h4>") == 16, title
+    assert html_text.count("<h4>問題の状況</h4>") == 1 and html_text.count("<h4>小問と正解</h4>") == 1  # 3D だけ
+    assert html_text.count("<details>") == 16 and html_text.count("<summary>問題文の原文") == 16
+    for anchor in ("s0", "s1", "s2", "s3", "s4", "s5"):
+        assert f'id="{anchor}"' in html_text
+    assert "総合 = 0.7 × 能力 + 0.3 × 速度点" in text and "易しい版" in text and "tools/model-eval/results/2026-10-08/summary.json" in text
+    assert "生成の上限: 32,768 トークン" in text and "思考の予算: 24,576 トークン（Strata だけ）" in text
+    assert html_text.count("<svg") == 1  # 3D の図だけ
+
+
+def test_problem_guide_results_follow_the_summary_and_hide_excluded_models():
+    guide, summary = load_guide(), load_real_summary()
+    html_text = build_problem_guide.build_html(guide, summary)
+    parser = parse_guide_html(html_text)
+    assert html_text.count('role="listitem"') == 15 * len(summary["models"])  # 3D 以外の 15 問 × モデルの数
+    text = "".join(parser.text)
+    for model in summary["models"]:
+        assert model["label"] in text
+    for entry in summary["excluded"]:
+        assert entry["label"] not in text and entry["key"] not in text  # 比較から外したモデルは出さない
+    # 状態が上限・エラー・答えなしのマスは、文字でも示す（元のレポートと同じ表記）
+    assert "上限" in text and "エラー" in text and "答えなし" in text and "本文なし" in text
+    # 3D は小問ごとの ○×—（能力に使った回だけ）。qwen3.8:27b の (4) は 2 回のうち 1 回が誤り
+    math3d = re.search(r'<article class="card cat-math3d".*?</article>', html_text, flags=re.S).group(0)
+    assert "全モデルの合計（正解 / 回数）" in math3d and "18 / 18" in math3d
+    assert math3d.count('aria-label="誤り"') == 1 + 3 + 1  # e4b の (2) 1 回・(4) 3 回、27b の (4) 1 回
+    assert "09-27（参考）" not in math3d
+
+
+def test_problem_guide_handles_missing_records_without_failing():
+    guide, summary = load_guide(), load_real_summary()
+    broken = json.loads(json.dumps(summary))
+    first = broken["models"][0]["key"]
+    del broken["suites"]["coding"]["models"][first]["items"]["c2"]       # 記録の無い問
+    del broken["suites"]["extra"]["models"][first]                       # モデルごと無い
+    broken["suites"]["math3d"]["models"][first]["runs"] = []             # 3D の回が無い
+    broken["suites"]["coding"]["models"][broken["models"][1]["key"]]["items"]["c3"] = {"cell": "skipped", "score": 0.0,
+                                                                                    "status": "skipped_time_budget"}
+    html_text = build_problem_guide.build_html(guide, broken)
+    text = "".join(parse_guide_html(html_text).text)
+    assert text.count("記録なし") >= 1 + 9 + 1                        # c2 の 1 マス、追加の 9 問、3D の行
+    assert "飛ばし" in text
+    # 3D 以外の suites が丸ごと無くても落ちない（記録なしと出す）
+    empty = json.loads(json.dumps(summary))
+    empty["suites"]["coding"]["models"] = {}
+    assert "記録なし" in "".join(parse_guide_html(build_problem_guide.build_html(guide, empty)).text)
+
+
+def test_problem_guide_main_writes_one_file_and_refuses_a_bad_guide(work_tmp, capsys):
+    out = work_tmp / "guide.html"
+    assert build_problem_guide.main(["--out", str(out)]) == 0
+    assert out.stat().st_size > 50_000 and out.read_text(encoding="utf-8").startswith("<!doctype html>")
+    # 原文と食い違う解説は、HTML を作らずに一覧を出して終了コード 1
+    broken = load_guide()
+    broken["problems"][4]["grading"]["case_total"] = 99
+    guide_path = work_tmp / "bad_guide.json"
+    guide_path.write_text(json.dumps(broken, ensure_ascii=False), encoding="utf-8")
+    refused = work_tmp / "refused.html"
+    capsys.readouterr()
+    assert build_problem_guide.main(["--guide", str(guide_path), "--out", str(refused)]) == 1
+    assert "c4: case_total 99" in capsys.readouterr().err and not refused.exists()
+    # --help に使い方が書いてある
+    with pytest.raises(SystemExit):
+        build_problem_guide.main(["--help"])
+    assert "--out" in capsys.readouterr().out
+
+
+def test_report_appendix_links_to_the_problem_guide():
+    summary = load_real_summary()
+    appendix = build_report.section_appendix(summary)
+    guide_name = f"AIモデル評価_出題内容_{summary['date']}.html"
+    assert f'<a href="{guide_name}">Documents/{guide_name}</a>' in appendix
+    assert "出した問題の解説は" in appendix
+    assert guide_name == build_problem_guide.DEFAULT_OUT.name

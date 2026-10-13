@@ -20,6 +20,7 @@
 | `suites/extra/` | `inst1`〜`3`・`needle1`〜`3`・`json1`〜`3/` の `prompt.md`・`answer.json`、採点器 `grade_extra.py`、`make_needle.py` |
 | `summarize.py` | `results/<日付>/` を集めて `summary.json` を作る |
 | `build_report.py` | `summary.json`（と `findings.json`）から HTML を作る |
+| `build_problem_guide.py` | 出した 16 問の解説書（`Documents/AIモデル評価_出題内容_2026-10-08.html`）を作る。本文は `suites/problem_guide.json`、結果のマスは `summary.json` |
 | `run_local.sh` | ローカルの 7 モデルを決めた順に全部流す（再開できる。最後に `results/<日付>/DONE`） |
 | `run_kv_compare.sh` | Strata 3 種で KV キャッシュの型（int8 / fp16）を変えて C4・C5 を流す（下の「KV キャッシュの比べ」）。最後に `results/2026-10-09-kv/DONE` |
 | `run_fix_compare.sh` | Strata 3 種のコーディング性能の調査。C4・C5 を思考の上限なし・生成 65,536 で流し（実験 A）、問題文を英語にしても流す（実験 B）（下の「コーディング性能の調査」）。最後に `results/2026-10-09-fix/DONE` |
@@ -104,6 +105,25 @@ ONLY_TARGETS=strata-official:IQ3_XXS ONLY_ARMS=nobudget-en ./run_fix_compare.sh 
 **1 回だけ**流し直す。1 回目の記録は `<問>-run1.attempt1.json` に残し、2 回目を `<問>-run1.json` に書く（`attempts: 2`・`first_attempt_status`）。
 2 回目も思考中の停止なら、そのまま 0 点・答えなしで記録する。累計時間には両方を足す。`--no-retry-eos` で流し直しを止める。
 `eos_in_thinking` は 0 点・答えなしとして数え、`--retry-errors` の対象にならない（記録済みとして飛ばす）。
+
+### 出題内容の解説書（16 問・色分け）
+
+評価レポートを読む人向けに、出した問題を問題ごとに説明した HTML。何を聞いたか・具体例・何が難しいか・何の力を見るか・採点の仕方・用語と、
+9 モデルの点（色つきのマス）を並べ、問題文の原文は折りたたんで載せる。問題の種類ごとに 5 色（3D 数学・コーディング・指示に従う力・
+資料からの検索・JSON の取り出し）で、種類の名前も文字で出す。1 ファイルで完結し、外部参照は無い。元のレポートの付録からリンクしている。
+
+```bash
+./build_problem_guide.py                       # suites/problem_guide.json と results/2026-10-08/summary.json → Documents/AIモデル評価_出題内容_2026-10-08.html
+./build_problem_guide.py --out work/guide.html # 出力先を変える（--summary と --guide も変えられる）
+```
+
+- 解説の本文は `suites/problem_guide.json`（手で書く）。読み込みのときに原文と照合し、食い違えば HTML を作らず終了コード 1 で止まる:
+  具体例の文字列が問題文か採点の答えにあること、隠しテストの件数が `tests.py` の `def case_` の数と合うこと
+  （C1 25・C2 26・C3 25・C4 23・C5 24・C6 20）、指示追従の条件と JSON の期待値が `answer.json` と合うこと、3D の正解が
+  `Documents/3D問題_実施モデル一覧_2026-10-08.md` の表と合うこと。問題を足す・変えたら、この JSON も直す。
+- 種類の色は `CATEGORY_COLORS`。dataviz スキルの検証済みの 8 色から緑・アクア・赤を外した 5 色で、隣り合う並びが通常の視覚・色覚の型の
+  どちらでも見分けられる（`validate_palette.js --mode light`、隣接の最悪 CVD ΔE 19.9）。正解・誤り・答えなしの色は元のレポートと同じ。
+- `summary.json` の `excluded` のモデルは出さない。記録が無いマスは「記録なし」と出す。
 
 試験（GPU は使わない。サンドボックスの子プロセスは起動する）:
 
