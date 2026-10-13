@@ -14,7 +14,7 @@
 ## 0. 取得と点検
 
 ```bash
-git clone https://github.com/<user>/localai.git
+git clone https://github.com/ringo7pie/localai.git
 cd localai
 ./localai doctor
 ```

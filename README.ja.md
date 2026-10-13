@@ -13,7 +13,7 @@ Claude Code / Codex から作業を回すための、**運用ツール・連携�
 | [docs/getting-started.md](docs/getting-started.md) | 導入から起動まで、段階ごとの手順 |
 | [docs/hardware-requirements.md](docs/hardware-requirements.md) | 動作を確かめた構成と、ツールごとの必要な資源 |
 | [NOTICE.md](NOTICE.md) | 第三者のソフトウェア・モデル・商標と、利用上の制約 |
-| `https://<user>.github.io/localai/` | 評価レポート（GitHub Pages） |
+| `https://ringo7pie.github.io/localai/` | 評価レポート（GitHub Pages） |
 
 ![入口ページ](docs/images/portal.png)
 
@@ -67,7 +67,7 @@ Claude Code / Codex から作業を回すための、**運用ツール・連携�
 前提: `git`・`uv`・`python3`（3.12 以上）・`systemctl --user`。GPU のツールは NVIDIA ドライバと CUDA Toolkit。
 
 ```bash
-git clone https://github.com/<user>/localai.git
+git clone https://github.com/ringo7pie/localai.git
 cd localai
 ./localai doctor              # 前提の点検（OK / WARN / NG と対処を出す）
 ./localai install ollama      # 公式の導入手順と `ollama pull qwen3.8:27b` を表示する（実行はしない）

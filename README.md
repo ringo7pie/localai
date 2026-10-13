@@ -1,6 +1,6 @@
 # localai
 
-[![CI](https://github.com/<user>/localai/actions/workflows/ci.yml/badge.svg)](https://github.com/<user>/localai/actions/workflows/ci.yml)
+[![CI](https://github.com/ringo7pie/localai/actions/workflows/ci.yml/badge.svg)](https://github.com/ringo7pie/localai/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Running a pack of local AI services on a single 24 GB GPU — and measuring which ones are worth running.**
@@ -15,7 +15,7 @@ hand mechanical coding work to a local Qwen, and a harness that compares nine mo
 | | |
 |---|---|
 | **Portfolio page** | [docs/portfolio.md](docs/portfolio.md) — problems, design decisions, measured numbers |
-| **Live reports** | `https://<user>.github.io/localai/` — evaluation reports (Japanese) |
+| **Live reports** | `https://ringo7pie.github.io/localai/` — evaluation reports (Japanese) |
 | **Architecture** | [docs/architecture.md](docs/architecture.md) |
 | **Requirements** | [docs/hardware-requirements.md](docs/hardware-requirements.md) |
 
@@ -87,7 +87,7 @@ Tested configuration: Ubuntu 24.04, NVIDIA A30 24 GB, driver 595, CUDA 13.2 + 12
 Other setups are **unverified** — see [docs/hardware-requirements.md](docs/hardware-requirements.md).
 
 ```bash
-git clone https://github.com/<user>/localai.git
+git clone https://github.com/ringo7pie/localai.git
 cd localai
 ./localai doctor              # checks GPU, CUDA, RAM, disk, uv, Ollama, ports
 ./localai install ollama      # prints the official Ollama steps and `ollama pull qwen3.8:27b`
