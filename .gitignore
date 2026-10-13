@@ -76,3 +76,24 @@ Downloads/
 
 # 3D 生成の出力メッシュ（数十 MB の生成物）。入力画像と問題文だけを追跡する。
 TestData/*.glb
+
+# --- 公開リポジトリに載せないもの（2026-10-13） ---
+# ChatGPT 連携の雛形と、エディタのワークスペース（親ディレクトリの .claude を指す）。
+CHATGPT_PROJECT_*.md
+.chatgpt-project-bridge.json
+localai.code-workspace
+
+# 3D 生成の入力画像。出所が確かめられないため公開しない。自分の画像で試す（TestData/README.md）。
+TestData/Chara*.jpg
+
+# Hunyuan3D-2 へのパッチ。Tencent Hunyuan 3D 2.0 Community License の派生物で、配布は EU・UK・韓国を除く
+# 地域に限られ GitHub では絞れないため公開しない。手元の setup-server.sh は置いてあれば当てる。
+tools/hunyuan3d/patches/
+
+# 保存した Claude の画面（第三者の CSS/JS を含む）。
+Documents/Qwen3.8-27B 運用マニュアル - Claude_files/
+Documents/Qwen3.8-27B 運用マニュアル - Claude.html
+
+# ユーザーの作業フォルダ・ダウンロード置き場。
+zzz-Temp/
+Downloads/
