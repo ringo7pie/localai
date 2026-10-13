@@ -108,7 +108,7 @@ python3 tools/portal/portal.py --host 127.0.0.1 --port 18080
 ## Evaluation snapshot (2026-10-08)
 
 Ability = mean score per problem; time = median seconds. Full tables, method and caveats are in the
-[report](Documents/AIモデル評価_2026-10-08.html) (Japanese). Few trials per cell — treat small differences as noise.
+[report](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html) (Japanese). Few trials per cell — treat small differences as noise.
 
 | Model | 3D math | Coding (6) | Extra (9) |
 |---|---|---|---|

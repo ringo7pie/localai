@@ -99,9 +99,9 @@ python3 tools/portal/portal.py --host 127.0.0.1 --port 18080   # 入口ページ
 ## 評価（2026-10-08）
 
 9 つの AI を、3D 数学・コーディング 6 問（隠しテスト）・追加の 3 試験（指示追従・長文検索・JSON）で比べた。
-読み方・条件・注意はレポートにある: [AIモデル評価](Documents/AIモデル評価_2026-10-08.html)・
-[出題内容の解説](Documents/AIモデル評価_出題内容_2026-10-08.html)・
-[Strata のコーディング性能の調査](Documents/Strata_コーディング性能の調査_2026-10-09.html)。
+読み方・条件・注意はレポートにある: [AIモデル評価](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html)・
+[出題内容の解説](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_%E5%87%BA%E9%A1%8C%E5%86%85%E5%AE%B9_2026-10-08.html)・
+[Strata のコーディング性能の調査](https://ringo7pie.github.io/localai/reports/Strata_%E3%82%B3%E3%83%BC%E3%83%87%E3%82%A3%E3%83%B3%E3%82%B0%E6%80%A7%E8%83%BD%E3%81%AE%E8%AA%BF%E6%9F%BB_2026-10-09.html)。
 
 ![コーディングの結果（問 × モデル）](docs/images/eval-coding-heatmap.png)
 
