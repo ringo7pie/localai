@@ -1,0 +1,1193 @@
+#!/usr/bin/env bash
+# localai: このリポジトリの導入・起動・点検の入口。
+#
+#   doctor     この機体で動かせるかを点検する（OK / WARN / NG）
+#   install    各ツールの setup-server.sh を呼ぶ（Ollama は公式の手順を表示するだけ）
+#   start | stop | restart | status   サービスの起動・停止・状態
+#   test       GPU を使わない試験をまとめて走らせる
+#
+# サービスの起動・停止は、入口ページ（portal、既定 8080）が応答していればその HTTP API を使う
+# （GPU の排他と Ollama のアンロードを portal が行う）。応答していなければ systemctl --user を直接使う。
+# リポジトリの場所はこのファイルの位置から決める（どこへ clone してもよい）。
+set -euo pipefail
+
+# symlink 経由（例: ~/.local/bin/localai）で呼ばれても、リポジトリの実体の位置を指す。
+SCRIPT_PATH="$(readlink -f -- "${BASH_SOURCE[0]}")"
+REPO_ROOT="$(cd -P -- "$(dirname -- "$SCRIPT_PATH")" && pwd -P)"
+
+# 外から差し替えられる値。試験（scripts/tests/test_localai.py）と、既定外の構成で使う。
+PORTAL_URL="${LOCALAI_PORTAL_URL:-http://127.0.0.1:8080}"
+OLLAMA_URL="${LOCALAI_OLLAMA_URL:-http://127.0.0.1:11434}"
+OS_RELEASE_FILE="${LOCALAI_OS_RELEASE:-/etc/os-release}"
+MEMINFO_FILE="${LOCALAI_MEMINFO:-/proc/meminfo}"
+CUDA_ROOT="${LOCALAI_CUDA_ROOT:-/usr/local}"
+
+# 主モデル（knowledge/10-silver/areas/env.md）。
+OLLAMA_MODEL="qwen3.8:27b"
+
+# 色は端末に出すときだけ（NO_COLOR があれば付けない）。
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  COLOR_OK=$'\033[32m'
+  COLOR_WARN=$'\033[33m'
+  COLOR_NG=$'\033[31m'
+  COLOR_RESET=$'\033[0m'
+else
+  COLOR_OK=""
+  COLOR_WARN=""
+  COLOR_NG=""
+  COLOR_RESET=""
+fi
+
+# サービスの一覧。key はそのまま systemd の user unit 名と portal の API の key になる。
+SERVICE_KEYS=(portal open-webui strata strata-coder strata-official pixal3d hunyuan3d comfyui)
+# 起動前に ollama のモデルと他の GPU サービスを降ろす必要があるもの（tools/portal/portal.py の GPU_EXCLUSIVE_KEYS）。
+GPU_SERVICE_KEYS=(strata strata-coder strata-official pixal3d hunyuan3d comfyui)
+
+usage() {
+  cat <<EOF
+使い方: localai <サブコマンド> [引数...]
+
+  doctor                       この機体で動かせるかを点検する。NG があれば終了コード 1
+  install [<名前> [引数...]]   導入。名前なしで一覧と最小の導入経路を表示する
+                               名前: portal strata pixal3d comfyui hunyuan3d qwen-worker ollama
+                               引数は tools/<名前>/setup-server.sh へそのまま渡す
+                               （例: localai install strata --model coder）
+  start   <サービス>           起動する
+  stop    <サービス>           停止する
+  restart <サービス>           停止してから起動する
+  status  [<サービス>]         状態を表示する（名前なしで全部）
+                               サービス: ${SERVICE_KEYS[*]}
+  test [--only <名前>]         GPU を使わない試験をまとめて走らせる（--list で名前の一覧）
+  -h | --help                  この説明を表示する
+
+入口ページ（portal、既定 ${PORTAL_URL}）が応答していれば、start / stop / restart はその API を使う。
+応答していなければ systemctl --user を直接使う（その場合、GPU を使うサービスは他の GPU サービスを
+自分で止めること）。
+
+終了コード: 0 成功 / 1 失敗（NG・試験の失敗・操作の失敗） / 2 使い方の誤り
+EOF
+}
+
+die_usage() {
+  echo "エラー: $1" >&2
+  echo "使い方は 'localai --help' を参照してください。" >&2
+  exit 2
+}
+
+# ---------------------------------------------------------------- 共通の道具
+
+# 外部コマンドをタイムアウト付きで呼ぶ。timeout が無い機体ではそのまま呼ぶ。
+run_with_timeout() {
+  local timeout_sec="$1"
+  shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$timeout_sec" "$@"
+  else
+    "$@"
+  fi
+}
+
+# HTTP 要求を送る。本文を HTTP_BODY に、ステータスを HTTP_CODE に入れる（接続できなければ 000）。
+# 使い方: http_request <GET|POST> <URL> <タイムアウト秒> [<ヘッダ "名前: 値">]
+http_request() {
+  local method="$1"
+  local url="$2"
+  local timeout_sec="$3"
+  local header="${4:-}"
+  local response=""
+  HTTP_BODY=""
+  HTTP_CODE="000"
+  if command -v curl >/dev/null 2>&1; then
+    local curl_args=(-sS --max-time "$timeout_sec" -X "$method")
+    if [ -n "$header" ]; then
+      curl_args+=(-H "$header")
+    fi
+    # -w で本文のあとに改行とステータスを足す。接続できないときは curl が非 0 で終わる。
+    if response="$(curl "${curl_args[@]}" -w $'\n%{http_code}' "$url" 2>/dev/null)"; then
+      HTTP_CODE="${response##*$'\n'}"
+      HTTP_BODY="${response%$'\n'*}"
+    fi
+  elif command -v python3 >/dev/null 2>&1; then
+    if response="$(python3 -I -c '
+import sys
+import urllib.error
+import urllib.request
+
+method, url, timeout_sec, header = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4]
+headers = {}
+if header:
+    name, _, value = header.partition(": ")
+    headers[name] = value
+request = urllib.request.Request(url, data=b"" if method == "POST" else None, headers=headers, method=method)
+try:
+    with urllib.request.urlopen(request, timeout=timeout_sec) as reply:
+        body, code = reply.read(), reply.status
+except urllib.error.HTTPError as error:
+    body, code = error.read(), error.code
+except Exception:
+    sys.exit(1)
+sys.stdout.write(body.decode("utf-8", "replace") + "\n" + str(code))
+' "$method" "$url" "$timeout_sec" "$header" 2>/dev/null)"; then
+      HTTP_CODE="${response##*$'\n'}"
+      HTTP_BODY="${response%$'\n'*}"
+    fi
+  fi
+  [ "$HTTP_CODE" != "000" ]
+}
+
+# 127.0.0.1 の指定ポートが待受中かどうか（ss が無ければ /dev/tcp で接続して確かめる）。
+port_is_listening() {
+  local port="$1"
+  if command -v ss >/dev/null 2>&1; then
+    [ -n "$(ss -H -ltn "sport = :$port" 2>/dev/null)" ]
+  else
+    run_with_timeout 1 bash -c "cat < /dev/null > /dev/tcp/127.0.0.1/$port" 2>/dev/null
+  fi
+}
+
+# サービス key の待受ポート（tools/portal/portal.py の SERVICES と同じ）。
+service_port() {
+  case "$1" in
+    portal) echo 8080 ;;
+    open-webui) echo 8081 ;;
+    strata) echo 8082 ;;
+    strata-coder) echo 8083 ;;
+    strata-official) echo 8084 ;;
+    hunyuan3d) echo 7860 ;;
+    pixal3d) echo 7861 ;;
+    comfyui) echo 8188 ;;
+    *) echo "" ;;
+  esac
+}
+
+# 未導入のときに案内する導入手順。
+install_hint() {
+  case "$1" in
+    portal) echo "./localai install portal" ;;
+    strata) echo "./localai install strata" ;;
+    strata-coder) echo "./localai install strata --model coder" ;;
+    strata-official) echo "./localai install strata --model official" ;;
+    pixal3d | comfyui | hunyuan3d) echo "./localai install $1" ;;
+    open-webui) echo "Open WebUI はこのリポジトリの外にある。systemd の user unit open-webui.service を用意する（tools/portal/README.md）" ;;
+    *) echo "./localai install" ;;
+  esac
+}
+
+is_service_key() {
+  local candidate="$1"
+  local key
+  for key in "${SERVICE_KEYS[@]}"
+  do
+    if [ "$key" = "$candidate" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+is_gpu_service_key() {
+  local candidate="$1"
+  local key
+  for key in "${GPU_SERVICE_KEYS[@]}"
+  do
+    if [ "$key" = "$candidate" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# ================================================================ doctor
+
+OK_COUNT=0
+WARN_COUNT=0
+NG_COUNT=0
+
+# 点検の 1 項目を表示して数える。使い方: report_item <OK|WARN|NG> <項目> <理由> [<対処>]
+report_item() {
+  local level="$1"
+  local label="$2"
+  local detail="$3"
+  local hint="${4:-}"
+  local color=""
+  local mark=""
+  case "$level" in
+    OK)
+      OK_COUNT=$((OK_COUNT + 1))
+      color="$COLOR_OK"
+      mark="[ OK ]"
+      ;;
+    WARN)
+      WARN_COUNT=$((WARN_COUNT + 1))
+      color="$COLOR_WARN"
+      mark="[WARN]"
+      ;;
+    *)
+      NG_COUNT=$((NG_COUNT + 1))
+      color="$COLOR_NG"
+      mark="[ NG ]"
+      ;;
+  esac
+  printf '%s%s%s %s: %s\n' "$color" "$mark" "$COLOR_RESET" "$label" "$detail"
+  if [ -n "$hint" ]; then
+    printf '       対処: %s\n' "$hint"
+  fi
+}
+
+os_release_value() {
+  local key="$1"
+  if [ ! -r "$OS_RELEASE_FILE" ]; then
+    return 0
+  fi
+  grep -E "^${key}=" "$OS_RELEASE_FILE" | head -n 1 | cut -d= -f2- | tr -d '"' || true
+}
+
+check_os() {
+  local kernel_name
+  kernel_name="$(uname -s)"
+  local os_id os_version os_pretty
+  os_id="$(os_release_value ID)"
+  os_version="$(os_release_value VERSION_ID)"
+  os_pretty="$(os_release_value PRETTY_NAME)"
+  if [ "$kernel_name" != "Linux" ]; then
+    report_item WARN "OS" "$kernel_name は未対応（systemd・CUDA・bash を前提にする）" \
+      "動作確認は Ubuntu 24.04 のみ。docs/hardware-requirements.md を参照"
+  elif [ "$os_id" = "ubuntu" ] && [ "$os_version" = "24.04" ]; then
+    report_item OK "OS" "${os_pretty:-Ubuntu 24.04}"
+  else
+    report_item WARN "OS" "${os_pretty:-不明}（Ubuntu 24.04 ではない）" \
+      "動作確認は Ubuntu 24.04 のみ。ほかの OS では導入の途中で止まることがある"
+  fi
+}
+
+check_gpu() {
+  if ! command -v nvidia-smi >/dev/null 2>&1; then
+    report_item WARN "GPU" "nvidia-smi が無い（GPU なし）" \
+      "GPU が無くても portal・評価レポートの閲覧・試験（./localai test）だけは使える。推論と 3D 生成には NVIDIA GPU とドライバが要る"
+    return 0
+  fi
+  local gpu_output
+  if ! gpu_output="$(run_with_timeout 10 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader,nounits 2>&1)"; then
+    report_item WARN "GPU" "nvidia-smi が失敗した（${gpu_output%%$'\n'*}）" \
+      "ドライバが読み込まれているか、nvidia-smi を直接実行して確かめる"
+    return 0
+  fi
+
+  local gpu_index=0
+  local first_driver=""
+  local gpu_name gpu_mib gpu_driver
+  while IFS=',' read -r gpu_name gpu_mib gpu_driver
+  do
+    # 前後の空白を落とす
+    gpu_name="${gpu_name#"${gpu_name%%[![:space:]]*}"}"
+    gpu_mib="${gpu_mib//[[:space:]]/}"
+    gpu_driver="${gpu_driver//[[:space:]]/}"
+    if [ -z "$gpu_name" ]; then
+      continue
+    fi
+    if [ -z "$first_driver" ]; then
+      first_driver="$gpu_driver"
+    fi
+    if [[ ! "$gpu_mib" =~ ^[0-9]+$ ]]; then
+      report_item WARN "GPU $gpu_index" "$gpu_name（VRAM を読めない: ${gpu_mib:-空}）"
+    # 24 GiB のカードは 24564〜24576 MiB と出る。24000 MiB 未満を「24 GiB 未満」とする。
+    elif [ "$gpu_mib" -lt 24000 ]; then
+      report_item WARN "GPU $gpu_index" "$gpu_name、VRAM ${gpu_mib} MiB（24 GiB 未満）" \
+        "A30 24GB 前提。Qwen3.8-27B・Strata・3D 生成は VRAM の取り合いで動かない可能性が高い（docs/hardware-requirements.md）"
+    else
+      report_item OK "GPU $gpu_index" "$gpu_name、VRAM ${gpu_mib} MiB"
+    fi
+    gpu_index=$((gpu_index + 1))
+  done <<<"$gpu_output"
+
+  if [ "$gpu_index" -eq 0 ]; then
+    report_item WARN "GPU" "nvidia-smi が GPU を 1 枚も返さなかった"
+    return 0
+  fi
+
+  # CUDA 13 系（Strata・Hunyuan3D）は配布の engine が MIN_DRIVER = 580（tools/strata/README.md）。
+  local driver_major="${first_driver%%.*}"
+  if [[ ! "$driver_major" =~ ^[0-9]+$ ]]; then
+    report_item WARN "NVIDIA ドライバ" "版を読めない（${first_driver:-空}）"
+  elif [ "$driver_major" -lt 580 ]; then
+    report_item WARN "NVIDIA ドライバ" "$first_driver（580 未満）" \
+      "CUDA 13 系を使う Strata・Hunyuan3D は 580 以上が要る。ドライバを上げる"
+  else
+    report_item OK "NVIDIA ドライバ" "$first_driver"
+  fi
+}
+
+check_cuda() {
+  # 版:使うツール。環境は knowledge/10-silver/areas/env.md、ツールごとの版は各 README にある。
+  local entry version users cuda_dir
+  for entry in "13.2:Strata・Hunyuan3D" "12.6:Pixal3D・ComfyUI"
+  do
+    version="${entry%%:*}"
+    users="${entry#*:}"
+    cuda_dir="$CUDA_ROOT/cuda-$version"
+    if [ -x "$cuda_dir/bin/nvcc" ]; then
+      report_item OK "CUDA $version" "$cuda_dir（$users が使う）"
+    elif [ -d "$cuda_dir" ]; then
+      report_item WARN "CUDA $version" "$cuda_dir に bin/nvcc が無い（$users が使う）" \
+        "CUDA Toolkit $version を入れ直す。入れなくても、ほかのツールは使える"
+    else
+      report_item WARN "CUDA $version" "$cuda_dir が無い（$users が使う）" \
+        "NVIDIA の CUDA Toolkit $version を入れる。入れなくても、ほかのツールは使える"
+    fi
+  done
+}
+
+check_ram() {
+  local mem_kib=""
+  if [ -r "$MEMINFO_FILE" ]; then
+    mem_kib="$(awk '/^MemTotal:/ {print $2; exit}' "$MEMINFO_FILE")"
+  fi
+  if [[ ! "$mem_kib" =~ ^[0-9]+$ ]]; then
+    report_item WARN "RAM" "総量を読めない（$MEMINFO_FILE）"
+    return 0
+  fi
+  local mem_mib=$((mem_kib / 1024))
+  local mem_gib
+  mem_gib="$(awk -v kib="$mem_kib" 'BEGIN { printf "%.1f", kib / 1048576 }')"
+  if [ "$mem_mib" -lt 32768 ]; then
+    report_item WARN "RAM" "${mem_gib} GiB（32 GiB 未満）" \
+      "64 GiB 推奨。3D 生成の低 VRAM モードと Strata は RAM を強く使い、足りないとデスクトップごと止まることがある"
+  elif [ "$mem_mib" -lt 61440 ]; then
+    report_item OK "RAM" "${mem_gib} GiB（64 GiB 推奨。Strata の汎用版・公式版は RAM を約 50 GiB 使う）"
+  else
+    report_item OK "RAM" "${mem_gib} GiB"
+  fi
+}
+
+# 指定パスのあるファイルシステムの空きを点検する。使い方: check_disk_for <項目> <パス>
+# 結果としてマウント先を DISK_MOUNT_POINT に入れる（同じファイルシステムの二重表示を避けるため）。
+check_disk_for() {
+  local label="$1"
+  local target_path="$2"
+  local df_line=""
+  DISK_MOUNT_POINT=""
+  if ! df_line="$(df -Pk -- "$target_path" 2>/dev/null | awk 'NR == 2 {print $4, $6}')" || [ -z "$df_line" ]; then
+    report_item WARN "$label" "空きを読めない（$target_path）"
+    return 0
+  fi
+  local free_kib="${df_line%% *}"
+  DISK_MOUNT_POINT="${df_line#* }"
+  if [[ ! "$free_kib" =~ ^[0-9]+$ ]]; then
+    report_item WARN "$label" "空きを読めない（$target_path）"
+    return 0
+  fi
+  local free_gib=$((free_kib / 1048576))
+  if [ "$free_kib" -lt 104857600 ]; then
+    report_item WARN "$label" "空き ${free_gib} GiB（100 GiB 未満。$target_path は $DISK_MOUNT_POINT）" \
+      "Strata は約 100 GB、Pixal3D 約 30 GB、Hunyuan3D 約 23 GB、ComfyUI 約 16 GB を取得する。入れるものを選ぶか、空きを作る"
+  else
+    report_item OK "$label" "空き ${free_gib} GiB（$target_path は $DISK_MOUNT_POINT）"
+  fi
+}
+
+check_disk() {
+  check_disk_for "ディスク（ホーム）" "$HOME"
+  local home_mount="$DISK_MOUNT_POINT"
+  # 重みはリポジトリの中（tools/*/models）に置く。ホームと別のファイルシステムなら、そちらも見る。
+  local repo_mount
+  repo_mount="$(df -Pk -- "$REPO_ROOT" 2>/dev/null | awk 'NR == 2 {print $6}')"
+  if [ -n "$repo_mount" ] && [ "$repo_mount" != "$home_mount" ]; then
+    check_disk_for "ディスク（リポジトリ）" "$REPO_ROOT"
+  fi
+}
+
+check_tools() {
+  if command -v git >/dev/null 2>&1; then
+    report_item OK "git" "$(git --version)"
+  else
+    report_item NG "git" "無い" "sudo apt-get install -y git"
+  fi
+
+  if command -v uv >/dev/null 2>&1; then
+    local uv_note=""
+    if ! command -v uvx >/dev/null 2>&1; then
+      uv_note="（uvx が無い。./localai test に要る）"
+    fi
+    report_item OK "uv" "$(uv --version)${uv_note}"
+  else
+    report_item NG "uv" "無い（Python の環境づくりと ./localai test に要る）" \
+      "curl -LsSf https://astral.sh/uv/install.sh | sh"
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    report_item NG "python3" "無い" "sudo apt-get install -y python3"
+    return 0
+  fi
+  local python_version
+  python_version="$(python3 -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])' 2>/dev/null || true)"
+  local python_major="${python_version%%.*}"
+  local python_rest="${python_version#*.}"
+  local python_minor="${python_rest%%.*}"
+  if [[ ! "$python_major" =~ ^[0-9]+$ ]] || [[ ! "$python_minor" =~ ^[0-9]+$ ]]; then
+    report_item WARN "python3" "版を読めない"
+  elif [ "$python_major" -gt 3 ] || { [ "$python_major" -eq 3 ] && [ "$python_minor" -ge 12 ]; }; then
+    report_item OK "python3" "$python_version"
+  else
+    report_item WARN "python3" "$python_version（3.12 未満）" \
+      "入口ページ（portal）はこの版で動く。各ツールの Python は uv が 3.12 などを取得する"
+  fi
+}
+
+check_systemd_user() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    report_item WARN "systemctl --user" "systemctl が無い" \
+      "サービスの unit が使えない。各ツールの run-<ツール> serve を手で起動する"
+  elif run_with_timeout 5 systemctl --user show-environment >/dev/null 2>&1; then
+    report_item OK "systemctl --user" "動く"
+  else
+    report_item WARN "systemctl --user" "ユーザーの systemd に接続できない" \
+      "SSH 越しなら XDG_RUNTIME_DIR を確かめ、loginctl enable-linger \$USER のあと入り直す。コンテナでは使えない"
+  fi
+}
+
+check_ollama() {
+  if command -v ollama >/dev/null 2>&1; then
+    local ollama_version
+    ollama_version="$(run_with_timeout 5 ollama --version 2>&1 || true)"
+    report_item OK "ollama" "${ollama_version%%$'\n'*}"
+  else
+    report_item WARN "ollama" "無い" "./localai install ollama（Qwen と Open WebUI に要る。Strata・3D 生成には要らない）"
+  fi
+
+  if http_request GET "$OLLAMA_URL/api/tags" 3 && [ "$HTTP_CODE" = "200" ]; then
+    report_item OK "Ollama API" "$OLLAMA_URL が応答する"
+    if [[ "$HTTP_BODY" == *"\"$OLLAMA_MODEL\""* ]]; then
+      report_item OK "Ollama のモデル" "$OLLAMA_MODEL がある"
+    else
+      report_item WARN "Ollama のモデル" "$OLLAMA_MODEL が無い" "ollama pull $OLLAMA_MODEL（約 17 GB）"
+    fi
+  else
+    report_item WARN "Ollama API" "$OLLAMA_URL が応答しない" \
+      "systemctl status ollama、または ollama serve で起動する"
+    report_item WARN "Ollama のモデル" "$OLLAMA_MODEL の有無を確認できない（Ollama API が応答しない）"
+  fi
+}
+
+# 待受ポートの使用者の名前（ss -p は自分のプロセスしか出せない。分からなければ空）。
+port_owner_name() {
+  local port="$1"
+  if ! command -v ss >/dev/null 2>&1; then
+    return 0
+  fi
+  ss -H -ltnp "sport = :$port" 2>/dev/null | sed -n 's/.*users:(("\([^"]*\)".*/\1/p' | head -n 1
+}
+
+# このポートを使うはずのサービス（unit）が動いているか。
+port_belongs_to_unit() {
+  local unit="$1"
+  local unit_state=""
+  if ! command -v systemctl >/dev/null 2>&1; then
+    return 1
+  fi
+  if [ "$unit" = "ollama" ]; then
+    unit_state="$(systemctl is-active ollama 2>/dev/null || true)"
+  else
+    unit_state="$(run_with_timeout 5 systemctl --user is-active "$unit" 2>/dev/null || true)"
+  fi
+  [ "$unit_state" = "active" ] || [ "$unit_state" = "activating" ]
+}
+
+check_ports() {
+  local entry port unit owner
+  for entry in 8080:portal 8081:open-webui 8082:strata 8083:strata-coder 8084:strata-official \
+    7860:hunyuan3d 7861:pixal3d 8188:comfyui 11434:ollama
+  do
+    port="${entry%%:*}"
+    unit="${entry#*:}"
+    if ! port_is_listening "$port"; then
+      report_item OK "ポート $port" "空き（$unit は停止中）"
+      continue
+    fi
+    owner="$(port_owner_name "$port")"
+    if port_belongs_to_unit "$unit" || [ "$owner" = "$unit" ]; then
+      report_item OK "ポート $port" "$unit が使用中"
+    else
+      report_item WARN "ポート $port" "使用中（使用者: ${owner:-不明。ほかのユーザーのプロセス}。$unit 用のポート）" \
+        "ss -ltnp | grep :$port で使用者を確かめ、止めるか、$unit を使わない"
+    fi
+  done
+}
+
+run_doctor() {
+  echo "== localai doctor =="
+  echo "リポジトリ: $REPO_ROOT"
+  echo
+  check_os
+  check_gpu
+  check_cuda
+  check_ram
+  check_disk
+  check_tools
+  check_systemd_user
+  check_ollama
+  check_ports
+  echo
+  echo "結果: OK $OK_COUNT / WARN $WARN_COUNT / NG $NG_COUNT"
+  if [ "$NG_COUNT" -gt 0 ]; then
+    echo "NG があります。上の対処を済ませてから導入してください。"
+    return 1
+  fi
+  if [ "$WARN_COUNT" -gt 0 ]; then
+    echo "WARN は、その機能が使えないか未検証という意味です。使わない機能なら無視できます。"
+  fi
+  return 0
+}
+
+# ================================================================ install
+
+# 導入できるツールと、setup-server.sh の場所（リポジトリ相対）。
+INSTALL_NAMES=(portal strata pixal3d comfyui hunyuan3d qwen-worker)
+
+install_script_path() {
+  echo "$REPO_ROOT/tools/$1/setup-server.sh"
+}
+
+print_install_list() {
+  cat <<EOF
+使い方: localai install <名前> [setup-server.sh の引数...]
+
+導入できるもの:
+  portal       入口ページ（既定 8080）。Open WebUI などの起動・停止と GPU の排他を 1 画面で行う
+               8080 を別のものが使っていれば --port N で別ポートに置く（Open WebUI を 8081 へ
+               移したいときだけ --move-open-webui。Open WebUI の user unit が先に要る）
+  strata       MoE の CPU-GPU 分担推論（8082〜8084）。約 100 GB を取得する
+               --model rvn（既定）| coder | official で版を選ぶ
+  pixal3d      複数画像 → 3D メッシュ（7861）。約 30 GB。CUDA 12.6
+  comfyui      ComfyUI と防水メッシュのワークフロー（8188）。約 16 GB。CUDA 12.6
+  hunyuan3d    4 画像 → 3D メッシュ（7860）。約 23 GB。CUDA 13.2
+  qwen-worker  ローカル Qwen を Claude Code / Codex から使う MCP ワーカー
+  ollama       公式の導入手順と ollama pull を表示するだけ（実行しない）
+
+最小の導入経路:
+  1. ./localai doctor               前提（GPU・CUDA・uv・空き容量）を点検する
+  2. ./localai install ollama       Ollama と ${OLLAMA_MODEL} の入れ方を確認し、手で実行する
+  3. ./localai install portal       入口ページ（http://<このサーバー>:8080）を立てる
+  4. 使うものだけ入れる:  ./localai install strata など
+  5. ./localai start strata         入口ページ経由で GPU の排他を取って起動する
+GPU が無い機体では 1 と ./localai test だけが使える（docs/hardware-requirements.md）。
+EOF
+}
+
+print_ollama_guide() {
+  cat <<EOF
+Ollama の導入（公式の手順。このコマンドは何も実行しない）
+
+  1. https://ollama.com/download を開き、Linux の手順を確かめる。公式の導入スクリプトは次のとおり。
+     中身を確かめてから、自分で実行する:
+       curl -fsSL https://ollama.com/install.sh | sh
+
+  2. 主モデルを取得する（約 17 GB）:
+       ollama pull ${OLLAMA_MODEL}
+
+  3. A30（VRAM 24 GiB）ではコンテキスト長 65536 が上限（81920 で KV キャッシュが CPU に溢れる）。
+     /etc/systemd/system/ollama.service.d/override.conf に
+       [Service]
+       Environment="OLLAMA_CONTEXT_LENGTH=65536"
+     を書き、sudo systemctl daemon-reload && sudo systemctl restart ollama を実行する
+     （根拠: knowledge/10-silver/areas/env.md）。
+
+  4. 確認:
+       ./localai doctor
+EOF
+}
+
+run_install() {
+  if [ "$#" -eq 0 ]; then
+    print_install_list
+    return 0
+  fi
+  local name="$1"
+  shift
+  case "$name" in
+    -h | --help)
+      print_install_list
+      return 0
+      ;;
+    ollama)
+      print_ollama_guide
+      return 0
+      ;;
+  esac
+  local known=false
+  local candidate
+  for candidate in "${INSTALL_NAMES[@]}"
+  do
+    if [ "$candidate" = "$name" ]; then
+      known=true
+    fi
+  done
+  if ! $known; then
+    echo "エラー: 導入できるものに '$name' はありません。" >&2
+    print_install_list >&2
+    return 2
+  fi
+  local script_path
+  script_path="$(install_script_path "$name")"
+  if [ ! -f "$script_path" ]; then
+    echo "エラー: $script_path が見つかりません。" >&2
+    return 1
+  fi
+  echo "==> $script_path $*"
+  exec bash "$script_path" "$@"
+}
+
+# ================================================================ start / stop / restart / status
+
+# 入口ページが応答しているか（/api/status が JSON を返すか）。
+portal_is_up() {
+  if http_request GET "$PORTAL_URL/api/status" 3 && [ "$HTTP_CODE" = "200" ] && [[ "$HTTP_BODY" == *'"services"'* ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# portal の起動・停止の応答（JSON）を表示し、ok なら 0、そうでなければ 1 を返す。
+print_portal_action_result() {
+  local key="$1"
+  local parsed
+  if ! command -v python3 >/dev/null 2>&1 || ! parsed="$(printf '%s' "$HTTP_BODY" | python3 -I -c '
+import json
+import sys
+
+data = json.load(sys.stdin)
+print("ok" if data.get("ok") else "ng")
+print(data.get("message", ""))
+print(data.get("state", ""))
+print("、".join(data.get("stopped") or []))
+print("、".join(data.get("unloaded_models") or []))
+' 2>/dev/null)"; then
+    echo "$key: 応答（HTTP $HTTP_CODE）: ${HTTP_BODY:0:300}"
+    [ "$HTTP_CODE" = "200" ]
+    return
+  fi
+  local -a fields
+  mapfile -t fields <<<"$parsed"
+  echo "${fields[1]:-}"
+  if [ -n "${fields[3]:-}" ]; then
+    echo "  先に停止したサービス: ${fields[3]}"
+  fi
+  if [ -n "${fields[4]:-}" ]; then
+    echo "  VRAM から降ろした Ollama のモデル: ${fields[4]}"
+  fi
+  if [ "${fields[0]:-}" != "ok" ] && [ "$HTTP_CODE" = "409" ]; then
+    echo "  未導入。$(install_hint "$key")"
+  fi
+  [ "${fields[0]:-}" = "ok" ]
+}
+
+control_via_portal() {
+  local action="$1"
+  local key="$2"
+  local timeout_sec=300
+  if [ "$action" = "stop" ]; then
+    timeout_sec=120
+  fi
+  if ! http_request POST "$PORTAL_URL/api/service/$key/$action" "$timeout_sec" "X-Portal-Request: 1"; then
+    echo "エラー: 入口ページ（$PORTAL_URL）への要求が失敗しました。" >&2
+    return 1
+  fi
+  print_portal_action_result "$key"
+}
+
+control_direct() {
+  local action="$1"
+  local key="$2"
+  if ! command -v systemctl >/dev/null 2>&1 || ! run_with_timeout 5 systemctl --user show-environment >/dev/null 2>&1; then
+    echo "エラー: systemctl --user が使えません。./localai doctor で確かめてください。" >&2
+    return 1
+  fi
+  local load_state
+  load_state="$(systemctl --user show "$key" --property=LoadState 2>/dev/null | sed -n 's/^LoadState=//p' || true)"
+  if [ "$load_state" != "loaded" ]; then
+    echo "$key: 未導入。$(install_hint "$key")" >&2
+    return 1
+  fi
+
+  if [ "$action" != "stop" ] && is_gpu_service_key "$key"; then
+    echo "警告: 入口ページ（$PORTAL_URL）が応答していないため、GPU の排他と Ollama のアンロードは行われません。" >&2
+    echo "  ほかの GPU サービスを自分で止めてください（VRAM 24 GiB は 1 つしか載りません）。" >&2
+    local other_key
+    local active_keys=""
+    for other_key in "${GPU_SERVICE_KEYS[@]}"
+    do
+      if [ "$other_key" != "$key" ] && port_belongs_to_unit "$other_key"; then
+        active_keys="$active_keys $other_key"
+      fi
+    done
+    if [ -n "$active_keys" ]; then
+      echo "  いま動いているもの:$active_keys（systemctl --user stop <名前>）" >&2
+    fi
+    echo "  Ollama にモデルが載っていれば降ろす: ollama ps / ollama stop <モデル名>" >&2
+  fi
+
+  case "$action" in
+    start)
+      # --no-block: Strata の unit は API が応答するまで（最大 15 分）systemctl start が戻らない。
+      systemctl --user start --no-block "$key"
+      echo "$key の起動を要求しました。準備できるまで数十秒〜数分かかります（./localai status $key）。"
+      ;;
+    restart)
+      systemctl --user restart --no-block "$key"
+      echo "$key の再起動を要求しました（./localai status $key）。"
+      ;;
+    stop)
+      systemctl --user stop "$key"
+      echo "$key を停止しました。"
+      ;;
+  esac
+}
+
+# start | stop | restart の本体。portal 自身は入口ページの API の対象外なので常に systemctl を使う。
+run_control() {
+  local action="$1"
+  local key="${2:-}"
+  if [ -z "$key" ]; then
+    die_usage "$action にはサービス名が要ります（${SERVICE_KEYS[*]}）"
+  fi
+  if ! is_service_key "$key"; then
+    die_usage "未知のサービス: $key（${SERVICE_KEYS[*]}）"
+  fi
+  if [ "$key" != "portal" ] && portal_is_up; then
+    if [ "$action" = "restart" ]; then
+      control_via_portal stop "$key" && control_via_portal start "$key"
+    else
+      control_via_portal "$action" "$key"
+    fi
+  else
+    control_direct "$action" "$key"
+  fi
+}
+
+# 入口ページの /api/status を、1 サービス 1 行に整形する。引数があればその key だけ。
+print_portal_status() {
+  local only_key="${1:-}"
+  printf '%s' "$HTTP_BODY" | python3 -I -c '
+import json
+import sys
+
+only_key, portal_url = sys.argv[1], sys.argv[2]
+labels = {"running": "稼働中", "starting": "起動中", "stopped": "停止中", "not_installed": "未導入"}
+data = json.load(sys.stdin)
+if not only_key:
+    gpu = data.get("gpu") or {}
+    if gpu.get("available"):
+        print("GPU: VRAM %s / %s MiB 使用中" % (gpu.get("used_mib"), gpu.get("total_mib")))
+    else:
+        print("GPU: 取得できない")
+    ollama = data.get("ollama") or {}
+    if ollama.get("reachable"):
+        models = [model.get("name", "?") for model in ollama.get("models", [])]
+        print("Ollama: 応答あり。載っているモデル: %s" % ("、".join(models) if models else "なし"))
+    else:
+        print("Ollama: 応答なし")
+    print("portal: 稼働中（%s）" % portal_url)
+for service in data.get("services", []):
+    if only_key and service.get("key") != only_key:
+        continue
+    print("%s: %s（:%s）" % (service.get("key"), labels.get(service.get("state"), service.get("state")), service.get("port")))
+' "$only_key" "$PORTAL_URL"
+}
+
+# systemd の状態を直接読んで 1 行にする（入口ページが応答しないとき）。
+print_direct_status() {
+  local key="$1"
+  local port
+  port="$(service_port "$key")"
+  local load_state="" active_state="" label
+  if command -v systemctl >/dev/null 2>&1; then
+    local show_output
+    show_output="$(run_with_timeout 5 systemctl --user show "$key" --property=LoadState --property=ActiveState 2>/dev/null || true)"
+    load_state="$(printf '%s\n' "$show_output" | sed -n 's/^LoadState=//p')"
+    active_state="$(printf '%s\n' "$show_output" | sed -n 's/^ActiveState=//p')"
+  fi
+  if [ -z "$load_state" ]; then
+    label="状態不明（systemctl --user が使えない）"
+  elif [ "$load_state" != "loaded" ]; then
+    label="未導入"
+  elif port_is_listening "$port"; then
+    label="稼働中"
+  elif [ "$active_state" = "active" ] || [ "$active_state" = "activating" ]; then
+    label="起動中"
+  else
+    label="停止中"
+  fi
+  echo "$key: $label（:$port）"
+}
+
+run_status() {
+  local key="${1:-}"
+  if [ -n "$key" ] && ! is_service_key "$key"; then
+    die_usage "未知のサービス: $key（${SERVICE_KEYS[*]}）"
+  fi
+  if portal_is_up && command -v python3 >/dev/null 2>&1; then
+    if [ "$key" = "portal" ]; then
+      echo "portal: 稼働中（$PORTAL_URL）"
+    else
+      print_portal_status "$key"
+    fi
+    return 0
+  fi
+  echo "入口ページ（$PORTAL_URL）が応答していません。systemd の状態を直接読みます。" >&2
+  local target_key
+  if [ -n "$key" ]; then
+    print_direct_status "$key"
+  else
+    for target_key in "${SERVICE_KEYS[@]}"
+    do
+      print_direct_status "$target_key"
+    done
+  fi
+}
+
+# ================================================================ test
+
+# 試験の名前（--only で選ぶ）。コマンドは CLAUDE.md の「ビルドとテスト」と各ツールの tests/ による。
+# GPU を使わないものだけを入れる。実機試験は TEST_SKIP_NAMES に理由つきで載せ、常に SKIP にする。
+TEST_NAMES=(localai portal gpu-watch-gui pixal3d hunyuan3d comfyui strata qwen-worker local-ai-bridge model-eval)
+TEST_SKIP_NAMES=(hunyuan3d-real local-ai-bridge-real)
+
+# uvx の Python。tools の試験は標準ライブラリか lock の依存だけなので、版を揃えて結果を安定させる。
+TEST_PYTHON_VERSION="3.12"
+
+test_description() {
+  case "$1" in
+    localai) echo "localai コマンド・scripts/build-site.sh・scripts/lib・setup-server.sh の一般化（scripts/tests。偽の PATH で呼ぶ。実機には触れない）" ;;
+    portal) echo "入口ページ（tools/portal/tests/test_units.py）" ;;
+    gpu-watch-gui) echo "gpu-watch-gui の値の解釈（GTK は使わない）" ;;
+    pixal3d) echo "Pixal3D の設定・コマンド組み立て（torch は import しない）" ;;
+    hunyuan3d) echo "Hunyuan3D の設定・コマンド組み立て（標準ライブラリだけ）" ;;
+    comfyui) echo "ComfyUI のワークフロー検査・メッシュ計測（numpy・scipy・trimesh）" ;;
+    strata) echo "Strata の設定・コマンド組み立て" ;;
+    qwen-worker) echo "qwen-worker（venv があれば使い、無ければ uvx で lock の依存を入れる）" ;;
+    local-ai-bridge) echo "local-ai-bridge（実機の統合試験を除く。venv があれば使い、無ければ uvx）" ;;
+    model-eval) echo "model-eval の採点・集計・レポート生成" ;;
+    hunyuan3d-real) echo "Hunyuan3D の実機試験（GPU と重みを使う。数分）" ;;
+    local-ai-bridge-real) echo "local-ai-bridge の統合試験（OpenCode と Ollama の Qwen を使う）" ;;
+    *) echo "" ;;
+  esac
+}
+
+test_skip_reason() {
+  case "$1" in
+    hunyuan3d-real) echo "GPU と重みを実際に使う。手で流す: systemctl --user stop hunyuan3d のあと tools/hunyuan3d/.venv/bin/python tools/hunyuan3d/tests/test_generate_real.py" ;;
+    local-ai-bridge-real) echo "OpenCode と A30 の Ollama を実際に使う。手で流す: tools/local-ai-bridge/.venv/bin/python -m pytest tools/local-ai-bridge/tests/test_integration.py -q -s" ;;
+    *) echo "" ;;
+  esac
+}
+
+# 結果の集計と表示。
+TEST_OK_COUNT=0
+TEST_FAIL_COUNT=0
+TEST_SKIP_COUNT=0
+TEST_VERBOSE=false
+
+report_test() {
+  local status="$1"
+  local name="$2"
+  local detail="$3"
+  local color=""
+  local mark=""
+  case "$status" in
+    OK)
+      TEST_OK_COUNT=$((TEST_OK_COUNT + 1))
+      color="$COLOR_OK"
+      mark="[ OK ]"
+      ;;
+    SKIP)
+      TEST_SKIP_COUNT=$((TEST_SKIP_COUNT + 1))
+      color="$COLOR_WARN"
+      mark="[SKIP]"
+      ;;
+    *)
+      TEST_FAIL_COUNT=$((TEST_FAIL_COUNT + 1))
+      color="$COLOR_NG"
+      mark="[FAIL]"
+      ;;
+  esac
+  printf '%s%s%s %s: %s\n' "$color" "$mark" "$COLOR_RESET" "$name" "$detail"
+}
+
+# コマンドを走らせ、pytest の最後の 1 行（"203 passed in 36.54s" など）を TEST_SUMMARY に、
+# 全出力を TEST_OUTPUT に、終了コードを TEST_EXIT_CODE に入れる。
+run_test_command() {
+  TEST_OUTPUT=""
+  TEST_EXIT_CODE=0
+  if TEST_OUTPUT="$("$@" 2>&1)"; then
+    TEST_EXIT_CODE=0
+  else
+    TEST_EXIT_CODE=$?
+  fi
+  TEST_SUMMARY="$(printf '%s\n' "$TEST_OUTPUT" | grep -v '^[[:space:]]*$' | tail -n 1 || true)"
+}
+
+# 1 件の結果を出す。TEST_EXIT_CODE が 0 なら OK、pytest の 5（試験が 1 件も無い）と他は FAIL。
+finish_test() {
+  local name="$1"
+  local elapsed_sec="$2"
+  if [ "$TEST_EXIT_CODE" -eq 0 ]; then
+    report_test OK "$name" "${TEST_SUMMARY:-通った}（${elapsed_sec} 秒）"
+    if $TEST_VERBOSE; then
+      printf '%s\n' "$TEST_OUTPUT" | sed 's/^/       | /'
+    fi
+  else
+    report_test FAIL "$name" "終了コード $TEST_EXIT_CODE（${elapsed_sec} 秒）: ${TEST_SUMMARY}"
+    printf '%s\n' "$TEST_OUTPUT" | tail -n 40 | sed 's/^/       | /'
+  fi
+}
+
+# uvx で pytest を走らせる。使い方: uvx_pytest <uvx の追加引数...> -- <pytest の引数...>
+uvx_pytest() {
+  local -a uvx_args=(--python "$TEST_PYTHON_VERSION" --with pytest)
+  while [ "$#" -gt 0 ] && [ "$1" != "--" ]
+  do
+    uvx_args+=("$1")
+    shift
+  done
+  if [ "$#" -gt 0 ]; then
+    shift
+  fi
+  PYTHONDONTWRITEBYTECODE=1 uvx "${uvx_args[@]}" pytest -p no:cacheprovider -q "$@"
+}
+
+# venv があって pytest と対象のパッケージを import できれば venv で、無ければ uvx で lock の依存を入れて走らせる。
+# PYTHONPATH にツールのディレクトリを足し、editable install されていない作業コピーでも現在のソースを試す。
+# 使い方: tool_pytest <ツールのディレクトリ（リポジトリ相対）> <import するパッケージ> -- <pytest の引数...>
+tool_pytest() {
+  local tool_dir="$1"
+  local package_name="$2"
+  shift 2
+  if [ "$#" -gt 0 ] && [ "$1" = "--" ]; then
+    shift
+  fi
+  local venv_python="$REPO_ROOT/$tool_dir/.venv/bin/python"
+  if [ -x "$venv_python" ] && "$venv_python" -c "import pytest, $package_name" >/dev/null 2>&1; then
+    PYTHONPATH="$REPO_ROOT/$tool_dir" PYTHONDONTWRITEBYTECODE=1 \
+      "$venv_python" -m pytest -p no:cacheprovider -q "$@"
+  else
+    PYTHONPATH="$REPO_ROOT/$tool_dir" uvx_pytest --with-requirements "$tool_dir/requirements.lock.txt" -- "$@"
+  fi
+}
+
+# 試験 1 件の実体。成功は TEST_EXIT_CODE=0。出力は呼び出し側が run_test_command で受ける。
+test_body() {
+  case "$1" in
+    localai)
+      uvx_pytest -- scripts/tests
+      ;;
+    portal)
+      uvx_pytest -- tools/portal/tests/test_units.py
+      ;;
+    gpu-watch-gui)
+      uvx_pytest -- tools/gpu-watch-gui/tests/test_units.py
+      ;;
+    pixal3d)
+      uvx_pytest -- tools/pixal3d/tests/test_units.py
+      ;;
+    hunyuan3d)
+      uvx_pytest -- tools/hunyuan3d/tests/test_units.py
+      ;;
+    comfyui)
+      # 2 本とも走らせ、どちらかが失敗すれば失敗にする（先に落ちても後ろを試す）。
+      # 最後の行に 2 本の要約を並べる（run_test_command が最後の行を結果として表示する）。
+      local units_output units_code=0
+      units_output="$(uvx_pytest -- tools/comfyui/tests/test_units.py tools/comfyui/tests/test_run_workflow.py 2>&1)" || units_code=$?
+      local mesh_output mesh_code=0
+      mesh_output="$(uvx_pytest --with numpy --with scipy --with trimesh -- tools/comfyui/tests/test_measure_mesh.py 2>&1)" || mesh_code=$?
+      printf '%s\n%s\n' "$units_output" "$mesh_output"
+      printf '%s / %s\n' \
+        "$(printf '%s\n' "$units_output" | grep -v '^[[:space:]]*$' | tail -n 1)" \
+        "$(printf '%s\n' "$mesh_output" | grep -v '^[[:space:]]*$' | tail -n 1)"
+      [ "$units_code" -eq 0 ] && [ "$mesh_code" -eq 0 ]
+      ;;
+    strata)
+      uvx_pytest -- tools/strata/tests
+      ;;
+    qwen-worker)
+      tool_pytest tools/qwen-worker qwen_worker -- tools/qwen-worker/tests
+      ;;
+    local-ai-bridge)
+      tool_pytest tools/local-ai-bridge bridge -- tools/local-ai-bridge/tests \
+        --ignore=tools/local-ai-bridge/tests/test_integration.py
+      ;;
+    model-eval)
+      uvx_pytest -- tools/model-eval/tests
+      ;;
+  esac
+}
+
+# 試験のディレクトリが無い clone（一部のツールを含まない配布など）では SKIP にする。
+test_required_path() {
+  case "$1" in
+    localai) echo "scripts/tests" ;;
+    portal) echo "tools/portal/tests/test_units.py" ;;
+    gpu-watch-gui) echo "tools/gpu-watch-gui/tests/test_units.py" ;;
+    pixal3d) echo "tools/pixal3d/tests/test_units.py" ;;
+    hunyuan3d) echo "tools/hunyuan3d/tests/test_units.py" ;;
+    comfyui) echo "tools/comfyui/tests/test_units.py" ;;
+    strata) echo "tools/strata/tests" ;;
+    qwen-worker) echo "tools/qwen-worker/tests" ;;
+    local-ai-bridge) echo "tools/local-ai-bridge/tests" ;;
+    model-eval) echo "tools/model-eval/tests" ;;
+    *) echo "" ;;
+  esac
+}
+
+print_test_list() {
+  local name
+  echo "走らせる試験（--only <名前>。複数は --only を重ねるかコンマで区切る）:"
+  for name in "${TEST_NAMES[@]}"
+  do
+    printf '  %-22s %s\n' "$name" "$(test_description "$name")"
+  done
+  echo "常に SKIP（実機が要る。手で流す）:"
+  for name in "${TEST_SKIP_NAMES[@]}"
+  do
+    printf '  %-22s %s\n' "$name" "$(test_description "$name")"
+  done
+}
+
+run_test() {
+  local -a selected=()
+  local list_only=false
+  local argument
+  while [ "$#" -gt 0 ]
+  do
+    argument="$1"
+    case "$argument" in
+      --only)
+        if [ "$#" -lt 2 ]; then
+          die_usage "--only には試験の名前が要ります（./localai test --list）"
+        fi
+        local -a only_names
+        IFS=',' read -r -a only_names <<<"$2"
+        selected+=("${only_names[@]}")
+        shift 2
+        ;;
+      --only=*)
+        local -a only_inline
+        IFS=',' read -r -a only_inline <<<"${argument#--only=}"
+        selected+=("${only_inline[@]}")
+        shift
+        ;;
+      --list)
+        list_only=true
+        shift
+        ;;
+      -v | --verbose)
+        TEST_VERBOSE=true
+        shift
+        ;;
+      -h | --help)
+        echo "使い方: localai test [--only <名前>]... [--list] [-v]"
+        return 0
+        ;;
+      *)
+        die_usage "test の引数が不正です: $argument"
+        ;;
+    esac
+  done
+
+  if $list_only; then
+    print_test_list
+    return 0
+  fi
+
+  # 名前を検査する。未知の名前は、何も走らせる前に使い方の誤りとして返す。
+  local name known candidate
+  if [ "${#selected[@]}" -eq 0 ]; then
+    selected=("${TEST_NAMES[@]}" "${TEST_SKIP_NAMES[@]}")
+  fi
+  for name in "${selected[@]}"
+  do
+    known=false
+    for candidate in "${TEST_NAMES[@]}" "${TEST_SKIP_NAMES[@]}"
+    do
+      if [ "$candidate" = "$name" ]; then
+        known=true
+      fi
+    done
+    if ! $known; then
+      die_usage "未知の試験名: $name（./localai test --list）"
+    fi
+  done
+
+  # 走らせる試験があるのに uv が無ければ、全部が走らない。SKIP にせず失敗として知らせる。
+  local needs_uv=false
+  for name in "${selected[@]}"
+  do
+    if [ -n "$(test_required_path "$name")" ]; then
+      needs_uv=true
+    fi
+  done
+  if $needs_uv && ! command -v uvx >/dev/null 2>&1; then
+    echo "エラー: uvx が無いので試験を走らせられません。" >&2
+    echo "  curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+    return 1
+  fi
+
+  echo "== localai test =="
+  cd -- "$REPO_ROOT"
+  local required_path started_sec
+  for name in "${selected[@]}"
+  do
+    if [ -n "$(test_skip_reason "$name")" ]; then
+      report_test SKIP "$name" "$(test_skip_reason "$name")"
+      continue
+    fi
+    required_path="$(test_required_path "$name")"
+    if [ ! -e "$REPO_ROOT/$required_path" ]; then
+      report_test SKIP "$name" "$required_path が無い（この clone に含まれない）"
+      continue
+    fi
+    started_sec="$SECONDS"
+    run_test_command test_body "$name"
+    finish_test "$name" "$((SECONDS - started_sec))"
+  done
+
+  echo
+  echo "結果: OK $TEST_OK_COUNT / FAIL $TEST_FAIL_COUNT / SKIP $TEST_SKIP_COUNT"
+  [ "$TEST_FAIL_COUNT" -eq 0 ]
+}
+
+# ================================================================ 入口
+
+main() {
+  if [ "$#" -eq 0 ]; then
+    usage
+    return 0
+  fi
+  local subcommand="$1"
+  shift
+  case "$subcommand" in
+    -h | --help | help)
+      usage
+      ;;
+    doctor)
+      run_doctor
+      ;;
+    install)
+      run_install "$@"
+      ;;
+    start | stop | restart)
+      run_control "$subcommand" "${1:-}"
+      ;;
+    status)
+      run_status "${1:-}"
+      ;;
+    test)
+      run_test "$@"
+      ;;
+    *)
+      echo "エラー: 未知のサブコマンド: $subcommand" >&2
+      usage >&2
+      return 2
+      ;;
+  esac
+}
+
+main "$@"

@@ -1,0 +1,74 @@
+# GPU・CUDA・systemd を前提にしない検査だけを走らせる。
+#   test  : ./localai test（GPU を使わない試験を、ツールごとに OK / FAIL / SKIP で出す）
+#   shell : 全シェルスクリプトの bash -n と、shellcheck（重大度 error のみ）
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 試験（./localai test）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv は v8 以降が主バージョンのタグを持たない（完全な版だけ）。主バージョンのタグで固定できる最後が v7。
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: false
+
+      # uvx で pytest を入れて走らせる。上流（vendor/）・重み・GPU は要らない。実機の試験は SKIP になる。
+      - name: GPU を使わない試験をまとめて走らせる
+        run: ./localai test
+
+  shell:
+    name: シェルの構文（bash -n）と shellcheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: bash -n と shellcheck（重大度 error のみ）
+        run: |
+          set -euo pipefail
+
+          # 追跡されている *.sh、入口の localai、tools/*/run-*。
+          mapfile -d '' -t candidates < <(git ls-files -z -- '*.sh' localai 'tools/*/run-*')
+
+          # tools/show-qwen-task.sh は拡張子が .sh でも、手順を書いたメモでありシェルスクリプトではない。
+          targets=()
+          for file in "${candidates[@]}"
+          do
+            if [ "$file" = "tools/show-qwen-task.sh" ]; then
+              echo "除外: $file（シェルスクリプトではない）"
+              continue
+            fi
+            targets+=("$file")
+          done
+          echo "対象: ${#targets[@]} 件"
+
+          for file in "${targets[@]}"
+          do
+            bash -n "$file"
+          done
+
+          # ランナーに shellcheck が無い場合だけ入れる。
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y shellcheck
+          fi
+          shellcheck --version
+
+          # 既存コードの警告（info / warning / style）では落とさない。error だけを見る。
+          # -s bash: 先頭に shebang の無い補助ファイル（scripts/lib/*.sh）も bash として読む。
+          shellcheck -s bash --severity=error "${targets[@]}"

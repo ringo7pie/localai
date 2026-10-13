@@ -21,9 +21,12 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 | `tools/portal/` | ポート 8080 のサービス入口ページ。Open WebUI / Strata 3 種 / Hunyuan3D / Pixal3D / ComfyUI を起動・停止する |
 | `tools/qwen-model-bench/` | Ollama の 1 モデルをこの機体で実用になるか測る（`bench-model.sh <モデル名>`、結果は `results/`） |
 | `tools/gpu-watch-gui/` | gpu-watch.sh の値を見る小さな常駐ウィンドウ（GTK4）。ログイン時に自動起動できる |
-| `TestData/` | モデルに解かせる試験問題（数学難問など）と 3D 生成の入力画像 |
+| `scripts/` | 導入スクリプトの共通部品（`lib/render-unit.sh` `lib/server-host.sh`）、試験（`tests/`）、Pages の組み立て（`build-site.sh`） |
+| `docs/` | 公開用の文書（アーキテクチャ・導入・資源・紹介ページ）と、Pages の元（`site/`）・画像（`images/`） |
+| `TestData/` | モデルに解かせる試験問題（数学難問）。3D 生成の入力画像は出所が不明なため追跡しない（`TestData/README.md`） |
 | `Documents/` | 利用者向けにまとめた文書（モデル比較など） |
 
+ルートの `./localai` が導入・起動・点検の入口（`doctor` / `install` / `start|stop|status` / `test`）。
 新しく作るリポジトリ・試験データは必ずこの中（例 `tools/*/fixtures/`）に置く。`~/Proj` 直下には作らない。
 `~/.local/share/qwen-worker` は `tools/qwen-worker` へのシンボリックリンク。MCP 登録と authorized_keys の強制コマンドがそのパスを指す。
 
@@ -34,9 +37,10 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
   `OLLAMA_UNLOAD_BEFORE_START_KEYS`（起動前に Ollama のモデルを降ろす）、Strata 3 種どうしは systemd の `Conflicts=`
   （`After=` は一方向だけに書く。両側に書くと順序が輪になる）。サービスを足すときは両方と `index.html` の同じキーを揃える。
 - **サービスは systemd の user unit で、enable しない。** 各ツールの `systemd/*.service.example` が雛形で、`setup-server.sh` が
-  `~/.config/systemd/user/` に置く（既にあれば上書きしないので、雛形を変えたら手で写す）。env ファイルは `~/.config/<tool>/`。
+  `@REPO_ROOT@` をこの clone の絶対パスに置換して `~/.config/systemd/user/` に置く（`scripts/lib/render-unit.sh`。既にあれば上書きしないので、
+  雛形を変えたら置換して手で写す）。env ファイルは `~/.config/<tool>/`。
 - **ツールごとの共通の型。** `setup-server.sh`（非対話・sudo を使わない導入。上流の対話式インストーラを置き換える）、
-  `run-<tool>`（`serve` / `doctor` などの入口）、`vendor/`（上流をコミット固定で取り込む。直接は直さず `patches/` で当てる）、
+  `run-<tool>`（`serve` / `doctor` などの入口）、`vendor/`（上流をコミット固定で取り込む。直接は直さず `patches/` で当てる。**Hunyuan3D のパッチは Tencent のライセンスの地域制限のため追跡・公開しない**。手元の `tools/hunyuan3d/patches/` は `.gitignore`）、
   `models/` と `.venv` は追跡しない。Python と CUDA はツールごとに違う（下の「ビルドとテスト」）。
 - **Open WebUI（8081、このリポジトリ外）** は Ollama と Strata 3 種（8082〜8084 の `/v1`）につなぐ。接続先は
   `~/.local/share/open-webui/data/webui.db` の `config` テーブルが優先され、env は初期値でしかない（`tools/strata/README.md`）。
@@ -46,6 +50,10 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 ## ビルドとテスト
 
 ```bash
+# GPU を使わない試験をまとめて（ツールごとに OK / FAIL / SKIP）。CI も同じ。
+./localai test
+uvx --with pytest pytest scripts/tests -q        # localai・setup-server.sh・共通部品の試験（偽の PATH で呼ぶ。実機には触れない）
+
 # 仮想環境は追跡していない。無ければ各ディレクトリで作る:
 #   uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -r requirements.lock.txt -e .
 tools/qwen-worker/.venv/bin/python tools/qwen-worker/tests/test_sandbox.py

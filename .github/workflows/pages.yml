@@ -1,0 +1,51 @@
+# main への push で、GitHub Pages に公開する（Actions 方式）。
+# サイトの中身は scripts/build-site.sh が組み立てる:
+#   docs/site/ → ルート、Documents/*.html → reports/、docs/images/ → images/、.nojekyll
+# 前提: リポジトリの Settings → Pages → Build and deployment の Source を「GitHub Actions」にしておく。
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 公開は 1 つずつ。途中の公開を打ち切らず、後ろに並べる。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: サイトを組み立てる
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/configure-pages@v6
+
+      - name: scripts/build-site.sh
+        run: bash scripts/build-site.sh _site
+
+      # v4 以降は隠しファイル（.nojekyll）を既定で含めない。include-hidden-files で含める。
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+          include-hidden-files: true
+
+  deploy:
+    name: 公開する
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

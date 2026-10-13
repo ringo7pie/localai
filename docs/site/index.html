@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>localai — 24 GB の GPU 1 枚で、ローカル AI の群れを運用し、測る</title>
+<meta name="description" content="NVIDIA A30 24 GB に LLM・3D 生成・画像ワークフローを載せ、GPU の排他・モデルの比較評価・Claude Code / Codex との連携を設計した記録。">
+<style>
+  :root {
+    --bg: #fcfcfa;
+    --fg: #1c1d1f;
+    --muted: #5d636b;
+    --line: #dcdfe3;
+    --card: #f3f4f1;
+    --accent: #1f5fae;
+    --font: "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Noto Sans Mono CJK JP", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.75 var(--font); }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 1.8rem; line-height: 1.35; margin: 0 0 8px; }
+  h2 { font-size: 1.25rem; margin: 48px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1.02rem; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  a { color: var(--accent); }
+  .lead { color: var(--muted); font-size: 1.05rem; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin: 16px 0; }
+  .card { background: var(--card); border-radius: 8px; padding: 14px 16px; }
+  .card h3 { margin-top: 0; }
+  .card p { margin: 4px 0; color: var(--muted); font-size: 0.95rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95rem; margin: 12px 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  code { font-family: var(--mono); font-size: 0.9em; background: var(--card); padding: 1px 5px; border-radius: 4px; }
+  figure { margin: 18px 0; }
+  figure img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+  figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+  .note { color: var(--muted); font-size: 0.92rem; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>localai</h1>
+<p class="lead">24 GB の GPU 1 枚で、ローカル AI の群れを運用し、どれが使えるかを測る。<br>
+資源の排他・推論サーバーの運用・Claude Code / Codex との連携・モデルの比較評価を、コードと計測の記録で残した個人プロジェクト。</p>
+
+<p>
+<a href="https://github.com/&lt;user&gt;/localai">GitHub のリポジトリ</a> ・
+<a href="https://github.com/&lt;user&gt;/localai/blob/main/docs/portfolio.md">紹介ページ（docs/portfolio.md）</a> ・
+<a href="https://github.com/&lt;user&gt;/localai/blob/main/docs/architecture.md">アーキテクチャ</a> ・
+<a href="https://github.com/&lt;user&gt;/localai/blob/main/NOTICE.md">NOTICE（第三者・ライセンス）</a>
+</p>
+
+<h2>解いた問題</h2>
+<div class="grid">
+  <div class="card">
+    <h3>1 枚の GPU の取り合い</h3>
+    <p>Qwen 27B だけで VRAM 22 GiB。MoE 推論・3D 生成・ComfyUI は同時に載らない。入口ページと systemd の 2 層で排他を取る。</p>
+  </div>
+  <div class="card">
+    <h3>RAM の枯渇でデスクトップごと落ちる</h3>
+    <p>3D 生成の低 VRAM モードが重みを CPU 側へ置いて RAM を使い切った。メモリ上限は「物理の残りより小さく」置く。</p>
+  </div>
+  <div class="card">
+    <h3>モデルを感覚でなく測る</h3>
+    <p>9 つの AI を同じ 16 問・同じ採点（隠しテスト）で比べ、速さと正しさの両方を記録した。</p>
+  </div>
+  <div class="card">
+    <h3>クラウドの AI からローカルへ回す</h3>
+    <p>機械的な実装の反復だけを Qwen へ。実測では費用は減らず、役割を夜間・レビュー・ローカル完結に絞った。</p>
+  </div>
+</div>
+
+<h2>画面と結果</h2>
+<figure>
+  <img src="images/portal.png" alt="入口ページ。GPU の使用量と、各サービスの起動・停止ボタン">
+  <figcaption>入口ページ（portal）。GPU の使用量、Ollama のモデル、各サービスの起動・停止とメモリ上限。依存なしの 1 ファイル。</figcaption>
+</figure>
+<figure>
+  <img src="images/eval-coding-heatmap.png" alt="コーディング 6 問 × 9 モデルの結果の表">
+  <figcaption>コーディング 6 問 × 9 モデル。「打切」は思考の上限に届いて打ち切られた回。隠しテストで採点。</figcaption>
+</figure>
+
+<h2>評価の要点（2026-10-08）</h2>
+<table>
+  <thead><tr><th>モデル</th><th class="num">3D 数学</th><th class="num">コーディング 6 問</th><th class="num">追加 9 問</th></tr></thead>
+  <tbody>
+    <tr><td>Sonnet 5.5 xHigh</td><td class="num">100% ・ 67 s</td><td class="num">100% ・ 46 s</td><td class="num">100% ・ 2 s</td></tr>
+    <tr><td>Opus 5.5 xHigh</td><td class="num">100% ・ 62 s</td><td class="num">100% ・ 59 s</td><td class="num">100% ・ 3 s</td></tr>
+    <tr><td>qwen3.8:27b（Ollama）</td><td class="num">88% ・ 873 s</td><td class="num">83% ・ 243 s</td><td class="num">100% ・ 13 s</td></tr>
+    <tr><td>gemma4:31b-it-qat</td><td class="num">100% ・ 3,660 s</td><td class="num">92% ・ 699 s</td><td class="num">100% ・ 45 s</td></tr>
+    <tr><td>Strata 公式 IQ3_XXS</td><td class="num">100% ・ 839 s</td><td class="num">84% ・ 464 s</td><td class="num">98% ・ 8 s</td></tr>
+    <tr><td>Strata Coder IQ1_M</td><td class="num">100% ・ 728 s</td><td class="num">59% ・ 406 s</td><td class="num">89% ・ 7 s</td></tr>
+  </tbody>
+</table>
+<p class="note">能力は問ごとの点数の平均、時間は中央値。試行は 1〜3 回で、サンプリングありのため小さな差は誤差の範囲。
+Claude 2 種はコーディングで全問合格し、能力では差がつかなかった（天井効果）。</p>
+
+<h3>調べたら、疑っていた設定が点を支えていた</h3>
+<p>Strata のコーディングの点が低いのは設定の誤りではないか、を条件を変えて調べた。評価が付けていた
+<strong>思考の上限（24,576）は、点を下げる原因ではなく、支えていた</strong>。49 本のうち 45 本で上限に届いて打ち切られており、
+上限を外すと公式版は 6 回とも答えが出なかった（平均 69% → 0%）。</p>
+
+<h2>レポート（1 ファイル完結の HTML）</h2>
+<ul>
+  <li><a href="reports/AIモデル評価_2026-10-08.html">AI モデル評価（3D 数学・コーディング・追加 3 試験）</a></li>
+  <li><a href="reports/AIモデル評価_出題内容_2026-10-08.html">評価で出した 16 問の解説（出題内容）</a></li>
+  <li><a href="reports/Strata_コーディング性能の調査_2026-10-09.html">Strata のコーディング性能の調査</a></li>
+  <li><a href="reports/local_ai_cloud_アーキテクチャ.html">クラウド × ローカル AI：実装分担と A30 共有サーバーの設計レポート</a></li>
+  <li><a href="reports/Hunyuan3D-2mv_使い方_4画像入力ガイド_2026-09-22.html">Hunyuan3D-2mv 使い方レポート（4 画像入力・ローカル実行・設定・注意点）</a></li>
+</ul>
+
+<h2>導入する</h2>
+<p>Ubuntu 24.04・NVIDIA GPU（24 GB）・uv・systemd --user が前提です。GPU が無くても、入口ページと試験は試せます。</p>
+<pre><code>git clone https://github.com/&lt;user&gt;/localai.git
+cd localai
+./localai doctor
+./localai install portal &amp;&amp; ./localai start portal</code></pre>
+<p>手順は <a href="https://github.com/&lt;user&gt;/localai/blob/main/docs/getting-started.md">docs/getting-started.md</a>。
+動作を確かめた構成は 1 つだけ（A30 24 GB・RAM 64 GB）で、ほかは未検証です。</p>
+
+<footer>
+  <p>コードと文書は MIT ライセンス。上流のソフトウェアとモデルの重みは再配布せず、各配布元の条件に従います。
+  Hunyuan3D-2 は使用許諾が EU・UK・韓国を対象外としているため、そのパッチは公開していません。
+  各社の名称・商標は権利者のものです。</p>
+</footer>
+
+</main>
+</body>
+</html>
