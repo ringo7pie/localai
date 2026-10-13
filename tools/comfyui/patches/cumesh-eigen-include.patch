@@ -1,3 +1,9 @@
+localai による変更（2026-10-02 作成）。この差分は上流のファイルの行を含む派生物で、上流と同じライセンスに従う。
+Modification notice: this patch changes setup.py of https://github.com/visualbruno/CuMesh (commit d10e54c30ddd03d11472c1431693f985501c7966).
+SPDX-License-Identifier: MIT
+Copyright of the modified upstream file: (c) 2025 Jianfeng XIANG
+License text: tools/comfyui/patches/LICENSES/ (see LICENSE-NOTICE.md)
+
 diff --git a/setup.py b/setup.py
 index d37be48..699ebce 100644
 --- a/setup.py

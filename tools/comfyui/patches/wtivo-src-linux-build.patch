@@ -1,3 +1,9 @@
+localai による変更（2026-10-02 作成）。この差分は上流のファイルの行を含む派生物で、上流と同じライセンスに従う。
+Modification notice: this patch changes CMakeLists.txt and scripts/build_gpupr.py of https://github.com/Mstafa-awad/WTiVo-WatertightVoxel (commit 7a0ac7cb24fd0588f2f7a78c787779d760d36f48).
+SPDX-License-Identifier: GPL-3.0-or-later
+Copyright of the modified upstream file: (c) 2026 Mstafa-awad
+License text: tools/comfyui/patches/LICENSES/ (see LICENSE-NOTICE.md)
+
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 9bc6e81..651547b 100644
 --- a/CMakeLists.txt

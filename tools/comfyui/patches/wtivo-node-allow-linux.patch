@@ -1,3 +1,9 @@
+localai による変更（2026-10-02 作成）。この差分は上流のファイルの行を含む派生物で、上流と同じライセンスに従う。
+Modification notice: this patch changes wtivo.py of https://github.com/Mstafa-awad/WTiVo-WatertightVoxel-ComfyuiNode (commit fb9e9ea6a7deec965d3a4bf43ba7a4a9ff3856f3).
+SPDX-License-Identifier: Apache-2.0
+Copyright of the modified upstream file: (c) 2026 Mstafa-awad
+License text: tools/comfyui/patches/LICENSES/ (see LICENSE-NOTICE.md)
+
 diff --git a/wtivo.py b/wtivo.py
 index 368b4eb..f78b9bd 100644
 --- a/wtivo.py

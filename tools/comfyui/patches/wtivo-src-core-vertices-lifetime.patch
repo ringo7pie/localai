@@ -1,3 +1,9 @@
+localai による変更（2026-10-02 作成）。この差分は上流のファイルの行を含む派生物で、上流と同じライセンスに従う。
+Modification notice: this patch changes native/core/wtivo_core.cpp of https://github.com/Mstafa-awad/WTiVo-WatertightVoxel (commit 7a0ac7cb24fd0588f2f7a78c787779d760d36f48).
+SPDX-License-Identifier: Apache-2.0
+Copyright of the modified upstream file: (c) 2026 Mstafa-awad (CelloCut lineage, Apache-2.0)
+License text: tools/comfyui/patches/LICENSES/ (see LICENSE-NOTICE.md)
+
 diff --git a/native/core/wtivo_core.cpp b/native/core/wtivo_core.cpp
 index a5803b3..dbbcb0d 100644
 --- a/native/core/wtivo_core.cpp
