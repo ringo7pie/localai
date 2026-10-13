@@ -6,12 +6,12 @@ After=network.target
 
 [Service]
 Type=simple
-# インストール先に合わせて書き換える。既定は tools/comfyui をこのパスに置いた場合。
-WorkingDirectory=%h/Proj/localai/tools/comfyui
+# リポジトリのパスは、setup-server.sh が雛形の印をこの機体の絶対パスに置き換えて書く（scripts/lib/render-unit.sh）。手で写すときは自分で置き換える。
+WorkingDirectory=@REPO_ROOT@/tools/comfyui
 # COMFYUI_EXTRA_ARGS（main.py に足す引数。例: --lowvram）などを読む。先頭の "-" はファイルが無くても
 # エラーにしない意味（pixal3d.service / hunyuan3d.service の EnvironmentFile と同じ型）。
 EnvironmentFile=-%h/.config/comfyui/comfyui.env
-ExecStart=%h/Proj/localai/tools/comfyui/run-comfyui serve
+ExecStart=@REPO_ROOT@/tools/comfyui/run-comfyui serve
 Restart=on-failure
 RestartSec=5
 # custom_nodes の読み込み（ComfyUI-Trellis2 が triton・open3d などを読む）に時間がかかることがある。

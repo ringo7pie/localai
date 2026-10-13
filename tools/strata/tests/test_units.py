@@ -294,7 +294,7 @@ def test_service_example() -> None:
     lines = text.splitlines()
     for line in (
         "EnvironmentFile=-%h/.config/strata/strata.env",
-        "ExecStart=%h/Proj/localai/tools/strata/run-strata serve",
+        "ExecStart=@REPO_ROOT@/tools/strata/run-strata serve",
         "Restart=on-failure",
         "TimeoutStartSec=900",
         "LimitMEMLOCK=infinity",
@@ -548,8 +548,8 @@ def test_coder_service_example() -> None:
         # 停止を起動より先にするための順序（片側だけ。汎用版の側に After=strata-coder.service は書かない）
         "After=network.target strata.service",
         "EnvironmentFile=-%h/.config/strata/strata-coder.env",
-        "ExecStart=%h/Proj/localai/tools/strata/run-strata serve --model coder",
-        "ExecStartPost=%h/Proj/localai/tools/strata/run-strata wait-ready --model coder --timeout 880",
+        "ExecStart=@REPO_ROOT@/tools/strata/run-strata serve --model coder",
+        "ExecStartPost=@REPO_ROOT@/tools/strata/run-strata wait-ready --model coder --timeout 880",
         "Restart=on-failure",
         "TimeoutStartSec=900",
         "LimitMEMLOCK=infinity",
@@ -792,8 +792,8 @@ def test_official_service_example() -> None:
         "Conflicts=strata.service strata-coder.service",
         "After=network.target strata.service strata-coder.service",
         "EnvironmentFile=-%h/.config/strata/strata-official.env",
-        "ExecStart=%h/Proj/localai/tools/strata/run-strata serve --model official",
-        "ExecStartPost=%h/Proj/localai/tools/strata/run-strata wait-ready --model official --timeout 880",
+        "ExecStart=@REPO_ROOT@/tools/strata/run-strata serve --model official",
+        "ExecStartPost=@REPO_ROOT@/tools/strata/run-strata wait-ready --model official --timeout 880",
         "Restart=on-failure",
         "TimeoutStartSec=900",
         "LimitMEMLOCK=infinity",

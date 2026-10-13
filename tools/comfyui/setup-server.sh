@@ -15,6 +15,12 @@ EXT_DIR="$VENDOR_DIR/extensions"
 LOG_DIR="$TOOL_DIR/logs"
 RUNNER="$TOOL_DIR/run-comfyui"
 
+# 雛形の書き出し（render_unit_file）と、終わりに表示する URL のホスト（detect_server_host）
+# shellcheck source=../../scripts/lib/render-unit.sh
+source "$TOOL_DIR/../../scripts/lib/render-unit.sh"
+# shellcheck source=../../scripts/lib/server-host.sh
+source "$TOOL_DIR/../../scripts/lib/server-host.sh"
+
 # cfui/config.py の COMFYUI_* / CUSTOM_NODES / EXTENSION_SOURCES / PIXELARTISTRY_* と一致させること
 # （venv 構築前に git 操作をするため、ここでは python を経由せず直値で持つ）。
 COMFYUI_URL="https://github.com/Comfy-Org/ComfyUI.git"
@@ -422,7 +428,8 @@ if [ -f "$SERVICE_FILE" ]; then
   echo "systemd ユニット: 既にあります（$SERVICE_FILE）"
 else
   mkdir -p "$SYSTEMD_USER_DIR"
-  cp -p "$TOOL_DIR/systemd/comfyui.service.example" "$SERVICE_FILE"
+  # 雛形のリポジトリのパス（@REPO_ROOT@）をこの clone の絶対パスにして置く
+  render_unit_file "$TOOL_DIR/systemd/comfyui.service.example" "$SERVICE_FILE"
   echo "systemd ユニット: 作成しました（$SERVICE_FILE）"
 fi
 
@@ -460,9 +467,10 @@ else
   echo "点検: 一部 NG があります（終了コード $DOCTOR_RC）。上の出力を確認してください"
 fi
 
+SERVER_HOST="$(detect_server_host)"
 echo
 echo "次にやること:"
 echo "  - 手動起動: $RUNNER serve"
 echo "  - systemd 経由: systemctl --user start comfyui"
-echo "  - ブラウザ: http://<server-ip>:8188 → Workflows → PixelArtistry"
+echo "  - ブラウザ: http://$SERVER_HOST:8188 → Workflows → PixelArtistry"
 exit "$DOCTOR_RC"

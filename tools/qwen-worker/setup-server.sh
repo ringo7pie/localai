@@ -9,6 +9,10 @@ CONFIG_DIR="$HOME/.config/qwen-worker"
 CONFIG_FILE="$CONFIG_DIR/config.toml"
 RUNNER="$LINK_TARGET/run-qwen-worker"
 
+# 設定の雛形の書き出し（render_unit_file。雛形の @REPO_ROOT@ をこの clone の絶対パスにする）
+# shellcheck source=../../scripts/lib/render-unit.sh
+source "$WORKER_DIR/../../scripts/lib/render-unit.sh"
+
 usage() {
   cat <<EOF
 使い方: $(basename -- "$0") [オプション]
@@ -101,7 +105,8 @@ else
     exit 1
   fi
   mkdir -p "$CONFIG_DIR"
-  cp -p "$EXAMPLE_FILE" "$CONFIG_FILE"
+  # 雛形に @REPO_ROOT@ があればこの clone の絶対パスにして置く（無ければそのまま写す）
+  render_unit_file "$EXAMPLE_FILE" "$CONFIG_FILE"
   chmod 600 "$CONFIG_FILE"
   echo "設定: 作成しました（$CONFIG_FILE）"
 fi

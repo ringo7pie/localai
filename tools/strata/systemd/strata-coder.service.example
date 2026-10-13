@@ -16,16 +16,16 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
-# インストール先に合わせて書き換える。既定は tools/strata をこのパスに置いた場合。
-WorkingDirectory=%h/Proj/localai/tools/strata
+# リポジトリのパスは、setup-server.sh が雛形の印をこの機体の絶対パスに置き換えて書く（scripts/lib/render-unit.sh）。手で写すときは自分で置き換える。
+WorkingDirectory=@REPO_ROOT@/tools/strata
 # STRATA_MAX_CONTEXT・STRATA_REASONING_BUDGET_TOKENS・STRATA_EXTRA_ARGS・STRATA_API_KEY などを読む（汎用版の strata.env とは別のファイル）。
 # 先頭の "-" はファイルが無くてもエラーにしない意味。
 EnvironmentFile=-%h/.config/strata/strata-coder.env
 Environment=PYTHONUNBUFFERED=1
-ExecStart=%h/Proj/localai/tools/strata/run-strata serve --model coder
+ExecStart=@REPO_ROOT@/tools/strata/run-strata serve --model coder
 # 上流のサーバーは engine の読み込みが終わってから待受を始める。API が応答するまで start を終えない
 # （systemctl --user start strata-coder が戻った時点で使える）。TimeoutStartSec より少し短くする。
-ExecStartPost=%h/Proj/localai/tools/strata/run-strata wait-ready --model coder --timeout 880
+ExecStartPost=@REPO_ROOT@/tools/strata/run-strata wait-ready --model coder --timeout 880
 Restart=on-failure
 RestartSec=10
 TimeoutStartSec=900

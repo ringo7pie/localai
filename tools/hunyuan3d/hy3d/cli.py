@@ -496,7 +496,26 @@ def _weights_present(local_dir: Path, required_files: tuple[str, ...] | None) ->
     return all((local_dir / name).is_file() for name in required_files)
 
 
+LICENSE_ACCEPT_ENV = "HY3D_ACCEPT_LICENSE"
+LICENSE_ACCEPT_MESSAGE = """\
+重みの取得の前に、Tencent Hunyuan 3D 2.0 Community License への同意が要ります。
+  - EU・UK・韓国は使用許諾の対象外（日本は対象内）。月間アクティブユーザー 100 万人超は別途申請
+  - 出力を使って、ほかの AI モデルを改善してはならない
+  - 原文: vendor/Hunyuan3D-2/LICENSE（setup-server.sh が上流を取得したあとに読める）
+原文を読んで同意する場合は --accept-tencent-license を付けるか、環境変数 HY3D_ACCEPT_LICENSE=1 を設定してください。"""
+
+
+def license_accepted(args: argparse.Namespace) -> bool:
+    """重みの取得に必要な使用許諾の同意があるか（引数か環境変数）。"""
+    if getattr(args, "accept_tencent_license", False):
+        return True
+    return os.environ.get(LICENSE_ACCEPT_ENV, "") == "1"
+
+
 def cmd_fetch_models(args: argparse.Namespace) -> int:
+    if not license_accepted(args):
+        print(LICENSE_ACCEPT_MESSAGE, file=sys.stderr)
+        return 2
     if not config.VENV_PYTHON.is_file():
         print(
             f"venv の python が見つかりません: {config.VENV_PYTHON}（setup-server.sh を実行してください）",
@@ -585,6 +604,11 @@ def build_parser() -> argparse.ArgumentParser:
     fetch_parser = subparsers.add_parser("fetch-models", help="重みを取得する（既にあればスキップ）")
     fetch_parser.add_argument(
         "--no-texture", action="store_true", help="テクスチャ用の重み（約 18GB）を取得しない"
+    )
+    fetch_parser.add_argument(
+        "--accept-tencent-license",
+        action="store_true",
+        help="Tencent Hunyuan 3D 2.0 Community License に同意する（環境変数 HY3D_ACCEPT_LICENSE=1 でも同じ）",
     )
     fetch_parser.set_defaults(func=cmd_fetch_models)
 

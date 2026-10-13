@@ -25,6 +25,12 @@ ENGINE_DIR="$STRATA_DIR/engine"
 LOG_DIR="$TOOL_DIR/logs"
 RUNNER="$TOOL_DIR/run-strata"
 
+# 雛形の書き出し（render_unit_file / render_unit_text）と、終わりに表示する URL のホスト（detect_server_host）
+# shellcheck source=../../scripts/lib/render-unit.sh
+source "$TOOL_DIR/../../scripts/lib/render-unit.sh"
+# shellcheck source=../../scripts/lib/server-host.sh
+source "$TOOL_DIR/../../scripts/lib/server-host.sh"
+
 # stra/config.py の STRATA_* / LLAMA_CPP_* / CUDA_* と一致させること
 # （venv 構築前に git 操作をするため、ここでは python を経由せず直値で持つ）。
 STRATA_URL="https://github.com/Niko1221/Strata.git"
@@ -345,12 +351,14 @@ SERVICE_EXAMPLE="$TOOL_DIR/systemd/$SERVICE_NAME.service.example"
 if [ -f "$SERVICE_FILE" ]; then
   echo "systemd ユニット: 既にあります（$SERVICE_FILE）"
   # 手で直したものかもしれないので上書きしない。雛形と違えば知らせるだけにする。
-  if ! cmp -s "$SERVICE_EXAMPLE" "$SERVICE_FILE"; then
-    echo "  （雛形 $SERVICE_EXAMPLE と中身が違います。diff で確かめ、必要なら手で写してください）"
+  # 雛形はリポジトリのパスが印（@REPO_ROOT@）のままなので、置き換えた中身と比べる。
+  if ! cmp -s <(render_unit_text "$SERVICE_EXAMPLE") "$SERVICE_FILE"; then
+    echo "  （雛形 $SERVICE_EXAMPLE の @REPO_ROOT@ を $LOCALAI_REPO_ROOT にしたものと中身が違います。diff で確かめ、必要なら手で写してください）"
   fi
 else
   mkdir -p "$SYSTEMD_USER_DIR"
-  cp -p "$SERVICE_EXAMPLE" "$SERVICE_FILE"
+  # 雛形のリポジトリのパス（@REPO_ROOT@）をこの clone の絶対パスにして置く
+  render_unit_file "$SERVICE_EXAMPLE" "$SERVICE_FILE"
   echo "systemd ユニット: 作成しました（$SERVICE_FILE）"
 fi
 
@@ -391,9 +399,10 @@ else
   echo "点検: 一部 NG があります（終了コード $DOCTOR_RC）。上の出力を確認してください"
 fi
 
+SERVER_HOST="$(detect_server_host)"
 echo
 echo "次にやること:"
 echo "  - 手動起動: $RUNNER serve --model $MODEL_KEY"
 echo "  - systemd 経由: systemctl --user start $SERVICE_NAME（API が応答するまで戻らない。最大 15 分）"
-echo "  - API: http://<server-ip>:$MODEL_PORT/v1（モデル名は run-strata doctor --model $MODEL_KEY の表示を参照）"
+echo "  - API: http://$SERVER_HOST:$MODEL_PORT/v1（モデル名は run-strata doctor --model $MODEL_KEY の表示を参照）"
 exit "$DOCTOR_RC"

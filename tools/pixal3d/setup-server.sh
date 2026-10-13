@@ -10,6 +10,12 @@ VENDOR_DIR="$TOOL_DIR/vendor/Pixal3D"
 TRELLIS_DIR="$TOOL_DIR/vendor/TRELLIS.2"
 RUNNER="$TOOL_DIR/run-pixal3d"
 
+# 雛形の書き出し（render_unit_file）と、終わりに表示する URL のホスト（detect_server_host）
+# shellcheck source=../../scripts/lib/render-unit.sh
+source "$TOOL_DIR/../../scripts/lib/render-unit.sh"
+# shellcheck source=../../scripts/lib/server-host.sh
+source "$TOOL_DIR/../../scripts/lib/server-host.sh"
+
 # px3d/config.py の UPSTREAM_URL / UPSTREAM_COMMIT / TRELLIS_URL / TRELLIS_COMMIT と一致させること
 # （venv 構築前に git 操作をするため、ここでは python を経由せず直値で持つ）。
 UPSTREAM_URL="https://github.com/TencentARC/Pixal3D.git"
@@ -343,7 +349,8 @@ if [ -f "$SERVICE_FILE" ]; then
   echo "systemd ユニット: 既にあります（$SERVICE_FILE）"
 else
   mkdir -p "$SYSTEMD_USER_DIR"
-  cp -p "$TOOL_DIR/systemd/pixal3d.service.example" "$SERVICE_FILE"
+  # 雛形のリポジトリのパス（@REPO_ROOT@）をこの clone の絶対パスにして置く
+  render_unit_file "$TOOL_DIR/systemd/pixal3d.service.example" "$SERVICE_FILE"
   echo "systemd ユニット: 作成しました（$SERVICE_FILE）"
 fi
 
@@ -380,10 +387,11 @@ else
   echo "点検: 一部 NG があります（終了コード $DOCTOR_RC）。上の出力を確認してください"
 fi
 
+SERVER_HOST="$(detect_server_host)"
 echo
 echo "次にやること:"
 echo "  - 手動起動: $RUNNER serve"
 echo "  - systemd 経由: systemctl --user start pixal3d"
-echo "  - ブラウザ（直接）: http://<server-ip>:7861"
-echo "  - 入口ページ経由: http://<server-ip>:8080"
+echo "  - ブラウザ（直接）: http://$SERVER_HOST:7861"
+echo "  - 入口ページ経由: http://$SERVER_HOST:8080（tools/portal を導入した場合。--port で変えたときはそのポート）"
 exit "$DOCTOR_RC"

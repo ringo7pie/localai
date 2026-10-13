@@ -6,12 +6,12 @@ After=network.target
 
 [Service]
 Type=simple
-# インストール先に合わせて書き換える。既定は tools/pixal3d をこのパスに置いた場合。
-WorkingDirectory=%h/Proj/localai/tools/pixal3d
+# リポジトリのパスは、setup-server.sh が雛形の印をこの機体の絶対パスに置き換えて書く（scripts/lib/render-unit.sh）。手で写すときは自分で置き換える。
+WorkingDirectory=@REPO_ROOT@/tools/pixal3d
 # PIXAL3D_LOW_VRAM（低 VRAM モードの On/Off）などを読む。先頭の "-" はファイルが無くてもエラーに
 # しない意味（hunyuan3d.service / open-webui.service の EnvironmentFile と同じ型）。
 EnvironmentFile=-%h/.config/pixal3d/pixal3d.env
-ExecStart=%h/Proj/localai/tools/pixal3d/run-pixal3d serve
+ExecStart=@REPO_ROOT@/tools/pixal3d/run-pixal3d serve
 Restart=on-failure
 RestartSec=5
 # パイプラインの読み込み（重み約 30GB）に数分かかることがある。

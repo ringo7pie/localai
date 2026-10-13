@@ -1,12 +1,24 @@
 """hy3d の単体試験。GPU もネットワークも使わない（モック試験）。
 
 実行: tools/hunyuan3d/.venv/bin/python -m pytest tools/hunyuan3d/tests/test_units.py -q
-    （pytest は requirements.lock.txt に入っているので、この venv にだけある）
+    （pytest は requirements.lock.txt に入っているので、この venv にだけある。
+    hy3d は標準ライブラリだけなので、`uvx --with pytest pytest <このファイル> -q` でも走る）
+
+公開版は上流への当て物（patches/）を含まず、上流（vendor/）も setup-server.sh を実行するまで無い。
+上流のソースを読む試験は、上流が無ければ SKIP、当て物が当たっていなければ当て物の結果を確かめる
+試験だけ SKIP にする（失敗にはしない）。公開版の状態を再現して全体を流すには、環境変数
+HY3D_TEST_VENDOR_DIR に存在しないパス（または当て物の無い上流）を渡す:
+
+    HY3D_TEST_VENDOR_DIR=/存在しないパス tools/hunyuan3d/.venv/bin/python -m pytest \
+        tools/hunyuan3d/tests/test_units.py -q
 """
 
 from __future__ import annotations
 
+import argparse
+import ast
 import json
+import os
 import re
 import subprocess
 import sys
@@ -22,6 +34,7 @@ from hy3d import errors  # noqa: E402
 from hy3d import help_texts  # noqa: E402
 from hy3d import ollama  # noqa: E402
 from hy3d import presets  # noqa: E402
+from hy3d import cli  # noqa: E402
 from hy3d.cli import (  # noqa: E402
     build_allow_patterns,
     build_gradio_command,
@@ -290,9 +303,42 @@ def test_classify_vram_status() -> None:
 # ---------------------------------------------------------------- help_texts / 画面の説明表示
 
 
+# 当て物が当たった gradio_app.py にだけ現れる目印（当て物ごと）。公開版には当て物が無いので、
+# これが無い上流では、当て物の結果を確かめる試験を SKIP にする。
+PATCH_MARKER_HELP = "def _localai_build_glossary_html"  # 0003 説明表示
+PATCH_MARKER_ERRORS = "def _localai_build_error_html"  # 0004 失敗したパラメータの表示
+PATCH_MARKER_PRESETS = "from hy3d import presets as _localai_presets"  # 0005 設定の保存・読み込み
+
+# 公開版の状態（上流が無い・当て物が無い）を再現して試験全体を流すための差し替え口。
+VENDOR_DIR_OVERRIDE_ENV = "HY3D_TEST_VENDOR_DIR"
+
+
+def _vendor_dir() -> Path:
+    override = os.environ.get(VENDOR_DIR_OVERRIDE_ENV)
+    if override:
+        return Path(override)
+    return config.VENDOR_DIR
+
+
 def _gradio_app_source() -> str:
-    path = config.VENDOR_DIR / "gradio_app.py"
+    """上流の gradio_app.py を読む。上流が取得されていなければ、その試験を SKIP にする。"""
+
+    path = _vendor_dir() / "gradio_app.py"
+    if not path.is_file():
+        pytest.skip(f"上流の gradio_app.py が無い（{path}）。setup-server.sh で上流を取得すると走る")
     return path.read_text(encoding="utf-8")
+
+
+def _patched_gradio_app_source(marker: str, patch_label: str) -> str:
+    """当て物が当たった gradio_app.py を読む。当たっていなければ、その試験を SKIP にする。"""
+
+    source = _gradio_app_source()
+    if marker not in source:
+        pytest.skip(
+            f"上流に当て物（{patch_label}）が当たっていない。公開版は当て物を含まない"
+            "（手元の patches/ に置いて setup-server.sh を実行すると当たる）"
+        )
+    return source
 
 
 def _widget_labels(source: str) -> list[str]:
@@ -321,7 +367,7 @@ def _render_glossary_html() -> str:
     torch を import する残りのコードは実行しない（この試験は GPU もネットワークも使わない）。
     """
 
-    source = _gradio_app_source()
+    source = _patched_gradio_app_source(PATCH_MARKER_HELP, "0003 説明表示")
     match = re.search(
         r"(def _localai_build_glossary_html.*?)\n\ndef get_example_img_list",
         source,
@@ -490,7 +536,7 @@ def _slice_between(source: str, start_marker: str, end_marker: str) -> str:
 
 
 def test_generation_entry_points_diagnose_failures_on_exception() -> None:
-    source = _gradio_app_source()
+    source = _patched_gradio_app_source(PATCH_MARKER_ERRORS, "0004 失敗したパラメータの表示")
 
     generation_all_src = _slice_between(source, "def generation_all(", "def shape_generation(")
     shape_generation_src = _slice_between(source, "def shape_generation(", "def build_app():")
@@ -519,8 +565,8 @@ def test_generation_entry_points_diagnose_failures_on_exception() -> None:
 def _isolated_presets_dir(monkeypatch):
     """presets.PRESETS_DIR を一時ディレクトリへ差し替え、本物の presets/ を汚さない。
 
-    pytest 標準の tmp_path ではなく tempfile を直接使う（このサンドボックスでは
-    USER=mt / 実プロセス uid=root がずれており、tmp_path 内部の所有者チェックが
+    pytest 標準の tmp_path ではなく tempfile を直接使う（サンドボックスでは
+    USER と実プロセスの uid がずれていることがあり、tmp_path 内部の所有者チェックが
     誤検知で失敗するため）。
     """
 
@@ -688,7 +734,7 @@ def test_default_settings_match_gradio_app_source() -> None:
 def test_gradio_app_calls_hy3d_presets_for_save_load_delete() -> None:
     """gradio_app.py が hy3d.presets の保存・読み込み・削除を実際に呼んでいること。"""
 
-    source = _gradio_app_source()
+    source = _patched_gradio_app_source(PATCH_MARKER_PRESETS, "0005 設定の保存・読み込み")
     assert "from hy3d import presets as _localai_presets" in source
     assert "_localai_presets.save_preset(" in source
     assert "_localai_presets.load_preset(" in source
@@ -699,7 +745,7 @@ def test_gradio_app_calls_hy3d_presets_for_save_load_delete() -> None:
 def test_preset_ui_widgets_have_tooltips() -> None:
     """新しく足した「設定の保存・読み込み」欄の部品にも説明の付け忘れが無いこと。"""
 
-    source = _gradio_app_source()
+    source = _patched_gradio_app_source(PATCH_MARKER_PRESETS, "0005 設定の保存・読み込み")
     labels = _widget_labels(source)
     for label in ("設定の保存・読み込み", "設定名", "保存済みの設定", "保存", "読み込み", "削除"):
         assert label in labels, f"{label} が gradio_app.py から抽出できていない"
@@ -719,11 +765,137 @@ def test_validate_preset_name_allows_natural_japanese_names() -> None:
 def test_validate_preset_name_rejects_windows_invalid_characters() -> None:
     """Windows / SMB で使えない文字を弾くこと。
 
-    presets/ は git で追跡し、リモートは CIFS マウント（/mnt/nas）にある。Windows で無効な
-    ファイル名だと push できなくなるため、この場で弾く。
+    presets/ を Windows や SMB 共有（CIFS）に置いても困らないよう、Windows で無効な
+    ファイル名はこの場で弾く。
     """
     for name in ("a/b", "a\\b", "a:b", "a*b", "a?b", 'a"b', "a<b", "a>b", "a|b"):
         reason = presets.validate_preset_name(name)
         assert reason is not None, name
     assert presets.validate_preset_name("末尾に空白 ") is not None
     assert presets.validate_preset_name("末尾にドット.") is not None
+
+
+# ---------------------------------------------------------------- 公開版（上流なし・当て物なし）でも壊れないこと
+#
+# 公開版は patches/ を含まず、vendor/ も setup-server.sh を実行するまで無い。patches/ や vendor/ を
+# 退避せず、パスを一時ディレクトリへ差し替えて、その状態でも hy3d と試験が壊れないことを確かめる。
+
+
+@pytest.fixture()
+def _vendor_dir_in_tmp(monkeypatch):
+    """config.VENDOR_DIR を空の一時ディレクトリへ差し替える（上流が取得されていない状態）。
+
+    tmp_path ではなく tempfile を使う理由は _isolated_presets_dir と同じ。
+    """
+
+    monkeypatch.delenv(VENDOR_DIR_OVERRIDE_ENV, raising=False)
+    with tempfile.TemporaryDirectory() as raw_dir:
+        vendor_dir = Path(raw_dir) / "Hunyuan3D-2"
+        monkeypatch.setattr(config, "VENDOR_DIR", vendor_dir)
+        yield vendor_dir
+
+
+def _write_gradio_app_stub(vendor_dir: Path, text: str) -> None:
+    vendor_dir.mkdir(parents=True, exist_ok=True)
+    (vendor_dir / "gradio_app.py").write_text(text, encoding="utf-8")
+
+
+def test_gradio_app_source_skips_when_vendor_is_absent(_vendor_dir_in_tmp) -> None:
+    """上流（vendor/）が無い公開版では、上流のソースを読む試験が失敗でなく SKIP になる。"""
+
+    assert not _vendor_dir_in_tmp.exists()
+    with pytest.raises(pytest.skip.Exception):
+        _gradio_app_source()
+    with pytest.raises(pytest.skip.Exception):
+        _patched_gradio_app_source(PATCH_MARKER_HELP, "0003 説明表示")
+
+
+def test_patch_dependent_checks_skip_on_unpatched_upstream(_vendor_dir_in_tmp) -> None:
+    """当て物が当たっていない上流（公開版の利用者の環境）では、当て物の結果を確かめる試験だけ SKIP になる。"""
+
+    _write_gradio_app_stub(_vendor_dir_in_tmp, "import gradio as gr\nMV_MODE = True\n")
+
+    # 上流そのものを読む試験は走る。
+    assert "MV_MODE" in _gradio_app_source()
+    for marker, label in (
+        (PATCH_MARKER_HELP, "0003 説明表示"),
+        (PATCH_MARKER_ERRORS, "0004 失敗したパラメータの表示"),
+        (PATCH_MARKER_PRESETS, "0005 設定の保存・読み込み"),
+    ):
+        with pytest.raises(pytest.skip.Exception):
+            _patched_gradio_app_source(marker, label)
+
+
+def test_patch_dependent_checks_run_when_patches_are_applied(_vendor_dir_in_tmp) -> None:
+    """当て物が当たっていれば SKIP にならず、当て物の結果を確かめる試験が走る（常に SKIP にはしない）。"""
+
+    stub = "\n".join([PATCH_MARKER_HELP, PATCH_MARKER_ERRORS, PATCH_MARKER_PRESETS, ""])
+    _write_gradio_app_stub(_vendor_dir_in_tmp, stub)
+
+    assert _patched_gradio_app_source(PATCH_MARKER_HELP, "0003 説明表示") == stub
+    assert _patched_gradio_app_source(PATCH_MARKER_ERRORS, "0004 失敗したパラメータの表示") == stub
+    assert _patched_gradio_app_source(PATCH_MARKER_PRESETS, "0005 設定の保存・読み込み") == stub
+
+
+def test_hy3d_does_not_read_patches_directory() -> None:
+    """hy3d が patches/ を実行時に読まないこと。読むと公開版（patches/ が無い）で壊れる。
+
+    patches/ を読むのは setup-server.sh だけ。hy3d/*.py に "patches" というパス要素が
+    入っていないことを、文字列定数の走査で確かめる（コメントと docstring は対象外）。
+    """
+
+    package_dir = Path(config.__file__).resolve().parent
+    offenders = []
+    for source_path in sorted(package_dir.glob("*.py")):
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and node.value == "patches":
+                offenders.append(f"{source_path.name}:{node.lineno}")
+    assert offenders == []
+
+
+def test_doctor_reports_ng_without_vendor(_vendor_dir_in_tmp) -> None:
+    """上流が無い公開版でも、doctor の上流確認は例外にならず NG と理由を返す。"""
+
+    ok, detail = cli._check_upstream_commit()
+    assert ok is False
+    assert "上流が見つかりません" in detail
+
+
+def test_serve_stops_with_guidance_without_vendor(_vendor_dir_in_tmp, monkeypatch, capsys) -> None:
+    """上流が無い公開版で serve しても、例外にならず setup-server.sh を案内して終了コード 1 を返す。"""
+
+    # Ollama・nvidia-smi には触れない。
+    monkeypatch.setattr(ollama, "loaded_models", lambda: [])
+    monkeypatch.setattr(ollama, "unload_all", lambda: [])
+    args = cli.build_parser().parse_args(["serve", "--skip-vram-check"])
+
+    assert cli.cmd_serve(args) == 1
+    assert "setup-server.sh" in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------
+# 重みの取得の前の使用許諾の確認（Tencent Hunyuan 3D 2.0 Community License）
+# --------------------------------------------------------------------------
+
+
+def test_fetch_models_refuses_without_license_acceptance(monkeypatch, capsys) -> None:
+    """同意が無ければ、何も取得せず終了コード 2 で止まり、条件の要約を出す。"""
+    monkeypatch.delenv("HY3D_ACCEPT_LICENSE", raising=False)
+    args = argparse.Namespace(no_texture=True, accept_tencent_license=False)
+
+    assert cli.cmd_fetch_models(args) == 2
+
+    captured = capsys.readouterr()
+    assert "EU・UK・韓国" in captured.err
+    assert "--accept-tencent-license" in captured.err
+
+
+def test_license_accepted_by_flag_or_environment(monkeypatch) -> None:
+    monkeypatch.delenv("HY3D_ACCEPT_LICENSE", raising=False)
+    assert cli.license_accepted(argparse.Namespace(accept_tencent_license=True)) is True
+    assert cli.license_accepted(argparse.Namespace(accept_tencent_license=False)) is False
+    monkeypatch.setenv("HY3D_ACCEPT_LICENSE", "1")
+    assert cli.license_accepted(argparse.Namespace(accept_tencent_license=False)) is True
+    monkeypatch.setenv("HY3D_ACCEPT_LICENSE", "yes")
+    assert cli.license_accepted(argparse.Namespace(accept_tencent_license=False)) is False

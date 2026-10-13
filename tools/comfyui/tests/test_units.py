@@ -506,14 +506,14 @@ def test_build_serve_command() -> None:
 
 
 def test_build_serve_env_points_blender_to_clean_dirs() -> None:
-    base = {"PATH": "/usr/bin", "BLENDER_USER_CONFIG": "/home/mt/.config/blender"}
+    base = {"PATH": "/usr/bin", "BLENDER_USER_CONFIG": "/home/user/.config/blender"}
     env = build_serve_env(base, Path("/h/.config/comfyui/blender-clean"))
     assert env["BLENDER_USER_CONFIG"] == "/h/.config/comfyui/blender-clean/config"
     assert env["BLENDER_USER_SCRIPTS"] == "/h/.config/comfyui/blender-clean/scripts"
     assert env["BLENDER_USER_EXTENSIONS"] == "/h/.config/comfyui/blender-clean/extensions"
     assert env["PATH"] == "/usr/bin"
     # 元の環境は変えない
-    assert base["BLENDER_USER_CONFIG"] == "/home/mt/.config/blender"
+    assert base["BLENDER_USER_CONFIG"] == "/home/user/.config/blender"
 
 
 def test_extra_args_from_env() -> None:
@@ -567,7 +567,7 @@ def test_service_example() -> None:
     text = (TOOL_DIR / "systemd" / "comfyui.service.example").read_text(encoding="utf-8")
     for line in (
         "EnvironmentFile=-%h/.config/comfyui/comfyui.env",
-        "ExecStart=%h/Proj/localai/tools/comfyui/run-comfyui serve",
+        "ExecStart=@REPO_ROOT@/tools/comfyui/run-comfyui serve",
         "Restart=on-failure",
         "TimeoutStartSec=600",
         "MemoryHigh=44G",

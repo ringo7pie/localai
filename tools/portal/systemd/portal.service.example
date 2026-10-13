@@ -3,7 +3,9 @@ Description=ローカル AI サーバーの入口ページ
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/python3 %h/Proj/localai/tools/portal/portal.py --host 0.0.0.0 --port 8080
+# リポジトリのパスは、setup-server.sh が雛形の印をこの機体の絶対パスに置き換えて書く（scripts/lib/render-unit.sh）。手で写すときは自分で置き換える。
+# 待受ポートは setup-server.sh --port N で、この行の --port の値が N に置き換わる（既定 8080）。
+ExecStart=/usr/bin/python3 @REPO_ROOT@/tools/portal/portal.py --host 0.0.0.0 --port 8080
 Restart=on-failure
 RestartSec=5
 
