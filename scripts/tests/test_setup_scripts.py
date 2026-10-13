@@ -22,6 +22,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SETUP_TOOLS = ("comfyui", "hunyuan3d", "pixal3d", "portal", "qwen-worker", "strata")
 FAKE_HOST_ADDRESS = "192.168.50.7"
 
+# 作者の機体の IP。ソース中に直書きしない（公開前の置換で壊れないよう、部品から組み立てる）。
+MAINTAINER_SERVER_IP = ".".join(("192", "168", "8", "103"))
+
 
 def setup_script(tool: str) -> Path:
     return REPO_ROOT / "tools" / tool / "setup-server.sh"
@@ -54,7 +57,7 @@ def test_setup_script_help_exits_zero(tool: str, tmp_path: Path) -> None:
 @pytest.mark.parametrize("tool", SETUP_TOOLS)
 def test_setup_script_has_no_machine_specific_values(tool: str) -> None:
     text = setup_script(tool).read_text(encoding="utf-8")
-    for fixed in ("<server-ip>", "%h/Proj/localai", "/home/mt", "mt ユーザー"):
+    for fixed in (MAINTAINER_SERVER_IP, "%h/Proj/localai", "/home/mt", "mt ユーザー"):
         assert fixed not in text, fixed
 
 
@@ -266,7 +269,7 @@ def test_portal_default_installs_on_given_port_without_touching_open_webui(make_
     assert "systemctl --user enable --now portal" in calls
     assert not [call for call in calls if "open-webui" in call and call.startswith("systemctl")]
     assert f"http://{FAKE_HOST_ADDRESS}:{listening_port}" in result.stdout
-    assert "<server-ip>" not in result.stdout
+    assert MAINTAINER_SERVER_IP not in result.stdout
 
 
 def test_portal_stops_when_port_is_used_by_another_process(make_sandbox) -> None:

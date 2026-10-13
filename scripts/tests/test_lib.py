@@ -263,7 +263,7 @@ def test_detect_server_host_prefers_environment_variable(tmp_path: Path) -> None
 @pytest.mark.parametrize(
     ("addresses", "expected"),
     [
-        ("<server-ip> 172.17.0.1 172.18.0.1 ", "<server-ip>"),
+        ("192.168.1.10 172.17.0.1 172.18.0.1 ", "192.168.1.10"),
         # 最初の私的 IPv4 を採る（並び順のまま。Docker のブリッジが先なら LOCALAI_SERVER_HOST で指定する）
         ("172.17.0.1 192.168.1.5", "172.17.0.1"),
         ("fe80::1 2001:db8::1 8.8.8.8 10.1.2.3", "10.1.2.3"),

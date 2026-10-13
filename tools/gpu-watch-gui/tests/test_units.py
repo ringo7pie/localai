@@ -7,6 +7,7 @@ GTK は import しない（model.py が GTK 非依存であることの確認も
 from __future__ import annotations
 
 import importlib.util
+import shutil
 import subprocess
 import sys
 import time
@@ -339,6 +340,7 @@ def _read_raw_lines(extra_args, max_lines, deadline_sec):
 
 
 @pytest.mark.skipif(not GPU_WATCH_SH.exists(), reason="gpu-watch.sh が見つからない")
+@pytest.mark.skipif(shutil.which("nvidia-smi") is None, reason="nvidia-smi が無い（GPU の無い機体）")
 def test_gpu_watch_sh_raw_mode_outputs_info_host_fan_gpu_lines():
     lines = _read_raw_lines(["-n", "1"], max_lines=6, deadline_sec=8.0)
     kinds = [line.split(",", 1)[0] for line in lines]
