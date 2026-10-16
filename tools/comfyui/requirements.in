@@ -11,7 +11,7 @@
 #   uv pip freeze --python .venv/bin/python   … から torch 系・ネイティブ拡張を除いて lock へ写す
 #   （除くものは requirements.lock.txt の冒頭に書いてある）
 
-# ComfyUI 本体（v0.38.2）
+# ComfyUI 本体（v0.41.1）
 -r vendor/ComfyUI/requirements.txt
 
 # visualbruno/ComfyUI-Trellis2。nodes.py が import 時に cv2・pymeshlab・meshlib を読む。

@@ -263,7 +263,7 @@ codex  mcp add          qwen-worker -- ssh -T qwen-worker
 
 ## ブラウザチャット（Open WebUI）
 
-同じホストで Open WebUI 0.11.3 が `systemd --user` のサービスとして動く。
+同じホストで Open WebUI 0.12.2 が `systemd --user` のサービスとして動く。
 
 | 項目 | 値 |
 |---|---|

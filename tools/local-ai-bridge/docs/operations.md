@@ -62,9 +62,9 @@ $BRIDGE/run-local-ai-task doctor
 
 | 行 | 期待 | 違うときに疑うこと |
 |---|---|---|
-| `ollama 接続` | `version=0.34.2` | `systemctl status ollama`。別 PC ならトンネルが切れている |
-| `モデル` | `digest=22130167c4c2` | `ollama list` でタグが変わっていないか |
-| `opencode` | `version=1.18.31` | 自動更新で版が変わっていないか（`autoupdate: false` にしてある） |
+| `ollama 接続` | `version=0.40.5` | `systemctl status ollama`。別 PC ならトンネルが切れている |
+| `モデル` | `digest=aaee06c39dcf` | `ollama list` でタグが変わっていないか |
+| `opencode` | `version=1.19.2` | 自動更新で版が変わっていないか（`autoupdate: false` にしてある） |
 | `実効設定` | `enabled_providers=['ollama']` | `$HOME/.opencode/opencode.json` が出来ていないか |
 | `見えるモデル` | `ollama/qwen3.8:27b` だけ | クラウドのプロバイダーが混ざっていないか |
 | `workspace ...` | `git=True 未コミット=0` | 未コミットがあると既定では受付が止まる |

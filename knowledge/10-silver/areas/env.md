@@ -29,7 +29,10 @@
 - アーキテクチャは qwen3_5 系。linear attention 3 層 + full attention 1 層の繰り返しで、
   KV キャッシュは full attention 層だけが持つ。モデル上限のコンテキスト長は 262144。
 - bf16 の重みは 51.7 GiB。A30 には載らない。4bit 量子化が必須。Q8_0（30 GB）も載らない。
-- 実測: コンテキスト長 65536 で VRAM 22201 MiB / 24576 MiB、100% GPU、生成 23〜26 tok/s。
+- 実測: コンテキスト長 65536 で VRAM 22201 MiB / 24576 MiB、100% GPU、生成 23〜26 tok/s（2026-09-19、Ollama 0.34.2）。
+  2026-10-16 に Ollama 0.40.5・同じ重み（ブロブのダイジェストは再取得後も不変）で測り直すと、VRAM 22215 MiB、
+  100% GPU、生成 34.3〜37.8 tok/s（`tools/qwen-model-bench/bench-model.sh qwen3.8:27b` の 2 回目以降、ロード済み）。
+  この機体では速くなっているが、原因（Ollama 側の llama.cpp 更新か計測条件の違いか）は確かめていない。
 - 65536 を超えると KV キャッシュが CPU に溢れる（81920 で 9%/91% CPU/GPU）。65536 が上限。
 - vision・tools・thinking はいずれも動作する。API 応答で確認済み。
 - 画像側の projector は clip 460.73M。vision を使っても VRAM 使用量はほぼ増えない（22201→22223 MiB）。
@@ -41,7 +44,10 @@
 
 ## 制約
 
-- Ollama 0.34.2 を導入済み。systemd の `ollama.service` が enabled で常時起動する。
+- Ollama 0.40.5 を導入済み（2026-10-16 に 0.34.2 から公式 install.sh で更新。ドライバ・CUDA Toolkit には触れない。
+  `ollama.service` 本体は作り直されるが `ollama.service.d/override.conf` は別ファイルなので残る）。
+  systemd の `ollama.service` が enabled で常時起動する。
+- `/api/tokenize` は 0.40.5 でも無い（404 を実測、2026-10-16）。
 - API は http://127.0.0.1:11434。OpenAI 互換は /v1。LAN には公開していない。
 - コンテキスト長は /etc/systemd/system/ollama.service.d/override.conf の
   `OLLAMA_CONTEXT_LENGTH` で設定する。変更したら daemon-reload と restart が要る。

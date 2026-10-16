@@ -105,8 +105,8 @@ if [ -x "$OPENCODE_BIN" ]; then
   "$OPENCODE_BIN" --version
   echo "OpenCode: 既にあります"
 else
-  echo "OpenCode が見つからないため導入します（v1.18.31）"
-  curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.31 --no-modify-path
+  echo "OpenCode が見つからないため導入します（v1.19.2）"
+  curl -fsSL https://opencode.ai/install | bash -s -- --version 1.19.2 --no-modify-path
   echo "OpenCode: 作成しました"
 fi
 

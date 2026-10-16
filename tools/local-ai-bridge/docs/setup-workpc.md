@@ -97,7 +97,7 @@ WSL2 から Windows 側のポートは `127.0.0.1` では見えないことが�
 
 ```bash
 # OpenCode（版を固定する）
-curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.31 --no-modify-path
+curl -fsSL https://opencode.ai/install | bash -s -- --version 1.19.2 --no-modify-path
 
 # 連携層
 git clone <このリポジトリ> && cd <repo>/tools/local-ai-bridge

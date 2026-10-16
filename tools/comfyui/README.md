@@ -19,7 +19,7 @@
 
 | 対象 | 版・コミット |
 |---|---|
-| Comfy-Org/ComfyUI | `v0.38.2` = `daeb5e53681e2b10a3f0727d9ec5bc90784bee10` |
+| Comfy-Org/ComfyUI | `v0.41.1` = `45bf90d1c91eecd782643346dcfb73cb0017667f` |
 | pixelartistry/PixelArtistry-Watertight-Meshes | `5b3a0e9d2c5783ed05ba45bbcc157b9509fb267b`（v1.1） |
 | visualbruno/ComfyUI-Trellis2 | `b0e84c0f29857a444e8bcb5b9be2ea218e96efd0`（2026-09-25 の HEAD） |
 | Mstafa-awad の 9 個 | 配布元 bat の `SHA_*`（`PIN_DATE=2026-09-26`）と同じ。一覧は `cfui/config.py` の `CUSTOM_NODES` |
@@ -32,8 +32,8 @@
 | CUDA（拡張のビルド） | `/usr/local/cuda-12.6`、`TORCH_CUDA_ARCH_LIST=8.0` |
 | Blender | snap の 5.2.2（`/snap/blender/current/blender` を直接起動）。`/usr/bin/blender` は apt の 4.0.2 なので使わない。`/snap/bin/blender` は snap run が cgroup の外へ移すので使わない（下の「実機試験の結果」） |
 
-- ComfyUI の GitHub Releases の最新は v0.38.0 だが、その後に版上げコミットの付いたタグ v0.38.1 / v0.38.2 がある。
-  差分は API ノードとテンプレートの更新だけ（2026-10-02 確認）なので v0.38.2 にした。
+- ComfyUI の GitHub Releases の最新は v0.41.0 だが、その後に版上げコミットの付いたタグ v0.41.1 がある。
+  差分は API ノード（Krea）とテンプレートの更新だけ（2026-10-16 確認）なので v0.41.1 にした。
   Pixal3D / TRELLIS.2 の標準ノード（`comfy_extras/nodes_trellis2.py`・`nodes_mesh_postprocess.py`）を含む。
 - その他の Python 依存は `requirements.lock.txt`（直接の依存は `requirements.in`）。
 
@@ -230,7 +230,7 @@ tools/comfyui/.venv/bin/python tools/comfyui/scripts/adapt_workflows.py --fallba
 
 ## torch が cu126 なので comfy_kitchen の CUDA 版が無効になる
 
-ComfyUI v0.38.2 は `torch.version.cuda` が 13 未満だと comfy_kitchen の CUDA 版を無効にし、起動時に
+ComfyUI v0.41.1 は `torch.version.cuda` が 13 未満だと comfy_kitchen の CUDA 版を無効にし、起動時に
 `You need pytorch with cu130 or higher to use optimized CUDA operations.` と警告する（`comfy/quant_ops.py:22-28`）。
 2026-10-02 の起動ログでも `backend cuda: {'available': True, 'disabled': True, ...}` だった。
 このワークフローの重み（`*_int8_convrot`）は無効になった CUDA 版の `dequantize_int8_convrot_weight` /
@@ -261,7 +261,7 @@ tools/comfyui/.venv/bin/python tools/comfyui/scripts/run_workflow.py convert WOR
 tools/comfyui/.venv/bin/python tools/comfyui/scripts/measure_mesh.py OUT.glb --reference PREV.glb -o m.json
 ```
 
-- ComfyUI v0.38.2 の Python 側には UI 形式 → API 形式の変換が無い（画面の `graphToPrompt` / `ExecutableNodeDTO`
+- ComfyUI v0.41.1 の Python 側には UI 形式 → API 形式の変換が無い（画面の `graphToPrompt` / `ExecutableNodeDTO`
   が行う）。`run_workflow.py` は comfyui_frontend_package 1.53.6 の規則（widget の並び、seed の後ろの
   control_after_generate、`image_upload` の余分な値、bypass の素通し `_getBypassSlotIndex`、muted の入力の削除、
   Note / MarkdownNote / PrimitiveNode / Reroute の除外）を書き直したもの。subgraph は未対応で、使われていたら止める。
