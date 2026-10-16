@@ -75,10 +75,10 @@ EXTRA_ARGS_ENV_VAR = "COMFYUI_EXTRA_ARGS"
 SERVICE_NAME = "comfyui"
 
 COMFYUI_URL = "https://github.com/Comfy-Org/ComfyUI.git"
-# GitHub の Releases 画面の最新は v0.38.0 だが、その後に版上げコミットの付いたタグ
-# v0.38.1 / v0.38.2 がある。差分は API ノードとテンプレートの更新だけ（2026-10-02 確認）。
-COMFYUI_TAG = "v0.38.2"
-COMFYUI_COMMIT = "daeb5e53681e2b10a3f0727d9ec5bc90784bee10"
+# GitHub の Releases 画面の最新は v0.41.0 だが、その後に版上げコミットの付いたタグ
+# v0.41.1 がある。差分は API ノード（Krea）とテンプレートの更新だけ（2026-10-16 確認）。
+COMFYUI_TAG = "v0.41.1"
+COMFYUI_COMMIT = "45bf90d1c91eecd782643346dcfb73cb0017667f"
 
 PIXELARTISTRY_URL = "https://github.com/pixelartistry/PixelArtistry-Watertight-Meshes.git"
 PIXELARTISTRY_COMMIT = "5b3a0e9d2c5783ed05ba45bbcc157b9509fb267b"

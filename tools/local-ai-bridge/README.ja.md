@@ -11,8 +11,8 @@ LAN 内のローカル Qwen へ移すための連携層。
 | 呼び方 | 何をするか | この環境での実体 |
 |---|---|---|
 | **クラウド** | 要求整理、設計、タスク分解、合格条件、レビューと判断 | Claude Code 2.1.278 / Codex（ChatGPT デスクトップ版同梱） |
-| **作業 PC** | ソース検索、部分読み取り、編集、ビルド、テスト | この PC。OpenCode 1.18.31 + この連携層 |
-| **A30 サーバー** | 推論の実行 | この PC（同一ホスト）。Ollama 0.34.2 + `qwen3.8:27b` |
+| **作業 PC** | ソース検索、部分読み取り、編集、ビルド、テスト | この PC。OpenCode 1.19.2 + この連携層 |
+| **A30 サーバー** | 推論の実行 | この PC（同一ホスト）。Ollama 0.40.5 + `qwen3.8:27b` |
 
 ```
 Claude Code / Codex（クラウド）
@@ -43,7 +43,7 @@ A30 サーバー上では、導入スクリプトを **1 回**走らせるだけ
 `setup-server.sh` がやること（`[1/7]`〜`[7/7]`）:
 
 1. uv と python3 の確認（uv が無ければ導入方法を表示して終了）
-2. OpenCode 1.18.31 を `~/.opencode/bin` へ（公式単体バイナリ。シェル設定は書き換えない）
+2. OpenCode 1.19.2 を `~/.opencode/bin` へ（公式単体バイナリ。シェル設定は書き換えない）
 3. 連携層の仮想環境 `.venv`（`requirements.lock.txt` と `-e .`）
 4. `~/.config/local-ai-bridge/bridge.toml` を `config/bridge.toml.example` から作り、`[registration] allowed_roots` を書く（既にあれば触らない）
 5. Claude Code / Codex への MCP 登録（`register-claude.sh` / `register-codex.sh`）
@@ -66,7 +66,7 @@ sudo が要る作業（ufw、linger、Ollama の drop-in）は `scripts/server-a
 <summary>手で行う場合（スクリプトと同じ手順）</summary>
 
 ```bash
-curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.31 --no-modify-path
+curl -fsSL https://opencode.ai/install | bash -s -- --version 1.19.2 --no-modify-path
 cd ~/Proj/localai/tools/local-ai-bridge
 ~/.local/bin/uv venv --python 3.12 .venv
 ~/.local/bin/uv pip install --python .venv/bin/python -r requirements.lock.txt

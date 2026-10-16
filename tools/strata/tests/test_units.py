@@ -43,9 +43,9 @@ def test_classify_commit() -> None:
 
 
 def test_classify_build_stamp() -> None:
-    stamp = {"src": config.STRATA_COMMIT, "cuda": config.CUDA_HOME, "archs": [80], "version": "0.1.40"}
+    stamp = {"src": config.STRATA_COMMIT, "cuda": config.CUDA_HOME, "archs": [80], "version": "0.1.44.1"}
     ok, detail = checks.classify_build_stamp(stamp, 51836336, config.STRATA_COMMIT, config.CUDA_HOME, "80")
-    assert ok and "sm_80" in detail and "0.1.40" in detail
+    assert ok and "sm_80" in detail and "0.1.44.1" in detail
     assert checks.classify_build_stamp(stamp, None, config.STRATA_COMMIT, config.CUDA_HOME, "80")[0] is False
     assert checks.classify_build_stamp(None, 1, config.STRATA_COMMIT, config.CUDA_HOME, "80")[0] is False
     old = dict(stamp, src="0" * 40)

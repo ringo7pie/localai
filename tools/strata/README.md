@@ -10,7 +10,7 @@ abliteration をしていない公式の [Qwen3.8-Flash-Next IQ3_XXS](https://hu
 も足した（ポート 8084、unit `strata-official`。下の「公式版（非 abliterated）IQ3_XXS」）。3 つは同時には載せない。
 
 上流の `./setup.sh` → `setup.py` は対話式で、足りないものを `sudo apt` / `pip` で入れ、Linux では engine を
-その場でコンパイルする（Linux 用のビルド済み engine は無い。v0.1.40.1 のリリース資産は Windows 用の 3 つだけ）。
+その場でコンパイルする（Linux 用のビルド済み engine は無い。v0.1.44.1 のリリース資産も Windows 用の 3 つだけ。2026-10-16 確認）。
 ここでは同じ手順を非対話・sudo なしで行う。`tools/comfyui` と構成・語り口を揃えている。
 
 ## ポート
@@ -28,7 +28,7 @@ Coder は `http://<server-ip>:8083/v1`、モデル名は **`strata-flash-coder:I
 
 | 対象 | 版・コミット |
 |---|---|
-| Niko1221/Strata | `v0.1.40.1` = `82f46a8c8f475f001ad76d92f58f4a4f8ffb0253`（engine の版は CMakeLists.txt の `0.1.40`） |
+| Niko1221/Strata | `v0.1.44.1` = `296b59d2f73c8f04a805df29c2fa97655adace78`（engine の版は CMakeLists.txt の `0.1.44.1`） |
 | ggml-org/llama.cpp（ggml を静的に組み込む、gguf-py） | `3cf03257f219afbe7334045ff7c6a06ac68c627d`（上流 setup.py の `LLAMA_CPP_COMMIT`） |
 | モデル（HF） | `jimmy31chen/RVN-Qwen3.8-Flash-Next-Abliterated-Uncensored-IQ3_S-Strata` の `17876139539724fc6f0b0fbfdcf7b1daa494d045`（2026-10-01） |
 | Coder（HF） | `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF` の `5348543e0147355ac9cbcb031184a3546350988e`（2026-09-29、Apache-2.0） |
@@ -132,6 +132,7 @@ strata --serve --pack models/RVN-Qwen3.8-Flash-Next-IQ3_S/pack
   draft の語彙は上流の既定と同じ CJK 込み（`data/draft_vocab.bin`、106,299 トークン）。
 - `--expert-profile` はカードのとおり上流同梱の汎用 profile。pack は 0.1.30 で作られたものだが 0.1.40 でそのまま
   読めた（`iq_pack.py` での作り直しは不要だった。0.1.40 の `iq_pack.py --compat-bf16` も同じ変換規則）。
+  0.1.44.1 でも pack は読めた。ただし RVN の GGUF は、メタデータを直さないと起動できない（下の「v0.1.44.1 への更新」）。
 
 ## CUDA 13.2 でビルドした理由
 
@@ -321,7 +322,7 @@ tools/strata/run-strata doctor
 ### AVX2 / CPU のカーネル
 
 - CPU は i7-12700（AVX2・FMA・AVX-VNNI あり、AVX-512 なし）。engine は `setup-server.sh` が機体でビルドしたもの
-  （`engine/BUILD.json`: source local、v0.1.40）。
+  （`engine/BUILD.json`: source local、v0.1.44.1）。
 - engine のログに、起動のたびに `this CPU has no AVX-512: the expert kernels run on AVX-2 (multi-token for the i-quant gate/up rows)`
   と出る。CPU 側のエキスパートの計算は AVX2 のカーネルで動いている。選ぶ設定は無く、engine が実行時に選ぶ。
 - AVX-VNNI の形は、上流の説明では対応 CPU（Alder Lake 以降）で既定で有効（`STRATA_NO_AVXVNNI=1` で止める）。この機体のログには
@@ -620,6 +621,58 @@ CPU 側の読み出しも少ない。
 - 画像入力は使わない（mmproj を取っていない）。
 - Open WebUI の接続先（`http://127.0.0.1:8084/v1`）と入口ページのカードには 2026-10-07 に足した（下の「Open WebUI（8081）からつなぐ」、
   `tools/portal`）。停止中は Open WebUI の一覧に出ないか、選んでもエラーになる（汎用版と同じ）。
+
+## v0.1.44.1 への更新（2026-10-16）
+
+v0.1.40.1 → v0.1.44.1（コミット `296b59d2…`）。llama.cpp の固定コミット（`3cf03257…`）は上流の `setup.py` も `third_party/ggml/VERSION.txt`
+も同じなので変えていない。`setup-server.sh --build-only --rebuild` で engine を作り直した（CUDA 13.2・sm_80）。
+新版は CMake の既定で K-quant の MMQ と Q6_K のエキスパート用カーネルが入り、engine が 49.4 MiB → 64.3 MiB に増えた
+（`strata_kq` は別ライブラリで、その形式のモデルを載せたときだけ読まれる。上流の CMakeLists.txt の注記）。
+
+### RVN の GGUF のメタデータを直した
+
+- 新 engine は起動時に GGUF のメタデータから形状を読み、`qwen4exp.attention.compress_ratios` が「full attention の層
+  （`(層番号 + 1)` が `full_attention_interval` で割り切れる層）だけ 0 でない」ことを検査する（`include/strata/artifact/gguf_reader.hpp` の
+  `read_geometry`、上流のコミット `f812e9a1`）。旧 engine は形状を決め打ちしていたので見ていなかった。
+- RVN の GGUF（`RVN-Qwen3.8-Flash-Next-IQ3_S-merged.gguf`）は 48 個すべてが 0 で、`strata generate: qwen4exp.attention.compress_ratios[3] = 0,
+  but full_attention_interval = 4 makes layer 3 full attention` で起動に失敗する。Coder・公式版の GGUF（ISTA の配布）は
+  インデックス 3, 7, …, 47 だけ 4 で、そのまま動いた。HF の RVN リポジトリは固定リビジョン（`17876139…`）のまま更新が無い（2026-10-16 確認）。
+- 利用者の判断で、RVN の GGUF の該当 12 要素（int32、ファイル内オフセット 2345, 2361, …, 2521）を 0 → 4 に書き換えた。
+  ファイルの大きさは変わらない。変わったのはこの 12 要素の 48 バイトのうち 12 バイトだけ（スクリプトが書いた前後のメタデータ領域を比べて確かめる）。
+  `scripts/patch_gguf_compress_ratios.py <gguf>` は現状の表示だけ、`--apply` で直す、`--revert` で全部 0 に戻す。
+  直すのは全部 0 のときだけ、戻すのは期待どおりの配列のときだけで、書く前に生のバイトと読み取った値の一致を確かめる。
+- **HF に固定した sha256 とは一致しなくなる。** `run-strata fetch-models --verify` は RVN の GGUF で失敗する（`--verify` なしの
+  `setup-server.sh` の再実行は大きさだけ見るので通る）。取り直したときは `--apply` をもう一度実行する。
+- 旧 engine（v0.1.40.1）に戻すときは、`--revert` は要らない（旧 engine はこの配列を読まない。旧 engine での確認はしていない）。
+
+### 他のモデルを動かした直後の RVN の起動
+
+2026-10-16、Coder・公式版を動かした直後に RVN を起動すると、エキスパートを RAM に複製している途中（`copied cache complement through
+layer 24/48`）で `systemd-oomd killed 3 process(es) in this unit` となり、起動が失敗した。page cache に前のモデルの GGUF が約 23 GiB
+残っていた。`posix_fadvise(DONTNEED)` で 3 つのモデルと MTP の GGUF の page cache を捨ててから起動すると、72 秒で起動した。
+モデルを切り替えるときは、前のモデルを止めたあとに次を実行する（root 不要）:
+
+```bash
+python3 -c 'import os, sys
+for path in sys.argv[1:]:
+    descriptor = os.open(path, os.O_RDONLY)
+    os.posix_fadvise(descriptor, 0, 0, os.POSIX_FADV_DONTNEED)
+    os.close(descriptor)' tools/strata/models/*/*.gguf tools/strata/models/*/*/*.gguf tools/strata/models/mtp/*.gguf
+```
+
+### 確認した結果（2026-10-16、`scripts/bench_api.py`、max_tokens 256、3 回の中央値）
+
+3 つとも doctor が全部 OK で、起動し、答えを返した。速さは 2026-10-07 の記録と同じ範囲（thinking ありは effort low）。
+
+| 条件 | 汎用版 RVN（10-07 の測り直し） | Coder（10-07） | 公式版（10-07） |
+|---|---:|---:|---:|
+| 短い質問 thinking なし: 生成 tok/s | 42.1（33.9） | 62.4（62.3） | 53.2（42.8） |
+| 4K 入力 thinking なし: 生成 tok/s | 48.8（35.8） | 65.2（63.3） | 53.3（54.5） |
+| 4K 入力 thinking あり: 生成 tok/s | 56.4（60.0） | 98.2（97.2） | 未測定 |
+| 4K 入力の prefill tok/s | 1,001（972〜990） | 1,641（1,664） | 1,265（1,242〜1,260） |
+
+- 汎用版の 4K・thinking ありだけ 6% 遅いが、1 回の測定で、原因（draft の採用率のばらつきなど）は確かめていない。
+- 77,641 トークンの長い入力・数学難問は測り直していない。
 
 ## 試験
 

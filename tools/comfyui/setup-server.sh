@@ -24,8 +24,8 @@ source "$TOOL_DIR/../../scripts/lib/server-host.sh"
 # cfui/config.py の COMFYUI_* / CUSTOM_NODES / EXTENSION_SOURCES / PIXELARTISTRY_* と一致させること
 # （venv 構築前に git 操作をするため、ここでは python を経由せず直値で持つ）。
 COMFYUI_URL="https://github.com/Comfy-Org/ComfyUI.git"
-COMFYUI_TAG="v0.38.2"
-COMFYUI_COMMIT="daeb5e53681e2b10a3f0727d9ec5bc90784bee10"
+COMFYUI_TAG="v0.41.1"
+COMFYUI_COMMIT="45bf90d1c91eecd782643346dcfb73cb0017667f"
 PIXELARTISTRY_URL="https://github.com/pixelartistry/PixelArtistry-Watertight-Meshes.git"
 PIXELARTISTRY_COMMIT="5b3a0e9d2c5783ed05ba45bbcc157b9509fb267b"
 

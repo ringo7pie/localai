@@ -22,7 +22,7 @@ this project is not affiliated with or endorsed by them.
 
 | 名前 | 取得元・固定 | ライセンス | 使われ方・注意 |
 |---|---|---|---|
-| Strata | [Niko1221/Strata](https://github.com/Niko1221/Strata) `v0.1.40.1` | MIT（Copyright (c) 2026 Niko1221 and the Strata contributors） | `tools/strata`。engine を取得してビルドする |
+| Strata | [Niko1221/Strata](https://github.com/Niko1221/Strata) `v0.1.44.1` | MIT（Copyright (c) 2026 Niko1221 and the Strata contributors） | `tools/strata`。engine を取得してビルドする |
 | llama.cpp（ggml・gguf-py） | [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) `3cf03257` | MIT | Strata の engine に静的に組み込まれる（上流の `setup.py` の手順） |
 | Ollama | [ollama.com](https://ollama.com) | MIT | 利用者が公式の手順で導入する。同梱しない |
 | Open WebUI | [open-webui/open-webui](https://github.com/open-webui/open-webui) | BSD-3-Clause をもとにした独自ライセンス（ブランド表示の保持条項を含む） | 別途導入する。同梱しない。導入時に原文を確認すること |

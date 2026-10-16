@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# A30 サーバーで推論エンジン Strata（v0.1.40.1）を組み立て、RVN-Qwen3.8-Flash-Next IQ3_S（Strata 用 pack 付き）を
+# A30 サーバーで推論エンジン Strata（v0.1.44.1）を組み立て、RVN-Qwen3.8-Flash-Next IQ3_S（Strata 用 pack 付き）を
 # 動かせる状態にする（冪等。再実行は既存物を触らない）。
 #
 # 上流の ./setup.sh → setup.py は対話式で、足りないものを sudo apt / pip で入れ、Linux では engine を
@@ -34,9 +34,9 @@ source "$TOOL_DIR/../../scripts/lib/server-host.sh"
 # stra/config.py の STRATA_* / LLAMA_CPP_* / CUDA_* と一致させること
 # （venv 構築前に git 操作をするため、ここでは python を経由せず直値で持つ）。
 STRATA_URL="https://github.com/Niko1221/Strata.git"
-STRATA_TAG="v0.1.40.1"
-STRATA_COMMIT="82f46a8c8f475f001ad76d92f58f4a4f8ffb0253"
-STRATA_ENGINE_VERSION="0.1.40"
+STRATA_TAG="v0.1.44.1"
+STRATA_COMMIT="296b59d2f73c8f04a805df29c2fa97655adace78"
+STRATA_ENGINE_VERSION="0.1.44.1"
 LLAMA_CPP_URL="https://github.com/ggml-org/llama.cpp.git"
 LLAMA_CPP_COMMIT="3cf03257f219afbe7334045ff7c6a06ac68c627d"
 # CUDA 13.2 でビルドする。12.6 にすると setup.py は実験扱いの CUDA 12 engine（-DSTRATA_EXPERIMENTAL_SM60=ON、

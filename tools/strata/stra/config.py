@@ -68,10 +68,10 @@ EXPECTED_NVCC_RELEASE = "13.2"
 CUDA_ARCH = "80"
 
 STRATA_URL = "https://github.com/Niko1221/Strata.git"
-STRATA_TAG = "v0.1.40.1"
-STRATA_COMMIT = "82f46a8c8f475f001ad76d92f58f4a4f8ffb0253"
-# CMakeLists.txt の project(strata VERSION ...)。v0.1.40.1 でも 0.1.40 のまま（サーバー側だけの修正版）。
-STRATA_ENGINE_VERSION = "0.1.40"
+STRATA_TAG = "v0.1.44.1"
+STRATA_COMMIT = "296b59d2f73c8f04a805df29c2fa97655adace78"
+# CMakeLists.txt の project(strata VERSION ...)。v0.1.44.1 は 4 桁目まで入っている。
+STRATA_ENGINE_VERSION = "0.1.44.1"
 # setup.py の LLAMA_CPP_COMMIT と同じ（ggml をこの版から静的に組み込む。third_party/ggml/VERSION.txt）。
 LLAMA_CPP_URL = "https://github.com/ggml-org/llama.cpp.git"
 LLAMA_CPP_COMMIT = "3cf03257f219afbe7334045ff7c6a06ac68c627d"

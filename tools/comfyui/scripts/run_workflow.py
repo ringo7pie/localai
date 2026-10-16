@@ -2,7 +2,7 @@
 """UI 形式のワークフロー（ComfyUI の画面で保存する JSON）を API 形式（POST /prompt の prompt）に変え、
 ComfyUI に投入して /history で終わりを確かめ、出力ファイルの一覧を JSON で返す。
 
-ComfyUI v0.38.2 の Python 側には UI 形式 → API 形式の変換が無い（画面のフロントエンドが
+ComfyUI v0.41.1 の Python 側には UI 形式 → API 形式の変換が無い（画面のフロントエンドが
 graphToPrompt / ExecutableNodeDTO で行う）。そこで同じ規則をここに書き直した。規則は
 comfyui_frontend_package 1.53.6 の settingStore-*.js を読んで合わせた（2026-10-03）:
 
