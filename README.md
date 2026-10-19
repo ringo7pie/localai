@@ -111,8 +111,11 @@ python3 tools/portal/portal.py --host 127.0.0.1 --port 18080
 ## Evaluation snapshot (2026-10-18)
 
 A harder round: six coding problems (hidden tests, sandboxed) and three math problems, written so that Sonnet and Opus
-might come apart. Reports (Japanese): [evaluation](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-18.html), [the problems explained](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_%E5%87%BA%E9%A1%8C%E5%86%85%E5%AE%B9_2026-10-18.html),
-[the local models on this machine](https://ringo7pie.github.io/localai/reports/%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%ABAI%E4%B8%80%E8%A6%A7_2026-10-18.html).
+might come apart. Open the reports (Japanese, self-contained HTML):
+
+- [AIモデル評価_2026-10-18.html](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-18.html) — results, conditions and caveats
+- [AIモデル評価_出題内容_2026-10-18.html](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_%E5%87%BA%E9%A1%8C%E5%86%85%E5%AE%B9_2026-10-18.html) — the nine problems explained, with examples and figures
+- [ローカルAI一覧_2026-10-18.html](https://ringo7pie.github.io/localai/reports/%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%ABAI%E4%B8%80%E8%A6%A7_2026-10-18.html) — the local models on this machine
 
 Ability = mean score over the nine problems. Time = median seconds per run. Claude was run three times per problem
 through sub-agents (time includes API wait); local models once per problem, on this machine (generation only, no model load).
@@ -147,8 +150,12 @@ Medium and High effort for both Claude models are in the report (98–100 % as w
 
 ## Earlier round (2026-10-08)
 
-Ability = mean score per problem; time = median seconds. Full tables, method and caveats are in the
-[report](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html) (Japanese). Few trials per cell — treat small differences as noise.
+The first round: 3D math, six coding problems and nine extra problems. Open the reports (Japanese, self-contained HTML):
+
+- [AIモデル評価_2026-10-08.html](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html) — full tables, method and caveats
+- [AIモデル評価_出題内容_2026-10-08.html](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_%E5%87%BA%E9%A1%8C%E5%86%85%E5%AE%B9_2026-10-08.html) — the 16 problems explained
+
+Ability = mean score per problem; time = median seconds. Few trials per cell — treat small differences as noise.
 
 | Model | 3D math | Coding (6) | Extra (9) |
 |---|---|---|---|
