@@ -66,7 +66,8 @@
   </div>
   <div class="card">
     <h3>モデルを感覚でなく測る</h3>
-    <p>9 つの AI を同じ 16 問・同じ採点（隠しテスト）で比べ、速さと正しさの両方を記録した。</p>
+    <p>9 つの AI を同じ 16 問・同じ採点（隠しテスト）で比べ、速さと正しさの両方を記録した。
+    2026-10-18 には難問 9 問で、Claude 8 構成とローカル 9 モデルを測り直した。</p>
   </div>
   <div class="card">
     <h3>クラウドの AI からローカルへ回す</h3>
@@ -84,7 +85,28 @@
   <figcaption>コーディング 6 問 × 9 モデル。「打切」は思考の上限に届いて打ち切られた回。隠しテストで採点。</figcaption>
 </figure>
 
-<h2>評価の要点（2026-10-08）</h2>
+<h2>評価の要点（2026-10-18）</h2>
+<p>前回より難しい問題（コーディング 6 問・数学 3 問）で、Claude 8 構成（Sonnet・Opus × effort 4 段階、各問 3 回）と
+ローカル 9 モデルを測った。</p>
+<table>
+  <thead><tr><th>モデル</th><th class="num">能力（9 問の平均）</th><th class="num">時間（中央値）</th></tr></thead>
+  <tbody>
+    <tr><td>Sonnet 5.5 xHigh</td><td class="num">98.6%</td><td class="num">98 s</td></tr>
+    <tr><td>Sonnet 5.5 Low</td><td class="num">98.4%</td><td class="num">29 s</td></tr>
+    <tr><td>Opus 5.5 xHigh</td><td class="num">99.9%</td><td class="num">123 s</td></tr>
+    <tr><td>Opus 5.5 Low</td><td class="num">98.8%</td><td class="num">31 s</td></tr>
+    <tr><td>Strata 公式 IQ3_XXS</td><td class="num">77.8%</td><td class="num">363 s</td></tr>
+    <tr><td>Strata Coder IQ1_M</td><td class="num">68.2%</td><td class="num">393 s</td></tr>
+    <tr><td>gemma4:31b-it-qat</td><td class="num">54.5%</td><td class="num">443 s</td></tr>
+    <tr><td>qwen3.8:27b</td><td class="num">27.8%</td><td class="num">534 s</td></tr>
+  </tbody>
+</table>
+<p class="note">Claude は各問 3 回（時間はサブエージェントの所要時間で API の待ちを含む）、ローカルは各問 1 回（この機体での生成時間）。
+Claude 8 構成はすべて 98〜100% で、Sonnet と Opus の差は High だけ Opus が上、ほかは判定できなかった。
+決まって違ったのは問 H3 の 1 ケースだけ（Sonnet は 12 回すべて、Opus は 12 回中 1 回落とした）。
+最良のローカルの能力は Sonnet xHigh の約 8 割で、1 問の時間は約 3.7 倍。全モデル・Medium と High はレポートにある。</p>
+
+<h2>前回の評価の要点（2026-10-08）</h2>
 <table>
   <thead><tr><th>モデル</th><th class="num">3D 数学</th><th class="num">コーディング 6 問</th><th class="num">追加 9 問</th></tr></thead>
   <tbody>
@@ -106,6 +128,9 @@ Claude 2 種はコーディングで全問合格し、能力では差がつか�
 
 <h2>レポート（1 ファイル完結の HTML）</h2>
 <ul>
+  <li><a href="reports/AIモデル評価_2026-10-18.html">AI モデル評価（難問 9 問・Claude 8 構成とローカル 9 モデル）</a></li>
+  <li><a href="reports/AIモデル評価_出題内容_2026-10-18.html">難問 9 問の解説（出題内容）</a></li>
+  <li><a href="reports/ローカルAI一覧_2026-10-18.html">この機体に入っているローカル AI の一覧</a></li>
   <li><a href="reports/AIモデル評価_2026-10-08.html">AI モデル評価（3D 数学・コーディング・追加 3 試験）</a></li>
   <li><a href="reports/AIモデル評価_出題内容_2026-10-08.html">評価で出した 16 問の解説（出題内容）</a></li>
   <li><a href="reports/Strata_コーディング性能の調査_2026-10-09.html">Strata のコーディング性能の調査</a></li>

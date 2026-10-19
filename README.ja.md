@@ -22,11 +22,12 @@ Claude Code / Codex から作業を回すための、**運用ツール・連携�
 - **GPU 1 枚を取り合う複数のサービスを、1 画面で起動・停止する。** 入口ページ（portal）が GPU の排他を取り、
   Strata の起動前に Ollama のモデルを降ろす。画面を通さない操作は systemd の `Conflicts=` が守る。
 - **VRAM に収まらない MoE のモデルを、24 GB のカードで動かす。** Strata（MoE の CPU-GPU 分担推論）を固定コミットから
-  ビルドし、OpenAI 互換 API で 3 種（汎用・Coder・公式）出す。
+  ビルドし、OpenAI 互換 API で 5 種（汎用・Coder・公式 IQ3_XXS・公式 IQ3_S・Swift 1.5）出す。
 - **複数枚の画像から 3D メッシュを作る。** Hunyuan3D-2mv（4 枚入力）と Pixal3D（1〜4 枚）、ComfyUI の防水メッシュのワークフロー。
 - **クラウドの Claude Code / Codex から、機械的な実装の反復だけをローカルの Qwen へ回す。** MCP サーバー
   （qwen-worker・local-ai-bridge）。要求の整理・設計・レビューはクラウドに残す。
-- **モデルを測って比べる。** 9 つの AI を同じ 16 問・同じ採点（隠しテスト）で比べ、HTML のレポートにする。
+- **モデルを測って比べる。** 同じ問題・同じ採点（隠しテスト）で比べ、HTML のレポートにする。2026-10-08 は 9 つの AI を 16 問で、
+  2026-10-18 は難問 9 問を Claude 8 構成とローカル 9 モデルで比べた。
 - **同じ環境を再現する。** 上流は固定コミット、導入は非対話・冪等・sudo なし。
 
 ## 構成
@@ -35,7 +36,7 @@ Claude Code / Codex から作業を回すための、**運用ツール・連携�
 |---|---|---|
 | `localai` | 入口のスクリプト。`doctor` / `install` / `start` / `stop` / `status` / `test` | 不要 |
 | `tools/portal/` | ポート 8080 の入口ページ。起動・停止、GPU の排他、メモリ上限。依存なし | 不要 |
-| `tools/strata/` | MoE の CPU-GPU 分担推論（OpenAI 互換 API）。汎用版 8082・Coder 版 8083・公式版 8084 | 要 |
+| `tools/strata/` | MoE の CPU-GPU 分担推論（OpenAI 互換 API）。汎用版 8082・Coder 版 8083・公式版 8084・公式版 IQ3_S 8085・Swift 1.5 8086 | 要 |
 | `tools/pixal3d/` | 複数画像から 3D メッシュ（Pixal3D、7861） | 要 |
 | `tools/hunyuan3d/` | 4 枚の画像から 3D メッシュ（Hunyuan3D-2mv、7860）。**使用許諾の確認が要る**（下記） | 要 |
 | `tools/comfyui/` | ComfyUI と防水メッシュのワークフロー（8188）。WTiVo のネイティブ部分（CGAL・CUDA 12.6）を自前でビルドする | 要 |
@@ -55,7 +56,7 @@ Claude Code / Codex から作業を回すための、**運用ツール・連携�
 |---|---|---|
 | 8080 | 入口ページ（portal） | 自動起動するのはこれだけ |
 | 8081 | Open WebUI | 別途導入（このリポジトリには含めない） |
-| 8082 / 8083 / 8084 | Strata 汎用版 / Coder 版 / 公式版 | 3 つは同時には載せない |
+| 8082 / 8083 / 8084 / 8085 / 8086 | Strata 汎用版 / Coder 版 / 公式版 / 公式版 IQ3_S / Swift 1.5 | 5 つは同時には載せない |
 | 7860 / 7861 | Hunyuan3D / Pixal3D | 排他 |
 | 8188 | ComfyUI | 排他 |
 | 11434 | Ollama API | 127.0.0.1 のみ |
@@ -79,7 +80,7 @@ cd localai
 引数はそのまま渡る）。
 
 ```bash
-./localai install strata --model rvn       # 約 100 GB。rvn | coder | official
+./localai install strata --model rvn       # 約 100 GB。rvn | coder | official | official-iq3s | swift
 ./localai install pixal3d                  # 約 30 GB・CUDA 12.6
 ./localai install comfyui                  # 約 16 GB・CUDA 12.6
 ./localai install hunyuan3d --accept-tencent-license   # 約 23 GB・使用許諾の確認が要る
@@ -95,6 +96,45 @@ GPU が無い機体でも、入口ページの閲覧・評価レポートの閲�
 ./localai test                                            # GPU 不要の試験を、ツールごとに OK / FAIL / SKIP で出す
 python3 tools/portal/portal.py --host 127.0.0.1 --port 18080   # 入口ページだけ（依存なし）
 ```
+
+## 評価（2026-10-18）
+
+前回より難しい問題で測り直した。コーディング 6 問（隠しテスト・サンドボックスで採点）と数学 3 問で、Sonnet と Opus に
+差が出るように作った。レポート: [AIモデル評価](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-18.html)・[出題内容の解説](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_%E5%87%BA%E9%A1%8C%E5%86%85%E5%AE%B9_2026-10-18.html)・
+[この機体のローカル AI の一覧](https://ringo7pie.github.io/localai/reports/%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%ABAI%E4%B8%80%E8%A6%A7_2026-10-18.html)。
+
+能力は 9 問の点数の平均、時間は 1 回あたりの中央値。Claude は各問 3 回をサブエージェント経由で測った（時間は API の待ちを含む）。
+ローカルは各問 1 回で、この機体での生成時間（モデルのロードは含まない）。
+
+| モデル | 能力 | 時間（中央値） |
+|---|---|---|
+| Sonnet 5.5 xHigh | 98.6% | 98 秒 |
+| Sonnet 5.5 Low | 98.4% | 29 秒 |
+| Opus 5.5 xHigh | 99.9% | 123 秒 |
+| Opus 5.5 Low | 98.8% | 31 秒 |
+| Strata 公式 IQ3_XXS | 77.8% | 363 秒 |
+| Strata Coder IQ1_M | 68.2% | 393 秒 |
+| Strata 公式 IQ3_S | 66.5% | 451 秒 |
+| Strata Swift 1.5 IQ3_XXS | 55.2% | 364 秒 |
+| gemma4:31b-it-qat | 54.5% | 443 秒 |
+| qwen3.8:27b | 27.8% | 534 秒 |
+| gemma4:e4b | 18.0% | 115 秒 |
+| qwen3.8-flash-next IQ4_XS（Ollama） | 11.1% | 1,404 秒 |
+| Strata 汎用 RVN IQ3_S | 4.0% | 480 秒 |
+
+両モデルの High・Medium もレポートにある（どれも 98〜100%）。
+
+**事実**
+- Claude 8 構成（Sonnet・Opus × effort 4 段階）はすべて 98〜100%。Sonnet と Opus は、High だけ Opus が上
+  （Opus の全回が Sonnet の全回より高い）で、xHigh・Medium・Low は点の範囲が重なり、差は判定できない。
+- 決まって違ったのは、問 H3 の 1 ケースだけ。Sonnet は 12 回すべて、Opus は 12 回中 1 回落とした。
+- effort を xHigh から Low に下げると、時間は 3〜4 分の 1 になり、能力は同じ 98〜100% の幅のまま。
+- ローカルで H3（型推論）と H5（最小 DFA）を満点にしたモデルは無い。
+- 最良のローカル（公式 IQ3_XXS）の能力は Sonnet xHigh の約 8 割で、1 問の時間は約 3.7 倍。
+- qwen3.8:27b の失点の多くは、思考の途中で止まり本文が空のまま終わった回（eos_in_thinking）。
+
+**注意**: ローカルは各問 1 回なので、小さな差は誤差の範囲。問題は Claude でもつまずくように選んでいる。ふだんの作業での差は
+これより小さいかもしれない（測っていない）。
 
 ## 評価（2026-10-08）
 
