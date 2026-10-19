@@ -1,5 +1,5 @@
 "use strict";
-// localai の紹介スライド（10 枚前後）を作る。数字はすべてこのリポジトリの記録から取った値で、各スライドのノートに根拠を書く。
+// single-gpu-local-ai の紹介スライド（10 枚前後）を作る。数字はすべてこのリポジトリの記録から取った値で、各スライドのノートに根拠を書く。
 //
 //   mkdir -p /tmp/slides-tool && cd /tmp/slides-tool && npm init -y && npm install pptxgenjs jszip
 //   NODE_PATH=/tmp/slides-tool/node_modules \
@@ -11,12 +11,12 @@ const pptxgen = require("pptxgenjs");
 
 const OUT_PATH = process.argv[2] || "localai-portfolio.pptx";
 const GITHUB_USER = process.env.GITHUB_USER || "<user>";
-const REPO_LABEL = `github.com/${GITHUB_USER}/localai`;
-const PAGES_LABEL = `${GITHUB_USER}.github.io/localai`;
+const REPO_LABEL = `github.com/${GITHUB_USER}/single-gpu-local-ai`;
+const PAGES_LABEL = `${GITHUB_USER}.github.io/single-gpu-local-ai`;
 const FONT = "Yu Gothic";
 
 const THEME = {
-  name: "localai",
+  name: "single-gpu-local-ai",
   headFontFace: FONT,
   bodyFontFace: FONT,
   colors: {
@@ -37,7 +37,7 @@ const THEME = {
 
 const pres = new pptxgen();
 pres.layout = "LAYOUT_16x9"; // 10 x 5.625 inch
-pres.title = "localai — 24 GB の GPU 1 枚で、ローカル AI の群れを運用し、測る";
+pres.title = "single-gpu-local-ai — 24 GB の GPU 1 枚で、ローカル AI の群れを運用し、測る";
 pres.author = GITHUB_USER;
 pres.subject = "ローカル AI の運用・評価・連携";
 pres.theme = { headFontFace: FONT, bodyFontFace: FONT };
@@ -66,7 +66,7 @@ pres.defineSlideMaster({
         text: "",
       },
     },
-    { text: { text: "localai", options: { x: 0.5, y: 5.2, w: 3, h: 0.3, fontSize: 10, color: C.accent6, margin: 0 } } },
+    { text: { text: "single-gpu-local-ai", options: { x: 0.5, y: 5.2, w: 3, h: 0.3, fontSize: 10, color: C.accent6, margin: 0 } } },
   ],
   slideNumber: { x: 9.0, y: 5.2, w: 0.5, h: 0.3, fontSize: 10, color: C.accent6, align: "right" },
 });
@@ -125,7 +125,7 @@ function titled(slide, text) {
 // ---------------------------------------------------------------- 1. 表紙
 {
   const slide = pres.addSlide({ masterName: "TITLE_DARK" });
-  label(slide, "表紙の題", "localai", 0.7, 1.0, 8.6, 1.0, { fontSize: 60, bold: true, color: C.background1, valign: "middle" });
+  label(slide, "表紙の題", "single-gpu-local-ai", 0.7, 1.0, 8.6, 1.0, { fontSize: 44, bold: true, color: C.background1, valign: "middle" });
   label(slide, "表紙の副題", "24 GB の GPU 1 枚で、\nローカル AI の群れを運用し、測る", 0.7, 2.1, 8.6, 1.1, {
     fontSize: 24, color: C.background2, valign: "top",
   });
@@ -139,7 +139,7 @@ function titled(slide, text) {
   label(slide, "表紙の説明", "資源の排他・モデルの測定・クラウドとの連携を設計した、個人プロジェクト", 0.7, 4.35, 8.6, 0.7, {
     fontSize: 14, color: C.accent2,
   });
-  slide.addNotes("localai の紹介。GPU 1 枚（NVIDIA A30 24 GB）で LLM・3D 生成・画像ワークフローを運用し、モデルを測り、クラウドの AI と連携する。");
+  slide.addNotes("single-gpu-local-ai の紹介。GPU 1 枚（NVIDIA A30 24 GB）で LLM・3D 生成・画像ワークフローを運用し、モデルを測り、クラウドの AI と連携する。");
 }
 
 // ---------------------------------------------------------------- 2. 解いた問題

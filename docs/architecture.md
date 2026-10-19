@@ -116,8 +116,8 @@ flowchart LR
 - 標準ライブラリだけで書いてあり、venv を作らない。
 - 採点はコードの取り出し・静的な走査・隠しテストの実行。問題ごとに参照解を持ち、解説書の本文は原文と照合して
   食い違えば HTML を作らず止まる。
-- 結果の見方は [評価レポート](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html) と
-  [出題内容の解説書](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_%E5%87%BA%E9%A1%8C%E5%86%85%E5%AE%B9_2026-10-08.html)。
+- 結果の見方は [評価レポート](https://ringo7pie.github.io/single-gpu-local-ai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html) と
+  [出題内容の解説書](https://ringo7pie.github.io/single-gpu-local-ai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_%E5%87%BA%E9%A1%8C%E5%86%85%E5%AE%B9_2026-10-08.html)。
 
 ## 6. 設計の判断（要約）
 

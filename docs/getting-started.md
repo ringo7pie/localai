@@ -14,8 +14,8 @@
 ## 0. 取得と点検
 
 ```bash
-git clone https://github.com/ringo7pie/localai.git
-cd localai
+git clone https://github.com/ringo7pie/single-gpu-local-ai.git
+cd single-gpu-local-ai
 ./localai doctor
 ```
 

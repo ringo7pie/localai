@@ -146,11 +146,11 @@ page = f"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>localai</title>
+<title>single-gpu-local-ai</title>
 <style>body{{font-family:system-ui,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem;line-height:1.7}}</style>
 </head>
 <body>
-<h1>localai</h1>
+<h1>single-gpu-local-ai</h1>
 <p>NVIDIA A30 1 枚でローカル LLM を動かす環境の、評価レポートと調査書。</p>
 <ul>
 {body}

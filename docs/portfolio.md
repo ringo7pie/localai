@@ -1,4 +1,4 @@
-# localai — 24 GB の GPU 1 枚で、ローカル AI の群れを運用する
+# single-gpu-local-ai — 24 GB の GPU 1 枚で、ローカル AI の群れを運用する
 
 > 個人の GPU サーバー（NVIDIA A30 24 GB）に、LLM・3D 生成・画像ワークフローを載せ、
 > **取り合う資源（VRAM と RAM）を設計で捌き**、**モデルの良し悪しを測って**、クラウドの Claude Code / Codex から
@@ -54,7 +54,7 @@
 ### 3.2 10 の AI の比較評価（同じ問題・同じ採点）
 
 能力 = 問ごとの点数の平均。時間は中央値。出典: [`summary.json`](../tools/model-eval/results/2026-10-08/summary.json)・
-[評価レポート](https://ringo7pie.github.io/localai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html)。
+[評価レポート](https://ringo7pie.github.io/single-gpu-local-ai/reports/AI%E3%83%A2%E3%83%87%E3%83%AB%E8%A9%95%E4%BE%A1_2026-10-08.html)。
 
 | モデル | 3D 数学（能力 / 時間） | コーディング 6 問 | 追加の 3 試験 |
 |---|---|---|---|
@@ -79,7 +79,7 @@
 ### 3.3 Strata のコーディング性能の調査（設定の誤りを疑って潰す）
 
 Strata のコーディングの点が低いのは設定の誤りではないか、を条件を変えて調べた。
-出典: [調査レポート](https://ringo7pie.github.io/localai/reports/Strata_%E3%82%B3%E3%83%BC%E3%83%87%E3%82%A3%E3%83%B3%E3%82%B0%E6%80%A7%E8%83%BD%E3%81%AE%E8%AA%BF%E6%9F%BB_2026-10-09.html)。
+出典: [調査レポート](https://ringo7pie.github.io/single-gpu-local-ai/reports/Strata_%E3%82%B3%E3%83%BC%E3%83%87%E3%82%A3%E3%83%B3%E3%82%B0%E6%80%A7%E8%83%BD%E3%81%AE%E8%AA%BF%E6%9F%BB_2026-10-09.html)。
 
 | 条件 | Coder IQ1_M の平均 | 公式 IQ3_XXS の平均 |
 |---|---|---|
