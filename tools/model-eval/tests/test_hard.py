@@ -13,6 +13,7 @@ import os
 import random
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -272,6 +273,24 @@ def test_run_past_deadline_skips_everything_and_writes_progress(offline_target, 
     assert lane["done"] == 9 and lane["total"] == 9 and lane["target"] == "fake:model"
 
 
+@pytest.fixture
+def jst():
+    """進捗の表示は、実行した機体の現地時刻で時刻を出す（意図した動作）。
+
+    時刻の文字列（「10-18 16:15」など）を比べる試験は、現地時刻が UTC の CI の機体でも同じになるよう、
+    日本時間（UTC+9）に固定して走らせる。POSIX 形式の TZ なので tzdata が無い機体でも動く。
+    """
+    previous = os.environ.get("TZ")
+    os.environ["TZ"] = "JST-9"
+    time.tzset()
+    yield
+    if previous is None:
+        os.environ.pop("TZ", None)
+    else:
+        os.environ["TZ"] = previous
+    time.tzset()
+
+
 def fixed_state(t0: datetime.datetime) -> dict:
     state = progress.empty_state()
     state["t0"] = progress.iso(t0)
@@ -352,7 +371,7 @@ def test_progress_unlimited_budget_estimates_from_items():
     assert view["phases"][1]["remaining_models_min"] == pytest.approx(60)
 
 
-def test_progress_added_phase_and_lifted_deadline(work_tmp, capsys):
+def test_progress_added_phase_and_lifted_deadline(work_tmp, capsys, jst):
     state = work_tmp / "p.json"
     base = ["--state", str(state)]
     assert progress_cli.main(base + ["init", "--t0", "2026-10-18T15:40:41+09:00"]) == 0
@@ -481,7 +500,7 @@ def test_progress_fmt_hm_has_no_negative_zero():
     assert progress.fmt_hm(None) == "—"
 
 
-def test_progress_all_phases_done_says_finished():
+def test_progress_all_phases_done_says_finished(jst):
     t0 = datetime.datetime(2026, 10, 18, 15, 40, tzinfo=datetime.timezone(datetime.timedelta(hours=9)))
     state = fixed_state(t0)
     for index, phase in enumerate(state["phases"]):
