@@ -1,0 +1,57 @@
+{
+  "model": "opus-low",
+  "suite": "math",
+  "item": "m2",
+  "run": 3,
+  "content": "u = x-1 とおく。V1∩V2 は (u,y) の符号で 4 つに分かれる。\n- u>0 または y<0 の 3 象限: 1/4 球（各 πr³/3）\n- u≤0, y≥0: 円柱 2 本の交わり（Steinmetz 立体）の 1/4、体積 4r³/3\n|I| = πr³ + 4r³/3、|V1| = πr² + 4πr³/3\n|W| = πr² + πr³/3 - 4r³/3 = 0.432π - 0.288\n\nモーメント: 1/4 球の重心は各軸方向に 3r/8 ずれる。Steinmetz の部分では ∫y = 3πr⁴/16。\nI について: M_u = -πr⁴/16、M_y = πr⁴/16\nW について: M_x = |V1|/2 - |I| + πr⁴/16 = 0.1161π - 0.288、M_y = -πr⁴/16 = -0.0081π\n\n答え(a): 0.432*pi - 0.288\n答え(b): (0.1161*pi - 0.288)/(0.432*pi - 0.288)\n答え(c): -0.0081*pi/(0.432*pi - 0.288)\n",
+  "wall_s": 31.143,
+  "usage": {
+    "subagent_tokens": 31350
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(0.1161*pi - 0.288)/(0.432*pi - 0.288)",
+        "value": 0.07177441261846827,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.1601171477293466e-15
+      },
+      {
+        "key": "c",
+        "text": "-0.0081*pi/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-low/math/m2-run3.md",
+  "imported_at": "2026-10-18T20:05:35+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:37+09:00"
+}

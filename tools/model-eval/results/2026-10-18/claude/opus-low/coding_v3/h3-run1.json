@@ -1,0 +1,183 @@
+{
+  "model": "opus-low",
+  "suite": "coding_v3",
+  "item": "h3",
+  "run": 1,
+  "content": "```python\nimport sys\nimport threading\n\n_KEYWORDS = {\"fun\", \"let\", \"rec\", \"in\", \"if\", \"then\", \"else\", \"true\", \"false\"}\n_GENERIC = 10 ** 9\n\n\ndef _lex(src):\n    toks = []\n    i = 0\n    n = len(src)\n    while i < n:\n        ch = src[i]\n        if ch in \" \\t\\n\\r\":\n            i += 1\n            continue\n        if ch.isdigit() and ch.isascii():\n            j = i\n            while j < n and src[j].isascii() and src[j].isdigit():\n                j += 1\n            toks.append((\"int\", int(src[i:j])))\n            i = j\n            continue\n        if (\"a\" <= ch <= \"z\") or ch == \"_\":\n            j = i + 1\n            while j < n and (src[j].isascii() and (src[j].isalnum()) or src[j] in \"_'\"):\n                j += 1\n            word = src[i:j]\n            if word in _KEYWORDS:\n                toks.append((\"kw\", word))\n            else:\n                toks.append((\"name\", word))\n            i = j\n            continue\n        two = src[i:i + 2]\n        if two in (\"->\", \"::\"):\n            toks.append((\"sym\", two))\n            i += 2\n            continue\n        if ch == \"[\":\n            if i + 1 < n and src[i + 1] == \"]\":\n                toks.append((\"nil\", None))\n                i += 2\n                continue\n            raise SyntaxError(\"bad [\")\n        if ch in \"(),+-*=<\":\n            toks.append((\"sym\", ch))\n            i += 1\n            continue\n        raise SyntaxError(\"bad char %r\" % ch)\n    toks.append((\"eof\", None))\n    return toks\n\n\nclass _Parser:\n    def __init__(self, toks):\n        self.toks = toks\n        self.pos = 0\n\n    def peek(self):\n        return self.toks[self.pos]\n\n    def next(self):\n        tok = self.toks[self.pos]\n        self.pos += 1\n        return tok\n\n    def expect(self, kind, val=None):\n        tok = self.next()\n        if tok[0] != kind or (val is not None and tok[1] != val):\n            raise SyntaxError(\"expected %s %s\" % (kind, val))\n        return tok\n\n    def is_tok(self, kind, val=None):\n        tok = self.peek()\n        return tok[0] == kind and (val is None or tok[1] == val)\n\n    def parse_top(self):\n        expr = self.parse_expr()\n        if not self.is_tok(\"eof\"):\n            raise SyntaxError(\"trailing tokens\")\n        return expr\n\n    def parse_name(self):\n        tok = self.next()\n        if tok[0] != \"name\":\n            raise SyntaxError(\"expected name\")\n        return tok[1]\n\n    def parse_params(self):\n        params = []\n        while self.is_tok(\"name\"):\n            params.append(self.next()[1])\n        return params\n\n    def parse_expr(self):\n        if self.is_tok(\"kw\", \"fun\"):\n            self.next()\n            params = self.parse_params()\n            if not params:\n                raise SyntaxError(\"fun needs params\")\n            self.expect(\"sym\", \"->\")\n            body = self.parse_expr()\n            for param in reversed(params):\n                body = (\"fun\", param, body)\n            return body\n        if self.is_tok(\"kw\", \"let\"):\n            self.next()\n            rec = False\n            if self.is_tok(\"kw\", \"rec\"):\n                self.next()\n                rec = True\n            name = self.parse_name()\n            params = self.parse_params()\n            if rec and not params:\n                raise SyntaxError(\"let rec needs params\")\n            self.expect(\"sym\", \"=\")\n            rhs = self.parse_expr()\n            self.expect(\"kw\", \"in\")\n            body = self.parse_expr()\n            for param in reversed(params):\n                rhs = (\"fun\", param, rhs)\n            if rec:\n                return (\"letrec\", name, rhs, body)\n            return (\"let\", name, rhs, body)\n        if self.is_tok(\"kw\", \"if\"):\n            self.next()\n            cond = self.parse_expr()\n            self.expect(\"kw\", \"then\")\n            thn = self.parse_expr()\n            self.expect(\"kw\", \"else\")\n            els = self.parse_expr()\n            return (\"if\", cond, thn, els)\n        return self.parse_cmp()\n\n    def parse_cmp(self):\n        left = self.parse_cons()\n        while self.is_tok(\"sym\", \"=\") or self.is_tok(\"sym\", \"<\"):\n            op = self.next()[1]\n            right = self.parse_cons()\n            left = (\"bin\", op, left, right)\n        return left\n\n    def parse_cons(self):\n        items = [self.parse_add()]\n        while self.is_tok(\"sym\", \"::\"):\n            self.next()\n            items.append(self.parse_add())\n        result = items[-1]\n        for item in reversed(items[:-1]):\n            result = (\"bin\", \"::\", item, result)\n        return result\n\n    def parse_add(self):\n        left = self.parse_mul()\n        while self.is_tok(\"sym\", \"+\") or self.is_tok(\"sym\", \"-\"):\n            op = self.next()[1]\n            right = self.parse_mul()\n            left = (\"bin\", op, left, right)\n        return left\n\n    def parse_mul(self):\n        left = self.parse_app()\n        while self.is_tok(\"sym\", \"*\"):\n            self.next()\n            right = self.parse_app()\n            left = (\"bin\", \"*\", left, right)\n        return left\n\n    def starts_atom(self):\n        tok = self.peek()\n        if tok[0] in (\"int\", \"name\", \"nil\"):\n            return True\n        if tok[0] == \"kw\" and tok[1] in (\"true\", \"false\"):\n            return True\n        return tok[0] == \"sym\" and tok[1] == \"(\"\n\n    def parse_app(self):\n        if not self.starts_atom():\n            raise SyntaxError(\"expected expression\")\n        func = self.parse_atom()\n        while self.starts_atom():\n            arg = self.parse_atom()\n            func = (\"app\", func, arg)\n        return func\n\n    def parse_atom(self):\n        tok = self.next()\n        kind, val = tok\n        if kind == \"int\":\n            return (\"int\", val)\n        if kind == \"name\":\n            return (\"var\", val)\n        if kind == \"nil\":\n            return (\"nil\",)\n        if kind == \"kw\" and val in (\"true\", \"false\"):\n            return (\"bool\", val == \"true\")\n        if kind == \"sym\" and val == \"(\":\n            first = self.parse_expr()\n            if self.is_tok(\"sym\", \",\"):\n                self.next()\n                second = self.parse_expr()\n                self.expect(\"sym\", \")\")\n                return (\"pair\", first, second)\n            self.expect(\"sym\", \")\")\n            return first\n        raise SyntaxError(\"unexpected token\")\n\n\nclass _TVar:\n    __slots__ = (\"ref\", \"level\")\n\n    def __init__(self, level):\n        self.ref = None\n        self.level = level\n\n\nclass _TCon:\n    __slots__ = (\"name\", \"args\")\n\n    def __init__(self, name, args=()):\n        self.name = name\n        self.args = tuple(args)\n\n\n_INT = _TCon(\"int\")\n_BOOL = _TCon(\"bool\")\n\n\ndef _arrow(a, b):\n    return _TCon(\"->\", (a, b))\n\n\ndef _prune(t):\n    while isinstance(t, _TVar) and t.ref is not None:\n        t = t.ref\n    return t\n\n\ndef _occurs_adjust(tv, t):\n    t = _prune(t)\n    if t is tv:\n        raise TypeError(\"occurs check\")\n    if isinstance(t, _TVar):\n        if t.level > tv.level:\n            t.level = tv.level\n        return\n    for arg in t.args:\n        _occurs_adjust(tv, arg)\n\n\ndef _unify(a, b):\n    a = _prune(a)\n    b = _prune(b)\n    if a is b:\n        return\n    if isinstance(a, _TVar):\n        _occurs_adjust(a, b)\n        a.ref = b\n        return\n    if isinstance(b, _TVar):\n        _occurs_adjust(b, a)\n        b.ref = a\n        return\n    if a.name != b.name or len(a.args) != len(b.args):\n        raise TypeError(\"type mismatch\")\n    for x, y in zip(a.args, b.args):\n        _unify(x, y)\n\n\nclass _Infer:\n    def __init__(self):\n        self.level = 0\n\n    def fresh(self):\n        return _TVar(self.level)\n\n    def generalize(self, t):\n        t = _prune(t)\n        if isinstance(t, _TVar):\n            if t.level > self.level:\n                t.level = _GENERIC\n            return\n        for arg in t.args:\n            self.generalize(arg)\n\n    def instantiate(self, t, mapping=None):\n        if mapping is None:\n            mapping = {}\n        t = _prune(t)\n        if isinstance(t, _TVar):\n            if t.level == _GENERIC:\n                if t not in mapping:\n                    mapping[t] = self.fresh()\n                return mapping[t]\n            return t\n        if not t.args:\n            return t\n        return _TCon(t.name, [self.instantiate(arg, mapping) for arg in t.args])\n\n    def poly(self, build):\n        self.level += 1\n        t = build()\n        self.level -= 1\n        self.generalize(t)\n        return t\n\n    def infer(self, env, expr):\n        kind = expr[0]\n        if kind == \"int\":\n            return _INT\n        if kind == \"bool\":\n            return _BOOL\n        if kind == \"nil\":\n            return _TCon(\"list\", (self.fresh(),))\n        if kind == \"var\":\n            if expr[1] not in env:\n                raise NameError(expr[1])\n            return self.instantiate(env[expr[1]])\n        if kind == \"pair\":\n            return _TCon(\"*\", (self.infer(env, expr[1]), self.infer(env, expr[2])))\n        if kind == \"fun\":\n            param_t = self.fresh()\n            new_env = dict(env)\n            new_env[expr[1]] = param_t\n            return _arrow(param_t, self.infer(new_env, expr[2]))\n        if kind == \"app\":\n            func_t = self.infer(env, expr[1])\n            arg_t = self.infer(env, expr[2])\n            res = self.fresh()\n            _unify(func_t, _arrow(arg_t, res))\n            return res\n        if kind == \"bin\":\n            op = expr[1]\n            left = self.infer(env, expr[2])\n            right = self.infer(env, expr[3])\n            if op in \"+-*\":\n                _unify(left, _INT)\n                _unify(right, _INT)\n                return _INT\n            if op == \"<\":\n                _unify(left, _INT)\n                _unify(right, _INT)\n                return _BOOL\n            if op == \"=\":\n                _unify(left, right)\n                return _BOOL\n            _unify(_TCon(\"list\", (left,)), right)\n            return right\n        if kind == \"if\":\n            _unify(self.infer(env, expr[1]), _BOOL)\n            thn = self.infer(env, expr[2])\n            els = self.infer(env, expr[3])\n            _unify(thn, els)\n            return thn\n        if kind == \"let\":\n            rhs_t = self.poly(lambda: self.infer(env, expr[2]))\n            new_env = dict(env)\n            new_env[expr[1]] = rhs_t\n            return self.infer(new_env, expr[3])\n        if kind == \"letrec\":\n            name = expr[1]\n\n            def build():\n                self_t = self.fresh()\n                rec_env = dict(env)\n                rec_env[name] = self_t\n                body_t = self.infer(rec_env, expr[2])\n                _unify(self_t, body_t)\n                return self_t\n\n            rhs_t = self.poly(build)\n            new_env = dict(env)\n            new_env[name] = rhs_t\n            return self.infer(new_env, expr[3])\n        raise SyntaxError(\"unknown node\")\n\n\ndef _builtin_env():\n    def gv():\n        return _TVar(_GENERIC)\n\n    env = {}\n    a, b = gv(), gv()\n    env[\"fst\"] = _arrow(_TCon(\"*\", (a, b)), a)\n    a, b = gv(), gv()\n    env[\"snd\"] = _arrow(_TCon(\"*\", (a, b)), b)\n    a = gv()\n    env[\"hd\"] = _arrow(_TCon(\"list\", (a,)), a)\n    a = gv()\n    env[\"tl\"] = _arrow(_TCon(\"list\", (a,)), _TCon(\"list\", (a,)))\n    a = gv()\n    env[\"null\"] = _arrow(_TCon(\"list\", (a,)), _BOOL)\n    return env\n\n\ndef _var_name(index):\n    letter = chr(ord(\"a\") + index % 26)\n    suffix = index // 26\n    return \"'\" + letter + (str(suffix) if suffix else \"\")\n\n\ndef _show(t, names):\n    t = _prune(t)\n    if isinstance(t, _TVar):\n        if t not in names:\n            names[t] = _var_name(len(names))\n        return names[t]\n    if t.name == \"->\":\n        left_t = _prune(t.args[0])\n        left = _show(left_t, names)\n        if isinstance(left_t, _TCon) and left_t.name == \"->\":\n            left = \"(\" + left + \")\"\n        return left + \" -> \" + _show(t.args[1], names)\n    if t.name == \"*\":\n        parts = []\n        for arg in t.args:\n            arg_p = _prune(arg)\n            text = _show(arg_p, names)\n            if isinstance(arg_p, _TCon) and arg_p.name in (\"->\", \"*\"):\n                text = \"(\" + text + \")\"\n            parts.append(text)\n        return parts[0] + \" * \" + parts[1]\n    if t.name == \"list\":\n        arg_p = _prune(t.args[0])\n        text = _show(arg_p, names)\n        if isinstance(arg_p, _TCon) and arg_p.name in (\"->\", \"*\"):\n            text = \"(\" + text + \")\"\n        return text + \" list\"\n    return t.name\n\n\ndef _infer_impl(src):\n    toks = _lex(src)\n    ast = _Parser(toks).parse_top()\n    engine = _Infer()\n    result = engine.infer(_builtin_env(), ast)\n    return _show(result, {})\n\n\ndef infer(src: str) -> str:\n    box = {}\n\n    def runner():\n        try:\n            box[\"value\"] = _infer_impl(src)\n        except BaseException as exc:\n            box[\"error\"] = exc\n\n    old_limit = sys.getrecursionlimit()\n    old_stack = threading.stack_size()\n    try:\n        sys.setrecursionlimit(max(old_limit, 200000))\n        threading.stack_size(512 * 1024 * 1024)\n        worker = threading.Thread(target=runner)\n        worker.start()\n        worker.join()\n    finally:\n        threading.stack_size(old_stack)\n        sys.setrecursionlimit(old_limit)\n    if \"error\" in box:\n        raise box[\"error\"]\n    return box[\"value\"]\n```\n",
+  "wall_s": 49.331,
+  "usage": {
+    "subagent_tokens": 36188
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 28,
+    "total": 28,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_literals_and_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_operators",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shadowing_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_curried_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_polymorphism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lambda_bound_is_monomorphic",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_generalization_of_environment_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_occurs_check",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec_polymorphic_after_in",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_if",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_printing_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_variable_naming_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_than_26_type_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_name_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_keyword_expressions_need_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors_come_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_names_and_reserved_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_whitespace_and_layout",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_programs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_lets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_many_nested_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_program",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.13,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-low/coding_v3/h3-run1.md",
+  "imported_at": "2026-10-18T19:46:45+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:34+09:00"
+}

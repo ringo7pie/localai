@@ -1,0 +1,57 @@
+{
+  "model": "opus-medium",
+  "suite": "math",
+  "item": "m2",
+  "run": 2,
+  "content": "## 考え方\n\nr = 0.6。V1 はカプセル（円柱 + 両端の半球）で、体積 = pi r^2 + (4/3) pi r^3 = 0.648 pi。重心は (0.5, 0, 0)。\n\nV1 ∩ V2 は A の近くにしかない。u = x - 1 として、u と y の符号で 4 つに分ける。\n- u ≤ 0, y ≥ 0: 直交する 2 本の円柱 y^2+z^2 ≤ r^2 と u^2+z^2 ≤ r^2 の共通部分（Steinmetz 立体）の 1/4。体積 4r^3/3\n- それ以外の 3 象限: 一方が A を中心とする球で、もう一方の条件を含む。それぞれ球の 1/4 で、体積 pi r^3/3\n\n共通部分の体積 = pi r^3 + 4r^3/3 = 0.216 pi + 0.288\n\nモーメント（A 基準）:\n- 1/4 球: u と y の重心はそれぞれ ±3r/8。u モーメントの合計 = +pi r^4/8、y モーメントの合計 = -pi r^4/8\n- 1/4 Steinmetz: 高さ z の断面は一辺 a = sqrt(r^2-z^2) の正方形。y モーメント = ∫ a^3/2 dz = 3 pi r^4/16、u モーメント = -3 pi r^4/16\n- 合計: u モーメント = -pi r^4/16、y モーメント = +pi r^4/16（pi r^4/16 = 0.0081 pi）\n\nW:\n- 体積 = 0.648 pi - 0.216 pi - 0.288 = 0.432 pi - 0.288 = (54 pi - 36)/125\n- x モーメント = 0.324 pi - (0.216 pi + 0.288) + 0.0081 pi = 0.1161 pi - 0.288\n- y モーメント = -0.0081 pi\n\nx̄ = (129 pi - 320)/(480 pi - 320) ≈ 0.0717744\nȳ = -9 pi/(480 pi - 320) ≈ -0.0238007\n\n答え(a): (54*pi - 36)/125\n答え(b): (129*pi - 320)/(480*pi - 320)\n答え(c): -9*pi/(480*pi - 320)\n",
+  "wall_s": 38.605,
+  "usage": {
+    "subagent_tokens": 32245
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "(54*pi - 36)/125",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(129*pi - 320)/(480*pi - 320)",
+        "value": 0.07177441261846824,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.546822863639129e-15
+      },
+      {
+        "key": "c",
+        "text": "-9*pi/(480*pi - 320)",
+        "value": -0.023800656086705944,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 2.9154212718459503e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-medium/math/m2-run2.md",
+  "imported_at": "2026-10-18T19:19:26+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

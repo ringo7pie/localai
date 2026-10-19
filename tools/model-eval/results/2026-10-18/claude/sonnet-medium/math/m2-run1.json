@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-medium",
+  "suite": "math",
+  "item": "m2",
+  "run": 1,
+  "content": "考え方: u = x-1 とおく。O 側の半球は V2 と交わらず全部 W に入る。A 側の半球(x>1)は全部 V2 に含まれる。\n0<=x<=1 の断面では、a=|u|<=r のとき、半径 r の円から「y<0 の半径 s=sqrt(r^2-a^2) の半円」と「y>=0, |z|<=s の帯」を除く。a>r のときは円全体が残る。\n\n断面積 A(a) = pi r^2 - s a - r^2 asin(s/r) - pi s^2/2 (a<=r)\n体積 = (2/3) pi r^3 + pi r^2 - r^3 (4+pi)/3 = pi r^2 + (pi-4) r^3/3\nx のモーメント = pi r^2/2 - r^3 (4+pi)/3 + pi r^4/16\ny のモーメント = -pi r^4/16 (断面ごとに -s a^2 を積分)\n\nr = 0.6 を代入する。\n\n答え(a): 0.36*pi + (pi-4)*0.216/3\n答え(b): (0.18*pi - 0.216*(4+pi)/3 + pi*0.1296/16) / (0.36*pi + (pi-4)*0.216/3)\n答え(c): (-pi*0.1296/16) / (0.36*pi + (pi-4)*0.216/3)\n\n数値: (a) 1.069168, (b) 0.071775, (c) -0.023801\n\n答え(a): 1.069168\n答え(b): 0.071775\n答え(c): -0.023801\n",
+  "wall_s": 37.397,
+  "usage": {
+    "subagent_tokens": 33239
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 0.6667,
+    "all_passed": false,
+    "passed": 2,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1.069168",
+        "value": 1.069168,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.4646070807583106e-08
+      },
+      {
+        "key": "b",
+        "text": "0.071775",
+        "value": 0.071775,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 8.183717709710569e-06
+      },
+      {
+        "key": "c",
+        "text": "-0.023801",
+        "value": -0.023801,
+        "expected": -0.023800656086705937,
+        "ok": false,
+        "rel_error": 1.4449740074765078e-05
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-medium/math/m2-run1.md",
+  "imported_at": "2026-10-18T19:04:58+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

@@ -1,0 +1,57 @@
+{
+  "model": "opus-medium",
+  "suite": "math",
+  "item": "m2",
+  "run": 3,
+  "content": "## 考え方\n\n座標を u = x - 1、v = y に移す（A が原点、OA は u ∈ [-1, 0]、AB は v ∈ [0, 1]）。r = 0.6 < 1 なので、V1 ∩ V2 は A の近くだけにある。\n\n- Vol(V1) = pi r^2 * 1 + (4/3) pi r^3 = 0.648 pi。V1 の重心は (0.5, 0, 0)。\n\nV1 ∩ V2 の分け方:\n1. u > 0: 条件は A からの距離 ≤ r → 半球。体積 (2/3) pi r^3、u モーメント pi r^4/4、v モーメント 0。\n2. u ≤ 0, v < 0: AB までの距離 = A からの距離 ≥ OA までの距離 → 1/4 球。体積 pi r^3/3、u・v モーメントはともに -pi r^4/8。\n3. u ≤ 0, v ≥ 0: v^2+z^2 ≤ r^2 かつ u^2+z^2 ≤ r^2 → 直交円柱の共通部分の 1/4。体積 4r^3/3。高さ z の断面は一辺 s = sqrt(r^2-z^2) の正方形なので、v モーメント = ∫ s^3/2 dz = 3 pi r^4/16、u モーメント = -3 pi r^4/16。\n\n合計: Vol(V1∩V2) = pi r^3 + 4r^3/3 = 0.216 pi + 0.288。\nu モーメント = -pi r^4/16、v モーメント = +pi r^4/16（pi r^4/16 = 0.0081 pi）。\n\n(a) Vol(W) = 0.648 pi - 0.216 pi - 0.288 = 0.432 pi - 0.288 ≈ 1.069168\n\n(b) x モーメント = 0.324 pi - (0.216 pi + 0.288) + 0.0081 pi = 0.1161 pi - 0.288\nx̄ = (1161 pi - 2880)/(4320 pi - 2880) ≈ 0.0717744\n\n(c) y モーメント = -0.0081 pi\nȳ = -81 pi/(4320 pi - 2880) ≈ -0.0238007\n\n答え(a): 0.432*pi - 0.288\n答え(b): (1161*pi - 2880)/(4320*pi - 2880)\n答え(c): -81*pi/(4320*pi - 2880)\n",
+  "wall_s": 38.447,
+  "usage": {
+    "subagent_tokens": 32334
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(1161*pi - 2880)/(4320*pi - 2880)",
+        "value": 0.07177441261846823,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.74017572159402e-15
+      },
+      {
+        "key": "c",
+        "text": "-81*pi/(4320*pi - 2880)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-medium/math/m2-run3.md",
+  "imported_at": "2026-10-18T19:36:37+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

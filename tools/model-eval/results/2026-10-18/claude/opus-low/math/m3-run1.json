@@ -1,0 +1,57 @@
+{
+  "model": "opus-low",
+  "suite": "math",
+  "item": "m3",
+  "run": 1,
+  "content": "中心を原点とする。面までの最小距離が d 以下 ⇔ P が内側の立方体 [-h,h]^3（h = 1/2 - d）の外。\np(d) = (1 - pi/6) - (h^3 の8倍 - 球∩内側立方体の体積)。\n\n(a) h = 1/4。内側立方体の頂点距離 sqrt(3)/4 < 1/2 なので内側立方体は球に含まれる。p = 1 - pi/6。\n\n(b) h = 2/5。h < 1/2 < h*sqrt(2) なので、球∩立方体 = 球 - 高さ 1/10 のキャップ 6 個。\nキャップ = pi*(1/100)*(3/2 - 1/10)/3 = 7pi/1500、6 個で 7pi/250。\np = 1 - pi/6 - 0.512 + pi/6 - 7pi/250 = 61/125 - 7pi/250 ≈ 0.400035\n\n(c) h = 7/20。h*sqrt(2) < 1/2 < h*sqrt(3) なので、球∩立方体 = 球 - 6 キャップ + 12 個の辺の重なり V。\nキャップ（高さ 3/20）= pi*0.0225*1.35/3、6 個で 243pi/4000。\n辺の重なり（x>a, y>a, 球内、w = sqrt(r^2-2a^2), q^2 = r^2-a^2）:\nV = (2/3)[a^2 w - a(q^2+2r^2) atan(w/a) + 2r^3 atan(w/r)]\nr=1/2, a=7/20, w=sqrt(2)/20 から 12V = 49sqrt(2)/1000 - (1757/1000) atan(sqrt(2)/7) + 2 atan(sqrt(2)/10) ≈ 2.28241e-5\np = 657/1000 - 243pi/4000 + 12V ≈ 0.466171\n\n答え(a): 1 - pi/6\n答え(b): 61/125 - 7*pi/250\n答え(c): 657/1000 - 243*pi/4000 + 49*sqrt(2)/1000 - (1757/1000)*atan(sqrt(2)/7) + 2*atan(sqrt(2)/10)\n",
+  "wall_s": 98.955,
+  "usage": {
+    "subagent_tokens": 38586
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "61/125 - 7*pi/250",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "657/1000 - 243*pi/4000 + 49*sqrt(2)/1000 - (1757/1000)*atan(sqrt(2)/7) + 2*atan(sqrt(2)/10)",
+        "value": 0.4661710704277855,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.190789277857109e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-low/math/m3-run1.md",
+  "imported_at": "2026-10-18T19:50:09+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:37+09:00"
+}

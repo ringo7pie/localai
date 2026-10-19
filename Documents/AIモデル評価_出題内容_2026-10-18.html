@@ -1,0 +1,986 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI モデル評価 2026-10-18 出題内容の解説</title><style>
+.viz-root{color-scheme:light;--surface:#fcfcfb;--surface-2:#f3f3f1;--grid:#e6e5e1;--axis:#bdbcb6;
+--text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#76756f;}
+body{margin:0;background:var(--surface);color:var(--text-primary);
+font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;line-height:1.6}
+main{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+h1{font-size:1.6rem;margin:0 0 4px}h2{font-size:1.3rem;margin:40px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--grid)}
+h3{font-size:1.05rem;margin:24px 0 8px}
+.sub,.caption,.muted{color:var(--text-secondary)}.caption{font-size:.85rem;margin:4px 0 0}.muted{color:var(--text-muted)}
+nav ol{display:flex;flex-wrap:wrap;gap:4px 16px;padding-left:20px;margin:8px 0}
+.tiles{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.tile{flex:1 1 220px;background:var(--surface-2);border-radius:8px;padding:12px 16px}
+.tile-label{font-size:.85rem;color:var(--text-secondary)}.tile-value{font-size:1.25rem;font-weight:600}
+.tile-sub{font-size:.85rem;color:var(--text-muted)}
+.notes li{margin:2px 0}
+table.data{border-collapse:collapse;width:100%;margin:8px 0;font-size:.9rem}
+table.data th,table.data td{border-bottom:1px solid var(--grid);padding:5px 8px;text-align:left;vertical-align:middle}
+table.data thead th{color:var(--text-secondary);font-weight:600;background:var(--surface-2)}
+table.kv th{width:9em;color:var(--text-secondary);font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}td.center{text-align:center}
+td.strong{font-weight:700}td.note{color:var(--text-secondary);font-size:.85rem}
+tr.unused td{color:var(--text-muted);background:var(--surface-2)}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.85rem;color:var(--text-secondary);margin:4px 0 8px}
+.chip{display:inline-block;min-width:22px;border-radius:4px;color:#fff;font-weight:700;text-align:center;line-height:22px}
+.medal{display:inline-block;width:24px;height:24px;border-radius:12px;color:#fff;font-weight:700;text-align:center;line-height:24px}
+.rank{display:inline-block;width:24px;text-align:center}
+svg.chart{display:block;max-width:100%;height:auto;margin:4px 0;font-size:12px}
+svg .grid{stroke:var(--grid);stroke-width:1}svg .axis{stroke:var(--axis);stroke-width:1}
+svg .tick,svg .axis-title{fill:var(--text-secondary)}svg .label{fill:var(--text-primary)}
+svg .value,svg .point-label{fill:var(--text-secondary)}svg .leader{stroke:var(--axis);stroke-width:1}svg .muted{fill:var(--text-muted)}
+svg .cell-text{font-size:11px;font-weight:600;pointer-events:none}
+svg .cell-sub{font-size:9.5px;font-weight:600;pointer-events:none}
+ul.callout{background:var(--surface-2);border-radius:8px;padding:8px 12px 8px 28px}
+svg .hit{fill:transparent}svg .mark{cursor:default;outline:none}
+svg .mark:hover>path,svg .mark:focus>path,svg .mark:hover>rect:not(.hit),svg .mark:focus>rect:not(.hit),
+svg .mark:hover>circle:not(.hit),svg .mark:focus>circle:not(.hit){filter:brightness(1.15)}
+svg .mark:focus>rect:not(.hit),svg .mark:focus>circle:not(.hit){stroke:var(--text-primary);stroke-width:1.5}
+details{margin:6px 0}summary{cursor:pointer;color:var(--text-secondary)}
+pre{white-space:pre-wrap;background:var(--surface-2);padding:10px;border-radius:6px;font-size:.82rem}
+#tip{position:fixed;pointer-events:none;background:#fff;border:1px solid var(--grid);border-radius:6px;padding:6px 10px;
+box-shadow:0 2px 8px rgba(0,0,0,.12);font-size:.82rem;color:var(--text-secondary);max-width:320px;z-index:10}
+#tip .tip-value{color:var(--text-primary);font-weight:700;font-size:.95rem}
+@media print{#tip{display:none}}
+
+.sub a{color:inherit}
+.lead-text{font-size:1.02rem;margin:8px 0 4px}
+.toc-groups{display:flex;flex-wrap:wrap;gap:10px 18px;margin:8px 0}
+.toc-group{flex:1 1 230px}.toc-group ul{margin:4px 0 0;padding-left:20px}.toc-group li{margin:1px 0}
+.chip-cat{display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border:1px solid var(--cat);border-radius:12px;
+background:var(--surface);color:var(--text-primary);font-size:.85rem;font-weight:600;white-space:nowrap}
+.dot{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--cat)}
+.exam-cards{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.exam{flex:1 1 300px;background:var(--surface-2);border-radius:8px;padding:12px 16px;border-top:6px solid var(--cat)}
+.exam.multi{border-top-color:var(--grid)}
+.exam h3{margin:6px 0 4px}.exam p{margin:4px 0}.exam .chips{display:flex;flex-wrap:wrap;gap:4px 6px}
+.exam dl{margin:6px 0 0;font-size:.88rem}.exam dt{font-weight:600;color:var(--text-secondary);margin-top:6px}
+.exam dd{margin:0}
+.k{color:var(--text-secondary);font-weight:600}
+.card{margin:20px 0 32px;border:1px solid var(--grid);border-left:8px solid var(--cat);border-radius:8px;padding:0 16px 14px}
+.card>header{margin:0 -16px 10px;padding:10px 16px;background:var(--band);border-radius:0 7px 0 0;display:flex;flex-wrap:wrap;
+align-items:center;gap:6px 12px}
+.card>header h3{margin:0;font-size:1.15rem}
+.card h4{font-size:.95rem;margin:16px 0 4px;color:var(--text-secondary)}
+.card h4::before{content:"";display:inline-block;width:4px;height:.9em;margin-right:6px;vertical-align:-1px;background:var(--cat);
+border-radius:2px}
+.card p{margin:4px 0}.card ul{margin:4px 0;padding-left:22px}.card li{margin:2px 0}
+p.one-line{font-weight:600;font-size:1.02rem;margin:6px 0}
+.example{display:grid;grid-template-columns:1fr auto 1fr;gap:6px 10px;align-items:start;margin:8px 0 2px}
+.example>div{min-width:0}
+.example .ex-label{font-size:.8rem;color:var(--text-secondary);font-weight:600}
+.example pre{margin:2px 0 0;font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.example .ex-arrow{align-self:center;font-size:1.2rem;color:var(--text-secondary);padding-top:16px}
+.ex-note{margin:2px 0 10px;color:var(--text-secondary);font-size:.88rem}
+@media (max-width:640px){.example{grid-template-columns:1fr}.example .ex-arrow{display:none}}
+dl.terms{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:4px 0;font-size:.9rem}
+dl.terms dt{font-weight:600}dl.terms dd{margin:0;color:var(--text-secondary)}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:6px 0}
+.res{min-width:0}.res-cell{border-radius:6px;padding:6px 4px;min-height:46px;text-align:center;display:flex;flex-direction:column;
+justify-content:center}
+.res-main{font-weight:700;font-size:1rem}.res-sub{font-size:.72rem;font-weight:600}
+.res-name{margin-top:2px;font-size:.78rem;color:var(--text-secondary);text-align:center;overflow-wrap:anywhere}
+.tally{margin:2px 0 4px;font-size:.88rem;color:var(--text-secondary)}
+.chips-run{display:inline-flex;gap:3px}
+.situation{margin:6px 0}
+svg.figure{display:block;max-width:100%;height:auto;margin:6px 0;background:var(--surface-2);border-radius:6px}
+svg.figure text{font-size:13px;fill:var(--text-primary)}svg.figure .sub-text{fill:var(--text-secondary);font-size:11.5px}
+.kind-intro{margin:22px 0 0;padding:8px 12px;background:var(--surface-2);border-radius:6px}
+.kind-intro p{margin:4px 0 0}
+details>pre{max-height:520px;overflow:auto}
+@media print{.card{break-inside:avoid-page}}
+
+.parts td.formula{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:.85rem;overflow-wrap:anywhere}
+.figures{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.fig-caption{font-size:.82rem;color:var(--text-secondary);margin:2px 0 8px}
+.result-note{margin:6px 0;padding:8px 12px;border-left:4px solid var(--cat);background:var(--surface-2);border-radius:0 6px 6px 0}
+.summary-lines{margin:4px 0 8px;padding-left:20px;font-size:.9rem}
+.run-sub{font-size:.7rem;font-weight:600}
+table.amend td{vertical-align:top;font-size:.88rem}
+.cat-coding_v3{--cat:#2a78d6;--band:#dae7f5}.cat-math{--cat:#eb6834;--band:#f9e4db}</style></head><body class="viz-root"><main><h1>評価で出した 9 問の解説（2026-10-18・難しい問題）</h1><p class="sub">評価日 2026-10-18・集計 2026-10-19T04:48:01+09:00・tools/model-eval/build_problem_guide_hard.py が problem_guide_hard.json と summary.json から生成（手で書き換えない）</p><p class="sub">順位・時間・所見は元のレポートにあります: <a href="AIモデル評価_2026-10-18.html">AIモデル評価_2026-10-18.html</a></p><nav aria-label="目次"><ol><li><a href="#s1">1. 全体像</a></li><li><a href="#s2">2. 難しいコーディング（6 問）</a></li><li><a href="#s3">3. 数学（3 問）</a></li><li><a href="#s4">4. 採点の改定の記録</a></li><li><a href="#s5">5. 生データの場所</a></li></ol><div class="toc-groups"><div class="toc-group cat-coding_v3"><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><ul><li><a href="#p-h1">H1 整数座標の 3 次元凸包</a></li><li><a href="#p-h2">H2 最短で、辞書順が最小の編集スクリプト</a></li><li><a href="#p-h3">H3 小さな関数型言語の型推論（Hindley–Milner）</a></li><li><a href="#p-h4">H4 分母に上限のある最良の有理近似</a></li><li><a href="#p-h5">H5 正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列</a></li><li><a href="#p-h6">H6 ドミノと L トロミノの敷き詰めの数</a></li></ul></div><div class="toc-group cat-math"><span class="chip-cat cat-math"><i class="dot"></i>数学</span><ul><li><a href="#p-m1">M1 正四面体のまわりの立体</a></li><li><a href="#p-m2">M2 2 本の線分のまわりの立体の差</a></li><li><a href="#p-m3">M3 立方体の中の点</a></li></ul></div></div></nav><section id="s1"><h2>1. 全体像</h2><p class="lead-text">前回（2026-10-08）の評価では、Sonnet と Opus がどちらもすべての問題で満点になり、差が測れませんでした。そこで今回は、Claude でもつまずきうる難しい問題を 9 問新しく作り、Claude 8 種（Sonnet と Opus を、考える量の設定 effort 4 段階で）と、この PC のローカル AI 9 種に、同じ問題文で解かせました。</p><div class="exam-cards"><div class="exam cat-coding_v3"><div class="chips"><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span></div><h3>難しいコーディング 6 問（H1〜H6）</h3><p>長い仕様・速さの要求・特殊な入力（すべての点が同じ平面にある、など）を含む問題です。仕様を 1 か所でも読み落とすと、そこに当たる隠しテストで落ちます。</p><dl><dt>問題数</dt><dd>6 問。隠しテストは 1 問あたり 18〜28 ケース</dd><dt>点の付け方</dt><dd>合格したケースの割合（部分点あり）。禁止したモジュールを使った答えは 0 点</dd></dl></div><div class="exam cat-math"><div class="chips"><span class="chip-cat cat-math"><i class="dot"></i>数学</span></div><h3>数学 3 問（M1〜M3）</h3><p>立体の体積・表面積・重心と、確率を求める問題です。答えは 1 つの数で、書き方さえ守れば機械で正確に採点できます。小問を 2〜3 つ付けて、部分点が付くようにしました。</p><dl><dt>問題数</dt><dd>3 問。小問は 1 問あたり 2〜3 つ</dd><dt>点の付け方</dt><dd>小問ごとに、正解との相対誤差が 10 万分の 1（1e-5）以内なら正解。点は正解した小問の割合</dd></dl></div></div><h3>解いたモデル</h3><p><span class="k">Claude 8 種</span>: Sonnet5.5-xHigh、Opus5.5-xHigh、Sonnet5.5-High、Opus5.5-High、Sonnet5.5-Medium、Opus5.5-Medium、Sonnet5.5-Low、Opus5.5-Low</p><p><span class="k">ローカル 9 種</span>: qwen3.8:27b、gemma4:e4b、gemma4:31b-it-qat、qwen3.8-flash-next:IQ4_XS、strata-flash-next:IQ3_S (RVN)、strata-official:IQ3_XXS、strata-flash-coder:IQ1_M (Coder)、strata-official:IQ3_S、strata-swift:IQ3_XXS (Swift 1.5)</p><h3>解かせ方</h3><ul><li>問題文はローカルと Claude で 1 文字も違わないものを使いました。コーディングは共通の指示（標準ライブラリだけを使う、答えはコードブロック 1 つ、など）を前に付けます。</li><li>Claude は各問 3 回、ローカルは各問 1 回解かせました（利用者の決定）。AI の答えは毎回少しずつ変わるので、3 回のうちの最低点と最高点も見ます。</li><li>Claude は、問題文のファイルを読んで答えをファイルに書くことだけを許しました。コードを動かして試す・調べ物をする、はしていません（記録で確かめました）。</li><li>ローカルは、生成の上限 32,768 トークン・1 回の要求 40 分までで解かせました。思考だけで上限を使い切ると、答えが無いまま 0 点になります。</li><li>解く順番は易しいと見込んだ順（H4 → M1 → H1 → H3 → M2 → H6 → M3 → H2 → H5）です。</li></ul><h3>正解と採点の確かさ</h3><ul><li>正解は 2 通りで確かめました。コーディングは、参照の解答（reference.py）と、作りの違う遅いが確実な解答（oracle.py）の答えが一致することを確かめてから期待値にしました。H1 は外部の計算ライブラリ Qhull とも照合しました。数学は、式で出した値と、乱数で点を打って数える方法（モンテカルロ法）の値が合うことを確かめました。</li><li>問題文は計測の前に固定し、計測中に一度も変えていません（ファイルの指紋 sha256 を記録）。</li><li>計測の途中で、隠しテストと採点の仕組みを 5 回直しました。問題文に書いていない入力を渡していたケースを直す、などです。理由はすべて記録し、最後に全部の答えを同じ採点器で採点し直しました。</li><li>最後の採点は、ほかの計測を止めた機体で 2 回続けて行い、297 件すべてで 2 回の点が一致しました。</li></ul><h3>用語</h3><dl class="terms"><dt>隠しテスト</dt><dd>AI には見せない採点用のテストです。1 つ 1 つを「ケース」と呼びます。</dd><dt>部分点</dt><dd>全部のケースに合格しなくても、合格した割合だけ点が付きます（28 ケース中 27 なら 96%）。</dd><dt>effort</dt><dd>Claude の考える量の設定です。xhigh・high・medium・low の順に多く考えます。</dd><dt>トークン</dt><dd>AI が文章を読み書きするときの単位です。日本語なら 1〜2 文字くらいです。</dd><dt>相対誤差</dt><dd>正解との差を、正解の大きさで割った値です。1e-5 は 10 万分の 1 です。</dd></dl><h3>結果のマスの見方</h3><p>各問題の「この問題の結果」は、マスの色と文字で点を示します。Claude のマスは 3 回の平均で、下段に回ごとの点を並べます。</p><div class="legend" aria-label="採点の凡例"><span class="legend-item"><span class="swatch" style="background:#1a7f37"></span>正解・全部合格</span><span class="legend-item"><span class="swatch" style="background:#76b688"></span>部分点（濃いほど高い）</span><span class="legend-item"><span class="swatch" style="background:#c0392b"></span>誤り・0 点</span><span class="legend-item"><span class="swatch" style="background:#8a8f98"></span>答えなし・飛ばし・記録なし</span></div><p class="caption">マスの下段の文字（状態）: 上限 = 生成の上限トークンに届いた、時間切れ = 1 要求の時間上限に届いた、無応答 = 一定時間なにも届かず打ち切った、エラー = サーバーがエラーを返した、思考中停止 = 思考の途中で停止トークンが出て、本文が空のまま終わった（0 点・答えなし）、打切 = 思考が予算に届いて打ち切られたあとの答え（Strata）、本文なし／コードなし = 答えの本文やコードのブロックが無かった、禁止 = 禁止の import・呼び出しがあり実行せず 0 点、文法誤り = 答えのコードが Python として読めない。2 つ当てはまるときは「・」でつなぐ。</p></section><section id="s2"><h2>2. 難しいコーディング（6 問）</h2><div class="kind-intro cat-coding_v3"><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><p>仕様どおりに動く Python の関数を書く問題です。隠しテストを動かして、合格したケースの割合が点になります。</p></div><article class="card cat-coding_v3" id="p-h1"><header><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><h3>H1 整数座標の 3 次元凸包</h3></header><p class="one-line">3 次元空間にばらまいた点を、ゴムの膜でぴったり包んだときにできる立体（凸包）の、体積・面の数・角の数を求める関数を書く問題です。</p><h4>やること</h4><p>関数 hull3d を書きます。整数座標の点のリストを受け取り、凸包の体積の 6 倍・面の数・頂点の数の 3 つを返します。同じ平面にある三角形はまとめて 1 つの面と数え、辺の途中や面の内側にある点は頂点に数えません。異なる点が 4 つ未満のときや、すべての点が 1 つの平面（または直線）の上にあるときは ValueError を出します。</p><h4>具体例</h4><div class="example"><div><div class="ex-label">入力</div><pre>hull3d([(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)])</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>(1, 4, 4)</pre></div></div><p class="ex-note">立方体の角を切り取った三角すいです。体積 1/6 の 6 倍で 1、面 4、頂点 4。</p><div class="example"><div><div class="ex-label">入力</div><pre>[(x, y, z) for x in (0, 1) for y in (0, 1) for z in (0, 1)]</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>(6, 6, 8)</pre></div></div><p class="ex-note">立方体の 8 つの角です。面は、三角形 12 枚ではなく、正方形 6 枚と数えます。</p><div class="example"><div><div class="ex-label">入力</div><pre>0〜2 の格子点 27 個（各辺の中点・各面の中心・中心を含む）</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>(48, 6, 8)</pre></div></div><p class="ex-note">辺の途中・面の中・内部の点は頂点ではないので、頂点は 8 のままです。</p><h4>何が難しいか</h4><ul><li>同じ平面に乗る点が多い入力（格子状に並んだ点など）で、どの三角形を 1 つの面にまとめるか、どの点が角かを正しく決める必要があります。</li><li>座標は最大 100 万で、途中の計算の値が 10 の 18 乗を超えます。小数（浮動小数点数）で計算すると、わずかな誤差で「同じ平面かどうか」を誤るので、整数だけで正確に計算します。</li><li>3,000 点を 1 秒程度で処理する速い方法が要ります。すべての組み合わせを調べる方法は間に合いません。</li><li>すべての点が平面や直線の上にある「つぶれた」入力を、エラーとして見分けます。</li></ul><h4>何の力を見るか</h4><p>図形の計算の定番の難しさ（正確な整数計算・つぶれた入力の扱い・速い方法）を、同時にこなす力を見ます。</p><h4>採点の仕方</h4><p>隠しテスト 24 ケースを実行し、合格したケースの割合が点です（部分点あり）。</p><p class="k">ケースの種類（合計 24 ケース）</p><ul><li>問題文の例（3 ケース）</li><li>重なった点・内部の点（2 ケース）</li><li>エラー（点が足りない・すべてが同じ平面や直線の上）（2 ケース）</li><li>いろいろな形（四角すい・三角柱・八面体・立方八面体）（3 ケース）</li><li>辺や面の上の点、面の延長の上の点（3 ケース）</li><li>大きな座標・ほとんど平らな立体（小数では誤る値）（3 ケース）</li><li>乱数の点・格子の点の束（3 ケース）</li><li>大きな入力（3,000 点前後。性能）（5 ケース）</li></ul><h4>用語</h4><dl class="terms"><dt>凸包</dt><dd>すべての点を含む、へこみの無い最小の立体です。点の集まりをゴムの膜で包んだ形です。</dd><dt>浮動小数点数</dt><dd>コンピュータの小数の表し方です。桁数に限りがあり、計算のたびに小さな誤差が出ます。</dd><dt>ValueError</dt><dd>Python で「入力が正しくない」ことを知らせるエラーの種類です。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 24 回が満点。</li><li>ローカル: 満点 2（strata-official:IQ3_XXS、strata-flash-coder:IQ1_M (Coder)）。部分点 4（gemma4:31b-it-qat 58%、strata-flash-next:IQ3_S (RVN) 17%、strata-official:IQ3_S 12%、strata-swift:IQ3_XXS (Swift 1.5) 8%）。0 点・答えなし 3（qwen3.8:27b、gemma4:e4b、qwen3.8-flash-next:IQ4_XS）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / H1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="答えなし（思考中停止）
+qwen3.8:27b / H1
+状態: eos_in_thinking（思考の途中で停止トークンが出て、本文が空のまま終わった（0 点・答えなし））
+理由: eos_in_thinking
+時間: 6 分 16 秒
+出力: 14,335 トークン
+うち思考（推定）: 14,335 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">思考中停止</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="0%（文法誤り）
+gemma4:e4b / H1
+時間: 1 分 13 秒
+出力: 6,011 トークン
+うち思考（推定）: 2,500 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">文法誤り</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="58%
+gemma4:31b-it-qat / H1
+時間: 7 分 23 秒
+出力: 11,465 トークン
+うち思考（推定）: 9,711 トークン"><div class="res-cell" style="background:#67ac7b;color:#ffffff"><span class="res-main">58%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8-flash-next:IQ4_XS / H1
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 23 分 20 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="17%（打切）
+strata-flash-next:IQ3_S (RVN) / H1
+思考が予算に届いて打ち切られたあとの答え
+時間: 9 分 17 秒
+出力: 31,610 トークン
+うち思考（推定）: 25,899 トークン"><div class="res-cell" style="background:#b4dabe;color:#0b0b0b"><span class="res-main">17%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_XXS / H1
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 35 秒
+出力: 27,374 トークン
+うち思考（推定）: 25,358 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / H1
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 8 秒
+出力: 26,946 トークン
+うち思考（推定）: 25,162 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="12%（打切）
+strata-official:IQ3_S / H1
+思考が予算に届いて打ち切られたあとの答え
+時間: 8 分 12 秒
+出力: 27,858 トークン
+うち思考（推定）: 25,820 トークン"><div class="res-cell" style="background:#bcdec5;color:#0b0b0b"><span class="res-main">12%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="8%（打切）
+strata-swift:IQ3_XXS (Swift 1.5) / H1
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 32 秒
+出力: 31,964 トークン
+うち思考（推定）: 26,262 トークン"><div class="res-cell" style="background:#c4e3cc;color:#0b0b0b"><span class="res-main">8%</span><span class="res-sub">打切</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。共通の指示（PREAMBLE）と、問題ごとの文を空行でつなぎます。）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 H1: 整数座標の 3 次元凸包
+
+関数 `hull3d(points: list[tuple[int, int, int]]) -&gt; tuple[int, int, int]` を書いてください。3 次元空間の整数座標の点の集まりの凸包（すべての点を含む最小の凸多面体）について、`(volume6, n_faces, n_vertices)` を返します。
+
+- `volume6`: 凸包の体積の 6 倍（整数になる）。
+- `n_faces`: 凸包の面の数。同じ平面にある三角形はまとめて 1 つの面（多角形）と数える。たとえば立方体の面は 6。
+- `n_vertices`: 凸包の頂点（角）の数。辺の途中や面の内側、凸包の内部にある点は頂点ではない。同じ座標の点が何度あっても 1 つと数える。
+
+### 入力と誤り
+
+- 座標は絶対値が 10**6 以下の整数。点は最大 3,000 個。同じ座標の点が重なっていてもよい。
+- 異なる点が 4 つ未満のとき、またはすべての点が 1 つの平面上（直線上も含む）にあるときは `ValueError`。
+- 浮動小数点数で計算すると、同じ平面にあるかの判定を誤る。整数だけで計算してください。
+
+### 性能
+
+- 3,000 点（すべての点が凸包の表面にある場合や、格子状に並んで同じ平面に多くの点がある場合も含む）で、1 回の呼び出しが 1 秒程度で終わること。O(n**4) の総当たりや、点を追加するたびにすべての面を調べ直す作りでは時間切れになることがある。
+
+例:
+- `hull3d([(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)])` → `(1, 4, 4)`
+- 立方体の 8 つの角 `[(x, y, z) for x in (0, 1) for y in (0, 1) for z in (0, 1)]` → `(6, 6, 8)`
+- 0〜2 の格子点 27 個（各辺の中点・各面の中心・中心を含む）→ `(48, 6, 8)`</pre></details></article><article class="card cat-coding_v3" id="p-h2"><header><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><h3>H2 最短で、辞書順が最小の編集スクリプト</h3></header><p class="one-line">2 つの文章（行の並び）の違いを「残す・消す・足す」の操作の列で表すとき、消す・足すの数が最も少なく、しかも決まった順番で最も前に来るものを求める問題です。</p><h4>やること</h4><p>関数 shortest_edit_script を書きます。行の並び a を b に変える操作の列（編集スクリプト）のうち、消す・足すの合計が最小のものを返します。最小のものが複数あるときは、操作の記号を「残す &lt; 消す &lt; 足す」の順として、先頭から比べて最も前に来るものを返します。標準ライブラリの difflib を使うと 0 点です。</p><h4>具体例</h4><div class="example"><div><div class="ex-label">入力</div><pre>shortest_edit_script([&quot;a&quot;, &quot;b&quot;, &quot;c&quot;], [&quot;a&quot;, &quot;c&quot;])</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>[(&quot;=&quot;, 0, 0), (&quot;-&quot;, 1), (&quot;=&quot;, 2, 1)]</pre></div></div><p class="ex-note">b を消すだけです。= は残す、- は消す、+ は足す、数は読んでいる位置です。</p><div class="example"><div><div class="ex-label">入力</div><pre>shortest_edit_script([&quot;a&quot;, &quot;b&quot;], [&quot;b&quot;, &quot;a&quot;])</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>[(&quot;-&quot;, 0), (&quot;=&quot;, 1, 0), (&quot;+&quot;, 1)]</pre></div></div><p class="ex-note">「先に b を足して最後の b を消す」も同じく編集 2 回ですが、1 つ目の操作で「消す」が「足す」より前なので、こちらを返します。</p><div class="example"><div><div class="ex-label">入力</div><pre>shortest_edit_script([&quot;a&quot;, &quot;x&quot;, &quot;a&quot;], [&quot;a&quot;])</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>[(&quot;=&quot;, 0, 0), (&quot;-&quot;, 1), (&quot;-&quot;, 2)]</pre></div></div><p class="ex-note">最初の a を残しても、最後の a を残しても編集は 2 回です。残せるときは先に残す方を返します。</p><h4>何が難しいか</h4><ul><li>最短の答えは何通りもあることがあり、その中から決まった 1 つを選ぶ必要があります。最短を求めるだけの方法では、別の最短を返してしまいます。</li><li>「残せるなら残す」を素直に先にやると、全体では最短でなくなる入力があります。最短を保ったまま順番の決まりを守る工夫が要ります。</li><li>長さ 5,000 の並びを 1 秒程度で処理します。5,000 × 5,000 の表を作る素直な方法は間に合わず、違いの数に比例する時間で解く方法（Myers の方法）が要ります。</li></ul><h4>何の力を見るか</h4><p>定番のアルゴリズム（差分を求める Myers の方法）を知っていて、それを「最短の中で辞書順が最小」という追加の条件に合わせて、正しく作り変える力を見ます。</p><h4>採点の仕方</h4><p>隠しテスト 18 ケースを実行し、合格したケースの割合が点です（部分点あり）。difflib を使った答えは実行せずに 0 点です。</p><p class="k">ケースの種類（合計 18 ケース）</p><ul><li>問題文の例・空の並び・同じ並び・全部違う並び（4 ケース）</li><li>選び方の決まり（置き換えは消すが先・繰り返しの行・欲張ると最短でなくなる場合・ブロックの移動）（4 ケース）</li><li>答えの形（タプルのリスト）（1 ケース）</li><li>小さい入力の全通り・乱数の入力・両端の近くの編集（4 ケース）</li><li>大きな入力（性能）（5 ケース）</li></ul><h4>用語</h4><dl class="terms"><dt>編集スクリプト</dt><dd>1 つの並びを別の並びに変える操作の手順です。ファイルの差分（diff）の中身にあたります。</dd><dt>辞書順</dt><dd>辞書に並ぶ順番と同じく、先頭から 1 つずつ比べて、最初に違うところで前後を決める順番です。</dd><dt>difflib</dt><dd>Python の標準ライブラリにある、差分を求める道具です。今回は使用を禁止しました。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 24 回が満点。</li><li>ローカル: 満点 5（qwen3.8:27b、strata-official:IQ3_XXS、strata-flash-coder:IQ1_M (Coder)、strata-official:IQ3_S、strata-swift:IQ3_XXS (Swift 1.5)）。部分点 1（gemma4:31b-it-qat 78%）。0 点・答えなし 3（gemma4:e4b、qwen3.8-flash-next:IQ4_XS、strata-flash-next:IQ3_S (RVN)）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / H2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="100%
+qwen3.8:27b / H2
+時間: 12 分 27 秒
+出力: 32,164 トークン
+うち思考（推定）: 31,150 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="0%
+gemma4:e4b / H2
+時間: 2 分 6 秒
+出力: 10,207 トークン
+うち思考（推定）: 8,482 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="78%
+gemma4:31b-it-qat / H2
+時間: 6 分 52 秒
+出力: 10,642 トークン
+うち思考（推定）: 9,118 トークン"><div class="res-cell" style="background:#43975b;color:#ffffff"><span class="res-main">78%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8-flash-next:IQ4_XS / H2
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 23 分 24 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="0%（打切）
+strata-flash-next:IQ3_S (RVN) / H2
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 58 秒
+出力: 25,870 トークン
+うち思考（推定）: 24,639 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_XXS / H2
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 3 秒
+出力: 25,764 トークン
+うち思考（推定）: 24,628 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / H2
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 33 秒
+出力: 25,857 トークン
+うち思考（推定）: 24,683 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_S / H2
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 31 秒
+出力: 25,928 トークン
+うち思考（推定）: 24,774 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="100%（打切）
+strata-swift:IQ3_XXS (Swift 1.5) / H2
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 4 秒
+出力: 25,477 トークン
+うち思考（推定）: 24,554 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。共通の指示（PREAMBLE）と、問題ごとの文を空行でつなぎます。）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 H2: 最短で、辞書順が最小の編集スクリプト
+
+関数 `shortest_edit_script(a: list[str], b: list[str]) -&gt; list[tuple]` を書いてください。行の並び `a` を `b` に変える編集スクリプトのうち、編集の数が最小のものを返します。標準ライブラリの `difflib` は使わないでください（使った答えは 0 点）。
+
+### 編集スクリプト
+
+- `a` と `b` を先頭から同時に読み進める操作の並び。操作は次の 3 種類のタプル。
+  - `(&quot;=&quot;, i, j)`: `a[i]` を残す（`a[i] == b[j]` のときだけ使える）。`a` と `b` を 1 つずつ進める。
+  - `(&quot;-&quot;, i)`: `a[i]` を消す。`a` を 1 つ進める。
+  - `(&quot;+&quot;, j)`: `b[j]` を足す。`b` を 1 つ進める。
+- 最後には `a` と `b` を両方とも読み終える。`i` と `j` は読んでいる位置そのもの（0 始まり）。
+- 編集の数は `&quot;-&quot;` と `&quot;+&quot;` の操作の合計。これが最小のスクリプトを「最短」と呼ぶ。最短のスクリプトはどれも操作の数が同じになる。
+
+### どれを返すか
+
+- 最短のスクリプトが複数あるときは、操作の記号の並びを先頭から比べ、記号の順を `&quot;=&quot; &lt; &quot;-&quot; &lt; &quot;+&quot;` とした辞書順で最小のものを返す（同じ位置で比べて、残せるなら残す、そうでなければ消す方を足す方より先に選ぶ）。
+
+### 性能
+
+- `a` と `b` の長さはそれぞれ最大 5,000。ただし編集の数が 100 を超えるのは、長さの合計が 600 以下のときだけ。最大の入力でも 1 秒程度で答えること。長さの積に比例する表を作る作り（5,000 × 5,000）は時間切れになる。
+
+例:
+- `shortest_edit_script([&quot;a&quot;, &quot;b&quot;, &quot;c&quot;], [&quot;a&quot;, &quot;c&quot;])` → `[(&quot;=&quot;, 0, 0), (&quot;-&quot;, 1), (&quot;=&quot;, 2, 1)]`
+- `shortest_edit_script([&quot;x&quot;], [&quot;y&quot;])` → `[(&quot;-&quot;, 0), (&quot;+&quot;, 0)]`
+- `shortest_edit_script([&quot;a&quot;, &quot;b&quot;], [&quot;b&quot;, &quot;a&quot;])` → `[(&quot;-&quot;, 0), (&quot;=&quot;, 1, 0), (&quot;+&quot;, 1)]`（`[(&quot;+&quot;, 0), (&quot;=&quot;, 0, 1), (&quot;-&quot;, 1)]` も最短だが、1 つ目の記号で `&quot;-&quot;` が先）
+- `shortest_edit_script([&quot;a&quot;, &quot;x&quot;, &quot;a&quot;], [&quot;a&quot;])` → `[(&quot;=&quot;, 0, 0), (&quot;-&quot;, 1), (&quot;-&quot;, 2)]`（`[(&quot;-&quot;, 0), (&quot;-&quot;, 1), (&quot;=&quot;, 2, 0)]` も最短だが、1 つ目の記号で `&quot;=&quot;` が先）
+- `shortest_edit_script([], [&quot;p&quot;, &quot;q&quot;])` → `[(&quot;+&quot;, 0), (&quot;+&quot;, 1)]`</pre></details></article><article class="card cat-coding_v3" id="p-h3"><header><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><h3>H3 小さな関数型言語の型推論（Hindley–Milner）</h3></header><p class="one-line">小さなプログラミング言語で書いた式を読み、その式の「型」（整数か、真偽か、どんな関数か）を自動で求める関数を書く問題です。</p><h4>やること</h4><p>関数 infer を書きます。式の文字列を読み（字句・構文の規則は問題文で細かく決めてあります）、Hindley–Milner の方法で型を求め、決まった書き方の文字列で返します。構文の誤りは SyntaxError、定義されていない名前は NameError、型が合わないときは TypeError を出します。</p><h4>具体例</h4><div class="example"><div><div class="ex-label">入力</div><pre>infer(&quot;fun x -&gt; x&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>&quot;&#x27;a -&gt; &#x27;a&quot;</pre></div></div><p class="ex-note">受け取ったものをそのまま返す関数です。どんな型にも使えるので、型の代わりの記号 &#x27;a で表します。</p><div class="example"><div><div class="ex-label">入力</div><pre>infer(&quot;let id = fun x -&gt; x in (id 1, id true)&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>&quot;int * bool&quot;</pre></div></div><p class="ex-note">let で作った関数は、整数にも真偽にも使えます（let 多相）。</p><div class="example"><div><div class="ex-label">入力</div><pre>infer(&quot;fun f -&gt; (f 1, f true)&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>TypeError</pre></div></div><p class="ex-note">fun の引数は 1 つの型に決まるので、整数と真偽の両方には使えません。</p><div class="example"><div><div class="ex-label">入力</div><pre>infer(&quot;let rec len l = if null l then 0 else 1 + len (tl l) in len&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>&quot;&#x27;a list -&gt; int&quot;</pre></div></div><p class="ex-note">リストの長さを数える関数です。中身の型によらないので &#x27;a list と書きます。</p><h4>何が難しいか</h4><ul><li>文字を読んで式の形にする部分（字句・構文。優先順位・括弧が要る場所など）と、型を求める部分（単一化・一般化）の、2 つの大きな仕組みを組み合わせます。</li><li>let と fun で型の扱いが違う（let で作った名前だけが多相になる）など、型の規則が細かく決まっています。</li><li>答えの型の書き方（型変数の名前の付け直し・括弧の付け方・空白）が厳密に決まっています。</li><li>字句の規則も細かく、たとえば「[ の直後には ] しか書けない」ので、[ ]（間に空白）は構文の誤りです。</li><li>入れ子が 300 段あっても、Python の再帰の上限（RecursionError）で落ちないようにします。</li></ul><h4>何の力を見るか</h4><p>長い仕様を隅々まで守って、中くらいの大きさのプログラム（字句解析・構文解析・型推論・表示）を一度で正しく書き上げる力を見ます。</p><h4>採点の仕方</h4><p>隠しテスト 28 ケースを実行し、合格したケースの割合が点です（部分点あり）。</p><p class="k">ケースの種類（合計 28 ケース）</p><ul><li>問題文の例・基本（整数と組・演算子・リスト・最初から使える名前とその上書き・引数の多い関数）（7 ケース）</li><li>多相と一般化（let 多相・fun の引数・環境の型変数・自分を含む型・let rec・if）（7 ケース）</li><li>型の書き方（括弧・型変数の名前の順・26 個を超える型変数）（3 ケース）</li><li>誤り（名前の誤り・構文の誤り・括弧の要る式・構文の誤りが先）（4 ケース）</li><li>字句（名前と予約語・空白と改行）（2 ケース）</li><li>乱数で作ったプログラム（1 ケース）</li><li>大きな入力（深い入れ子・長いプログラム。性能）（4 ケース）</li></ul><h4>用語</h4><dl class="terms"><dt>型</dt><dd>値の種類です。整数（int）・真偽（bool）・リスト・関数（int -&gt; bool など）があります。</dd><dt>型推論</dt><dd>型を書かなくても、式の形から型を自動で決める仕組みです。</dd><dt>型変数</dt><dd>「どんな型でもよい」ことを表す記号です（&#x27;a、&#x27;b など）。</dd><dt>let 多相</dt><dd>let で名前を付けた関数は、使う場所ごとに違う型で使えるという規則です。</dd><dt>RecursionError</dt><dd>関数が自分自身を深く呼びすぎたときに Python が出すエラーです。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 11 回が満点。満点でなかった回: Sonnet5.5-xHigh の 1 回目 96%、Sonnet5.5-xHigh の 2 回目 96%、Sonnet5.5-xHigh の 3 回目 96%、Opus5.5-xHigh の 3 回目 96%、Sonnet5.5-High の 1 回目 96%、Sonnet5.5-High の 2 回目 96%、Sonnet5.5-High の 3 回目 96%、Sonnet5.5-Medium の 1 回目 96%、Sonnet5.5-Medium の 2 回目 93%、Sonnet5.5-Medium の 3 回目 96%、Sonnet5.5-Low の 1 回目 96%、Sonnet5.5-Low の 2 回目 96%、Sonnet5.5-Low の 3 回目 96%。</li><li>ローカル: 部分点 4（gemma4:31b-it-qat 32%、strata-flash-coder:IQ1_M (Coder) 4%、strata-official:IQ3_S 14%、strata-swift:IQ3_XXS (Swift 1.5) 7%）。0 点・答えなし 5（qwen3.8:27b、gemma4:e4b、qwen3.8-flash-next:IQ4_XS、strata-flash-next:IQ3_S (RVN)、strata-official:IQ3_XXS）。</li></ul><p class="result-note">Sonnet と Opus で決まって差が出たのは、この問題の 1 ケース（構文の誤りのケースの中の [ ]）だけです。問題文で禁じている [ ]（間に空白）を空のリストとして受け付けてしまう誤りで、Sonnet は 4 つの effort の 12 回すべてで、Opus は 12 回中 1 回（xhigh の 3 回目）だけ落としました。</p><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / H3（3 回の平均 96%）
+1 回目: 96%（落ちたケース: case_syntax_errors）
+2 回目: 96%（落ちたケース: case_syntax_errors）
+3 回目: 96%（落ちたケース: case_syntax_errors）"><div class="res-cell" style="background:#21833d;color:#ffffff"><span class="res-main">96%</span><span class="res-sub">3 回: 96・96・96</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / H3（3 回の平均 99%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 96%（落ちたケース: case_syntax_errors）"><div class="res-cell" style="background:#1c8039;color:#ffffff"><span class="res-main">99%</span><span class="res-sub">3 回: 100・100・96</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / H3（3 回の平均 96%）
+1 回目: 96%（落ちたケース: case_syntax_errors）
+2 回目: 96%（落ちたケース: case_syntax_errors）
+3 回目: 96%（落ちたケース: case_syntax_errors）"><div class="res-cell" style="background:#21833d;color:#ffffff"><span class="res-main">96%</span><span class="res-sub">3 回: 96・96・96</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / H3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / H3（3 回の平均 95%）
+1 回目: 96%（落ちたケース: case_syntax_errors）
+2 回目: 93%（落ちたケース: case_syntax_errors、case_performance_deep_parentheses）
+3 回目: 96%（落ちたケース: case_syntax_errors）"><div class="res-cell" style="background:#23843f;color:#ffffff"><span class="res-main">95%</span><span class="res-sub">3 回: 96・93・96</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / H3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / H3（3 回の平均 96%）
+1 回目: 96%（落ちたケース: case_syntax_errors）
+2 回目: 96%（落ちたケース: case_syntax_errors）
+3 回目: 96%（落ちたケース: case_syntax_errors）"><div class="res-cell" style="background:#21833d;color:#ffffff"><span class="res-main">96%</span><span class="res-sub">3 回: 96・96・96</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / H3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8:27b / H3
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 13 分 16 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="0%（文法誤り）
+gemma4:e4b / H3
+時間: 2 分 24 秒
+出力: 11,490 トークン
+うち思考（推定）: 1,499 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">文法誤り</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="32%
+gemma4:31b-it-qat / H3
+時間: 8 分 31 秒
+出力: 13,024 トークン
+うち思考（推定）: 8,002 トークン"><div class="res-cell" style="background:#98c9a5;color:#0b0b0b"><span class="res-main">32%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8-flash-next:IQ4_XS / H3
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 23 分 33 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="0%（打切）
+strata-flash-next:IQ3_S (RVN) / H3
+思考が予算に届いて打ち切られたあとの答え
+時間: 9 分 5 秒
+出力: 29,792 トークン
+うち思考（推定）: 24,402 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="0%（打切）
+strata-official:IQ3_XXS / H3
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 36 秒
+出力: 30,463 トークン
+うち思考（推定）: 25,052 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="4%（打切）
+strata-flash-coder:IQ1_M (Coder) / H3
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 37 秒
+出力: 29,379 トークン
+うち思考（推定）: 25,030 トークン"><div class="res-cell" style="background:#cce8d3;color:#0b0b0b"><span class="res-main">4%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="14%（打切）
+strata-official:IQ3_S / H3
+思考が予算に届いて打ち切られたあとの答え
+時間: 8 分 42 秒
+出力: 30,341 トークン
+うち思考（推定）: 24,657 トークン"><div class="res-cell" style="background:#b9dcc2;color:#0b0b0b"><span class="res-main">14%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="7%（打切）
+strata-swift:IQ3_XXS (Swift 1.5) / H3
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 56 秒
+出力: 30,107 トークン
+うち思考（推定）: 24,941 トークン"><div class="res-cell" style="background:#c6e4cd;color:#0b0b0b"><span class="res-main">7%</span><span class="res-sub">打切</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。共通の指示（PREAMBLE）と、問題ごとの文を空行でつなぎます。）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 H3: 小さな関数型言語の型推論（Hindley–Milner）
+
+関数 `infer(src: str) -&gt; str` を書いてください。下の小さな言語の式 `src` の型を Hindley–Milner の型推論（let 多相あり）で求め、決まった書き方の文字列で返します。
+
+### 字句
+
+- 空白（スペース・タブ・改行）は字句の区切り。
+- 整数: `0`〜`9` の並び（負の数の字句は無い。`-` はいつも引き算）。
+- 名前: 英小文字か `_` で始まり、英字・数字・`_`・`&#x27;` が続く。ただし予約語 `fun` `let` `rec` `in` `if` `then` `else` `true` `false` は名前にならない。
+- 記号: `-&gt;` `::` `(` `)` `,` `+` `-` `*` `=` `&lt;` `[` `]`。`[` の直後には `]` しか書けない（`[]` で空のリスト）。
+- それ以外の文字は構文の誤り。
+
+### 構文（優先順位の低い順）
+
+1. `fun x1 x2 ... -&gt; e`（引数 1 つ以上）、`let x = e1 in e2`、`let f x1 ... = e1 in e2`（`let f = fun x1 ... -&gt; e1 in e2` と同じ）、`let rec f x1 ... = e1 in e2`（引数 1 つ以上）、`if e1 then e2 else e3`。どれも右へできるだけ長く伸びる。これら 4 つは、式全体・括弧の中（組の各要素も含む）・`-&gt;` の後・let の `=` の後・`in` `then` `else` の後にだけ書ける（関数の引数や演算子の右に書くには括弧が要る。括弧なしで書いたら構文の誤り）。
+2. `e1 = e2`、`e1 &lt; e2`（左結合）
+3. `e1 :: e2`（右結合）
+4. `e1 + e2`、`e1 - e2`（左結合）
+5. `e1 * e2`（左結合）
+6. 関数の適用 `e1 e2`（並べて書く。左結合。`f x y` は `(f x) y`）
+7. 整数、`true`、`false`、名前、`[]`、`( e )`、組 `( e1 , e2 )`（2 つ組だけ）
+
+### 型の規則
+
+- 整数は `int`、`true` と `false` は `bool`、`[]` は `&#x27;a list`、組は `t1 * t2`。
+- `+` `-` `*` は `int -&gt; int -&gt; int`、`&lt;` は `int -&gt; int -&gt; bool`、`=` は `&#x27;a -&gt; &#x27;a -&gt; bool`（両辺が同じ型）、`::` は `&#x27;a -&gt; &#x27;a list -&gt; &#x27;a list`。
+- `if` の条件は `bool`、2 つの枝は同じ型。
+- 最初から使える名前（`let` や `fun` で同じ名前を作れば隠れる）: `fst : &#x27;a * &#x27;b -&gt; &#x27;a`、`snd : &#x27;a * &#x27;b -&gt; &#x27;b`、`hd : &#x27;a list -&gt; &#x27;a`、`tl : &#x27;a list -&gt; &#x27;a list`、`null : &#x27;a list -&gt; bool`。
+- `let` で束縛した名前は多相（その時点の環境に現れない型変数を一般化する）。`fun` の引数は単相。`let rec` の関数は、自分の本体の中では単相、`in` の後では多相。
+
+### 答えの型の書き方
+
+- 基本の型は `int`・`bool`、型変数は `&#x27;a` `&#x27;b` …。型の中を左から右へ読んで最初に現れた順に `&#x27;a`, `&#x27;b`, …, `&#x27;z`, `&#x27;a1`, `&#x27;b1`, … と名前を付け直す。
+- `-&gt;` は右結合で最も弱い。`*` は `-&gt;` より強い。`list` は後置で最も強い。必要なところにだけ括弧を付ける（`-&gt;` の左の関数型、`*` の両側の関数型と組の型、`list` の前の関数型と組の型）。
+- 区切りは `-&gt;` と `*` の前後に空白 1 つ、`list` の前に空白 1 つ。例: `(&#x27;a -&gt; &#x27;b) -&gt; &#x27;a list -&gt; &#x27;b list`、`(int * bool) list`、`int * (bool * &#x27;a)`、`(&#x27;a -&gt; &#x27;a) * int`。
+
+### 誤り
+
+- 構文の誤りは `SyntaxError`、定義されていない名前は `NameError`、型が合わない（自分を含む型になる場合も）ときは `TypeError` を投げる。
+- 構文は式全体を読んでから型を調べる（構文の誤りがあれば、ほかの誤りより先に `SyntaxError`）。
+
+### 性能
+
+- `src` は最大 20,000 文字、括弧や `let` の入れ子は最大 300 段。どれも 1 秒程度で答えること（入れ子が深くても `RecursionError` を出さないこと）。
+
+例:
+- `infer(&quot;fun x -&gt; x&quot;)` → `&quot;&#x27;a -&gt; &#x27;a&quot;`
+- `infer(&quot;let id = fun x -&gt; x in (id 1, id true)&quot;)` → `&quot;int * bool&quot;`
+- `infer(&quot;fun f -&gt; (f 1, f true)&quot;)` → `TypeError`
+- `infer(&quot;fun f g x -&gt; f (g x)&quot;)` → `&quot;(&#x27;a -&gt; &#x27;b) -&gt; (&#x27;c -&gt; &#x27;a) -&gt; &#x27;c -&gt; &#x27;b&quot;`
+- `infer(&quot;let rec len l = if null l then 0 else 1 + len (tl l) in len&quot;)` → `&quot;&#x27;a list -&gt; int&quot;`
+- `infer(&quot;1 + y&quot;)` → `NameError`</pre></details></article><article class="card cat-coding_v3" id="p-h4"><header><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><h3>H4 分母に上限のある最良の有理近似</h3></header><p class="one-line">分数（たとえば 3.14159）を、分母が決まった大きさ以下の分数の中で、いちばん近いもの（または、すぐ下・すぐ上のもの）で表す関数を書く問題です。</p><h4>やること</h4><p>関数 best_rational を書きます。num / den を、分母が max_den 以下の分数で近似します。side が 0 なら最も近いもの、-1 なら以下で最大のもの、1 なら以上で最小のものを、約分した形で返します。標準ライブラリの fractions と decimal を使うと 0 点です。</p><h4>具体例</h4><div class="example"><div><div class="ex-label">入力</div><pre>best_rational(314159, 100000, 100)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>(311, 99)</pre></div></div><p class="ex-note">3.14159 に、分母 100 以下でいちばん近い分数は 311/99（= 3.1414…）です。</p><div class="example"><div><div class="ex-label">入力</div><pre>best_rational(314159, 100000, 100, side=1)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>(22, 7)</pre></div></div><p class="ex-note">3.14159 以上で最小の分数（分母 100 以下）は 22/7（= 3.1428…）です。</p><div class="example"><div><div class="ex-label">入力</div><pre>best_rational(1, 2, 1)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>(0, 1)</pre></div></div><p class="ex-note">0/1 と 1/1 は 1/2 から同じ距離です。分母が同じなので、分子の小さい方を返します。</p><h4>何が難しいか</h4><ul><li>連分数でよく知られた近似の分数だけでは足りません。その間に入る「中間の分数」も候補にしないと、本当にいちばん近い分数を見落とします。</li><li>数は最大で 10 の 40 乗です。分母を 1 つずつ試す方法や、木を 1 段ずつたどる方法は間に合わず、まとめて飛ばす計算が要ります。</li><li>小数では誤差で間違えるので、整数だけで比べます。</li><li>同じ距離のときの選び方、負の数、約分など、細かい決まりが多くあります。</li></ul><h4>何の力を見るか</h4><p>数学（連分数）の知識を、正確な整数計算と細かい決まりまで含めて実装する力を見ます。</p><h4>採点の仕方</h4><p>隠しテスト 21 ケースを実行し、合格したケースの割合が点です（部分点あり）。fractions・decimal を使った答えは実行せずに 0 点です。</p><p class="k">ケースの種類（合計 21 ケース）</p><ul><li>問題文の例・ちょうど表せる値・整数と 0・分母の上限が 1（4 ケース）</li><li>負の数と side（1 ケース）</li><li>同じ距離のときの選び方（2 ケース）</li><li>中間の分数が要る場合（2 ケース）</li><li>エラー・答えの形（2 ケース）</li><li>小さい乱数（3 つの side）（3 ケース）</li><li>小数では足りない値・とても小さい値と大きい値・フィボナッチ数の比・√2 の近似（4 ケース）</li><li>大きな入力（性能）（3 ケース）</li></ul><h4>用語</h4><dl class="terms"><dt>有理近似</dt><dd>ある数を、分数（整数 ÷ 整数）で近く表すことです。</dd><dt>既約分数</dt><dd>これ以上約分できない分数です（6/4 ではなく 3/2）。</dd><dt>連分数</dt><dd>数を「整数 + 1 / (整数 + 1 / …)」の形で表す方法です。よい近似の分数を順に作れます。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 24 回が満点。</li><li>ローカル: 満点 4（strata-official:IQ3_XXS、strata-flash-coder:IQ1_M (Coder)、strata-official:IQ3_S、strata-swift:IQ3_XXS (Swift 1.5)）。部分点 3（gemma4:e4b 10%、gemma4:31b-it-qat 19%、strata-flash-next:IQ3_S (RVN) 19%）。0 点・答えなし 2（qwen3.8:27b、qwen3.8-flash-next:IQ4_XS）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / H4（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="答えなし（思考中停止）
+qwen3.8:27b / H4
+状態: eos_in_thinking（思考の途中で停止トークンが出て、本文が空のまま終わった（0 点・答えなし））
+理由: eos_in_thinking
+時間: 8 分 31 秒
+出力: 22,023 トークン
+うち思考（推定）: 22,023 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">思考中停止</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="10%
+gemma4:e4b / H4
+時間: 1 分 32 秒
+出力: 7,527 トークン
+うち思考（推定）: 4,865 トークン"><div class="res-cell" style="background:#c1e2ca;color:#0b0b0b"><span class="res-main">10%</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="19%
+gemma4:31b-it-qat / H4
+時間: 6 分 59 秒
+出力: 10,871 トークン
+うち思考（推定）: 9,545 トークン"><div class="res-cell" style="background:#b0d7ba;color:#0b0b0b"><span class="res-main">19%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8-flash-next:IQ4_XS / H4
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 24 分 19 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="19%（打切）
+strata-flash-next:IQ3_S (RVN) / H4
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 30 秒
+出力: 26,722 トークン
+うち思考（推定）: 24,137 トークン"><div class="res-cell" style="background:#b0d7ba;color:#0b0b0b"><span class="res-main">19%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_XXS / H4
+思考が予算に届いて打ち切られたあとの答え
+時間: 5 分 50 秒
+出力: 25,875 トークン
+うち思考（推定）: 24,585 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / H4
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 32 秒
+出力: 25,833 トークン
+うち思考（推定）: 24,584 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_S / H4
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 17 秒
+出力: 26,246 トークン
+うち思考（推定）: 24,442 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="100%（打切）
+strata-swift:IQ3_XXS (Swift 1.5) / H4
+思考が予算に届いて打ち切られたあとの答え
+時間: 5 分 42 秒
+出力: 25,482 トークン
+うち思考（推定）: 24,443 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。共通の指示（PREAMBLE）と、問題ごとの文を空行でつなぎます。）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 H4: 分母に上限のある最良の有理近似
+
+関数 `best_rational(num: int, den: int, max_den: int, side: int = 0) -&gt; tuple[int, int]` を書いてください。有理数 `x = num / den` を、分母が `max_den` 以下の分数 `p / q`（`p` は整数、`q` は `1 &lt;= q &lt;= max_den` の整数）で近似し、`(p, q)` を返します。標準ライブラリの `fractions` モジュールと `decimal` モジュールは使わないでください（使った答えは 0 点）。浮動小数点数で計算すると誤差で誤ります。整数だけで計算してください。
+
+### 選び方
+
+- `side == 0`: `|x - p/q|` が最小の分数。最小のものが複数あるときは、`q` が小さい方、それも同じなら `p` が小さい方（数として小さい方。`-1 &lt; 0`）を返す。
+- `side == -1`: `p/q &lt;= x` を満たす分数のうち、値が最大のもの。
+- `side == 1`: `p/q &gt;= x` を満たす分数のうち、値が最小のもの。
+- 返す分数は既約にする（`q &gt;= 1` かつ `p` と `q` の最大公約数が 1。`p == 0` なら `(0, 1)`）。同じ値の分数は 1 つと数える。
+- `x` 自身の既約分数の分母が `max_den` 以下なら、どの `side` でもその既約分数を返す。
+
+### 入力と誤り
+
+- `num` と `den` は任意の大きさの整数（負でもよい。`den` が負なら `x` は `num / den` の値どおり）。
+- `den == 0`、`max_den &lt; 1`、`side` が `-1`・`0`・`1` 以外のときは `ValueError`。
+
+### 性能
+
+- `num`・`den`・`max_den` の絶対値は最大 10**40。1 回の呼び出しは分母の上限の大きさによらず、すぐ（1 ミリ秒程度で）答えること。分母を 1 つずつ調べる作りや、Stern–Brocot 木を 1 段ずつたどる作りは時間切れになる。
+
+例:
+- `best_rational(314159, 100000, 100)` → `(311, 99)`
+- `best_rational(1, 2, 1)` → `(0, 1)`（`0/1` と `1/1` は同じ距離。分母が同じなので分子の小さい方）
+- `best_rational(-1, 2, 1)` → `(-1, 1)`
+- `best_rational(314159, 100000, 100, side=1)` → `(22, 7)`
+- `best_rational(6, -4, 10)` → `(-3, 2)`</pre></details></article><article class="card cat-coding_v3" id="p-h5"><header><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><h3>H5 正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列</h3></header><p class="one-line">正規表現（文字列のパターン）を、同じ働きをする最小の「状態機械」に直したときの状態の数と、2 つのパターンの違いを示す最も短い文字列を求める問題です。</p><h4>やること</h4><p>2 つの関数を書きます。min_dfa_size は、パターンに全体が一致する文字列の集まりを見分ける、最小の完全な DFA の状態の数を返します。distinguish は、2 つのパターンが同じ文字列の集まりなら None を、違えば一方だけに一致する最も短い文字列を返します。パターンの文法（. [ ] * + ? ( ) |）は自分で読みます。標準ライブラリの re を使うと 0 点です。</p><h4>具体例</h4><div class="example"><div><div class="ex-label">入力</div><pre>min_dfa_size(&quot;a*&quot;, &quot;ab&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>2</pre></div></div><p class="ex-note">「a だけが続いている」状態と、「b が出てもう一致しない」状態の 2 つです。</p><div class="example"><div><div class="ex-label">入力</div><pre>min_dfa_size(&quot;(a|b)*a(a|b)&quot;, &quot;ab&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>4</pre></div></div><p class="ex-note">「後ろから 2 文字目が a」の文字列です。最後の 2 文字を覚える 4 つの状態が要ります。</p><div class="example"><div><div class="ex-label">入力</div><pre>distinguish(&quot;(ab)*&quot;, &quot;(a|b)*&quot;, &quot;ab&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>&quot;a&quot;</pre></div></div><p class="ex-note">&quot;a&quot; は 2 つ目のパターンには一致しますが、1 つ目には一致しません。これが最も短い違いです。</p><div class="example"><div><div class="ex-label">入力</div><pre>distinguish(&quot;a(b|c)&quot;, &quot;ab|ac&quot;, &quot;abc&quot;)</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>None</pre></div></div><p class="ex-note">書き方は違いますが、一致する文字列は同じ（ab と ac）なので None です。</p><h4>何が難しいか</h4><ul><li>パターンの文法を自分で読みます（文字クラスの範囲・否定・エスケープ・空の選択肢・誤りの見分けなど、細かい決まりが多くあります）。</li><li>パターン → 非決定性の機械（NFA）→ 決定性の機械（DFA）→ 最小化、という定番の手順を正しく組み立てます。もう一致しない「死んだ状態」も 1 つと数えます。</li><li>distinguish は、2 つの機械を同時に動かして、短い順に違いを探します。同じ長さなら、alphabet に書いた文字の順で辞書順が最小のものを返します。</li><li>状態が数千になる場合も 1 秒程度で答えます。</li></ul><h4>何の力を見るか</h4><p>オートマトン（状態機械）の理論の定番の手順を、細かい文法と合わせて実装する力を見ます。</p><h4>採点の仕方</h4><p>隠しテスト 19 ケースを実行し、合格したケースの割合が点です（部分点あり）。re などを使った答えは実行せずに 0 点です。</p><p class="k">ケースの種類（合計 19 ケース）</p><ul><li>問題文の例（1 ケース）</li><li>エラー（alphabet・パターン）（2 ケース）</li><li>パターンの文法（空の集まりと空の文字列・. と文字クラス・普通の文字になる記号・量指定子とグループ・空の選択肢）（5 ケース）</li><li>状態の数（数を数える言語・乱数のパターン）（2 ケース）</li><li>distinguish（同じ集まり・空の文字列で区別・短い順・alphabet の順・乱数の組）（5 ケース）</li><li>大きな入力（性能）（4 ケース）</li></ul><h4>用語</h4><dl class="terms"><dt>正規表現</dt><dd>文字列のパターンを表す書き方です。a* は「a が 0 個以上」、(a|b) は「a か b」です。</dd><dt>DFA</dt><dd>決定性有限オートマトン。1 文字読むごとに、決まった次の状態へ移る機械です。</dd><dt>状態</dt><dd>機械が覚えている「ここまでの読み具合」です。少ないほど簡単な機械です。</dd><dt>死んだ状態</dt><dd>そこに入ると、後ろに何を付けても一致しなくなる状態です。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 23 回が満点。満点でなかった回: Sonnet5.5-xHigh の 1 回目 74%。</li><li>ローカル: 部分点 5（gemma4:e4b 5%、gemma4:31b-it-qat 84%、strata-flash-coder:IQ1_M (Coder) 11%、strata-official:IQ3_S 5%、strata-swift:IQ3_XXS (Swift 1.5) 5%）。0 点・答えなし 4（qwen3.8:27b、qwen3.8-flash-next:IQ4_XS、strata-flash-next:IQ3_S (RVN)、strata-official:IQ3_XXS）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / H5（3 回の平均 91%）
+1 回目: 74%（落ちたケース: case_examples、case_quantifiers_and_groups、case_random_patterns、case_equal_languages、case_random_pairs）
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#2a8945;color:#ffffff"><span class="res-main">91%</span><span class="res-sub">3 回: 74・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / H5（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / H5（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / H5（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / H5（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / H5（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / H5（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / H5（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="答えなし（思考中停止）
+qwen3.8:27b / H5
+状態: eos_in_thinking（思考の途中で停止トークンが出て、本文が空のまま終わった（0 点・答えなし））
+理由: eos_in_thinking
+時間: 9 分 42 秒
+出力: 24,931 トークン
+うち思考（推定）: 24,931 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">思考中停止</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="5%
+gemma4:e4b / H5
+時間: 1 分 43 秒
+出力: 8,356 トークン
+うち思考（推定）: 821 トークン"><div class="res-cell" style="background:#c9e6d0;color:#0b0b0b"><span class="res-main">5%</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="84%
+gemma4:31b-it-qat / H5
+時間: 6 分 26 秒
+出力: 9,931 トークン
+うち思考（推定）: 6,589 トークン"><div class="res-cell" style="background:#379051;color:#ffffff"><span class="res-main">84%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8-flash-next:IQ4_XS / H5
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 23 分 30 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="0%（打切）
+strata-flash-next:IQ3_S (RVN) / H5
+思考が予算に届いて打ち切られたあとの答え
+時間: 8 分
+出力: 26,235 トークン
+うち思考（推定）: 24,627 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="0%（打切）
+strata-official:IQ3_XXS / H5
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 31 秒
+出力: 30,441 トークン
+うち思考（推定）: 25,130 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="11%（打切）
+strata-flash-coder:IQ1_M (Coder) / H5
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 42 秒
+出力: 28,904 トークン
+うち思考（推定）: 24,931 トークン"><div class="res-cell" style="background:#c0e1c8;color:#0b0b0b"><span class="res-main">11%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="5%（打切）
+strata-official:IQ3_S / H5
+思考が予算に届いて打ち切られたあとの答え
+時間: 8 分 27 秒
+出力: 30,307 トークン
+うち思考（推定）: 25,081 トークン"><div class="res-cell" style="background:#c9e6d0;color:#0b0b0b"><span class="res-main">5%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="5%（打切）
+strata-swift:IQ3_XXS (Swift 1.5) / H5
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 25 秒
+出力: 28,519 トークン
+うち思考（推定）: 24,750 トークン"><div class="res-cell" style="background:#c9e6d0;color:#0b0b0b"><span class="res-main">5%</span><span class="res-sub">打切</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。共通の指示（PREAMBLE）と、問題ごとの文を空行でつなぎます。）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 H5: 正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列
+
+次の 2 つの関数を書いてください。標準ライブラリの `re` モジュール（および `sre_parse`、`sre_compile`、`_sre`）は使わないでください（使った答えは 0 点）。
+
+- `min_dfa_size(pattern: str, alphabet: str) -&gt; int`: 文字の集合 `alphabet` の上で、`pattern` に**全体が**一致する文字列の集合（言語）を受理する、状態数が最小の**完全な** DFA の状態数を返す。完全とは、どの状態にも `alphabet` のすべての文字の遷移があること（受理できなくなった後の「死んだ状態」も 1 つと数える）。言い換えると、`alphabet` 上の文字列を「後ろに何を付けたら受理されるか」で分けたときの類の数。
+- `distinguish(p1: str, p2: str, alphabet: str) -&gt; str | None`: `p1` と `p2` の言語が等しければ `None`。違えば、ちょうど一方だけに全体が一致する文字列のうち最も短いものを返す。最も短いものが複数あるときは、文字の順を **`alphabet` の中の並び順**とした辞書順で最小のものを返す。
+
+### alphabet
+
+- 1〜8 文字の、互いに異なる文字の並び。空、または同じ文字が 2 度あれば `ValueError`。
+- 言語は `alphabet` の文字だけからなる文字列の集合として考える。
+
+### パターンの文法
+
+- 普通の文字: その文字そのものに一致する。`alphabet` に無い文字は、どの文字列にも現れないので一致しない（その部分の言語は空）。`^` と `$` も普通の文字。
+- `.`: `alphabet` の任意の 1 文字に一致する。
+- `\` の直後の 1 文字: その文字そのものに一致する（`\.` は `.`、`\\` は `\`、`\n` は `n`）。パターンの末尾に単独の `\` があれば `ValueError`。
+- 文字クラス `[...]`: `[` の直後の `^` は否定（`[^...]` は列挙した文字以外の、`alphabet` の 1 文字）。中身は左から順に項目として読む。項目を読むときは、まず 1 文字（`\` でエスケープされた文字も 1 文字と数え、エスケープを解いた文字になる）を読み、その直後が `-` で、さらにその次の文字が `]` でなければ範囲 `x-y`（`x` 以上 `y` 以下のコードポイント。`y` もエスケープできる。`x &gt; y` なら `ValueError`）、そうでなければ読んだ 1 文字だけの項目とする。`]` はエスケープしない限り常にクラスを閉じる。`-` は項目の 1 文字目として読まれたとき、または `]` の直前にあるときはただの文字。クラスの中では `.` `*` `+` `?` `|` `(` `)` `^`（先頭以外）`$` はただの文字。項目が 1 つも無い `[]`、`[^]`、閉じていない `[` は `ValueError`。`alphabet` に無い文字は列挙しても一致しない。
+- 量指定子 `*`（0 回以上）、`+`（1 回以上）、`?`（0 回か 1 回）: 直前の要素（1 文字、`.`、エスケープした文字、文字クラス、グループ）に付ける。付ける要素が無いとき（パターンの先頭、`(` や `|` の直後）、量指定子を重ねたとき（`a**`、`a*?`）は `ValueError`。
+- グループ `( ... )`: 中身を 1 つの要素にまとめる。空のグループ `()` は空文字列に一致する。対応の取れていない `(` や `)` は `ValueError`。
+- 選択 `|`: 優先順位は最も低い。空の選択肢（`a|`、`|a`、`(|a)`）は空文字列に一致する。
+- 空のパターン `&quot;&quot;` は空文字列だけに一致する。
+
+### 性能
+
+- パターンは最大 100 文字。最小 DFA の状態数が数千になる場合も、1 回の呼び出しが 1 秒程度で終わること。文字列を短い順に全部試す作りは時間切れになる。
+
+例:
+- `min_dfa_size(&quot;a*&quot;, &quot;ab&quot;)` → `2`
+- `min_dfa_size(&quot;(a|b)*&quot;, &quot;ab&quot;)` → `1`
+- `min_dfa_size(&quot;&quot;, &quot;ab&quot;)` → `2`
+- `min_dfa_size(&quot;[c]&quot;, &quot;ab&quot;)` → `1`（言語は空）
+- `min_dfa_size(&quot;(a|b)*a(a|b)&quot;, &quot;ab&quot;)` → `4`
+- `distinguish(&quot;(ab)*&quot;, &quot;(a|b)*&quot;, &quot;ab&quot;)` → `&quot;a&quot;`
+- `distinguish(&quot;a(b|c)&quot;, &quot;ab|ac&quot;, &quot;abc&quot;)` → `None`
+- `distinguish(&quot;b*&quot;, &quot;a*&quot;, &quot;ba&quot;)` → `&quot;b&quot;`（長さ 1 の `&quot;a&quot;` と `&quot;b&quot;` がどちらも区別する。`alphabet` の順では `b` が先）</pre></details></article><article class="card cat-coding_v3" id="p-h6"><header><span class="chip-cat cat-coding_v3"><i class="dot"></i>難しいコーディング</span><h3>H6 ドミノと L トロミノの敷き詰めの数</h3></header><p class="one-line">マス目の盤面を、ドミノ（2 マス）と L 字の駒（3 マス）ですき間なく敷き詰める方法が何通りあるかを数える関数を書く問題です。</p><h4>やること</h4><p>関数 count_tilings を書きます。盤面の空きマス（.）を、重ならず、はみ出さずに、ドミノと L トロミノで覆う方法の数を返します。埋まっているマス（#）は覆いません。答えは非常に大きくなることがあるので、正確な整数で返します。</p><h4>具体例</h4><div class="example"><div><div class="ex-label">入力</div><pre>count_tilings([&quot;..&quot;, &quot;..&quot;])</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>2</pre></div></div><p class="ex-note">横のドミノ 2 つ、または縦のドミノ 2 つです。</p><div class="example"><div><div class="ex-label">入力</div><pre>count_tilings([&quot;...&quot;, &quot;...&quot;])</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>5</pre></div></div><p class="ex-note">ドミノだけで 3 通り、L 字の駒 2 つで 2 通り、合わせて 5 通りです（下の図）。</p><div class="example"><div><div class="ex-label">入力</div><pre>count_tilings([&quot;.#&quot;, &quot;..&quot;])</pre></div><div class="ex-arrow" aria-hidden="true">→</div><div><div class="ex-label">期待する答え</div><pre>1</pre></div></div><p class="ex-note">L 字の駒 1 つで覆う 1 通りです。</p><svg class="figure" viewBox="0 0 498 92" width="498" height="92" role="img" aria-label="2 行 3 列の盤面を、ドミノと L トロミノで敷き詰める 5 通りの方法"><rect x="10.0" y="10.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="10.0" y="36.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="36.0" y="10.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="36.0" y="36.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="62.0" y="10.0" width="26.0" height="26.0" fill="#4a8cdc"/><rect x="62.0" y="36.0" width="26.0" height="26.0" fill="#4a8cdc"/><line x1="36.0" y1="10.0" x2="36.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="10.0" y1="36.0" x2="36.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="62.0" y1="10.0" x2="62.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="36.0" y1="36.0" x2="62.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="62.0" y1="36.0" x2="88.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="36.0" y1="36.0" x2="36.0" y2="62.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="62.0" y1="36.0" x2="62.0" y2="62.0" stroke="#3b3a37" stroke-width="2.5"/><rect x="10.0" y="10.0" width="78.0" height="52.0" fill="none" stroke="#3b3a37" stroke-width="2.5"/><text class="sub-text" x="49.0" y="78.0" text-anchor="middle">1（ドミノ）</text><rect x="110.0" y="10.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="110.0" y="36.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="136.0" y="10.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="162.0" y="10.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="136.0" y="36.0" width="26.0" height="26.0" fill="#4a8cdc"/><rect x="162.0" y="36.0" width="26.0" height="26.0" fill="#4a8cdc"/><line x1="136.0" y1="10.0" x2="136.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="110.0" y1="36.0" x2="136.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="162.0" y1="10.0" x2="162.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="136.0" y1="36.0" x2="162.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="162.0" y1="36.0" x2="188.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="136.0" y1="36.0" x2="136.0" y2="62.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="162.0" y1="36.0" x2="162.0" y2="62.0" stroke="#3b3a37" stroke-width="0.5"/><rect x="110.0" y="10.0" width="78.0" height="52.0" fill="none" stroke="#3b3a37" stroke-width="2.5"/><text class="sub-text" x="149.0" y="78.0" text-anchor="middle">2（ドミノ）</text><rect x="210.0" y="10.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="236.0" y="10.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="210.0" y="36.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="236.0" y="36.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="262.0" y="10.0" width="26.0" height="26.0" fill="#4a8cdc"/><rect x="262.0" y="36.0" width="26.0" height="26.0" fill="#4a8cdc"/><line x1="236.0" y1="10.0" x2="236.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="210.0" y1="36.0" x2="236.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="262.0" y1="10.0" x2="262.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="236.0" y1="36.0" x2="262.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="262.0" y1="36.0" x2="288.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="236.0" y1="36.0" x2="236.0" y2="62.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="262.0" y1="36.0" x2="262.0" y2="62.0" stroke="#3b3a37" stroke-width="2.5"/><rect x="210.0" y="10.0" width="78.0" height="52.0" fill="none" stroke="#3b3a37" stroke-width="2.5"/><text class="sub-text" x="249.0" y="78.0" text-anchor="middle">3（ドミノ）</text><rect x="310.0" y="10.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="336.0" y="10.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="310.0" y="36.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="336.0" y="36.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="362.0" y="36.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="362.0" y="10.0" width="26.0" height="26.0" fill="#88b3e7"/><line x1="336.0" y1="10.0" x2="336.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="310.0" y1="36.0" x2="336.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="362.0" y1="10.0" x2="362.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="336.0" y1="36.0" x2="362.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="362.0" y1="36.0" x2="388.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="336.0" y1="36.0" x2="336.0" y2="62.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="362.0" y1="36.0" x2="362.0" y2="62.0" stroke="#3b3a37" stroke-width="0.5"/><rect x="310.0" y="10.0" width="78.0" height="52.0" fill="none" stroke="#3b3a37" stroke-width="2.5"/><text class="sub-text" x="349.0" y="78.0" text-anchor="middle">4（L 字）</text><rect x="410.0" y="10.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="410.0" y="36.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="436.0" y="36.0" width="26.0" height="26.0" fill="#c8dbf2"/><rect x="436.0" y="10.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="462.0" y="10.0" width="26.0" height="26.0" fill="#88b3e7"/><rect x="462.0" y="36.0" width="26.0" height="26.0" fill="#88b3e7"/><line x1="436.0" y1="10.0" x2="436.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="410.0" y1="36.0" x2="436.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="462.0" y1="10.0" x2="462.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="436.0" y1="36.0" x2="462.0" y2="36.0" stroke="#3b3a37" stroke-width="2.5"/><line x1="462.0" y1="36.0" x2="488.0" y2="36.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="436.0" y1="36.0" x2="436.0" y2="62.0" stroke="#3b3a37" stroke-width="0.5"/><line x1="462.0" y1="36.0" x2="462.0" y2="62.0" stroke="#3b3a37" stroke-width="2.5"/><rect x="410.0" y="10.0" width="78.0" height="52.0" fill="none" stroke="#3b3a37" stroke-width="2.5"/><text class="sub-text" x="449.0" y="78.0" text-anchor="middle">5（L 字）</text></svg><p class="fig-caption">["...", "..."]（2 行 3 列）の 5 通り。太い線が駒の境目。</p><h4>何が難しいか</h4><ul><li>答えは天文学的に大きくなり、1 つずつ数える探索は間に合いません。「ここまでで、次の行へはみ出しているマス」を状態として覚えて数える方法（動的計画法）が要ります。</li><li>L 字の駒は 4 つの向きがあり、2 行にまたがります。左下へ伸びる向きなど、はみ出し方を見落としやすい形があります。</li><li>盤面は最大 16 × 16（小さい辺は 10 以下）です。短い辺の向きに状態を取らないと、状態が多すぎて間に合いません。</li></ul><h4>何の力を見るか</h4><p>組み合わせの数え上げを、状態の設計（何を覚えて次へ進むか）で効率よく解く力を見ます。</p><h4>採点の仕方</h4><p>隠しテスト 21 ケースを実行し、合格したケースの割合が点です（部分点あり）。</p><p class="k">ケースの種類（合計 21 ケース）</p><ul><li>問題文の例・覆うものが無い盤面・1 行や 1 列の盤面・不正な盤面（4 ケース）</li><li>L 字の各向き（左下へ伸びる形を含む）（2 ケース）</li><li>2 × n・3 × n の数列・小さな盤面（3 ケース）</li><li>穴・つながっていない領域・輪や L 字の領域（3 ケース）</li><li>縦横を入れ替えても同じ・乱数の盤面・細長い盤面・大きな答え（5 ケース）</li><li>大きな盤面（性能）（4 ケース）</li></ul><h4>用語</h4><dl class="terms"><dt>ドミノ</dt><dd>2 マスの長方形の駒です（縦置き・横置き）。</dd><dt>L トロミノ</dt><dd>2 × 2 の正方形から 1 マスを除いた、L 字の 3 マスの駒です。</dd><dt>動的計画法</dt><dd>小さい部分の答えを表に覚えておき、それを組み合わせて大きな答えを出す方法です。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 24 回が満点。</li><li>ローカル: 満点 3（strata-official:IQ3_XXS、strata-flash-coder:IQ1_M (Coder)、strata-official:IQ3_S）。部分点 3（gemma4:e4b 14%、gemma4:31b-it-qat 19%、strata-swift:IQ3_XXS (Swift 1.5) 10%）。0 点・答えなし 3（qwen3.8:27b、qwen3.8-flash-next:IQ4_XS、strata-flash-next:IQ3_S (RVN)）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / H6（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="答えなし（思考中停止）
+qwen3.8:27b / H6
+状態: eos_in_thinking（思考の途中で停止トークンが出て、本文が空のまま終わった（0 点・答えなし））
+理由: eos_in_thinking
+時間: 6 分 40 秒
+出力: 16,873 トークン
+うち思考（推定）: 16,873 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">思考中停止</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="14%
+gemma4:e4b / H6
+時間: 2 分
+出力: 9,790 トークン
+うち思考（推定）: 7,540 トークン"><div class="res-cell" style="background:#b9dcc2;color:#0b0b0b"><span class="res-main">14%</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="19%
+gemma4:31b-it-qat / H6
+時間: 10 分 17 秒
+出力: 15,768 トークン
+うち思考（推定）: 9,133 トークン"><div class="res-cell" style="background:#b0d7ba;color:#0b0b0b"><span class="res-main">19%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="0%（文法誤り）
+qwen3.8-flash-next:IQ4_XS / H6
+時間: 20 分 8 秒
+出力: 28,393 トークン
+うち思考（推定）: 27,688 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">文法誤り</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="0%（上限・打切）
+strata-flash-next:IQ3_S (RVN) / H6
+状態: length（生成の上限トークンに届いた）
+思考が予算に届いて打ち切られたあとの答え
+時間: 9 分 35 秒
+出力: 32,768 トークン
+うち思考（推定）: 24,828 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">上限・打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_XXS / H6
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 25 秒
+出力: 26,065 トークン
+うち思考（推定）: 24,565 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / H6
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 47 秒
+出力: 25,693 トークン
+うち思考（推定）: 24,706 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_S / H6
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 31 秒
+出力: 25,370 トークン
+うち思考（推定）: 24,595 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="10%（打切）
+strata-swift:IQ3_XXS (Swift 1.5) / H6
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 12 秒
+出力: 26,134 トークン
+うち思考（推定）: 24,699 トークン"><div class="res-cell" style="background:#c1e2ca;color:#0b0b0b"><span class="res-main">10%</span><span class="res-sub">打切</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。共通の指示（PREAMBLE）と、問題ごとの文を空行でつなぎます。）</summary><pre>次の仕様を満たす Python 3.12 のコードを書いてください。
+
+守ること:
+- 標準ライブラリだけを使う。外部のパッケージは使わない。
+- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。
+- 仕様にある関数名・クラス名・引数の名前をそのまま使う。
+- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。
+
+## 問題 H6: ドミノと L トロミノの敷き詰めの数
+
+関数 `count_tilings(grid: list[str]) -&gt; int` を書いてください。盤面 `grid` は同じ長さの文字列の並びで、`&quot;.&quot;` は空きのマス、`&quot;#&quot;` は埋まっているマスです。空きのマスをすべて、重ならず、はみ出さずに、次の 2 種類の駒で覆う方法の数を返します。
+
+- ドミノ: 横に並んだ 2 マス、または縦に並んだ 2 マス。
+- L トロミノ: 2×2 の正方形から 1 マスを除いた 3 マス（4 つの向きがある）。
+
+駒どうしは区別しません。2 つの敷き詰めが違うのは、空きのマスを駒に分ける分け方が違うときです。埋まっているマス（`&quot;#&quot;`）は覆いません。
+
+### 入力と誤り
+
+- `grid` は 0 行以上。各行の長さが違う、または `&quot;.&quot;` と `&quot;#&quot;` 以外の文字があれば `ValueError`。
+- 空きのマスが 1 つも無ければ 1（何も置かない 1 通り）。`grid == []` と `grid == [&quot;&quot;]` も 1。
+- 答えは非常に大きくなることがある（正確な整数で返す）。
+
+### 性能
+
+- 盤面は最大 16 行 × 16 列。ただし行数と列数の小さい方は 10 以下。最大の盤面でも 1 秒程度で答えること。敷き詰めを 1 つずつ数える探索は時間切れになる。
+
+例:
+- `count_tilings([&quot;..&quot;, &quot;..&quot;])` → `2`（横のドミノ 2 つ、縦のドミノ 2 つ）
+- `count_tilings([&quot;...&quot;, &quot;...&quot;])` → `5`
+- `count_tilings([&quot;.#&quot;, &quot;..&quot;])` → `1`（L トロミノ 1 つ）
+- `count_tilings([&quot;.&quot;])` → `0`</pre></details></article></section><section id="s3"><h2>3. 数学（3 問）</h2><div class="kind-intro cat-math"><span class="chip-cat cat-math"><i class="dot"></i>数学</span><p>立体や確率の値を求める問題です。最後に書いた答えの数を、正解と比べて採点します。</p></div><article class="card cat-math" id="p-m1"><header><span class="chip-cat cat-math"><i class="dot"></i>数学</span><h3>M1 正四面体のまわりの立体</h3></header><p class="one-line">正四面体（4 枚の正三角形でできた三角すい）を、厚さ 0.6 の衣でくるんだ立体の、体積と表面積を求める問題です。</p><h4>やること</h4><p>1 辺の長さが 1 の正四面体 T から距離 0.6 以内にある点全体の立体 K について、(a) 体積と (b) 表面積を求めます。</p><h4>問題の状況</h4><div class="situation"><p>K は、T そのものと、面の上に乗る厚さ 0.6 の板、辺のまわりの円柱の一部、頂点のまわりの球の一部に分けられます。</p><p>図は同じ考え方を 2 次元で描いたものです（正三角形を 0.6 だけ太らせた図形）。角の丸い部分を全部集めると、ちょうど 1 つの円になります。</p><svg class="figure" viewBox="0 0 330 300" width="330" height="300" role="img" aria-label="1 辺 1 の正三角形と、そこから距離 0.6 以内の点が作る、角の丸い三角形の図形"><path d="M227.4,59.0 L287.4,162.9 A72.0,72.0 0 0 1 225.0,270.9 L105.0,270.9 A72.0,72.0 0 0 1 42.6,162.9 L102.6,59.0 A72.0,72.0 0 0 1 227.4,59.0Z" fill="#f8d7c9" stroke="#3b3a37" stroke-width="1.5"/><polygon points="165.0,95.0 225.0,198.9 105.0,198.9" fill="#f09470" stroke="#3b3a37" stroke-width="1.5"/><line x1="165.0" y1="198.9" x2="165.0" y2="270.9" stroke="#3b3a37" stroke-width="1.2" stroke-dasharray="4 3"/><text x="171.0" y="238.9">r = 0.6</text><text x="165.0" y="182.3" text-anchor="middle">T</text><text class="sub-text" x="235.0" y="45.0">角は半径 r の円弧</text></svg></div><h4>小問と正解</h4><table class="data parts"><thead><tr><th>小問</th><th>何を答えるか</th><th>正解の式</th><th>正解の値</th></tr></thead><tbody><tr><td class="strong">(a)</td><td>K の体積</td><td class="formula">sqrt(2)/12 + sqrt(3)*r + 3*(pi - acos(1/3))*r**2 + 4/3*pi*r**3（r = 0.6）</td><td class="num">4.125344</td></tr><tr><td class="strong">(b)</td><td>K の表面積</td><td class="formula">sqrt(3) + 6*(pi - acos(1/3))*r + 4*pi*r**2（r = 0.6）</td><td class="num">13.13422</td></tr></tbody></table><p class="caption">正解は answer.json の値（式の値。乱数で点を打つモンテカルロ法でも確かめた）。答えは式でも、有効数字 6 桁以上の小数でもよい。</p><h4>何が難しいか</h4><ul><li>面・辺・頂点のまわりの部分に分けて足します（シュタイナーの公式）。辺のまわりの円柱は、その辺で 2 枚の面がつくる外側の角の分だけです。正四面体の 2 枚の面の間の角 acos(1/3) を正しく使います。</li><li>頂点のまわりの球の部分は、4 つ合わせてちょうど 1 つの球になります。</li><li>体積と表面積で、それぞれの部分の式が違います。</li></ul><h4>何の力を見るか</h4><p>立体の形を頭の中で正確に分解し、式を組み立てて最後まで計算し切る力を見ます。</p><h4>採点の仕方</h4><p>最後の「答え(a): 値」「答え(b): 値」の行を機械で読み、正解との相対誤差が 1e-5（10 万分の 1）以内なら正解です。点は正解した小問の割合です（2 問中 1 問なら 50%）。</p><h4>用語</h4><dl class="terms"><dt>正四面体</dt><dd>4 枚の合同な正三角形でできた立体です。</dd><dt>シュタイナーの公式</dt><dd>へこみの無い立体を一定の厚さで太らせたときの体積を、元の体積・表面積・辺の情報・r の 3 乗の項の和で表す公式です。</dd><dt>acos</dt><dd>逆三角関数のアークコサイン（cos の逆）です。acos(1/3) は約 70.5 度です。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 23 回が満点。満点でなかった回: Opus5.5-Medium の 1 回目 50%。</li><li>ローカル: 満点 7（gemma4:e4b、gemma4:31b-it-qat、qwen3.8-flash-next:IQ4_XS、strata-official:IQ3_XXS、strata-flash-coder:IQ1_M (Coder)、strata-official:IQ3_S、strata-swift:IQ3_XXS (Swift 1.5)）。部分点 1（qwen3.8:27b 50%）。0 点・答えなし 1（strata-flash-next:IQ3_S (RVN)）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / M1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / M1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / M1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / M1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / M1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / M1（3 回の平均 83%）
+1 回目: 50%（落ちたケース: (b)）
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#399152;color:#ffffff"><span class="res-main">83%</span><span class="res-sub">3 回: 50・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / M1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / M1（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="50%
+qwen3.8:27b / M1
+時間: 6 分 27 秒
+出力: 17,896 トークン
+うち思考（推定）: 17,446 トークン"><div class="res-cell" style="background:#76b688;color:#ffffff"><span class="res-main">50%</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="100%
+gemma4:e4b / M1
+時間: 57 秒
+出力: 4,756 トークン
+うち思考（推定）: 3,616 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="100%
+gemma4:31b-it-qat / M1
+時間: 3 分 45 秒
+出力: 5,946 トークン
+うち思考（推定）: 5,213 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="100%
+qwen3.8-flash-next:IQ4_XS / M1
+時間: 15 分 6 秒
+出力: 21,821 トークン
+うち思考（推定）: 20,991 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="答えなし（打切）
+strata-flash-next:IQ3_S (RVN) / M1
+思考が予算に届いて打ち切られたあとの答え
+理由: 答えの行が無い
+時間: 7 分 6 秒
+出力: 24,659 トークン
+うち思考（推定）: 24,624 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_XXS / M1
+思考が予算に届いて打ち切られたあとの答え
+時間: 5 分 51 秒
+出力: 25,117 トークン
+うち思考（推定）: 24,849 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / M1
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 10 秒
+出力: 25,020 トークン
+うち思考（推定）: 24,755 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_S / M1
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 52 秒
+出力: 25,350 トークン
+うち思考（推定）: 24,919 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="100%
+strata-swift:IQ3_XXS (Swift 1.5) / M1
+時間: 5 分 12 秒
+出力: 23,684 トークン
+うち思考（推定）: 23,340 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。問題ごとの文と、答えの書き方（POSTAMBLE）を空行でつなぎます。）</summary><pre>## 問題 M1: 正四面体のまわりの立体
+
+1 辺の長さが 1 の正四面体 T がある。T からの距離が r 以下の点全体（T の内部も含む）がつくる立体を K とする（中心が T の上を動く半径 r の球が通過する範囲と同じ）。r = 0.6 のとき、次を求めよ。
+
+(a) K の体積
+
+(b) K の表面積
+
+### 答えの書き方
+
+- 途中の考え方は自由に書いてよい。最後に、小問ごとに 1 行ずつ `答え(a): &lt;値&gt;` の形で書く（`(b)` 以降も同じ）。
+- `&lt;値&gt;` は 1 つの数。厳密な式（円周率は `pi`、平方根は `sqrt(...)`、逆三角関数は `acos(...)` `atan(...)` など、べき乗は `**`）か、有効数字 6 桁以上の小数で書く。単位や説明は付けない。</pre></details></article><article class="card cat-math" id="p-m2"><header><span class="chip-cat cat-math"><i class="dot"></i>数学</span><h3>M2 2 本の線分のまわりの立体の差</h3></header><p class="one-line">直角に曲がる 2 本の線分のまわりにできる、ソーセージのような 2 つの立体について、一方から他方と重なる部分を取り除いた立体の、体積と重心を求める問題です。</p><h4>やること</h4><p>O = (0, 0, 0)、A = (1, 0, 0)、B = (1, 1, 0) とします。線分 OA の上を半径 0.6 の球が動いてできる立体を V1、線分 AB の上を動いてできる立体を V2 とし、V1 から V2 に含まれる部分を取り除いた立体 W の、(a) 体積、(b) 重心の x 座標、(c) 重心の y 座標を求めます。</p><h4>問題の状況</h4><div class="situation"><p>V1 と V2 は、両端が半球になった円柱（カプセルの形）です。2 つは A のまわりで重なっています。</p><p>図は、高さ z = 0 で切った断面です。色の部分が W の断面で、点線が V2 の断面です。</p><svg class="figure" viewBox="0 0 330 318" width="330" height="318" role="img" aria-label="高さ 0 での断面。線分 OA のまわりの帯から、線分 AB のまわりの帯と重なる部分を除いた図形"><path d="M85.0,281.0 L195.0,281.0 A66.0,66.0 0 0 0 195.0,149.0 L85.0,149.0 A66.0,66.0 0 0 0 85.0,281.0Z" fill="#f4b9a1" stroke="#3b3a37" stroke-width="1.5"/><path d="M261.0,215.0 L261.0,105.0 A66.0,66.0 0 0 0 129.0,105.0 L129.0,215.0 A66.0,66.0 0 0 0 261.0,215.0Z" fill="#fcfcfb" stroke="#3b3a37" stroke-width="1.5" stroke-dasharray="6 4"/><line x1="85.0" y1="215.0" x2="195.0" y2="215.0" stroke="#3b3a37" stroke-width="4" stroke-linecap="round"/><line x1="195.0" y1="215.0" x2="195.0" y2="105.0" stroke="#3b3a37" stroke-width="4" stroke-linecap="round"/><circle cx="85.0" cy="215.0" r="4.5" fill="#0b0b0b"/><text x="77.0" y="233.0" text-anchor="end">O</text><circle cx="195.0" cy="215.0" r="4.5" fill="#0b0b0b"/><text x="203.0" y="233.0" text-anchor="start">A</text><circle cx="195.0" cy="105.0" r="4.5" fill="#0b0b0b"/><text x="203.0" y="99.0" text-anchor="start">B</text><text x="93.0" y="189.0">W</text><text class="sub-text" x="155.0" y="33.0">V2（点線。中は取り除く）</text><text class="sub-text" x="12" y="310">x → 右、y → 上。半径 r = 0.6</text></svg></div><h4>小問と正解</h4><table class="data parts"><thead><tr><th>小問</th><th>何を答えるか</th><th>正解の式</th><th>正解の値</th></tr></thead><tbody><tr><td class="strong">(a)</td><td>W の体積</td><td class="formula">pi*r**2 + 4/3*pi*r**3 - (pi + 4/3)*r**3（r = 0.6）</td><td class="num">1.069168</td></tr><tr><td class="strong">(b)</td><td>W の重心の x 座標</td><td class="formula">(V1/2 - ((pi + 4/3)*r**3 - pi*r**4/16)) / 体積</td><td class="num">0.07177441</td></tr><tr><td class="strong">(c)</td><td>W の重心の y 座標</td><td class="formula">-(pi*r**4/16) / 体積</td><td class="num">-0.02380066</td></tr></tbody></table><p class="caption">正解は answer.json の値（式の値。乱数で点を打つモンテカルロ法でも確かめた）。答えは式でも、有効数字 6 桁以上の小数でもよい。</p><h4>何が難しいか</h4><ul><li>2 つのカプセルの重なりの形（A のまわりの球と、直角に交わる 2 本の円柱の共通部分の一部）を正しくつかみます。</li><li>体積だけでなく重心も要るので、各部分の体積と重心を正確に足し引きします。</li><li>重心の y 座標は、小さな負の数になります。符号と大きさの確かめが要ります。</li></ul><h4>何の力を見るか</h4><p>3 次元の重なりの形を正確に捉え、体積と重心を積分で計算する力を見ます。</p><h4>採点の仕方</h4><p>最後の「答え(a)〜(c)」の行を機械で読み、正解との相対誤差が 1e-5 以内なら正解です。点は正解した小問の割合です（3 問中 2 問なら 67%）。</p><h4>用語</h4><dl class="terms"><dt>重心</dt><dd>立体の重さの釣り合う点です。ここでは各座標の平均の位置です。</dd><dt>V1 \ V2</dt><dd>V1 に含まれ、V2 に含まれない点全体（差集合）です。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 22 回が満点。満点でなかった回: Sonnet5.5-Medium の 1 回目 67%、Sonnet5.5-Low の 3 回目 67%。</li><li>ローカル: 満点 5（qwen3.8:27b、strata-official:IQ3_XXS、strata-flash-coder:IQ1_M (Coder)、strata-official:IQ3_S、strata-swift:IQ3_XXS (Swift 1.5)）。部分点 1（gemma4:31b-it-qat 33%）。0 点・答えなし 3（gemma4:e4b、qwen3.8-flash-next:IQ4_XS、strata-flash-next:IQ3_S (RVN)）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / M2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / M2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / M2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / M2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / M2（3 回の平均 89%）
+1 回目: 67%（落ちたケース: (c)）
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#2f8b49;color:#ffffff"><span class="res-main">89%</span><span class="res-sub">3 回: 67・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / M2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / M2（3 回の平均 89%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 67%（落ちたケース: (c)）"><div class="res-cell" style="background:#2f8b49;color:#ffffff"><span class="res-main">89%</span><span class="res-sub">3 回: 100・100・67</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / M2（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="100%
+qwen3.8:27b / M2
+時間: 8 分 54 秒
+出力: 25,816 トークン
+うち思考（推定）: 24,940 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="答えなし
+gemma4:e4b / M2
+理由: 答えの行が無い
+時間: 2 分 34 秒
+出力: 12,466 トークン
+うち思考（推定）: 11,002 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="33%
+gemma4:31b-it-qat / M2
+時間: 7 分 29 秒
+出力: 11,658 トークン
+うち思考（推定）: 10,229 トークン"><div class="res-cell" style="background:#95c8a3;color:#0b0b0b"><span class="res-main">33%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="答えなし
+qwen3.8-flash-next:IQ4_XS / M2
+理由: 答えの行が無い
+時間: 23 分 32 秒
+出力: 31,384 トークン
+うち思考（推定）: 30,610 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="答えなし（上限・打切）
+strata-flash-next:IQ3_S (RVN) / M2
+状態: length（生成の上限トークンに届いた）
+思考が予算に届いて打ち切られたあとの答え
+理由: 答えの行が無い
+時間: 8 分 55 秒
+出力: 32,768 トークン
+うち思考（推定）: 24,519 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限・打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_XXS / M2
+思考が予算に届いて打ち切られたあとの答え
+時間: 5 分 34 秒
+出力: 26,220 トークン
+うち思考（推定）: 25,103 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="100%（打切）
+strata-flash-coder:IQ1_M (Coder) / M2
+思考が予算に届いて打ち切られたあとの答え
+時間: 5 分 53 秒
+出力: 24,902 トークン
+うち思考（推定）: 24,654 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_S / M2
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 16 秒
+出力: 24,653 トークン
+うち思考（推定）: 24,615 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="100%
+strata-swift:IQ3_XXS (Swift 1.5) / M2
+時間: 4 分 58 秒
+出力: 24,941 トークン
+うち思考（推定）: 23,309 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。問題ごとの文と、答えの書き方（POSTAMBLE）を空行でつなぎます。）</summary><pre>## 問題 M2: 2 本の線分のまわりの立体の差
+
+三次元空間に O = (0, 0, 0)、A = (1, 0, 0)、B = (1, 1, 0) をとり、r = 0.6 とする。点 P が線分 OA 上を動くとき、P を中心とする半径 r の球（内部を含む）が通過してできる立体を V1 とする。同様に、点 P が線分 AB 上を動くときにできる立体を V2 とする。V1 から V2 に含まれる部分を取り除いた立体 W = V1 \ V2（V1 に含まれ V2 に含まれない点全体）について、次を求めよ。
+
+(a) W の体積
+
+(b) W の重心の x 座標
+
+(c) W の重心の y 座標
+
+### 答えの書き方
+
+- 途中の考え方は自由に書いてよい。最後に、小問ごとに 1 行ずつ `答え(a): &lt;値&gt;` の形で書く（`(b)` 以降も同じ）。
+- `&lt;値&gt;` は 1 つの数。厳密な式（円周率は `pi`、平方根は `sqrt(...)`、逆三角関数は `acos(...)` `atan(...)` など、べき乗は `**`）か、有効数字 6 桁以上の小数で書く。単位や説明は付けない。</pre></details></article><article class="card cat-math" id="p-m3"><header><span class="chip-cat cat-math"><i class="dot"></i>数学</span><h3>M3 立方体の中の点</h3></header><p class="one-line">立方体の中にでたらめに打った点が、「内接する球の外」で、しかも「面の近く」にある確率を、3 つの近さ d について求める問題です。</p><h4>やること</h4><p>1 辺 1 の立方体の中から一様にランダムに点 P を選びます。P が内接球（半径 1/2）の外にあり、しかも 6 つの面までの距離の最小が d 以下である確率 p(d) を、d = 1/4、1/10、3/20 について求めます。</p><h4>問題の状況</h4><div class="situation"><p>図は、立方体の真ん中の高さで切った断面です。色の部分が、2 つの条件を両方満たす点です（太い枠は面から d 以内の帯、点線は内接球）。</p><p>d の値によって、帯と球の重なり方が変わります。</p><div class="figures"><svg class="figure" viewBox="0 0 148 170" width="148" height="170" role="img" aria-label="立方体の真ん中の断面。d = 1/4 のとき、面から d 以内で、内接球の外にある部分"><path d="M14.0,14.0 h120.0 v120.0 h-120.0 Z M44.0,44.0 v60.0 h60.0 v-60.0 Z" fill="#f2a384" fill-rule="evenodd"/><circle cx="74.0" cy="74.0" r="60.0" fill="#fcfcfb"/><rect x="14.0" y="14.0" width="120.0" height="120.0" fill="none" stroke="#3b3a37" stroke-width="1.5"/><path d="M44.0,44.0 v60.0 h60.0 v-60.0 Z" fill="none" stroke="#76756f" stroke-width="1" stroke-dasharray="2 3"/><circle cx="74.0" cy="74.0" r="60.0" fill="none" stroke="#3b3a37" stroke-width="1.2" stroke-dasharray="5 4"/><text x="74.0" y="164.0" text-anchor="middle">d = 1/4</text></svg><svg class="figure" viewBox="0 0 148 170" width="148" height="170" role="img" aria-label="立方体の真ん中の断面。d = 1/10 のとき、面から d 以内で、内接球の外にある部分"><path d="M14.0,14.0 h120.0 v120.0 h-120.0 Z M26.0,26.0 v96.0 h96.0 v-96.0 Z" fill="#f2a384" fill-rule="evenodd"/><circle cx="74.0" cy="74.0" r="60.0" fill="#fcfcfb"/><rect x="14.0" y="14.0" width="120.0" height="120.0" fill="none" stroke="#3b3a37" stroke-width="1.5"/><path d="M26.0,26.0 v96.0 h96.0 v-96.0 Z" fill="none" stroke="#76756f" stroke-width="1" stroke-dasharray="2 3"/><circle cx="74.0" cy="74.0" r="60.0" fill="none" stroke="#3b3a37" stroke-width="1.2" stroke-dasharray="5 4"/><text x="74.0" y="164.0" text-anchor="middle">d = 1/10</text></svg><svg class="figure" viewBox="0 0 148 170" width="148" height="170" role="img" aria-label="立方体の真ん中の断面。d = 3/20 のとき、面から d 以内で、内接球の外にある部分"><path d="M14.0,14.0 h120.0 v120.0 h-120.0 Z M32.0,32.0 v84.0 h84.0 v-84.0 Z" fill="#f2a384" fill-rule="evenodd"/><circle cx="74.0" cy="74.0" r="60.0" fill="#fcfcfb"/><rect x="14.0" y="14.0" width="120.0" height="120.0" fill="none" stroke="#3b3a37" stroke-width="1.5"/><path d="M32.0,32.0 v84.0 h84.0 v-84.0 Z" fill="none" stroke="#76756f" stroke-width="1" stroke-dasharray="2 3"/><circle cx="74.0" cy="74.0" r="60.0" fill="none" stroke="#3b3a37" stroke-width="1.2" stroke-dasharray="5 4"/><text x="74.0" y="164.0" text-anchor="middle">d = 3/20</text></svg></div></div><h4>小問と正解</h4><table class="data parts"><thead><tr><th>小問</th><th>何を答えるか</th><th>正解の式</th><th>正解の値</th></tr></thead><tbody><tr><td class="strong">(a)</td><td>p(1/4)</td><td class="formula">1 - pi/6</td><td class="num">0.4764012</td></tr><tr><td class="strong">(b)</td><td>p(1/10)</td><td class="formula">0.488 - 0.028*pi</td><td class="num">0.4000354</td></tr><tr><td class="strong">(c)</td><td>p(3/20)</td><td class="formula">1 - pi/6 - 8E（E は角 1 つ分の球の外の体積。reference.py の 1 次元積分）</td><td class="num">0.4661711</td></tr></tbody></table><p class="caption">正解は answer.json の値（式の値。乱数で点を打つモンテカルロ法でも確かめた）。答えは式でも、有効数字 6 桁以上の小数でもよい。</p><h4>何が難しいか</h4><ul><li>3 つの d で、帯と球の重なり方が違います。d = 1/4 では球の外の点がすべて帯に入り、d = 1/10 では球が帯にはみ出す部分が 6 つの離れた「おわん」になり、d = 3/20 ではそのおわんどうしが辺の近くで重なります。</li><li>d = 3/20 では重なりの分を積分で計算する必要があり、手で求めるのが最も難しい小問です。</li><li>場合の切り替わり（d がいくつのとき形が変わるか）を見落とすと、近いが違う値になります。</li></ul><h4>何の力を見るか</h4><p>場合分けを見落とさずに、立体の重なりを正確に数える力を見ます。</p><h4>採点の仕方</h4><p>最後の「答え(a)〜(c)」の行を機械で読み、正解との相対誤差が 1e-5 以内なら正解です。点は正解した小問の割合です。</p><h4>用語</h4><dl class="terms"><dt>内接球</dt><dd>立方体の 6 つの面すべてに内側から接する球です（中心は立方体の中心、半径 1/2）。</dd><dt>一様にランダム</dt><dd>立方体の中のどの場所も、同じ起こりやすさで選ぶことです。確率は体積の割合になります。</dd></dl><h4>この問題の結果</h4><ul class="summary-lines"><li>Claude: 24 回中 23 回が満点。満点でなかった回: Opus5.5-Low の 3 回目 67%。</li><li>ローカル: 満点 1（strata-official:IQ3_XXS）。部分点 4（gemma4:e4b 33%、gemma4:31b-it-qat 67%、strata-official:IQ3_S 67%、strata-swift:IQ3_XXS (Swift 1.5) 67%）。0 点・答えなし 4（qwen3.8:27b、qwen3.8-flash-next:IQ4_XS、strata-flash-next:IQ3_S (RVN)、strata-flash-coder:IQ1_M (Coder)）。</li></ul><div class="results" role="list" aria-label="モデルごとの結果"><div class="res" role="listitem" title="Sonnet5.5-xHigh / M3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-xHigh</div></div><div class="res" role="listitem" title="Opus5.5-xHigh / M3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-xHigh</div></div><div class="res" role="listitem" title="Sonnet5.5-High / M3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-High</div></div><div class="res" role="listitem" title="Opus5.5-High / M3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-High</div></div><div class="res" role="listitem" title="Sonnet5.5-Medium / M3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Medium</div></div><div class="res" role="listitem" title="Opus5.5-Medium / M3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Opus5.5-Medium</div></div><div class="res" role="listitem" title="Sonnet5.5-Low / M3（3 回の平均 100%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 100%"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">3 回: 100・100・100</span></div><div class="res-name">Sonnet5.5-Low</div></div><div class="res" role="listitem" title="Opus5.5-Low / M3（3 回の平均 89%）
+1 回目: 100%
+2 回目: 100%
+3 回目: 67%（落ちたケース: (c)）"><div class="res-cell" style="background:#2f8b49;color:#ffffff"><span class="res-main">89%</span><span class="res-sub">3 回: 100・100・67</span></div><div class="res-name">Opus5.5-Low</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8:27b / M3
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 11 分 25 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8:27b</div></div><div class="res" role="listitem" title="33%
+gemma4:e4b / M3
+時間: 1 分 55 秒
+出力: 9,500 トークン
+うち思考（推定）: 7,861 トークン"><div class="res-cell" style="background:#95c8a3;color:#0b0b0b"><span class="res-main">33%</span></div><div class="res-name">gemma4:e4b</div></div><div class="res" role="listitem" title="67%
+gemma4:31b-it-qat / M3
+時間: 7 分 48 秒
+出力: 12,153 トークン
+うち思考（推定）: 11,070 トークン"><div class="res-cell" style="background:#58a36d;color:#ffffff"><span class="res-main">67%</span></div><div class="res-name">gemma4:31b-it-qat</div></div><div class="res" role="listitem" title="答えなし（上限）
+qwen3.8-flash-next:IQ4_XS / M3
+状態: length（生成の上限トークンに届いた）
+理由: length（上限に達して本文が無い）
+時間: 23 分 15 秒
+出力: 32,768 トークン
+うち思考（推定）: 32,768 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">上限</span></div><div class="res-name">qwen3.8-flash-next:IQ4_XS</div></div><div class="res" role="listitem" title="0%（打切）
+strata-flash-next:IQ3_S (RVN) / M3
+思考が予算に届いて打ち切られたあとの答え
+時間: 6 分 48 秒
+出力: 25,913 トークン
+うち思考（推定）: 25,238 トークン"><div class="res-cell" style="background:#c0392b;color:#ffffff"><span class="res-main">0%</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-next:IQ3_S (RVN)</div></div><div class="res" role="listitem" title="100%（打切）
+strata-official:IQ3_XXS / M3
+思考が予算に届いて打ち切られたあとの答え
+時間: 5 分 22 秒
+出力: 24,636 トークン
+うち思考（推定）: 24,609 トークン"><div class="res-cell" style="background:#1a7f37;color:#ffffff"><span class="res-main">100%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_XXS</div></div><div class="res" role="listitem" title="答えなし（打切）
+strata-flash-coder:IQ1_M (Coder) / M3
+思考が予算に届いて打ち切られたあとの答え
+理由: 答えの行が無い
+時間: 6 分 19 秒
+出力: 25,715 トークン
+うち思考（推定）: 25,275 トークン"><div class="res-cell" style="background:#8a8f98;color:#ffffff"><span class="res-main">答えなし</span><span class="res-sub">打切</span></div><div class="res-name">strata-flash-coder:IQ1_M (Coder)</div></div><div class="res" role="listitem" title="67%（打切）
+strata-official:IQ3_S / M3
+思考が予算に届いて打ち切られたあとの答え
+時間: 7 分 3 秒
+出力: 27,257 トークン
+うち思考（推定）: 25,372 トークン"><div class="res-cell" style="background:#58a36d;color:#ffffff"><span class="res-main">67%</span><span class="res-sub">打切</span></div><div class="res-name">strata-official:IQ3_S</div></div><div class="res" role="listitem" title="67%（打切）
+strata-swift:IQ3_XXS (Swift 1.5) / M3
+思考が予算に届いて打ち切られたあとの答え
+時間: 5 分 31 秒
+出力: 25,376 トークン
+うち思考（推定）: 24,779 トークン"><div class="res-cell" style="background:#58a36d;color:#ffffff"><span class="res-main">67%</span><span class="res-sub">打切</span></div><div class="res-name">strata-swift:IQ3_XXS (Swift 1.5)</div></div></div><details><summary>問題文の原文（AI に送った問題文の全文です。問題ごとの文と、答えの書き方（POSTAMBLE）を空行でつなぎます。）</summary><pre>## 問題 M3: 立方体の中の点
+
+1 辺の長さが 1 の立方体の内部から、一様にランダムに点 P を選ぶ。次の 2 つの条件を両方とも満たす確率を p(d) とする。
+
+- P は、立方体に内接する球（中心は立方体の中心、半径 1/2）の外側にある。
+- P から立方体の 6 つの面までの距離のうち、最も小さいものが d 以下である。
+
+次を求めよ。
+
+(a) p(1/4)
+
+(b) p(1/10)
+
+(c) p(3/20)
+
+### 答えの書き方
+
+- 途中の考え方は自由に書いてよい。最後に、小問ごとに 1 行ずつ `答え(a): &lt;値&gt;` の形で書く（`(b)` 以降も同じ）。
+- `&lt;値&gt;` は 1 つの数。厳密な式（円周率は `pi`、平方根は `sqrt(...)`、逆三角関数は `acos(...)` `atan(...)` など、べき乗は `**`）か、有効数字 6 桁以上の小数で書く。単位や説明は付けない。</pre></details></article></section><section id="s4"><h2>4. 採点の改定の記録</h2><p>問題文は一度も変えず、隠しテストと採点の仕組みだけを直しました。直したあとは、すべてのモデルの答えを同じ採点器で採点し直しています。</p><table class="data amend"><thead><tr><th>日時</th><th>直したファイル</th><th>理由</th></tr></thead><tbody><tr><td>10-18 16:44</td><td><code>suites/coding_v3/h3/tests.py</code></td><td>隠しテストだけを直した（問題文は変えていない）。乱数のプログラムに、名前の誤りと型の誤りが両方あるもの（順序が問題文で決まっていない）と、if の直後に括弧なしの fun/let/if があるもの（問題文では構文の誤り。参照解が受け付けていた）が入っていたので、構文が正しく名前の誤りの無いプログラムに作り直した。記録は本文から採点し直した（流し直しは不要）。</td></tr><tr><td>10-18 16:45</td><td><code>suites/coding_v3/h1/tests.py</code></td><td>問題文にない入力（点を list で渡す）のケース case_input_may_be_lists を消した。問題文は変えていない</td></tr><tr><td>10-18 16:45</td><td><code>suites/coding_v3/h2/tests.py</code></td><td>問題文にない入力（a と b を tuple で渡す）を list に直した（ケース名 case_result_is_list_of_tuples）。問題文は変えていない</td></tr><tr><td>10-18 18:07</td><td><code>evallib/sandbox.py</code></td><td>採点のサンドボックスから RLIMIT_NPROC 0 を外した。スレッドも作れず、深い再帰のために大きなスタックのスレッドで動かす答え（問題文では禁じていない）が全ケース落ちたため。子プロセスは静的な走査と実行時の差し替えで止める。2026-10-18 の記録は全部採点し直す</td></tr><tr><td>10-18 20:11</td><td><code>evallib/sandbox.py</code></td><td>採点のサンドボックスのアドレス空間の上限を 1 GiB から 2 GiB にした。512 MiB のスタックのスレッドで深い再帰を動かす答え（h3 の Claude の答え 18 本など。問題文では禁じていない）が、1 GiB では malloc の arena の予約と配置の乱数しだいで「can&#x27;t start new thread」になり、同じ答えの点が採点のたびに揺れた（opus-high h3-run1 を 20 回採点して 5 回が満点未満。2 GiB では 20 回とも満点）。2026-10-18 の記録は全部採点し直す</td></tr></tbody></table></section><section id="s5"><h2>5. 生データの場所</h2><table class="data kv"><tbody><tr><th>問題文</th><td><code>tools/model-eval/suites/coding_v3/PREAMBLE.md と h1〜h6/prompt.md、suites/math/m1〜m3/prompt.md と POSTAMBLE.md</code></td></tr><tr><th>隠しテスト・参照解・オラクル</th><td><code>tools/model-eval/suites/coding_v3/&lt;問&gt;/tests.py・reference.py・oracle.py</code></td></tr><tr><th>数学の正解と検算</th><td><code>tools/model-eval/suites/math/&lt;問&gt;/answer.json・reference.py、verify_numeric.json</code></td></tr><tr><th>点の記録</th><td><code>tools/model-eval/results/2026-10-18/summary.json</code></td></tr><tr><th>この解説の本文</th><td><code>tools/model-eval/suites/problem_guide_hard.json（作り直すのは tools/model-eval/build_problem_guide_hard.py）</code></td></tr></tbody></table><p>この解説は、問題文・隠しテスト・正解のファイルと照合してから作っています（食い違えば作らずに止まります）。順位・時間・所見は元のレポートにあります。</p></section></main></body></html>

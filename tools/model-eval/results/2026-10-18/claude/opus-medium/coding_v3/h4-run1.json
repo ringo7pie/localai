@@ -1,0 +1,148 @@
+{
+  "model": "opus-medium",
+  "suite": "coding_v3",
+  "item": "h4",
+  "run": 1,
+  "content": "```python\nfrom math import gcd\n\n\ndef best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]:\n    if den == 0:\n        raise ValueError(\"den must not be zero\")\n    if max_den < 1:\n        raise ValueError(\"max_den must be >= 1\")\n    if side not in (-1, 0, 1):\n        raise ValueError(\"side must be -1, 0 or 1\")\n\n    numer, denom = int(num), int(den)\n    if denom < 0:\n        numer, denom = -numer, -denom\n    common = gcd(numer, denom)\n    numer //= common\n    denom //= common\n    if numer == 0:\n        return (0, 1)\n    if denom <= max_den:\n        return (numer, denom)\n\n    # Continued fraction expansion with convergents.\n    p_prev, q_prev = 0, 1\n    p_cur, q_cur = 1, 0\n    rem_n, rem_d = numer, denom\n    while rem_d != 0:\n        term = rem_n // rem_d\n        p_next = term * p_cur + p_prev\n        q_next = term * q_cur + q_prev\n        if q_next > max_den:\n            break\n        p_prev, q_prev, p_cur, q_cur = p_cur, q_cur, p_next, q_next\n        rem_n, rem_d = rem_d, rem_n - term * rem_d\n\n    # Best semiconvergent within the bound.\n    steps = (max_den - q_prev) // q_cur\n    p_semi = p_prev + steps * p_cur\n    q_semi = q_prev + steps * q_cur\n\n    cand_a = (p_cur, q_cur)\n    cand_b = (p_semi, q_semi)\n\n    def is_below(frac: tuple[int, int]) -> bool:\n        # frac < x  <=>  p * denom < numer * q\n        return frac[0] * denom < numer * frac[1]\n\n    if is_below(cand_a):\n        lower, upper = cand_a, cand_b\n    else:\n        lower, upper = cand_b, cand_a\n\n    if side == -1:\n        return lower\n    if side == 1:\n        return upper\n\n    dist_low = abs(numer * lower[1] - lower[0] * denom)\n    dist_up = abs(numer * upper[1] - upper[0] * denom)\n    lhs = dist_low * upper[1]\n    rhs = dist_up * lower[1]\n    if lhs < rhs:\n        return lower\n    if rhs < lhs:\n        return upper\n    if lower[1] != upper[1]:\n        return lower if lower[1] < upper[1] else upper\n    return lower if lower[0] < upper[0] else upper\n```\n",
+  "wall_s": 24.563,
+  "usage": {
+    "subagent_tokens": 31290
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_value_is_returned_reduced",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers_and_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_max_den_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_values_and_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_prefer_smaller_denominator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_same_denominator_smaller_numerator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_semiconvergents_are_needed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_one_sided_semiconvergents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_reduced_int_tuple",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_nearest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_lower",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_upper",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_are_not_precise_enough",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tiny_and_huge_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fibonacci_ratios",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sqrt2_approximations",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_far_from_simple_fractions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch_negative_dens",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.06,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-medium/coding_v3/h4-run1.md",
+  "imported_at": "2026-10-18T18:50:53+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:39+09:00"
+}

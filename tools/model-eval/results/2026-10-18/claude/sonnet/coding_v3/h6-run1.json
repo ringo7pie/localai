@@ -1,0 +1,148 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 1,
+  "content": "```python\n_PIECES = (\n    # 各駒は「行優先で最初のマス」を (0, 0) に置いたときの (行の差, 列の差) の並び。\n    ((0, 0), (0, 1)),                  # 横ドミノ\n    ((0, 0), (1, 0)),                  # 縦ドミノ\n    ((0, 0), (0, 1), (1, 0)),          # L: 右下を除く\n    ((0, 0), (0, 1), (1, 1)),          # L: 左下を除く\n    ((0, 0), (1, 0), (1, 1)),          # L: 右上を除く\n    ((0, 0), (1, -1), (1, 0)),         # L: 左上を除く（最初のマスは右上）\n)\n\n\ndef count_tilings(grid: list[str]) -> int:\n    rows = list(grid)\n    for row in rows:\n        if not isinstance(row, str):\n            raise ValueError(\"each row must be a string\")\n    if rows:\n        width_first = len(rows[0])\n        for row in rows:\n            if len(row) != width_first:\n                raise ValueError(\"rows must have the same length\")\n            for ch in row:\n                if ch != \".\" and ch != \"#\":\n                    raise ValueError(\"invalid character in grid\")\n    if not rows or len(rows[0]) == 0:\n        return 1\n\n    free = [[ch == \".\" for ch in row] for row in rows]\n    # 列数を小さい方にそろえる（駒の集合は転置で閉じているので数は変わらない）\n    if len(free[0]) > len(free):\n        free = [list(col) for col in zip(*free)]\n    height = len(free)\n    width = len(free[0])\n\n    total = height * width\n    blocked = [False] * total\n    for row_index in range(height):\n        for col_index in range(width):\n            if not free[row_index][col_index]:\n                blocked[row_index * width + col_index] = True\n\n    # 各マスを最初のマスとして置ける駒を、窓のビット列（bit i = マス p+i）で前計算する\n    piece_bits: list[list[int]] = []\n    for row_index in range(height):\n        for col_index in range(width):\n            position = row_index * width + col_index\n            options: list[int] = []\n            if not blocked[position]:\n                for piece in _PIECES:\n                    bits = 0\n                    ok = True\n                    for d_row, d_col in piece:\n                        new_row = row_index + d_row\n                        new_col = col_index + d_col\n                        if new_row >= height or new_col < 0 or new_col >= width:\n                            ok = False\n                            break\n                        if blocked[new_row * width + new_col]:\n                            ok = False\n                            break\n                        bits |= 1 << (d_row * width + d_col)\n                    if ok:\n                        options.append(bits)\n            piece_bits.append(options)\n\n    dp: dict[int, int] = {0: 1}\n    for position in range(total):\n        options = piece_bits[position]\n        new_dp: dict[int, int] = {}\n        get = new_dp.get\n        if blocked[position]:\n            for mask, count in dp.items():\n                key = mask >> 1\n                new_dp[key] = get(key, 0) + count\n        else:\n            for mask, count in dp.items():\n                if mask & 1:\n                    key = mask >> 1\n                    new_dp[key] = get(key, 0) + count\n                else:\n                    for bits in options:\n                        if not (mask & bits):\n                            key = (mask | bits) >> 1\n                            new_dp[key] = get(key, 0) + count\n        dp = new_dp\n        if not dp:\n            return 0\n    return dp.get(0, 0)\n```\n",
+  "wall_s": 47.731,
+  "usage": {
+    "subagent_tokens": 33801
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.19,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h6-run1.md",
+  "imported_at": "2026-10-18T16:47:55+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:43+09:00"
+}

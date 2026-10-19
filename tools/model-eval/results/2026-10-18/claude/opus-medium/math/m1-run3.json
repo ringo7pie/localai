@@ -1,0 +1,49 @@
+{
+  "model": "opus-medium",
+  "suite": "math",
+  "item": "m1",
+  "run": 3,
+  "content": "## 考え方\n\nT は凸多面体なので、距離 r 以下の平行体 K の体積・表面積はシュタイナーの公式（Steiner formula）で正確に求まる。\n\n- 体積: V(r) = V0 + S0 r + (Σ_辺 L_e (π - θ_e)/2) r^2 + (4/3)π r^3\n- 表面積: S(r) = S0 + 2 (Σ_辺 L_e (π - θ_e)/2) r + 4π r^2\n\n正四面体（辺 1）:\n- V0 = sqrt(2)/12\n- S0 = sqrt(3)\n- 二面角 θ = acos(1/3)、外角 π - θ = acos(-1/3)、辺 6 本、長さ 1\n- Σ L_e (π - θ_e)/2 = 3 acos(-1/3)\n\nr = 0.6:\n- V = sqrt(2)/12 + 0.6 sqrt(3) + 3·0.36·acos(-1/3) + (4/3)π·0.216\n  = 0.1178511 + 1.0392305 + 2.0634839 + 0.9047787 ≈ 4.125344\n- S = sqrt(3) + 2·3·0.6·acos(-1/3) + 4π·0.36\n  = 1.7320508 + 6.8782795 + 4.5238934 ≈ 13.134224\n\n答え(a): sqrt(2)/12 + 0.6*sqrt(3) + 1.08*acos(-1/3) + 0.288*pi\n答え(b): sqrt(3) + 3.6*acos(-1/3) + 1.44*pi\n",
+  "wall_s": 16.515,
+  "usage": {
+    "subagent_tokens": 29716
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 2,
+    "total": 2,
+    "parts": [
+      {
+        "key": "a",
+        "text": "sqrt(2)/12 + 0.6*sqrt(3) + 1.08*acos(-1/3) + 0.288*pi",
+        "value": 4.125344194121884,
+        "expected": 4.125344194121884,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "sqrt(3) + 3.6*acos(-1/3) + 1.44*pi",
+        "value": 13.134223879234646,
+        "expected": 13.134223879234646,
+        "ok": true,
+        "rel_error": 0.0
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-medium/math/m1-run3.md",
+  "imported_at": "2026-10-18T19:28:29+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

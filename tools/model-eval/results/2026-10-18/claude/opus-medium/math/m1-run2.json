@@ -1,0 +1,49 @@
+{
+  "model": "opus-medium",
+  "suite": "math",
+  "item": "m1",
+  "run": 2,
+  "content": "## 考え方\n\nK は凸多面体 T の平行体（r 近傍）なので、シュタイナーの公式が使える。\n\nV(K) = V(T) + S(T) r + (Σ_辺 l_e (π − θ_e)/2) r^2 + (4/3)π r^3\n\n- 面の上: 厚さ r の角柱（面積 × r）\n- 辺の上: 開き角 π − θ（θ は二面角）、半径 r、長さ l の円柱の一部\n- 頂点の上: 合わせると球 1 個分\n\n1 辺 1 の正四面体: V(T) = sqrt(2)/12、S(T) = sqrt(3)、二面角 θ = acos(1/3)、辺は 6 本。\n辺の項 = 6 · (π − acos(1/3))/2 = 3(π − acos(1/3))。\n\n表面積は体積を r で微分したもの:\nS(K) = sqrt(3) + 6(π − acos(1/3)) r + 4π r^2\n\nr = 0.6 を代入:\n\nV = sqrt(2)/12 + 0.6 sqrt(3) + 1.08(π − acos(1/3)) + 0.288π\n  ≈ 0.1178511 + 1.0392305 + 2.0634839 + 0.9047787 ≈ 4.125344\n\nS = sqrt(3) + 3.6(π − acos(1/3)) + 1.44π\n  ≈ 1.7320508 + 6.8782797 + 4.5238934 ≈ 13.134224\n\n答え(a): sqrt(2)/12 + 0.6*sqrt(3) + 1.08*(pi - acos(1/3)) + 0.288*pi\n答え(b): sqrt(3) + 3.6*(pi - acos(1/3)) + 1.44*pi\n",
+  "wall_s": 18.053,
+  "usage": {
+    "subagent_tokens": 29794
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 2,
+    "total": 2,
+    "parts": [
+      {
+        "key": "a",
+        "text": "sqrt(2)/12 + 0.6*sqrt(3) + 1.08*(pi - acos(1/3)) + 0.288*pi",
+        "value": 4.125344194121884,
+        "expected": 4.125344194121884,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "sqrt(3) + 3.6*(pi - acos(1/3)) + 1.44*pi",
+        "value": 13.134223879234646,
+        "expected": 13.134223879234646,
+        "ok": true,
+        "rel_error": 0.0
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-medium/math/m1-run2.md",
+  "imported_at": "2026-10-18T19:13:15+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

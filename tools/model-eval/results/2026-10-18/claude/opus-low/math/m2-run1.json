@@ -1,0 +1,57 @@
+{
+  "model": "opus-low",
+  "suite": "math",
+  "item": "m2",
+  "run": 1,
+  "content": "V1 の体積 = pi r^2 + (4/3) pi r^3。\nV1∩V2 は x≥0.4 の部分に限られ、u = x-1 として\n- y<0: A を中心とする半球（体積 (2/3)pi r^3）\n- y≥0, u>0: 4 分の 1 球（体積 (1/3)pi r^3）\n- y≥0, u≤0: 2 本の円柱の共通部分（Steinmetz 立体）の 4 分の 1（体積 4r^3/3）\nよって |V1∩V2| = pi r^3 + 4r^3/3、|W| = pi r^2 + (pi/3 - 4/3) r^3 = 0.432pi - 0.288。\n\nモーメント: 共通部分の u モーメント = -pi r^4/16、y モーメント = pi r^4/16。\nW の x モーメント = 0.5|V1| - |I| + pi r^4/16 = 0.1161pi - 0.288\nW の y モーメント = -pi r^4/16 = -0.0081pi\n\n答え(a): 0.432*pi - 0.288\n答え(b): (0.1161*pi - 0.288)/(0.432*pi - 0.288)\n答え(c): -0.0081*pi/(0.432*pi - 0.288)\n",
+  "wall_s": 27.447,
+  "usage": {
+    "subagent_tokens": 30879
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(0.1161*pi - 0.288)/(0.432*pi - 0.288)",
+        "value": 0.07177441261846827,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.1601171477293466e-15
+      },
+      {
+        "key": "c",
+        "text": "-0.0081*pi/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-low/math/m2-run1.md",
+  "imported_at": "2026-10-18T19:47:34+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:37+09:00"
+}

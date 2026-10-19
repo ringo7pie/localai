@@ -1,0 +1,163 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 3,
+  "content": "```python\nimport math\nimport random\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    distinct = sorted({(int(p[0]), int(p[1]), int(p[2])) for p in points})\n    if len(distinct) < 4:\n        raise ValueError(\"distinct points are fewer than 4\")\n    pts = distinct\n    random.Random(20261018).shuffle(pts)\n    count = len(pts)\n\n    # --- 最初の四面体を整数だけで探す ---\n    x0, y0, z0 = pts[0]\n    ux, uy, uz = pts[1][0] - x0, pts[1][1] - y0, pts[1][2] - z0\n    idx_c = -1\n    normal = (0, 0, 0)\n    for i in range(2, count):\n        vx, vy, vz = pts[i][0] - x0, pts[i][1] - y0, pts[i][2] - z0\n        cx = uy * vz - uz * vy\n        cy = uz * vx - ux * vz\n        cz = ux * vy - uy * vx\n        if cx or cy or cz:\n            idx_c = i\n            normal = (cx, cy, cz)\n            break\n    if idx_c < 0:\n        raise ValueError(\"all points are collinear\")\n    idx_d = -1\n    orient = 0\n    for i in range(2, count):\n        if i == idx_c:\n            continue\n        w = (pts[i][0] - x0) * normal[0] + (pts[i][1] - y0) * normal[1] + (pts[i][2] - z0) * normal[2]\n        if w != 0:\n            idx_d = i\n            orient = w\n            break\n    if idx_d < 0:\n        raise ValueError(\"all points are coplanar\")\n\n    ia, ib, ic, id_ = 0, 1, idx_c, idx_d\n    if orient > 0:\n        ib, ic = ic, ib  # d が (a, b, c) の裏側に来るように向きをそろえる\n\n    # --- 面の記憶域 ---\n    fverts = []\n    fplane = []\n    fout = []\n    falive = []\n    edge_face = {}\n\n    def add_face(a, b, c):\n        ax, ay, az = pts[a]\n        bx, by, bz = pts[b]\n        cx, cy, cz = pts[c]\n        ex, ey, ez = bx - ax, by - ay, bz - az\n        gx, gy, gz = cx - ax, cy - ay, cz - az\n        nx = ey * gz - ez * gy\n        ny = ez * gx - ex * gz\n        nz = ex * gy - ey * gx\n        fid = len(fverts)\n        fverts.append((a, b, c))\n        fplane.append((nx, ny, nz, nx * ax + ny * ay + nz * az))\n        fout.append([])\n        falive.append(True)\n        edge_face[(a, b)] = fid\n        edge_face[(b, c)] = fid\n        edge_face[(c, a)] = fid\n        return fid\n\n    first_faces = [\n        add_face(ia, ib, ic),\n        add_face(ib, ia, id_),\n        add_face(ic, ib, id_),\n        add_face(ia, ic, id_),\n    ]\n    used = {ia, ib, ic, id_}\n    first_planes = [(fplane[f], fout[f]) for f in first_faces]\n    for q in range(count):\n        if q in used:\n            continue\n        x, y, z = pts[q]\n        for (nx, ny, nz, d), lst in first_planes:\n            if nx * x + ny * y + nz * z > d:\n                lst.append(q)\n                break\n\n    # --- 外側の点集合を面ごとに持つ増分構築 ---\n    pending = [f for f in first_faces if fout[f]]\n    while pending:\n        f0 = pending.pop()\n        if not falive[f0]:\n            continue\n        outside = fout[f0]\n        if not outside:\n            continue\n        p = outside.pop()\n        px, py, pz = pts[p]\n\n        visible = {f0}\n        nonvisible = set()\n        stack = [f0]\n        horizon = []\n        while stack:\n            f = stack.pop()\n            a, b, c = fverts[f]\n            for u, v in ((a, b), (b, c), (c, a)):\n                g = edge_face[(v, u)]\n                if g in visible:\n                    continue\n                if g in nonvisible:\n                    horizon.append((u, v))\n                    continue\n                nx, ny, nz, d = fplane[g]\n                if nx * px + ny * py + nz * pz > d:\n                    visible.add(g)\n                    stack.append(g)\n                else:\n                    nonvisible.add(g)\n                    horizon.append((u, v))\n\n        orphans = []\n        for f in visible:\n            a, b, c = fverts[f]\n            del edge_face[(a, b)]\n            del edge_face[(b, c)]\n            del edge_face[(c, a)]\n            falive[f] = False\n            orphans.extend(fout[f])\n            fout[f] = []\n\n        new_ids = [add_face(u, v, p) for u, v in horizon]\n        new_planes = [(fplane[i], fout[i]) for i in new_ids]\n        for q in orphans:\n            x, y, z = pts[q]\n            for (nx, ny, nz, d), lst in new_planes:\n                if nx * x + ny * y + nz * z > d:\n                    lst.append(q)\n                    break\n        for i in new_ids:\n            if fout[i]:\n                pending.append(i)\n\n    # --- 集計 ---\n    volume6 = 0\n    plane_ids = {}\n    vertex_planes = {}\n    for fid in range(len(fverts)):\n        if not falive[fid]:\n            continue\n        nx, ny, nz, d = fplane[fid]\n        volume6 += d\n        g = math.gcd(nx, ny, nz)\n        key = (nx // g, ny // g, nz // g, d // g)\n        pid = plane_ids.get(key)\n        if pid is None:\n            pid = len(plane_ids)\n            plane_ids[key] = pid\n        for v in fverts[fid]:\n            holder = vertex_planes.get(v)\n            if holder is None:\n                holder = set()\n                vertex_planes[v] = holder\n            holder.add(pid)\n\n    n_faces = len(plane_ids)\n    n_vertices = sum(1 for holder in vertex_planes.values() if len(holder) >= 3)\n    return (volume6, n_faces, n_vertices)\n```\n",
+  "wall_s": 165.222,
+  "usage": {
+    "subagent_tokens": 49702
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.29,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h1-run3.md",
+  "imported_at": "2026-10-18T17:31:17+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:42+09:00"
+}

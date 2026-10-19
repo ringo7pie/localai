@@ -1,0 +1,163 @@
+{
+  "model": "opus-high",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 1,
+  "content": "```python\nimport math\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    unique_points = set()\n    for point in points:\n        px, py, pz = point\n        unique_points.add((int(px), int(py), int(pz)))\n    pts = sorted(unique_points)\n    count = len(pts)\n    if count < 4:\n        raise ValueError(\"fewer than 4 distinct points\")\n    xs = [pt[0] for pt in pts]\n    ys = [pt[1] for pt in pts]\n    zs = [pt[2] for pt in pts]\n\n    # initial tetrahedron\n    i0, i1 = 0, count - 1\n    x0, y0, z0 = xs[i0], ys[i0], zs[i0]\n    ux, uy, uz = xs[i1] - x0, ys[i1] - y0, zs[i1] - z0\n    best_cross = 0\n    i2 = -1\n    for k in range(count):\n        wx, wy, wz = xs[k] - x0, ys[k] - y0, zs[k] - z0\n        cx = uy * wz - uz * wy\n        cy = uz * wx - ux * wz\n        cz = ux * wy - uy * wx\n        mag = cx * cx + cy * cy + cz * cz\n        if mag > best_cross:\n            best_cross = mag\n            i2 = k\n    if i2 < 0:\n        raise ValueError(\"all points are collinear\")\n    wx, wy, wz = xs[i2] - x0, ys[i2] - y0, zs[i2] - z0\n    bnx = uy * wz - uz * wy\n    bny = uz * wx - ux * wz\n    bnz = ux * wy - uy * wx\n    bd = bnx * x0 + bny * y0 + bnz * z0\n    best_dist = 0\n    i3 = -1\n    for k in range(count):\n        val = bnx * xs[k] + bny * ys[k] + bnz * zs[k] - bd\n        if val < 0:\n            val = -val\n        if val > best_dist:\n            best_dist = val\n            i3 = k\n    if i3 < 0:\n        raise ValueError(\"all points are coplanar\")\n\n    va, vb, vc, vd = i0, i1, i2, i3\n    if bnx * xs[vd] + bny * ys[vd] + bnz * zs[vd] - bd > 0:\n        vb, vc = vc, vb\n\n    face_a = []\n    face_b = []\n    face_c = []\n    face_plane = []\n    alive = []\n    outside = []\n    edge_face = {}\n\n    def add_face(pa, pb, pc):\n        ax, ay, az = xs[pa], ys[pa], zs[pa]\n        ex, ey, ez = xs[pb] - ax, ys[pb] - ay, zs[pb] - az\n        fx, fy, fz = xs[pc] - ax, ys[pc] - ay, zs[pc] - az\n        nx = ey * fz - ez * fy\n        ny = ez * fx - ex * fz\n        nz = ex * fy - ey * fx\n        fid = len(face_a)\n        face_a.append(pa)\n        face_b.append(pb)\n        face_c.append(pc)\n        face_plane.append((nx, ny, nz, nx * ax + ny * ay + nz * az))\n        alive.append(True)\n        outside.append([])\n        edge_face[pa * count + pb] = fid\n        edge_face[pb * count + pc] = fid\n        edge_face[pc * count + pa] = fid\n        return fid\n\n    initial = [\n        add_face(va, vb, vc),\n        add_face(va, vd, vb),\n        add_face(vb, vd, vc),\n        add_face(vc, vd, va),\n    ]\n    used = {va, vb, vc, vd}\n    for k in range(count):\n        if k in used:\n            continue\n        qx, qy, qz = xs[k], ys[k], zs[k]\n        for fid in initial:\n            nx, ny, nz, dd = face_plane[fid]\n            if nx * qx + ny * qy + nz * qz > dd:\n                outside[fid].append(k)\n                break\n\n    stack = [fid for fid in initial if outside[fid]]\n    while stack:\n        fid = stack.pop()\n        if not alive[fid]:\n            continue\n        out = outside[fid]\n        if not out:\n            continue\n        nx, ny, nz, dd = face_plane[fid]\n        eye = out[0]\n        best_val = nx * xs[eye] + ny * ys[eye] + nz * zs[eye]\n        for q in out:\n            val = nx * xs[q] + ny * ys[q] + nz * zs[q]\n            if val > best_val:\n                best_val = val\n                eye = q\n        px, py, pz = xs[eye], ys[eye], zs[eye]\n\n        # find visible faces (strictly) and horizon\n        visible = {fid}\n        not_visible = set()\n        horizon = []\n        work = [fid]\n        while work:\n            g = work.pop()\n            ga, gb, gc = face_a[g], face_b[g], face_c[g]\n            for eu, ev in ((ga, gb), (gb, gc), (gc, ga)):\n                h = edge_face[ev * count + eu]\n                if h in visible:\n                    continue\n                if h in not_visible:\n                    horizon.append((eu, ev))\n                    continue\n                hx, hy, hz, hd = face_plane[h]\n                if hx * px + hy * py + hz * pz > hd:\n                    visible.add(h)\n                    work.append(h)\n                else:\n                    not_visible.add(h)\n                    horizon.append((eu, ev))\n\n        pending = []\n        for g in visible:\n            alive[g] = False\n            ga, gb, gc = face_a[g], face_b[g], face_c[g]\n            del edge_face[ga * count + gb]\n            del edge_face[gb * count + gc]\n            del edge_face[gc * count + ga]\n            if outside[g]:\n                pending.extend(outside[g])\n            outside[g] = None\n\n        new_faces = []\n        for eu, ev in horizon:\n            new_faces.append(add_face(eu, ev, eye))\n        new_planes = [(face_plane[nf], outside[nf]) for nf in new_faces]\n\n        for q in pending:\n            if q == eye:\n                continue\n            qx, qy, qz = xs[q], ys[q], zs[q]\n            for (nx, ny, nz, dd), lst in new_planes:\n                if nx * qx + ny * qy + nz * qz > dd:\n                    lst.append(q)\n                    break\n\n        for nf in new_faces:\n            if outside[nf]:\n                stack.append(nf)\n\n    volume6 = 0\n    face_keys = set()\n    vertex_groups = {}\n    for fid in range(len(face_a)):\n        if not alive[fid]:\n            continue\n        pa, pb, pc = face_a[fid], face_b[fid], face_c[fid]\n        ax, ay, az = xs[pa], ys[pa], zs[pa]\n        bx, by, bz = xs[pb], ys[pb], zs[pb]\n        cx, cy, cz = xs[pc], ys[pc], zs[pc]\n        volume6 += ax * (by * cz - bz * cy) + ay * (bz * cx - bx * cz) + az * (bx * cy - by * cx)\n        nx, ny, nz, dd = face_plane[fid]\n        div = math.gcd(nx, ny, nz)\n        key = (nx // div, ny // div, nz // div, dd // div)\n        face_keys.add(key)\n        for vert in (pa, pb, pc):\n            groups = vertex_groups.get(vert)\n            if groups is None:\n                groups = set()\n                vertex_groups[vert] = groups\n            groups.add(key)\n\n    n_vertices = 0\n    for groups in vertex_groups.values():\n        if len(groups) >= 3:\n            n_vertices += 1\n\n    return (abs(volume6), len(face_keys), n_vertices)\n```\n",
+  "wall_s": 195.329,
+  "usage": {
+    "subagent_tokens": 47224
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.13,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-high/coding_v3/h1-run1.md",
+  "imported_at": "2026-10-18T18:03:02+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:29+09:00"
+}

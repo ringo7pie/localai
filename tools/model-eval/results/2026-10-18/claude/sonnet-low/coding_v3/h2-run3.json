@@ -1,0 +1,133 @@
+{
+  "model": "sonnet-low",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 3,
+  "content": "```python\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n = len(a)\n    m = len(b)\n    INF = 10**9\n    delta = n - m\n    lo = min(0, delta)\n    hi = max(0, delta)\n\n    def attempt(w):\n        # 対角 c = i - j が [lo - w, hi + w] の帯だけで、末尾からの距離を求める\n        jlow = [max(0, i - hi - w) for i in range(n + 1)]\n        jhigh = [min(m, i - lo + w) for i in range(n + 1)]\n        rows = [None] * (n + 1)\n\n        def get(i, j):\n            if i > n or j > m:\n                return INF\n            if j < jlow[i] or j > jhigh[i]:\n                return INF\n            return rows[i][j - jlow[i]]\n\n        for i in range(n, -1, -1):\n            low = jlow[i]\n            high = jhigh[i]\n            if low > high:\n                rows[i] = []\n                continue\n            row = [INF] * (high - low + 1)\n            rows[i] = row\n            nxt = rows[i + 1] if i < n else None\n            if i < n:\n                nlow = jlow[i + 1]\n                nhigh = jhigh[i + 1]\n            ai = a[i] if i < n else None\n            for j in range(high, low - 1, -1):\n                if i == n:\n                    val = m - j\n                elif j == m:\n                    val = n - i\n                else:\n                    if ai == b[j]:\n                        k = j + 1\n                        val = nxt[k - nlow] if nlow <= k <= nhigh else INF\n                    else:\n                        down = nxt[j - nlow] if nlow <= j <= nhigh else INF\n                        right = row[j + 1 - low] if j + 1 <= high else INF\n                        val = 1 + (down if down < right else right)\n                        if val > INF:\n                            val = INF\n                row[j - low] = val\n        return get, get(0, 0)\n\n    w = 8\n    while True:\n        get, total = attempt(w)\n        full = (lo - w <= -n) and (hi + w >= m)\n        if total < INF and (total < abs(delta) + 2 * (w + 1) or full):\n            break\n        if full:\n            break\n        w *= 2\n\n    result = []\n    i = 0\n    j = 0\n    while i < n or j < m:\n        if i < n and j < m and a[i] == b[j]:\n            result.append((\"=\", i, j))\n            i += 1\n            j += 1\n        elif i < n and get(i + 1, j) + 1 == get(i, j):\n            result.append((\"-\", i))\n            i += 1\n        else:\n            result.append((\"+\", j))\n            j += 1\n    return result\n```\n",
+  "wall_s": 29.572,
+  "usage": {
+    "subagent_tokens": 32712
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.54,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-low/coding_v3/h2-run3.md",
+  "imported_at": "2026-10-18T20:08:23+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:49+09:00"
+}

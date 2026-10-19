@@ -1,0 +1,148 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 3,
+  "content": "```python\ndef count_tilings(grid: list[str]) -> int:\n    rows = list(grid)\n    for row in rows:\n        if not isinstance(row, str):\n            raise ValueError(\"each row must be a string\")\n    if rows:\n        width_check = len(rows[0])\n        for row in rows:\n            if len(row) != width_check:\n                raise ValueError(\"rows must have the same length\")\n            for ch in row:\n                if ch != \".\" and ch != \"#\":\n                    raise ValueError(\"invalid character in grid\")\n\n    if not rows or len(rows[0]) == 0:\n        return 1\n    if not any(\".\" in row for row in rows):\n        return 1\n\n    num_rows = len(rows)\n    num_cols = len(rows[0])\n    # 列数が行数より大きければ転置して、行の長さ(幅)を小さい方にする。\n    # ドミノと L トロミノの集合は転置で閉じているので、数は変わらない。\n    if num_cols > num_rows:\n        rows = [\"\".join(rows[r][c] for r in range(num_rows)) for c in range(num_cols)]\n        num_rows, num_cols = num_cols, num_rows\n\n    width = num_cols\n    total = num_rows * width\n\n    def is_open(r: int, c: int) -> bool:\n        return 0 <= r < num_rows and 0 <= c < width and rows[r][c] == \".\"\n\n    shapes = (\n        ((0, 0), (0, 1)),\n        ((0, 0), (1, 0)),\n        ((0, 0), (0, 1), (1, 0)),\n        ((0, 0), (0, 1), (1, 1)),\n        ((0, 0), (1, 0), (1, 1)),\n        ((0, 0), (1, 0), (1, -1)),\n    )\n\n    blocked = [False] * total\n    pieces: list[list[int]] = [[] for _ in range(total)]\n    for pos in range(total):\n        r, c = divmod(pos, width)\n        if rows[r][c] != \".\":\n            blocked[pos] = True\n            continue\n        for shape in shapes:\n            ok = True\n            mask = 0\n            for dr, dc in shape:\n                if not is_open(r + dr, c + dc):\n                    ok = False\n                    break\n                mask |= 1 << (dr * width + dc)\n            if ok:\n                pieces[pos].append(mask)\n\n    # 壊れたプロファイル DP。状態は「今のマス以降の width+1 マスが埋まっているか」のビット列。\n    states: dict[int, int] = {0: 1}\n    for pos in range(total):\n        new_states: dict[int, int] = {}\n        get = new_states.get\n        piece_list = pieces[pos]\n        is_blocked = blocked[pos]\n        for mask, ways in states.items():\n            if mask & 1 or is_blocked:\n                key = mask >> 1\n                new_states[key] = get(key, 0) + ways\n            else:\n                for piece in piece_list:\n                    if not (mask & piece):\n                        key = (mask | piece) >> 1\n                        new_states[key] = get(key, 0) + ways\n        states = new_states\n        if not states:\n            return 0\n\n    return states.get(0, 0)\n```\n",
+  "wall_s": 36.487,
+  "usage": {
+    "subagent_tokens": 32288
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.2,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h6-run3.md",
+  "imported_at": "2026-10-18T17:42:55+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:44+09:00"
+}

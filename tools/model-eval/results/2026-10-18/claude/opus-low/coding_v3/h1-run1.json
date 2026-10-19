@@ -1,0 +1,163 @@
+{
+  "model": "opus-low",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 1,
+  "content": "```python\nfrom math import gcd\n\n\ndef _sub(a, b):\n    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])\n\n\ndef _cross(u, v):\n    return (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])\n\n\ndef _dot(u, v):\n    return u[0] * v[0] + u[1] * v[1] + u[2] * v[2]\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    pts = list(dict.fromkeys(tuple(int(c) for c in p) for p in points))\n    count = len(pts)\n    if count < 4:\n        raise ValueError(\"fewer than 4 distinct points\")\n    i0 = 0\n    i1 = 1\n    i2 = -1\n    base = _sub(pts[i1], pts[i0])\n    for idx in range(2, count):\n        if _cross(base, _sub(pts[idx], pts[i0])) != (0, 0, 0):\n            i2 = idx\n            break\n    if i2 < 0:\n        raise ValueError(\"collinear\")\n    normal0 = _cross(base, _sub(pts[i2], pts[i0]))\n    i3 = -1\n    for idx in range(count):\n        if _dot(normal0, _sub(pts[idx], pts[i0])) != 0:\n            i3 = idx\n            break\n    if i3 < 0:\n        raise ValueError(\"coplanar\")\n\n    faces = {}   # fid -> (a, b, c, normal, offset)\n    edges = {}   # (u, v) -> fid\n    outside = {}\n    counter = [0]\n\n    def make_face(a, b, c):\n        normal = _cross(_sub(pts[b], pts[a]), _sub(pts[c], pts[a]))\n        offset = _dot(normal, pts[a])\n        fid = counter[0]\n        counter[0] += 1\n        faces[fid] = (a, b, c, normal, offset)\n        edges[(a, b)] = fid\n        edges[(b, c)] = fid\n        edges[(c, a)] = fid\n        outside[fid] = []\n        return fid\n\n    if _dot(normal0, _sub(pts[i3], pts[i0])) > 0:\n        i1, i2 = i2, i1\n    tetra = [make_face(i0, i1, i2), make_face(i0, i3, i1),\n             make_face(i1, i3, i2), make_face(i2, i3, i0)]\n\n    used = {i0, i1, i2, i3}\n    for idx in range(count):\n        if idx in used:\n            continue\n        pt = pts[idx]\n        for fid in tetra:\n            fa = faces[fid]\n            if _dot(fa[3], pt) - fa[4] > 0:\n                outside[fid].append(idx)\n                break\n\n    pending = [fid for fid in tetra if outside[fid]]\n    while pending:\n        fid = pending.pop()\n        if fid not in faces or not outside[fid]:\n            continue\n        fa = faces[fid]\n        normal, offset = fa[3], fa[4]\n        best = -1\n        bestval = 0\n        for idx in outside[fid]:\n            val = _dot(normal, pts[idx]) - offset\n            if val > bestval:\n                bestval = val\n                best = idx\n        apex = pts[best]\n        visible = {fid}\n        stack = [fid]\n        horizon = []\n        while stack:\n            cur = stack.pop()\n            ca, cb, cc = faces[cur][0], faces[cur][1], faces[cur][2]\n            for (u, v) in ((ca, cb), (cb, cc), (cc, ca)):\n                nb = edges[(v, u)]\n                if nb in visible:\n                    continue\n                nf = faces[nb]\n                if _dot(nf[3], apex) - nf[4] > 0:\n                    visible.add(nb)\n                    stack.append(nb)\n        for cur in visible:\n            ca, cb, cc = faces[cur][0], faces[cur][1], faces[cur][2]\n            for (u, v) in ((ca, cb), (cb, cc), (cc, ca)):\n                if edges[(v, u)] not in visible:\n                    horizon.append((u, v))\n        orphan = []\n        for cur in visible:\n            ca, cb, cc = faces[cur][0], faces[cur][1], faces[cur][2]\n            for edge in ((ca, cb), (cb, cc), (cc, ca)):\n                if edges.get(edge) == cur:\n                    del edges[edge]\n            orphan.extend(outside[cur])\n            del faces[cur]\n            del outside[cur]\n        new_faces = [make_face(u, v, best) for (u, v) in horizon]\n        new_data = [(nf, faces[nf][3], faces[nf][4]) for nf in new_faces]\n        for idx in orphan:\n            if idx == best:\n                continue\n            pt = pts[idx]\n            for nf, nn, no in new_data:\n                if _dot(nn, pt) - no > 0:\n                    outside[nf].append(idx)\n                    break\n        for nf in new_faces:\n            if outside[nf]:\n                pending.append(nf)\n\n    volume6 = 0\n    planes = set()\n    vertex_planes = {}\n    for (a, b, c, normal, offset) in faces.values():\n        volume6 += _dot(pts[a], _cross(pts[b], pts[c]))\n        g = gcd(gcd(abs(normal[0]), abs(normal[1])), abs(normal[2]))\n        key = (normal[0] // g, normal[1] // g, normal[2] // g)\n        planes.add(key)\n        for vtx in (a, b, c):\n            vertex_planes.setdefault(vtx, set()).add(key)\n    n_vertices = sum(1 for s in vertex_planes.values() if len(s) >= 3)\n    return (volume6, len(planes), n_vertices)\n```\n",
+  "wall_s": 35.577,
+  "usage": {
+    "subagent_tokens": 32517
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.16,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-low/coding_v3/h1-run1.md",
+  "imported_at": "2026-10-18T19:45:20+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:32+09:00"
+}

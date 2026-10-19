@@ -1,0 +1,183 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h3",
+  "run": 1,
+  "content": "```python\nimport sys\n\n_KEYWORDS = frozenset(\n    (\"fun\", \"let\", \"rec\", \"in\", \"if\", \"then\", \"else\", \"true\", \"false\")\n)\n_LOWER_LETTERS = \"abcdefghijklmnopqrstuvwxyz\"\n_DIGITS = frozenset(\"0123456789\")\n_NAME_START = frozenset(_LOWER_LETTERS + \"_\")\n_NAME_CHARS = frozenset(_LOWER_LETTERS + _LOWER_LETTERS.upper() + \"0123456789_'\")\n_SPACES = frozenset(\" \\t\\n\")\n_SINGLE_SYMBOLS = frozenset(\"()+*=<,\")\n_ATOM_START = frozenset((\"int\", \"name\", \"true\", \"false\", \"[]\", \"(\"))\n\n_GENERIC = 1 << 62\n_RECURSION_LIMIT = 200000\n\n_INT_NODE = (\"int\",)\n_BOOL_NODE = (\"bool\",)\n_NIL_NODE = (\"nil\",)\n\n\n# ---------------------------------------------------------------- types\n\n\nclass _TVar:\n    __slots__ = (\"ref\", \"level\")\n\n    def __init__(self, level):\n        self.ref = None\n        self.level = level\n\n\nclass _TCon:\n    __slots__ = (\"name\", \"args\")\n\n    def __init__(self, name, args):\n        self.name = name\n        self.args = args\n\n\n_T_INT = _TCon(\"int\", ())\n_T_BOOL = _TCon(\"bool\", ())\n\n\ndef _prune(node):\n    if node.__class__ is not _TVar or node.ref is None:\n        return node\n    root = node.ref\n    while root.__class__ is _TVar and root.ref is not None:\n        root = root.ref\n    while node is not root:\n        following = node.ref\n        node.ref = root\n        node = following\n    return root\n\n\ndef _bind(var, target):\n    if target.__class__ is _TVar:\n        if target.level > var.level:\n            target.level = var.level\n        var.ref = target\n        return\n    if target.args:\n        level = var.level\n        stack = list(target.args)\n        seen = {id(target)}\n        while stack:\n            node = _prune(stack.pop())\n            if node.__class__ is _TVar:\n                if node is var:\n                    raise TypeError(\"recursive type\")\n                if node.level > level:\n                    node.level = level\n            elif node.args:\n                key = id(node)\n                if key not in seen:\n                    seen.add(key)\n                    stack.extend(node.args)\n    var.ref = target\n\n\ndef _unify(left, right):\n    stack = [(left, right)]\n    seen = None\n    while stack:\n        first, second = stack.pop()\n        first = _prune(first)\n        second = _prune(second)\n        if first is second:\n            continue\n        if first.__class__ is _TVar:\n            _bind(first, second)\n        elif second.__class__ is _TVar:\n            _bind(second, first)\n        else:\n            if first.name != second.name or len(first.args) != len(second.args):\n                raise TypeError(\"type mismatch\")\n            if not first.args:\n                continue\n            if seen is None:\n                seen = set()\n            key = (id(first), id(second))\n            if key in seen:\n                continue\n            seen.add(key)\n            stack.extend(zip(first.args, second.args))\n\n\ndef _generalize(node, level):\n    stack = [node]\n    seen = set()\n    found = False\n    while stack:\n        current = _prune(stack.pop())\n        if current.__class__ is _TVar:\n            if current.level > level:\n                current.level = _GENERIC\n                found = True\n        elif current.args:\n            key = id(current)\n            if key in seen:\n                continue\n            seen.add(key)\n            stack.extend(current.args)\n    return found\n\n\ndef _instantiate(node, level):\n    memo = {}\n    root = _prune(node)\n    stack = [root]\n    while stack:\n        current = stack[-1]\n        key = id(current)\n        if key in memo:\n            stack.pop()\n            continue\n        if current.__class__ is _TVar:\n            memo[key] = _TVar(level) if current.level == _GENERIC else current\n            stack.pop()\n            continue\n        args = current.args\n        if not args:\n            memo[key] = current\n            stack.pop()\n            continue\n        pruned = [_prune(arg) for arg in args]\n        missing = False\n        for arg in pruned:\n            if id(arg) not in memo:\n                stack.append(arg)\n                missing = True\n        if missing:\n            continue\n        stack.pop()\n        new_args = tuple(memo[id(arg)] for arg in pruned)\n        changed = False\n        for old, new in zip(pruned, new_args):\n            if old is not new:\n                changed = True\n                break\n        memo[key] = _TCon(current.name, new_args) if changed else current\n    return memo[id(root)]\n\n\ndef _push_wrapped(stack, node):\n    if node.__class__ is _TCon and (node.name == \"->\" or node.name == \"*\"):\n        stack.append(\")\")\n        stack.append(node)\n        stack.append(\"(\")\n    else:\n        stack.append(node)\n\n\ndef _show(node):\n    names = {}\n    pieces = []\n    stack = [node]\n    while stack:\n        item = stack.pop()\n        if item.__class__ is str:\n            pieces.append(item)\n            continue\n        current = _prune(item)\n        if current.__class__ is _TVar:\n            key = id(current)\n            label = names.get(key)\n            if label is None:\n                count = len(names)\n                label = \"'\" + chr(97 + count % 26) + (str(count // 26) if count >= 26 else \"\")\n                names[key] = label\n            pieces.append(label)\n            continue\n        name = current.name\n        if name == \"->\":\n            left = _prune(current.args[0])\n            stack.append(current.args[1])\n            stack.append(\" -> \")\n            if left.__class__ is _TCon and left.name == \"->\":\n                stack.append(\")\")\n                stack.append(left)\n                stack.append(\"(\")\n            else:\n                stack.append(left)\n        elif name == \"*\":\n            left = _prune(current.args[0])\n            right = _prune(current.args[1])\n            _push_wrapped(stack, right)\n            stack.append(\" * \")\n            _push_wrapped(stack, left)\n        elif name == \"list\":\n            stack.append(\" list\")\n            _push_wrapped(stack, _prune(current.args[0]))\n        else:\n            pieces.append(name)\n    return \"\".join(pieces)\n\n\n# ---------------------------------------------------------------- lexer\n\n\ndef _tokenize(src):\n    tokens = []\n    length = len(src)\n    index = 0\n    while index < length:\n        char = src[index]\n        if char in _SPACES:\n            index += 1\n        elif char in _DIGITS:\n            end = index + 1\n            while end < length and src[end] in _DIGITS:\n                end += 1\n            tokens.append((\"int\", src[index:end]))\n            index = end\n        elif char in _NAME_START:\n            end = index + 1\n            while end < length and src[end] in _NAME_CHARS:\n                end += 1\n            word = src[index:end]\n            if word in _KEYWORDS:\n                tokens.append((word, word))\n            else:\n                tokens.append((\"name\", word))\n            index = end\n        elif char == \"-\":\n            if index + 1 < length and src[index + 1] == \">\":\n                tokens.append((\"->\", \"->\"))\n                index += 2\n            else:\n                tokens.append((\"-\", \"-\"))\n                index += 1\n        elif char == \":\":\n            if index + 1 < length and src[index + 1] == \":\":\n                tokens.append((\"::\", \"::\"))\n                index += 2\n            else:\n                raise SyntaxError(\"unexpected ':'\")\n        elif char == \"[\":\n            if index + 1 < length and src[index + 1] == \"]\":\n                tokens.append((\"[]\", \"[]\"))\n                index += 2\n            else:\n                raise SyntaxError(\"'[' must be followed by ']'\")\n        elif char in _SINGLE_SYMBOLS:\n            tokens.append((char, char))\n            index += 1\n        else:\n            raise SyntaxError(f\"unexpected character {char!r}\")\n    tokens.append((\"eof\", None))\n    return tokens\n\n\n# ---------------------------------------------------------------- parser\n\n\nclass _Parser:\n    __slots__ = (\"tokens\", \"pos\")\n\n    def __init__(self, tokens):\n        self.tokens = tokens\n        self.pos = 0\n\n    def _expect(self, kind):\n        if self.tokens[self.pos][0] != kind:\n            raise SyntaxError(f\"expected {kind!r}\")\n        self.pos += 1\n\n    def _name(self):\n        token = self.tokens[self.pos]\n        if token[0] != \"name\":\n            raise SyntaxError(\"expected a name\")\n        self.pos += 1\n        return token[1]\n\n    def parse(self):\n        tree = self._expr()\n        if self.tokens[self.pos][0] != \"eof\":\n            raise SyntaxError(\"unexpected token\")\n        return tree\n\n    def _expr(self):\n        tokens = self.tokens\n        kind = tokens[self.pos][0]\n        if kind == \"fun\":\n            self.pos += 1\n            params = [self._name()]\n            while tokens[self.pos][0] == \"name\":\n                params.append(tokens[self.pos][1])\n                self.pos += 1\n            self._expect(\"->\")\n            body = self._expr()\n            return (\"fun\", params, body)\n        if kind == \"let\":\n            self.pos += 1\n            recursive = False\n            if tokens[self.pos][0] == \"rec\":\n                self.pos += 1\n                recursive = True\n            name = self._name()\n            params = []\n            while tokens[self.pos][0] == \"name\":\n                params.append(tokens[self.pos][1])\n                self.pos += 1\n            if recursive and not params:\n                raise SyntaxError(\"let rec needs at least one parameter\")\n            self._expect(\"=\")\n            bound = self._expr()\n            self._expect(\"in\")\n            body = self._expr()\n            if recursive:\n                return (\"letrec\", name, params, bound, body)\n            if params:\n                bound = (\"fun\", params, bound)\n            return (\"let\", name, bound, body)\n        if kind == \"if\":\n            self.pos += 1\n            condition = self._expr()\n            self._expect(\"then\")\n            then_branch = self._expr()\n            self._expect(\"else\")\n            else_branch = self._expr()\n            return (\"if\", condition, then_branch, else_branch)\n        return self._cmp()\n\n    def _cmp(self):\n        tokens = self.tokens\n        first = self._cons()\n        rest = None\n        while True:\n            kind = tokens[self.pos][0]\n            if kind != \"=\" and kind != \"<\":\n                break\n            self.pos += 1\n            operand = self._cons()\n            if rest is None:\n                rest = []\n            rest.append((kind, operand))\n        return first if rest is None else (\"ops\", first, rest)\n\n    def _cons(self):\n        tokens = self.tokens\n        first = self._add()\n        if tokens[self.pos][0] != \"::\":\n            return first\n        items = [first]\n        while tokens[self.pos][0] == \"::\":\n            self.pos += 1\n            items.append(self._add())\n        return (\"cons\", items)\n\n    def _add(self):\n        tokens = self.tokens\n        first = self._mul()\n        rest = None\n        while True:\n            kind = tokens[self.pos][0]\n            if kind != \"+\" and kind != \"-\":\n                break\n            self.pos += 1\n            operand = self._mul()\n            if rest is None:\n                rest = []\n            rest.append((kind, operand))\n        return first if rest is None else (\"ops\", first, rest)\n\n    def _mul(self):\n        tokens = self.tokens\n        first = self._app()\n        rest = None\n        while tokens[self.pos][0] == \"*\":\n            self.pos += 1\n            operand = self._app()\n            if rest is None:\n                rest = []\n            rest.append((\"*\", operand))\n        return first if rest is None else (\"ops\", first, rest)\n\n    def _app(self):\n        tokens = self.tokens\n        head = self._atom()\n        if tokens[self.pos][0] not in _ATOM_START:\n            return head\n        args = []\n        while tokens[self.pos][0] in _ATOM_START:\n            args.append(self._atom())\n        return (\"app\", head, args)\n\n    def _atom(self):\n        token = self.tokens[self.pos]\n        kind = token[0]\n        if kind == \"int\":\n            self.pos += 1\n            return _INT_NODE\n        if kind == \"true\" or kind == \"false\":\n            self.pos += 1\n            return _BOOL_NODE\n        if kind == \"name\":\n            self.pos += 1\n            return (\"var\", token[1])\n        if kind == \"[]\":\n            self.pos += 1\n            return _NIL_NODE\n        if kind == \"(\":\n            self.pos += 1\n            inner = self._expr()\n            if self.tokens[self.pos][0] == \",\":\n                self.pos += 1\n                second = self._expr()\n                self._expect(\")\")\n                return (\"tuple\", inner, second)\n            self._expect(\")\")\n            return inner\n        raise SyntaxError(\"unexpected token\")\n\n\n# ---------------------------------------------------------------- checker\n\n\nclass _Checker:\n    def __init__(self):\n        env = {}\n        first = _TVar(_GENERIC)\n        second = _TVar(_GENERIC)\n        env[\"fst\"] = (_TCon(\"->\", (_TCon(\"*\", (first, second)), first)), True)\n        first = _TVar(_GENERIC)\n        second = _TVar(_GENERIC)\n        env[\"snd\"] = (_TCon(\"->\", (_TCon(\"*\", (first, second)), second)), True)\n        elem = _TVar(_GENERIC)\n        env[\"hd\"] = (_TCon(\"->\", (_TCon(\"list\", (elem,)), elem)), True)\n        elem = _TVar(_GENERIC)\n        env[\"tl\"] = (\n            _TCon(\"->\", (_TCon(\"list\", (elem,)), _TCon(\"list\", (elem,)))),\n            True,\n        )\n        elem = _TVar(_GENERIC)\n        env[\"null\"] = (_TCon(\"->\", (_TCon(\"list\", (elem,)), _T_BOOL)), True)\n        self.env = env\n\n    def _restore(self, name, previous):\n        if previous is None:\n            del self.env[name]\n        else:\n            self.env[name] = previous\n\n    def _infer_fun(self, params, body, level):\n        env = self.env\n        saved = []\n        param_types = []\n        for name in params:\n            var = _TVar(level)\n            saved.append((name, env.get(name)))\n            env[name] = (var, False)\n            param_types.append(var)\n        result = self.infer(body, level)\n        for name, previous in reversed(saved):\n            self._restore(name, previous)\n        for var in reversed(param_types):\n            result = _TCon(\"->\", (var, result))\n        return result\n\n    def infer(self, node, level):\n        kind = node[0]\n        env = self.env\n        if kind == \"var\":\n            entry = env.get(node[1])\n            if entry is None:\n                raise NameError(f\"name {node[1]!r} is not defined\")\n            if entry[1]:\n                return _instantiate(entry[0], level)\n            return entry[0]\n        if kind == \"int\":\n            return _T_INT\n        if kind == \"bool\":\n            return _T_BOOL\n        if kind == \"nil\":\n            return _TCon(\"list\", (_TVar(level),))\n        if kind == \"app\":\n            func_type = self.infer(node[1], level)\n            for argument in node[2]:\n                arg_type = self.infer(argument, level)\n                result = _TVar(level)\n                _unify(func_type, _TCon(\"->\", (arg_type, result)))\n                func_type = result\n            return func_type\n        if kind == \"ops\":\n            current = self.infer(node[1], level)\n            for op, operand in node[2]:\n                if op == \"=\":\n                    right = self.infer(operand, level)\n                    _unify(current, right)\n                    current = _T_BOOL\n                else:\n                    _unify(current, _T_INT)\n                    right = self.infer(operand, level)\n                    _unify(right, _T_INT)\n                    current = _T_BOOL if op == \"<\" else _T_INT\n            return current\n        if kind == \"cons\":\n            types = [self.infer(item, level) for item in node[1]]\n            result = types[-1]\n            for position in range(len(types) - 2, -1, -1):\n                _unify(result, _TCon(\"list\", (types[position],)))\n            return result\n        if kind == \"tuple\":\n            first = self.infer(node[1], level)\n            second = self.infer(node[2], level)\n            return _TCon(\"*\", (first, second))\n        if kind == \"if\":\n            condition = self.infer(node[1], level)\n            _unify(condition, _T_BOOL)\n            then_type = self.infer(node[2], level)\n            else_type = self.infer(node[3], level)\n            _unify(then_type, else_type)\n            return then_type\n        if kind == \"fun\":\n            return self._infer_fun(node[1], node[2], level)\n        if kind == \"let\":\n            name = node[1]\n            bound = self.infer(node[2], level + 1)\n            poly = _generalize(bound, level)\n            previous = env.get(name)\n            env[name] = (bound, poly)\n            body = self.infer(node[3], level)\n            self._restore(name, previous)\n            return body\n        if kind == \"letrec\":\n            name = node[1]\n            self_type = _TVar(level + 1)\n            previous = env.get(name)\n            env[name] = (self_type, False)\n            func_type = self._infer_fun(node[2], node[3], level + 1)\n            _unify(self_type, func_type)\n            poly = _generalize(self_type, level)\n            env[name] = (self_type, poly)\n            body = self.infer(node[4], level)\n            self._restore(name, previous)\n            return body\n        raise SyntaxError(\"unknown node\")\n\n\n# ---------------------------------------------------------------- entry\n\n\ndef infer(src: str) -> str:\n    previous_limit = sys.getrecursionlimit()\n    if previous_limit < _RECURSION_LIMIT:\n        sys.setrecursionlimit(_RECURSION_LIMIT)\n    try:\n        tokens = _tokenize(src)\n        tree = _Parser(tokens).parse()\n        result = _Checker().infer(tree, 0)\n        return _show(result)\n    finally:\n        if sys.getrecursionlimit() != previous_limit:\n            sys.setrecursionlimit(previous_limit)\n```\n",
+  "wall_s": 463.207,
+  "usage": {
+    "subagent_tokens": 80119
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 28,
+    "total": 28,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_literals_and_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_operators",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shadowing_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_curried_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_polymorphism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lambda_bound_is_monomorphic",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_generalization_of_environment_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_occurs_check",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec_polymorphic_after_in",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_if",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_printing_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_variable_naming_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_than_26_type_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_name_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_keyword_expressions_need_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors_come_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_names_and_reserved_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_whitespace_and_layout",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_programs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_lets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_many_nested_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_program",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.06,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h3-run1.md",
+  "imported_at": "2026-10-18T16:42:45+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:27+09:00"
+}

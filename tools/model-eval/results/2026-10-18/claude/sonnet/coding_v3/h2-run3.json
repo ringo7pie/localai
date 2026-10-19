@@ -1,0 +1,133 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 3,
+  "content": "```python\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n = len(a)\n    m = len(b)\n    # 末尾から先頭へ向かう Myers 法。layers[d][(k + d) // 2] は、\n    # 逆向きの列で対角線 k (= x - y) 上に d 回の編集で届く最も遠い x。\n    # 逆向きの点 (x, y) は、元の列では a[n - x:] と b[m - y:] が残っている状態に当たる。\n    ra = a[::-1]\n    rb = b[::-1]\n    target = n - m\n\n    x = 0\n    while x < n and x < m and ra[x] == rb[x]:\n        x += 1\n    layers = [[x]]\n    distance = 0\n    if not (target == 0 and x >= n):\n        d = 0\n        while True:\n            d += 1\n            prev = layers[d - 1]\n            cur = []\n            for k in range(-d, d + 1, 2):\n                if k == -d:\n                    x = prev[(k + d) // 2]\n                elif k == d:\n                    x = prev[(k + d - 2) // 2] + 1\n                else:\n                    x_right = prev[(k + d - 2) // 2] + 1\n                    x_down = prev[(k + d) // 2]\n                    x = x_right if x_right > x_down else x_down\n                y = x - k\n                while x < n and y < m and ra[x] == rb[y]:\n                    x += 1\n                    y += 1\n                cur.append(x)\n            layers.append(cur)\n            if -d <= target <= d and (target + d) % 2 == 0:\n                if cur[(target + d) // 2] >= n:\n                    distance = d\n                    break\n\n    # 先頭から貪欲に選ぶ。残せるなら必ず残す（残しても最短のまま）。\n    # 消すのは、消した後の残りの編集数が 1 減るときだけ。そうでなければ足す。\n    operations: list[tuple] = []\n    i = 0\n    j = 0\n    remaining = distance\n    while i < n or j < m:\n        if i < n and j < m and a[i] == b[j]:\n            operations.append((\"=\", i, j))\n            i += 1\n            j += 1\n            continue\n        can_delete = False\n        if i < n:\n            if j == m:\n                can_delete = True\n            else:\n                next_x = n - i - 1\n                diagonal = next_x - (m - j)\n                if remaining >= 1 and abs(diagonal) <= remaining - 1:\n                    layer = layers[remaining - 1]\n                    if layer[(diagonal + remaining - 1) // 2] >= next_x:\n                        can_delete = True\n        if can_delete:\n            operations.append((\"-\", i))\n            i += 1\n        else:\n            operations.append((\"+\", j))\n            j += 1\n        remaining -= 1\n    return operations\n```\n",
+  "wall_s": 90.2,
+  "usage": {
+    "subagent_tokens": 39909
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.08,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h2-run3.md",
+  "imported_at": "2026-10-18T17:48:47+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:42+09:00"
+}

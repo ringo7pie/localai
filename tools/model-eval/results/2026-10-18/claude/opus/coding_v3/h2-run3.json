@@ -1,0 +1,133 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 3,
+  "content": "```python\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    result: list[tuple] = []\n\n    # 先頭の共通部分は、辞書順でも最短でも必ず \"=\" になる\n    prefix = 0\n    limit = min(len(a), len(b))\n    while prefix < limit and a[prefix] == b[prefix]:\n        result.append((\"=\", prefix, prefix))\n        prefix += 1\n\n    # 比較を速くするため、行を整数に置き換える\n    try:\n        ids: dict = {}\n        seq_a = [ids.setdefault(item, len(ids)) for item in a[prefix:]]\n        seq_b = [ids.setdefault(item, len(ids)) for item in b[prefix:]]\n    except TypeError:\n        seq_a = list(a[prefix:])\n        seq_b = list(b[prefix:])\n\n    n_len = len(seq_a)\n    m_len = len(seq_b)\n\n    # 逆順の列で Myers の前進を行う。\n    # fronts[d][kr + m_len] は、逆順の格子の対角線 kr (= x - y) 上で\n    # 原点からの編集数が d 以下になる点の x の最大値（無ければ -1）。\n    # 原点からの距離は対角線に沿って単調に増えないので、x 以下の点はすべて d 以下で届く。\n    # 逆順の点 (x, y) は、元の位置 (n_len - x, m_len - y) から終点までの距離に対応する。\n    rev_a = seq_a[::-1]\n    rev_b = seq_b[::-1]\n    offset = m_len\n    size = n_len + m_len + 1\n\n    front = [-1] * size\n    x_pos = 0\n    while x_pos < n_len and x_pos < m_len and rev_a[x_pos] == rev_b[x_pos]:\n        x_pos += 1\n    front[offset] = x_pos\n    fronts: list[list[int]] = [front]\n\n    end_index = n_len - m_len + offset\n    dist_total = 0\n    while front[end_index] < n_len:\n        dist_total += 1\n        prev = front\n        front = prev[:]\n        low = max(-dist_total, -m_len)\n        high = min(dist_total, n_len)\n        for diag in range(low, high + 1):\n            idx = diag + offset\n            best = prev[idx]\n            # 対角線 diag-1 から a を 1 つ消して移る\n            if diag - 1 >= -m_len and n_len >= 1:\n                prev_x = prev[idx - 1]\n                if prev_x >= 0:\n                    cand = prev_x + 1 if prev_x < n_len else n_len\n                    if cand > best:\n                        best = cand\n            # 対角線 diag+1 から b を 1 つ足して移る\n            if diag + 1 <= n_len and m_len >= 1:\n                prev_x = prev[idx + 1]\n                if prev_x >= 0:\n                    cap = m_len + diag\n                    cand = prev_x if prev_x < cap else cap\n                    if cand > best:\n                        best = cand\n            if best < 0:\n                continue\n            x_pos = best\n            y_pos = x_pos - diag\n            while x_pos < n_len and y_pos < m_len and rev_a[x_pos] == rev_b[y_pos]:\n                x_pos += 1\n                y_pos += 1\n            front[idx] = x_pos\n        fronts.append(front)\n\n    # 前から貪欲に、最短を保てる最小の記号を選ぶ\n    remaining = dist_total\n    pos_a = 0\n    pos_b = 0\n    while pos_a < n_len or pos_b < m_len:\n        if pos_a < n_len and pos_b < m_len and seq_a[pos_a] == seq_b[pos_b]:\n            result.append((\"=\", pos_a + prefix, pos_b + prefix))\n            pos_a += 1\n            pos_b += 1\n            continue\n        if pos_a < n_len:\n            # (pos_a + 1, pos_b) から終点までの距離が remaining - 1 以下か\n            rev_x = n_len - pos_a - 1\n            idx = rev_x - (m_len - pos_b) + offset\n            if fronts[remaining - 1][idx] >= rev_x:\n                result.append((\"-\", pos_a + prefix))\n                pos_a += 1\n                remaining -= 1\n                continue\n        result.append((\"+\", pos_b + prefix))\n        pos_b += 1\n        remaining -= 1\n\n    return result\n```\n",
+  "wall_s": 181.445,
+  "usage": {
+    "subagent_tokens": 46839
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.14,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h2-run3.md",
+  "imported_at": "2026-10-18T17:48:53+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:27+09:00"
+}

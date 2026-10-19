@@ -1,0 +1,138 @@
+{
+  "model": "sonnet-high",
+  "suite": "coding_v3",
+  "item": "h5",
+  "run": 3,
+  "content": "```python\ndef _check_alphabet(alphabet):\n    if not isinstance(alphabet, str) or len(alphabet) == 0 or len(set(alphabet)) != len(alphabet):\n        raise ValueError(\"invalid alphabet\")\n    if len(alphabet) > 8:\n        raise ValueError(\"alphabet too long\")\n\n\nclass _Parser:\n    def __init__(self, pattern, alphabet):\n        self.pattern = pattern\n        self.length = len(pattern)\n        self.pos = 0\n        self.alphabet = alphabet\n        self.index = {ch: i for i, ch in enumerate(alphabet)}\n        self.full = frozenset(range(len(alphabet)))\n\n    def parse(self):\n        node = self.parse_alt()\n        if self.pos != self.length:\n            raise ValueError(\"unbalanced )\")\n        return node\n\n    def parse_alt(self):\n        branches = [self.parse_concat()]\n        while self.pos < self.length and self.pattern[self.pos] == \"|\":\n            self.pos += 1\n            branches.append(self.parse_concat())\n        if len(branches) == 1:\n            return branches[0]\n        return (\"alt\", branches)\n\n    def literal(self, ch):\n        idx = self.index.get(ch)\n        if idx is None:\n            return (\"set\", frozenset())\n        return (\"set\", frozenset((idx,)))\n\n    def parse_concat(self):\n        items = []\n        pattern = self.pattern\n        while self.pos < self.length:\n            ch = pattern[self.pos]\n            if ch == \"|\" or ch == \")\":\n                break\n            if ch in \"*+?\":\n                raise ValueError(\"nothing to repeat\")\n            if ch == \"(\":\n                self.pos += 1\n                node = self.parse_alt()\n                if self.pos >= self.length or pattern[self.pos] != \")\":\n                    raise ValueError(\"unbalanced (\")\n                self.pos += 1\n            elif ch == \"[\":\n                node = self.parse_class()\n            elif ch == \".\":\n                self.pos += 1\n                node = (\"set\", self.full)\n            elif ch == \"\\\\\":\n                if self.pos + 1 >= self.length:\n                    raise ValueError(\"trailing backslash\")\n                node = self.literal(pattern[self.pos + 1])\n                self.pos += 2\n            else:\n                node = self.literal(ch)\n                self.pos += 1\n            if self.pos < self.length and pattern[self.pos] in \"*+?\":\n                kind = {\"*\": \"star\", \"+\": \"plus\", \"?\": \"opt\"}[pattern[self.pos]]\n                node = (kind, node)\n                self.pos += 1\n                if self.pos < self.length and pattern[self.pos] in \"*+?\":\n                    raise ValueError(\"multiple repeat\")\n            items.append(node)\n        if not items:\n            return (\"empty\",)\n        if len(items) == 1:\n            return items[0]\n        return (\"cat\", items)\n\n    def read_class_char(self):\n        pattern = self.pattern\n        ch = pattern[self.pos]\n        if ch == \"\\\\\":\n            if self.pos + 1 >= self.length:\n                raise ValueError(\"trailing backslash\")\n            ch = pattern[self.pos + 1]\n            self.pos += 2\n        else:\n            self.pos += 1\n        return ch\n\n    def parse_class(self):\n        pattern = self.pattern\n        self.pos += 1  # '['\n        negate = False\n        if self.pos < self.length and pattern[self.pos] == \"^\":\n            negate = True\n            self.pos += 1\n        members = set()\n        count = 0\n        while True:\n            if self.pos >= self.length:\n                raise ValueError(\"unterminated class\")\n            if pattern[self.pos] == \"]\":\n                break\n            low = self.read_class_char()\n            if (\n                self.pos + 1 < self.length\n                and pattern[self.pos] == \"-\"\n                and pattern[self.pos + 1] != \"]\"\n            ):\n                self.pos += 1\n                high = self.read_class_char()\n                if low > high:\n                    raise ValueError(\"bad range\")\n                for idx, letter in enumerate(self.alphabet):\n                    if low <= letter <= high:\n                        members.add(idx)\n            else:\n                idx = self.index.get(low)\n                if idx is not None:\n                    members.add(idx)\n            count += 1\n        if count == 0:\n            raise ValueError(\"empty class\")\n        self.pos += 1  # ']'\n        if negate:\n            return (\"set\", frozenset(self.full - members))\n        return (\"set\", frozenset(members))\n\n\nclass _NFA:\n    def __init__(self):\n        self.eps = []\n        self.moves = []\n\n    def new_state(self):\n        self.eps.append([])\n        self.moves.append([])\n        return len(self.eps) - 1\n\n    def build(self, node):\n        kind = node[0]\n        if kind == \"empty\":\n            state = self.new_state()\n            return state, state\n        if kind == \"set\":\n            start = self.new_state()\n            end = self.new_state()\n            self.moves[start].append((node[1], end))\n            return start, end\n        if kind == \"cat\":\n            start, end = self.build(node[1][0])\n            for child in node[1][1:]:\n                child_start, child_end = self.build(child)\n                self.eps[end].append(child_start)\n                end = child_end\n            return start, end\n        if kind == \"alt\":\n            start = self.new_state()\n            end = self.new_state()\n            for child in node[1]:\n                child_start, child_end = self.build(child)\n                self.eps[start].append(child_start)\n                self.eps[child_end].append(end)\n            return start, end\n        inner_start, inner_end = self.build(node[1])\n        start = self.new_state()\n        end = self.new_state()\n        self.eps[start].append(inner_start)\n        self.eps[inner_end].append(end)\n        if kind == \"star\":\n            self.eps[start].append(end)\n            self.eps[inner_end].append(inner_start)\n        elif kind == \"plus\":\n            self.eps[inner_end].append(inner_start)\n        elif kind == \"opt\":\n            self.eps[start].append(end)\n        return start, end\n\n\ndef _minimize(trans, accepting, symbol_count):\n    count = len(trans)\n    inverse = [[[] for _ in range(count)] for _ in range(symbol_count)]\n    for state in range(count):\n        row = trans[state]\n        for symbol in range(symbol_count):\n            inverse[symbol][row[symbol]].append(state)\n\n    accept_set = set(s for s in range(count) if accepting[s])\n    reject_set = set(s for s in range(count) if not accepting[s])\n    blocks = []\n    for group in (accept_set, reject_set):\n        if group:\n            blocks.append(group)\n    block_of = [0] * count\n    for block_id, group in enumerate(blocks):\n        for state in group:\n            block_of[state] = block_id\n    work = set()\n    if len(blocks) == 2:\n        work.add(0 if len(blocks[0]) <= len(blocks[1]) else 1)\n\n    while work:\n        splitter_id = work.pop()\n        splitter = list(blocks[splitter_id])\n        for symbol in range(symbol_count):\n            inv_symbol = inverse[symbol]\n            predecessors = set()\n            for target in splitter:\n                predecessors.update(inv_symbol[target])\n            touched = {}\n            for state in predecessors:\n                touched.setdefault(block_of[state], []).append(state)\n            for block_id, members in touched.items():\n                if len(members) == len(blocks[block_id]):\n                    continue\n                new_block = set(members)\n                blocks[block_id].difference_update(new_block)\n                new_id = len(blocks)\n                blocks.append(new_block)\n                for state in members:\n                    block_of[state] = new_id\n                if block_id in work:\n                    work.add(new_id)\n                elif len(blocks[block_id]) <= len(new_block):\n                    work.add(block_id)\n                else:\n                    work.add(new_id)\n\n    new_trans = []\n    new_accepting = []\n    for group in blocks:\n        rep = next(iter(group))\n        new_trans.append([block_of[trans[rep][symbol]] for symbol in range(symbol_count)])\n        new_accepting.append(accepting[rep])\n    return new_trans, new_accepting, block_of[0]\n\n\ndef _build_dfa(pattern, alphabet):\n    _check_alphabet(alphabet)\n    if not isinstance(pattern, str):\n        raise ValueError(\"pattern must be str\")\n    symbol_count = len(alphabet)\n    ast = _Parser(pattern, alphabet).parse()\n    nfa = _NFA()\n    nfa_start, nfa_end = nfa.build(ast)\n    size = len(nfa.eps)\n\n    closure = [0] * size\n    for state in range(size):\n        seen = 1 << state\n        stack = [state]\n        while stack:\n            current = stack.pop()\n            for nxt in nfa.eps[current]:\n                bit = 1 << nxt\n                if not seen & bit:\n                    seen |= bit\n                    stack.append(nxt)\n        closure[state] = seen\n\n    step = [[0] * size for _ in range(symbol_count)]\n    movable = 0\n    for state in range(size):\n        if nfa.moves[state]:\n            movable |= 1 << state\n        for charset, target in nfa.moves[state]:\n            for symbol in charset:\n                step[symbol][state] |= closure[target]\n\n    start_mask = closure[nfa_start]\n    ids = {start_mask: 0}\n    masks = [start_mask]\n    trans = []\n    index = 0\n    while index < len(masks):\n        mask = masks[index]\n        active = mask & movable\n        row = []\n        for symbol in range(symbol_count):\n            step_symbol = step[symbol]\n            new_mask = 0\n            rest = active\n            while rest:\n                low = rest & -rest\n                new_mask |= step_symbol[low.bit_length() - 1]\n                rest ^= low\n            target = ids.get(new_mask)\n            if target is None:\n                target = len(masks)\n                ids[new_mask] = target\n                masks.append(new_mask)\n            row.append(target)\n        trans.append(row)\n        index += 1\n    accepting = [bool((mask >> nfa_end) & 1) for mask in masks]\n    return _minimize(trans, accepting, symbol_count)\n\n\ndef min_dfa_size(pattern: str, alphabet: str) -> int:\n    _check_alphabet(alphabet)\n    trans, _accepting, _start = _build_dfa(pattern, alphabet)\n    return len(trans)\n\n\ndef distinguish(p1: str, p2: str, alphabet: str) -> str | None:\n    _check_alphabet(alphabet)\n    trans1, accept1, start1 = _build_dfa(p1, alphabet)\n    trans2, accept2, start2 = _build_dfa(p2, alphabet)\n    symbol_count = len(alphabet)\n    if accept1[start1] != accept2[start2]:\n        return \"\"\n    width = len(trans2)\n    nodes = [(start1, start2)]\n    parents = [-1]\n    symbols = [-1]\n    seen = {start1 * width + start2}\n    index = 0\n    while index < len(nodes):\n        left, right = nodes[index]\n        row1 = trans1[left]\n        row2 = trans2[right]\n        for symbol in range(symbol_count):\n            next_left = row1[symbol]\n            next_right = row2[symbol]\n            key = next_left * width + next_right\n            if key in seen:\n                continue\n            seen.add(key)\n            nodes.append((next_left, next_right))\n            parents.append(index)\n            symbols.append(symbol)\n            if accept1[next_left] != accept2[next_right]:\n                letters = []\n                cursor = len(nodes) - 1\n                while parents[cursor] != -1:\n                    letters.append(alphabet[symbols[cursor]])\n                    cursor = parents[cursor]\n                letters.reverse()\n                return \"\".join(letters)\n        index += 1\n    return None\n```\n",
+  "wall_s": 74.016,
+  "usage": {
+    "subagent_tokens": 40234
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 19,
+    "total": 19,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_alphabets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_language_and_empty_string",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_dot_and_classes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_specials_are_ordinary_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_quantifiers_and_groups",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_alternation_with_empty_branches",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_counting_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_string_can_distinguish",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shortest_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_follow_alphabet_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_minimal_dfa",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_larger_alphabet",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_shortest_difference",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_equal_large_languages",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.2,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-high/coding_v3/h5-run3.md",
+  "imported_at": "2026-10-18T18:49:47+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:46+09:00"
+}

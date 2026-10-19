@@ -1,0 +1,183 @@
+{
+  "model": "opus-medium",
+  "suite": "coding_v3",
+  "item": "h3",
+  "run": 3,
+  "content": "```python\nimport sys\nimport threading\n\n_GENERIC = 1 << 60\n\n_KEYWORDS = {\"fun\", \"let\", \"rec\", \"in\", \"if\", \"then\", \"else\", \"true\", \"false\"}\n\n\nclass _TVar:\n    __slots__ = (\"ref\", \"level\")\n\n    def __init__(self, level):\n        self.ref = None\n        self.level = level\n\n\n_INT = (\"int\",)\n_BOOL = (\"bool\",)\n\n\ndef _prune(t):\n    if not isinstance(t, _TVar) or t.ref is None:\n        return t\n    root = t\n    while isinstance(root, _TVar) and root.ref is not None:\n        root = root.ref\n    cur = t\n    while isinstance(cur, _TVar) and cur.ref is not None:\n        nxt = cur.ref\n        cur.ref = root\n        cur = nxt\n    return root\n\n\ndef _occurs_adjust(var, t):\n    stack = [t]\n    seen = set()\n    while stack:\n        node = _prune(stack.pop())\n        if isinstance(node, _TVar):\n            if node is var:\n                raise TypeError(\"occurs check failed\")\n            if node.level > var.level:\n                node.level = var.level\n        else:\n            key = id(node)\n            if key in seen:\n                continue\n            seen.add(key)\n            for child in node[1:]:\n                stack.append(child)\n\n\ndef _unify(left, right):\n    stack = [(left, right)]\n    while stack:\n        lhs, rhs = stack.pop()\n        lhs = _prune(lhs)\n        rhs = _prune(rhs)\n        if lhs is rhs:\n            continue\n        if isinstance(lhs, _TVar):\n            _occurs_adjust(lhs, rhs)\n            lhs.ref = rhs\n        elif isinstance(rhs, _TVar):\n            _occurs_adjust(rhs, lhs)\n            rhs.ref = lhs\n        else:\n            if lhs[0] != rhs[0] or len(lhs) != len(rhs):\n                raise TypeError(\"type mismatch\")\n            for idx in range(1, len(lhs)):\n                stack.append((lhs[idx], rhs[idx]))\n\n\ndef _generalize(t, level):\n    found = False\n    stack = [t]\n    seen = set()\n    while stack:\n        node = _prune(stack.pop())\n        if isinstance(node, _TVar):\n            if node.level != _GENERIC and node.level > level:\n                node.level = _GENERIC\n                found = True\n            elif node.level == _GENERIC:\n                found = True\n        else:\n            key = id(node)\n            if key in seen:\n                continue\n            seen.add(key)\n            for child in node[1:]:\n                stack.append(child)\n    return found\n\n\ndef _instantiate(t, level):\n    memo = {}\n\n    def go(node):\n        node = _prune(node)\n        if isinstance(node, _TVar):\n            if node.level == _GENERIC:\n                fresh = memo.get(id(node))\n                if fresh is None:\n                    fresh = _TVar(level)\n                    memo[id(node)] = fresh\n                return fresh\n            return node\n        if len(node) == 1:\n            return node\n        key = id(node)\n        cached = memo.get(key)\n        if cached is not None:\n            return cached\n        if len(node) == 2:\n            result = (node[0], go(node[1]))\n        else:\n            first = go(node[1])\n            second = go(node[2])\n            result = (node[0], first, second)\n        memo[key] = result\n        return result\n\n    return go(t)\n\n\ndef _lex(src):\n    toks = []\n    pos = 0\n    length = len(src)\n    while pos < length:\n        ch = src[pos]\n        if ch == \" \" or ch == \"\\t\" or ch == \"\\n\":\n            pos += 1\n        elif \"0\" <= ch <= \"9\":\n            end = pos\n            while end < length and \"0\" <= src[end] <= \"9\":\n                end += 1\n            toks.append((\"INT\", src[pos:end]))\n            pos = end\n        elif (\"a\" <= ch <= \"z\") or ch == \"_\":\n            end = pos + 1\n            while end < length:\n                cc = src[end]\n                if (\"a\" <= cc <= \"z\") or (\"A\" <= cc <= \"Z\") or (\"0\" <= cc <= \"9\") or cc == \"_\" or cc == \"'\":\n                    end += 1\n                else:\n                    break\n            word = src[pos:end]\n            if word in _KEYWORDS:\n                toks.append((word, None))\n            else:\n                toks.append((\"NAME\", word))\n            pos = end\n        elif src.startswith(\"->\", pos):\n            toks.append((\"->\", None))\n            pos += 2\n        elif src.startswith(\"::\", pos):\n            toks.append((\"::\", None))\n            pos += 2\n        elif ch == \"[\":\n            if pos + 1 < length and src[pos + 1] == \"]\":\n                toks.append((\"[]\", None))\n                pos += 2\n            else:\n                raise SyntaxError(\"expected ] after [\")\n        elif ch in \"(),+-*=<\":\n            toks.append((ch, None))\n            pos += 1\n        else:\n            raise SyntaxError(\"unexpected character %r\" % ch)\n    toks.append((\"EOF\", None))\n    return toks\n\n\n_ATOM_START = {\"INT\", \"NAME\", \"true\", \"false\", \"[]\", \"(\"}\n\n\nclass _Parser:\n    def __init__(self, toks):\n        self.toks = toks\n        self.pos = 0\n\n    def peek(self):\n        return self.toks[self.pos][0]\n\n    def advance(self):\n        tok = self.toks[self.pos]\n        if tok[0] != \"EOF\":\n            self.pos += 1\n        return tok\n\n    def expect(self, kind):\n        if self.peek() != kind:\n            raise SyntaxError(\"expected %s\" % kind)\n        return self.advance()\n\n    def parse(self):\n        expr = self.expr()\n        if self.peek() != \"EOF\":\n            raise SyntaxError(\"unexpected token\")\n        return expr\n\n    def expr(self):\n        kind = self.peek()\n        if kind == \"fun\":\n            self.advance()\n            params = []\n            while self.peek() == \"NAME\":\n                params.append(self.advance()[1])\n            if not params:\n                raise SyntaxError(\"fun needs a parameter\")\n            self.expect(\"->\")\n            body = self.expr()\n            for param in reversed(params):\n                body = (\"fun\", param, body)\n            return body\n        if kind == \"let\":\n            self.advance()\n            is_rec = False\n            if self.peek() == \"rec\":\n                self.advance()\n                is_rec = True\n            name = self.expect(\"NAME\")[1]\n            params = []\n            while self.peek() == \"NAME\":\n                params.append(self.advance()[1])\n            if is_rec and not params:\n                raise SyntaxError(\"let rec needs a parameter\")\n            self.expect(\"=\")\n            bound = self.expr()\n            self.expect(\"in\")\n            body = self.expr()\n            for param in reversed(params):\n                bound = (\"fun\", param, bound)\n            return (\"letrec\" if is_rec else \"let\", name, bound, body)\n        if kind == \"if\":\n            self.advance()\n            cond = self.cmp()\n            self.expect(\"then\")\n            then_branch = self.expr()\n            self.expect(\"else\")\n            else_branch = self.expr()\n            return (\"if\", cond, then_branch, else_branch)\n        return self.cmp()\n\n    def cmp(self):\n        expr = self.cons()\n        while self.peek() in (\"=\", \"<\"):\n            op = self.advance()[0]\n            rhs = self.cons()\n            expr = (\"binop\", op, expr, rhs)\n        return expr\n\n    def cons(self):\n        items = [self.add()]\n        while self.peek() == \"::\":\n            self.advance()\n            items.append(self.add())\n        expr = items[-1]\n        for idx in range(len(items) - 2, -1, -1):\n            expr = (\"binop\", \"::\", items[idx], expr)\n        return expr\n\n    def add(self):\n        expr = self.mul()\n        while self.peek() in (\"+\", \"-\"):\n            op = self.advance()[0]\n            rhs = self.mul()\n            expr = (\"binop\", op, expr, rhs)\n        return expr\n\n    def mul(self):\n        expr = self.app()\n        while self.peek() == \"*\":\n            self.advance()\n            rhs = self.app()\n            expr = (\"binop\", \"*\", expr, rhs)\n        return expr\n\n    def app(self):\n        expr = self.atom()\n        while self.peek() in _ATOM_START:\n            arg = self.atom()\n            expr = (\"app\", expr, arg)\n        return expr\n\n    def atom(self):\n        kind = self.peek()\n        if kind == \"INT\":\n            self.advance()\n            return (\"int\",)\n        if kind == \"true\" or kind == \"false\":\n            self.advance()\n            return (\"bool\",)\n        if kind == \"NAME\":\n            return (\"var\", self.advance()[1])\n        if kind == \"[]\":\n            self.advance()\n            return (\"nil\",)\n        if kind == \"(\":\n            self.advance()\n            first = self.expr()\n            if self.peek() == \",\":\n                self.advance()\n                second = self.expr()\n                self.expect(\")\")\n                return (\"pair\", first, second)\n            self.expect(\")\")\n            return first\n        raise SyntaxError(\"unexpected token\")\n\n\ndef _bind(env, name, scheme):\n    prev = env.get(name)\n    env[name] = scheme\n    return prev\n\n\ndef _restore(env, name, prev):\n    if prev is None:\n        del env[name]\n    else:\n        env[name] = prev\n\n\ndef _ti(expr, env, level):\n    tag = expr[0]\n    if tag == \"int\":\n        return _INT\n    if tag == \"bool\":\n        return _BOOL\n    if tag == \"var\":\n        scheme = env.get(expr[1])\n        if scheme is None:\n            raise NameError(expr[1])\n        typ, poly = scheme\n        if poly:\n            return _instantiate(typ, level)\n        return typ\n    if tag == \"nil\":\n        return (\"list\", _TVar(level))\n    if tag == \"pair\":\n        first = _ti(expr[1], env, level)\n        second = _ti(expr[2], env, level)\n        return (\"pair\", first, second)\n    if tag == \"app\":\n        fun_type = _ti(expr[1], env, level)\n        arg_type = _ti(expr[2], env, level)\n        result = _TVar(level)\n        _unify(fun_type, (\"fn\", arg_type, result))\n        return result\n    if tag == \"fun\":\n        param_type = _TVar(level)\n        name = expr[1]\n        prev = _bind(env, name, (param_type, False))\n        body_type = _ti(expr[2], env, level)\n        _restore(env, name, prev)\n        return (\"fn\", param_type, body_type)\n    if tag == \"let\":\n        name = expr[1]\n        bound_type = _ti(expr[2], env, level + 1)\n        poly = _generalize(bound_type, level)\n        prev = _bind(env, name, (bound_type, poly))\n        body_type = _ti(expr[3], env, level)\n        _restore(env, name, prev)\n        return body_type\n    if tag == \"letrec\":\n        name = expr[1]\n        self_type = _TVar(level + 1)\n        prev = _bind(env, name, (self_type, False))\n        bound_type = _ti(expr[2], env, level + 1)\n        _unify(self_type, bound_type)\n        poly = _generalize(self_type, level)\n        env[name] = (self_type, poly)\n        body_type = _ti(expr[3], env, level)\n        _restore(env, name, prev)\n        return body_type\n    if tag == \"if\":\n        cond_type = _ti(expr[1], env, level)\n        _unify(cond_type, _BOOL)\n        then_type = _ti(expr[2], env, level)\n        else_type = _ti(expr[3], env, level)\n        _unify(then_type, else_type)\n        return then_type\n    if tag == \"binop\":\n        op = expr[1]\n        lhs = _ti(expr[2], env, level)\n        rhs = _ti(expr[3], env, level)\n        if op in (\"+\", \"-\", \"*\"):\n            _unify(lhs, _INT)\n            _unify(rhs, _INT)\n            return _INT\n        if op == \"<\":\n            _unify(lhs, _INT)\n            _unify(rhs, _INT)\n            return _BOOL\n        if op == \"=\":\n            _unify(lhs, rhs)\n            return _BOOL\n        if op == \"::\":\n            _unify(rhs, (\"list\", lhs))\n            return rhs\n    raise SyntaxError(\"bad expression\")\n\n\ndef _builtins():\n    env = {}\n    var_a = _TVar(_GENERIC)\n    var_b = _TVar(_GENERIC)\n    env[\"fst\"] = ((\"fn\", (\"pair\", var_a, var_b), var_a), True)\n    var_a = _TVar(_GENERIC)\n    var_b = _TVar(_GENERIC)\n    env[\"snd\"] = ((\"fn\", (\"pair\", var_a, var_b), var_b), True)\n    var_a = _TVar(_GENERIC)\n    env[\"hd\"] = ((\"fn\", (\"list\", var_a), var_a), True)\n    var_a = _TVar(_GENERIC)\n    env[\"tl\"] = ((\"fn\", (\"list\", var_a), (\"list\", var_a)), True)\n    var_a = _TVar(_GENERIC)\n    env[\"null\"] = ((\"fn\", (\"list\", var_a), _BOOL), True)\n    return env\n\n\ndef _show(t):\n    names = {}\n\n    def name_of(var):\n        key = id(var)\n        found = names.get(key)\n        if found is None:\n            index = len(names)\n            found = \"'\" + chr(97 + index % 26) + (str(index // 26) if index >= 26 else \"\")\n            names[key] = found\n        return found\n\n    def go(node, prec):\n        node = _prune(node)\n        if isinstance(node, _TVar):\n            return name_of(node)\n        tag = node[0]\n        if tag == \"int\" or tag == \"bool\":\n            return tag\n        if tag == \"list\":\n            return go(node[1], 3) + \" list\"\n        if tag == \"pair\":\n            left = go(node[1], 2)\n            right = go(node[2], 2)\n            text = left + \" * \" + right\n            return \"(\" + text + \")\" if prec >= 2 else text\n        left = go(node[1], 1)\n        right = go(node[2], 0)\n        text = left + \" -> \" + right\n        return \"(\" + text + \")\" if prec >= 1 else text\n\n    return go(t, 0)\n\n\ndef _infer_main(src):\n    toks = _lex(src)\n    ast = _Parser(toks).parse()\n    env = _builtins()\n    typ = _ti(ast, env, 0)\n    return _show(typ)\n\n\ndef infer(src: str) -> str:\n    box = {}\n\n    def run():\n        try:\n            box[\"result\"] = _infer_main(src)\n        except BaseException as exc:  # noqa: BLE001\n            box[\"error\"] = exc\n\n    old_limit = sys.getrecursionlimit()\n    sys.setrecursionlimit(max(old_limit, 200000))\n    old_size = None\n    try:\n        old_size = threading.stack_size(256 * 1024 * 1024)\n    except (ValueError, RuntimeError):\n        old_size = None\n    try:\n        worker = threading.Thread(target=run)\n        worker.start()\n        worker.join()\n    finally:\n        if old_size is not None:\n            try:\n                threading.stack_size(old_size)\n            except (ValueError, RuntimeError):\n                pass\n        sys.setrecursionlimit(old_limit)\n    if \"error\" in box:\n        raise box[\"error\"]\n    return box[\"result\"]\n```\n",
+  "wall_s": 132.461,
+  "usage": {
+    "subagent_tokens": 44788
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 28,
+    "total": 28,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_literals_and_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_operators",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shadowing_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_curried_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_polymorphism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lambda_bound_is_monomorphic",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_generalization_of_environment_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_occurs_check",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec_polymorphic_after_in",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_if",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_printing_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_variable_naming_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_than_26_type_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_name_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_keyword_expressions_need_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors_come_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_names_and_reserved_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_whitespace_and_layout",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_programs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_lets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_many_nested_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_program",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.13,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-medium/coding_v3/h3-run3.md",
+  "imported_at": "2026-10-18T19:33:44+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:39+09:00"
+}

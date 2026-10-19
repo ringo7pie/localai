@@ -1,0 +1,133 @@
+{
+  "model": "opus-low",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 1,
+  "content": "```python\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n, m = len(a), len(b)\n    ra = a[::-1]\n    rb = b[::-1]\n    offset = n + m + 1\n    vec = [0] * (2 * offset + 2)\n    trace = []\n    total = 0\n    d = 0\n    while True:\n        done = False\n        for k in range(-d, d + 1, 2):\n            if k == -d or (k != d and vec[offset + k - 1] < vec[offset + k + 1]):\n                x = vec[offset + k + 1]\n            else:\n                x = vec[offset + k - 1] + 1\n            y = x - k\n            while x < n and y < m and ra[x] == rb[y]:\n                x += 1\n                y += 1\n            vec[offset + k] = x\n            if x >= n and y >= m:\n                done = True\n        trace.append(vec[offset - d:offset + d + 1])\n        if done:\n            total = d\n            break\n        d += 1\n\n    def reach(i, j, dist):\n        if dist < 0:\n            return False\n        p = n - i\n        q = m - j\n        k = p - q\n        if abs(k) > dist or (dist - k) % 2:\n            return False\n        return trace[dist][k + dist] >= p\n\n    result = []\n    i = j = 0\n    cost = total\n    while i < n or j < m:\n        if i < n and j < m and a[i] == b[j]:\n            result.append((\"=\", i, j))\n            i += 1\n            j += 1\n        elif i < n and reach(i + 1, j, cost - 1):\n            result.append((\"-\", i))\n            i += 1\n            cost -= 1\n        else:\n            result.append((\"+\", j))\n            j += 1\n            cost -= 1\n    return result\n```\n",
+  "wall_s": 30.576,
+  "usage": {
+    "subagent_tokens": 31947
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.09,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-low/coding_v3/h2-run1.md",
+  "imported_at": "2026-10-18T19:51:01+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:33+09:00"
+}

@@ -1,0 +1,163 @@
+{
+  "model": "sonnet-medium",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 1,
+  "content": "```python\nimport random\nfrom math import gcd\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    distinct = list(dict.fromkeys((int(p[0]), int(p[1]), int(p[2])) for p in points))\n    count = len(distinct)\n    if count < 4:\n        raise ValueError(\"need at least 4 distinct points\")\n\n    def cross(u, v):\n        return (u[1] * v[2] - u[2] * v[1],\n                u[2] * v[0] - u[0] * v[2],\n                u[0] * v[1] - u[1] * v[0])\n\n    def sub(u, v):\n        return (u[0] - v[0], u[1] - v[1], u[2] - v[2])\n\n    # Find 4 non-coplanar points with exact integer arithmetic.\n    p0 = distinct[0]\n    p1 = distinct[1]\n    edge = sub(p1, p0)\n    i2 = -1\n    normal0 = (0, 0, 0)\n    for idx in range(2, count):\n        candidate = cross(edge, sub(distinct[idx], p0))\n        if candidate != (0, 0, 0):\n            i2 = idx\n            normal0 = candidate\n            break\n    if i2 < 0:\n        raise ValueError(\"all points are collinear\")\n    i3 = -1\n    for idx in range(2, count):\n        if idx == i2:\n            continue\n        diff = sub(distinct[idx], p0)\n        if normal0[0] * diff[0] + normal0[1] * diff[1] + normal0[2] * diff[2] != 0:\n            i3 = idx\n            break\n    if i3 < 0:\n        raise ValueError(\"all points are coplanar\")\n\n    rng = random.Random(20261018)\n    rest = [distinct[idx] for idx in range(count) if idx not in (0, 1, i2, i3)]\n    rng.shuffle(rest)\n    orig = [p0, p1, distinct[i2], distinct[i3]] + rest\n\n    # Symbolic-like perturbation with exact big integers: the scale K is far larger\n    # than the perturbation effect, so non-degenerate orientations never change,\n    # while the perturbed points are in general position.\n    scale = 1 << 100\n    radius = 1 << 40\n    pts = [(scale * x + rng.randint(-radius, radius),\n            scale * y + rng.randint(-radius, radius),\n            scale * z + rng.randint(-radius, radius)) for (x, y, z) in orig]\n\n    fa = []\n    fb = []\n    fc = []\n    fplane = []\n    conf = []\n    edge_face = {}\n\n    def make_face(a, b, c):\n        ax, ay, az = pts[a]\n        bx, by, bz = pts[b]\n        cx, cy, cz = pts[c]\n        ux, uy, uz = bx - ax, by - ay, bz - az\n        vx, vy, vz = cx - ax, cy - ay, cz - az\n        nx = uy * vz - uz * vy\n        ny = uz * vx - ux * vz\n        nz = ux * vy - uy * vx\n        fa.append(a)\n        fb.append(b)\n        fc.append(c)\n        fplane.append((nx, ny, nz, nx * ax + ny * ay + nz * az))\n        conf.append(set())\n        return len(fa) - 1\n\n    def register(face):\n        a, b, c = fa[face], fb[face], fc[face]\n        edge_face[a * count + b] = face\n        edge_face[b * count + c] = face\n        edge_face[c * count + a] = face\n\n    for a, b, c, opposite in ((0, 1, 2, 3), (0, 1, 3, 2), (0, 2, 3, 1), (1, 2, 3, 0)):\n        face = make_face(a, b, c)\n        nx, ny, nz, dist = fplane[face]\n        ox, oy, oz = pts[opposite]\n        if nx * ox + ny * oy + nz * oz > dist:\n            fa.pop(); fb.pop(); fc.pop(); fplane.pop(); conf.pop()\n            face = make_face(a, c, b)\n        register(face)\n\n    pface = [set() for _ in range(count)]\n    for q in range(4, count):\n        qx, qy, qz = pts[q]\n        for face in range(4):\n            nx, ny, nz, dist = fplane[face]\n            if nx * qx + ny * qy + nz * qz > dist:\n                conf[face].add(q)\n                pface[q].add(face)\n\n    alive = [True] * len(fa)\n\n    for p in range(4, count):\n        visible = pface[p]\n        if not visible:\n            continue\n        visible = set(visible)\n        horizon = []\n        for face in visible:\n            a, b, c = fa[face], fb[face], fc[face]\n            for u, v in ((a, b), (b, c), (c, a)):\n                other = edge_face[v * count + u]\n                if other not in visible:\n                    horizon.append((u, v, face, other))\n        for u, v, face, other in horizon:\n            new_face = make_face(u, v, p)\n            alive.append(True)\n            nx, ny, nz, dist = fplane[new_face]\n            candidates = conf[face] | conf[other]\n            candidates.discard(p)\n            bucket = conf[new_face]\n            for q in candidates:\n                qx, qy, qz = pts[q]\n                if nx * qx + ny * qy + nz * qz > dist:\n                    bucket.add(q)\n                    pface[q].add(new_face)\n            edge_face[u * count + v] = new_face\n            edge_face[v * count + p] = new_face\n            edge_face[p * count + u] = new_face\n        for face in visible:\n            alive[face] = False\n            for q in conf[face]:\n                pface[q].discard(face)\n            conf[face] = None\n\n    volume6 = 0\n    planes = set()\n    normals_at = {}\n    for face in range(len(fa)):\n        if not alive[face]:\n            continue\n        a, b, c = fa[face], fb[face], fc[face]\n        pa, pb, pc = orig[a], orig[b], orig[c]\n        volume6 += pa[0] * (pb[1] * pc[2] - pb[2] * pc[1]) \\\n            + pa[1] * (pb[2] * pc[0] - pb[0] * pc[2]) \\\n            + pa[2] * (pb[0] * pc[1] - pb[1] * pc[0])\n        normal = cross(sub(pb, pa), sub(pc, pa))\n        if normal == (0, 0, 0):\n            continue\n        divisor = gcd(gcd(abs(normal[0]), abs(normal[1])), abs(normal[2]))\n        normal = (normal[0] // divisor, normal[1] // divisor, normal[2] // divisor)\n        offset = normal[0] * pa[0] + normal[1] * pa[1] + normal[2] * pa[2]\n        planes.add((normal, offset))\n        for vertex in (a, b, c):\n            normals_at.setdefault(vertex, set()).add(normal)\n\n    n_vertices = 0\n    for normal_set in normals_at.values():\n        if len(normal_set) < 3:\n            continue\n        normal_list = list(normal_set)\n        first = normal_list[0]\n        axis = None\n        for other in normal_list[1:]:\n            candidate = cross(first, other)\n            if candidate != (0, 0, 0):\n                axis = candidate\n                break\n        if axis is None:\n            continue\n        for other in normal_list[1:]:\n            if axis[0] * other[0] + axis[1] * other[1] + axis[2] * other[2] != 0:\n                n_vertices += 1\n                break\n\n    return (abs(volume6), len(planes), n_vertices)\n```\n",
+  "wall_s": 128.243,
+  "usage": {
+    "subagent_tokens": 44741
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.45,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-medium/coding_v3/h1-run1.md",
+  "imported_at": "2026-10-18T18:54:32+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:53+09:00"
+}

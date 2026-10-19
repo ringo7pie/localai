@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-low",
+  "suite": "math",
+  "item": "m2",
+  "run": 3,
+  "content": "A を原点にずらし u=x-1, v=y とする。交わり V1∩V2 は u,v ∈ [-r,r] の 4 象限に分かれる。\n\n- u<=0, v>=0: 断面が正方形で体積 4r^3/3\n- 残り 3 象限: それぞれ 1/4 球で体積 pi r^3/3\n\nよって |V1∩V2| = 4r^3/3 + pi r^3。\n\n|V1| = pi r^2 + 4 pi r^3/3 なので、\n|W| = pi r^2 + pi r^3/3 - 4 r^3/3 = 1.069168。\n\nモーメントは次のとおり。\n- V1 のモーメント: x 方向は 0.5|V1|、y 方向は 0。\n- 交わりの (u,v) モーメント: (-pi r^4/16, +pi r^4/16)。\n\nW の x モーメント = 0.5|V1| - (|I| - pi r^4/16) = 0.0767389。\nW の y モーメント = -pi r^4/16 = -0.0254469。\n\n答え(a): pi*0.36 + pi*0.216/3 - 4*0.216/3\n答え(b): 0.071775\n答え(c): -0.023801\n",
+  "wall_s": 26.927,
+  "usage": {
+    "subagent_tokens": 31544
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 0.6667,
+    "all_passed": false,
+    "passed": 2,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "pi*0.36 + pi*0.216/3 - 4*0.216/3",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "0.071775",
+        "value": 0.071775,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 8.183717709710569e-06
+      },
+      {
+        "key": "c",
+        "text": "-0.023801",
+        "value": -0.023801,
+        "expected": -0.023800656086705937,
+        "ok": false,
+        "rel_error": 1.4449740074765078e-05
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-low/math/m2-run3.md",
+  "imported_at": "2026-10-18T20:05:27+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:52+09:00"
+}

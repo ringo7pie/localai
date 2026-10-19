@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-medium",
+  "suite": "math",
+  "item": "m3",
+  "run": 2,
+  "content": "## 考え方\n\n中心を原点にした座標 (x, y, z) を使う（各座標は -1/2 から 1/2）。面までの最小距離が d 以下という条件は max(|x|, |y|, |z|) >= a（a = 1/2 - d）と同じ。\n条件を満たす領域は「球の外側」かつ「内側の立方体（1 辺 2a）の外側」なので、p = 1 - Vol(球 ∪ 内側立方体) となる。\n\n(a) a = 1/4。内側立方体の頂点までの距離は sqrt(3)/4 ≈ 0.433 で 1/2 より小さい。立方体は球に完全に含まれるので、和集合は球だけ。p = 1 - pi/6。\n\n(b) a = 2/5。球は立方体の各面から高さ h = 1/10 の球欠（cap）6 個分だけはみ出す。a > 1/(2 sqrt(2)) なので球欠どうしは重ならない。\n球欠 1 個の体積は pi h^2 (3R - h)/3 = 0.014 pi / 3 なので、6 個で 0.028 pi。\n和集合の体積は 0.8^3 + 0.028 pi。p = 1 - 0.512 - 0.028 pi = 0.488 - 0.028 pi。\n\n(c) a = 7/20。h = 3/20。球欠 1 個は 0.010125 pi なので、6 個で 0.06075 pi。\nここでは a < 1/(2 sqrt(2)) なので、隣り合う球欠（12 本の辺）が少し重なる。3 つが重なることはない。\n重なり L = Vol{x > a, y > a, 球の内部} は、z を固定した断面積を級数展開して積分すると L ≈ 1.90202e-6。\n和集合の体積は 0.7^3 + 0.06075 pi - 12 L。p = 0.657 - 0.06075 pi + 12 L ≈ 0.657 - 0.190851753 + 0.0000228242 = 0.466171071。\n\n答え(a): 1 - pi/6\n答え(b): 0.488 - 0.028*pi\n答え(c): 0.466171\n",
+  "wall_s": 76.279,
+  "usage": {
+    "subagent_tokens": 38252
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "0.488 - 0.028*pi",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "0.466171",
+        "value": 0.466171,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.5107712600711135e-07
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-medium/math/m3-run2.md",
+  "imported_at": "2026-10-18T19:22:38+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

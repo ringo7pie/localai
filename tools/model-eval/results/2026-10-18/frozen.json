@@ -1,0 +1,67 @@
+{
+ "frozen_at": "2026-10-18T16:25:54+09:00",
+ "note": "問題文・隠しテスト・正解・数学の採点器の sha256。計測の途中で変えていないことの確認に使う",
+ "files": {
+  "suites/coding_v3/PREAMBLE.md": "818480b2d8d1753f6dd4829ba3a6df16e1360ab21d0fd1cf90a5f4d9d9932516",
+  "suites/coding_v3/h1/prompt.md": "7679d6b6bfd7a0b89a58b2fe6f398d85ed92c0f7949dbbf66804bdc5ec505237",
+  "suites/coding_v3/h1/tests.py": "311e192acb9ae706292cc1b82bcf922d80088fc9fc8a218c6228d344d1cd52ef",
+  "suites/coding_v3/h2/prompt.md": "5d2758aaea15776b1c14565e81c99aa14ff39921806c60fd663b082857972a1f",
+  "suites/coding_v3/h2/tests.py": "eb40dd709aed3f88bcc9fb32e9d5fb4387dba5c3e28d7a891638cf3fbd7f4c9c",
+  "suites/coding_v3/h3/prompt.md": "046f35deca96bf55bf1f68a1f9ab5a37d02c51b6eced8741dc1d4d7afce9d65b",
+  "suites/coding_v3/h3/tests.py": "8aab0ae6393aaaa255fd28ddba6951a081bebf84bc9d7575c6fb8c40a6e52787",
+  "suites/coding_v3/h4/prompt.md": "21c21159866c2ca07ecaceea1ef8ffa8f1eccb9b841576e95f2945cdd420e7f6",
+  "suites/coding_v3/h4/tests.py": "9a007e463305c89afd2e5fb2040574591aa078b988ad0d454fd4ecf2e67a4971",
+  "suites/coding_v3/h5/prompt.md": "49078dc45268ff8529b7afa10276d5533be5a906b572e6b1aa738b06992f606b",
+  "suites/coding_v3/h5/tests.py": "6394959f4883df637c2988da3f215dc3d8e3c8ce159c8cf6f606ef9f0e8eceea",
+  "suites/coding_v3/h6/prompt.md": "1f3c4faedbd58b637c589a3607eea2de92d8adadebf31c57293c5d951f32524d",
+  "suites/coding_v3/h6/tests.py": "463772d851b0ff787a8a0a3129d76f5101e2fa88c150a385e9f5426ea0c488f3",
+  "suites/math/POSTAMBLE.md": "d48480274b34253d4baf43fcd14baafccaccd61b1602677ef0f73d24ec2d8cac",
+  "suites/math/grade_math.py": "907902dbbb5f40196057dcb13716bb399792fbdeec142b5bc2f0ae35730cc891",
+  "suites/math/m1/answer.json": "9d4354b620b2775a561a187b31e5cdcee26902fb315b27e0de23834b78d4c7af",
+  "suites/math/m1/prompt.md": "33b457f29cd686ed5ede7d6d2ee524dcc327d9e3ae09010e05b7153caed5a26e",
+  "suites/math/m2/answer.json": "e6a9b09a29c48986ac55836e6861b8b93ae83e94136c321b0cd7919fbf2a12f8",
+  "suites/math/m2/prompt.md": "e72f1b63fcf5d8f47ba34a538b74cb9f5a3d4a12c1b0e8f4a540d093a32f242c",
+  "suites/math/m3/answer.json": "799d6cec718889030bda58bf4fd46885bfaff0ed0271ba50421e92f2c7a7a10e",
+  "suites/math/m3/prompt.md": "fa9e8de35b06d3c7b823f18c1bb4f8bd4b0e6747317b69dc983244689935bbdb"
+ },
+ "amendments": [
+  {
+   "at": "2026-10-18T16:44:11+09:00",
+   "file": "suites/coding_v3/h3/tests.py",
+   "old_sha256": "9d95cb74278e2056db7c3a3f41ef6f323dfd79db63c97bbaec39a496e8e77bae",
+   "new_sha256": "8aab0ae6393aaaa255fd28ddba6951a081bebf84bc9d7575c6fb8c40a6e52787",
+   "prompt_changed": false,
+   "reason": "隠しテストだけを直した（問題文は変えていない）。乱数のプログラムに、名前の誤りと型の誤りが両方あるもの（順序が問題文で決まっていない）と、if の直後に括弧なしの fun/let/if があるもの（問題文では構文の誤り。参照解が受け付けていた）が入っていたので、構文が正しく名前の誤りの無いプログラムに作り直した。記録は本文から採点し直した（流し直しは不要）。"
+  },
+  {
+   "at": "2026-10-18T16:45:39+09:00",
+   "file": "suites/coding_v3/h1/tests.py",
+   "old_sha256": "48e8c21a85b3c0d0fb9a1a3776abc020f0a5e9c20c218889269463da8d9288d4",
+   "new_sha256": "311e192acb9ae706292cc1b82bcf922d80088fc9fc8a218c6228d344d1cd52ef",
+   "prompt_changed": false,
+   "reason": "問題文にない入力（点を list で渡す）のケース case_input_may_be_lists を消した。問題文は変えていない"
+  },
+  {
+   "at": "2026-10-18T16:45:39+09:00",
+   "file": "suites/coding_v3/h2/tests.py",
+   "old_sha256": "ad0bda6ffb4a138b7daf910420c30f3ce1566cf171657ac77177d1fe35cfe203",
+   "new_sha256": "eb40dd709aed3f88bcc9fb32e9d5fb4387dba5c3e28d7a891638cf3fbd7f4c9c",
+   "prompt_changed": false,
+   "reason": "問題文にない入力（a と b を tuple で渡す）を list に直した（ケース名 case_result_is_list_of_tuples）。問題文は変えていない"
+  },
+  {
+   "at": "2026-10-18T18:07:29+09:00",
+   "file": "evallib/sandbox.py",
+   "prompt_changed": false,
+   "new_sha256": "3eba35ec22a982b74a1809ae1a83a4b54cad340197e46557eefac710a58e8f8c",
+   "reason": "採点のサンドボックスから RLIMIT_NPROC 0 を外した。スレッドも作れず、深い再帰のために大きなスタックのスレッドで動かす答え（問題文では禁じていない）が全ケース落ちたため。子プロセスは静的な走査と実行時の差し替えで止める。2026-10-18 の記録は全部採点し直す"
+  },
+  {
+   "at": "2026-10-18T20:11:25+09:00",
+   "file": "evallib/sandbox.py",
+   "prompt_changed": false,
+   "new_sha256": "e712bb6202ccc6042f8fc4126b5c286f07c6ea6680181035aa52653d3624e454",
+   "reason": "採点のサンドボックスのアドレス空間の上限を 1 GiB から 2 GiB にした。512 MiB のスタックのスレッドで深い再帰を動かす答え（h3 の Claude の答え 18 本など。問題文では禁じていない）が、1 GiB では malloc の arena の予約と配置の乱数しだいで「can't start new thread」になり、同じ答えの点が採点のたびに揺れた（opus-high h3-run1 を 20 回採点して 5 回が満点未満。2 GiB では 20 回とも満点）。2026-10-18 の記録は全部採点し直す"
+  }
+ ]
+}

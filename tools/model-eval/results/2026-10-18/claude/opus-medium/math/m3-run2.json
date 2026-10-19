@@ -1,0 +1,57 @@
+{
+  "model": "opus-medium",
+  "suite": "math",
+  "item": "m3",
+  "run": 2,
+  "content": "## 考え方\n\n立方体の中心を原点に置き、立方体を [-1/2,1/2]^3 とする。面までの最小距離が d 以下 ⇔ P が内側の立方体 Q = [-a,a]^3（a = 1/2 - d）の外側にある。\n球 B（半径 r = 1/2）の外側かつ Q の外側の確率は\n\np = 1 - (V(B) + V(Q) - V(B∩Q))\n\n(a) d = 1/4, a = 1/4。a·sqrt(3) < 1/2 なので Q は B に含まれる。V(B∩Q) = V(Q)。\np = 1 - pi/6\n\n(b) d = 1/10, a = 2/5。a < r < a·sqrt(2) なので、球は 6 面から互いに重ならない球冠として出る。\n球冠の高さ h = 0.1、体積 pi h^2 (3r - h)/3 = 7pi/1500。\nV(B∩Q) = pi/6 - 6·7pi/1500。p = 1 - 0.512 - 7pi/250 = 61/125 - 7pi/250\n\n(c) d = 3/20, a = 7/20。a·sqrt(2) < r < a·sqrt(3) なので、球冠どうしが辺の近くで重なる（3 つの重なりは無い）。\nV(B∩Q) = pi/6 - 6C + 12E。C は h = 3/20 の球冠 = 243pi/24000、E は {x>a, y>a} にある球の部分。\nE = 2[(2/3) r^3 atan(z0/r) - (a/3)(3r^2 - a^2) asin(z0/c) + a^2 z0/3]（c^2 = r^2 - a^2、z0^2 = r^2 - 2a^2）\n数値を入れると z0 = sqrt(2)/20, c = sqrt(51)/20 で\n12E = 2 atan(sqrt(2)/10) - (1757/1000) asin(sqrt(2/51)) + 49 sqrt(2)/1000 ≈ 0.0000228258\np = 1 - 0.343 - 243pi/4000 + 12E ≈ 0.466171\n\n答え(a): 1 - pi/6\n答え(b): 61/125 - 7*pi/250\n答え(c): 657/1000 - 243*pi/4000 + 2*atan(sqrt(2)/10) - (1757/1000)*asin(sqrt(2/51)) + 49*sqrt(2)/1000\n",
+  "wall_s": 64.151,
+  "usage": {
+    "subagent_tokens": 35267
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "61/125 - 7*pi/250",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "657/1000 - 243*pi/4000 + 2*atan(sqrt(2)/10) - (1757/1000)*asin(sqrt(2/51)) + 49*sqrt(2)/1000",
+        "value": 0.4661710704277855,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.190789277857109e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-medium/math/m3-run2.md",
+  "imported_at": "2026-10-18T19:22:30+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

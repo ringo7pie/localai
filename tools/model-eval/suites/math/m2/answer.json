@@ -1,0 +1,30 @@
+{
+  "item": "m2",
+  "parts": [
+    {
+      "key": "a",
+      "value": 1.0691680263507908,
+      "rel_tol": 1e-05,
+      "formula": "pi*r**2 + 4/3*pi*r**3 - (pi + 4/3)*r**3（r = 0.6）",
+      "monte_carlo": 1.0690052,
+      "monte_carlo_std_error": 0.00029
+    },
+    {
+      "key": "b",
+      "value": 0.07177441261846836,
+      "rel_tol": 1e-05,
+      "formula": "(V1/2 - ((pi + 4/3)*r**3 - pi*r**4/16)) / 体積",
+      "monte_carlo": 0.071752,
+      "monte_carlo_std_error": 8.3e-05
+    },
+    {
+      "key": "c",
+      "value": -0.023800656086705937,
+      "rel_tol": 1e-05,
+      "formula": "-(pi*r**4/16) / 体積",
+      "monte_carlo": -0.0236382,
+      "monte_carlo_std_error": 7.9e-05
+    }
+  ],
+  "note": "value は reference.py の answers()。monte_carlo は suites/math/verify_numeric.py（numpy、標本 4,000 万〜6,000 万）の検算。採点は相対誤差 rel_tol 以内で正解。"
+}

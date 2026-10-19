@@ -1,0 +1,57 @@
+{
+  "model": "opus-low",
+  "suite": "math",
+  "item": "m3",
+  "run": 2,
+  "content": "考え方: p(d) = 1 - (1-2d)^3 - [球の体積 - (球 ∩ 内側の立方体 [d,1-d]^3 の体積)]。内側の立方体の半辺を h = 1/2 - d とする。\n\n(a) h=1/4。h*sqrt(3) < 1/2 なので、内側の立方体は球の中にすっぽり入る。p = 1 - 1/8 - (pi/6 - 1/8) = 1 - pi/6。\n\n(b) h=0.4。h*sqrt(2) > 1/2 なので、球は面の外に 6 つの球冠（高さ 0.1）としてはみ出すだけ。球冠 1 つは pi*0.01*1.4/3。p = 1 - 0.512 - 0.028*pi = 61/125 - 7*pi/250。\n\n(c) h=0.35。h*sqrt(2) < 1/2 < h*sqrt(3) なので、球冠どうしが辺のところで重なる。球冠 6 つ（高さ 0.15）の合計は 0.06075*pi で、12 本の辺で重なった部分 W を戻して足す。W は級数展開で求めて W ≈ 1.90203e-6。\np = 1 - 0.343 - 0.06075*pi + 12W ≈ 0.466171。\n\n答え(a): 1 - pi/6\n答え(b): 61/125 - 7*pi/250\n答え(c): 0.466171\n",
+  "wall_s": 54.101,
+  "usage": {
+    "subagent_tokens": 33331
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "61/125 - 7*pi/250",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "0.466171",
+        "value": 0.466171,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.5107712600711135e-07
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-low/math/m3-run2.md",
+  "imported_at": "2026-10-18T19:58:41+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:37+09:00"
+}

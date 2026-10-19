@@ -1,0 +1,133 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 2,
+  "content": "```python\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n = len(a)\n    m = len(b)\n    rev_a = a[::-1]\n    rev_b = b[::-1]\n    off = m + 1\n    # far[k + off]: on diagonal k (x - y) of the reversed problem, the largest x\n    # whose distance from the reversed start is <= current d (-1 if none).\n    far = [-1] * (n + m + 3)\n    delta = n - m\n\n    x = 0\n    while x < n and x < m and rev_a[x] == rev_b[x]:\n        x += 1\n    far[off] = x\n    rows = [(0, [x])]\n    total = 0 if (delta == 0 and x == n) else -1\n    d = 0\n    while total < 0:\n        d += 1\n        lo = -d\n        if lo < -m:\n            lo += ((-m - lo + 1) // 2) * 2\n        hi = d\n        if hi > n:\n            hi -= ((hi - n + 1) // 2) * 2\n        for k in range(lo, hi + 1, 2):\n            idx = k + off\n            best = far[idx]\n            src = far[idx - 1]\n            if src >= 0:\n                if src < n:\n                    cand = src + 1\n                elif n >= 1:\n                    cand = n\n                else:\n                    cand = -1\n                if cand > best:\n                    best = cand\n            src = far[idx + 1]\n            if src >= 0:\n                if src - k <= m:\n                    cand = src\n                elif m >= 1:\n                    cand = m + k\n                else:\n                    cand = -1\n                if cand > best:\n                    best = cand\n            if best < 0:\n                continue\n            x = best\n            y = x - k\n            while x < n and y < m and rev_a[x] == rev_b[y]:\n                x += 1\n                y += 1\n            far[idx] = x\n        rows.append((lo, far[lo + off: hi + off + 1: 2]))\n        if (delta - d) % 2 == 0 and -d <= delta <= d and far[delta + off] == n:\n            total = d\n\n    def reachable(limit: int, diag: int, xr: int) -> bool:\n        if (diag - limit) % 2:\n            limit -= 1\n        if limit < 0:\n            return False\n        row_lo, vals = rows[limit]\n        pos = diag - row_lo\n        if pos < 0:\n            return False\n        pos //= 2\n        if pos >= len(vals):\n            return False\n        return vals[pos] >= xr\n\n    result = []\n    i = 0\n    j = 0\n    remain = total\n    while i < n or j < m:\n        if i < n and j < m and a[i] == b[j]:\n            result.append((\"=\", i, j))\n            i += 1\n            j += 1\n        elif i < n and (\n            j == m\n            or reachable(remain - 1, (n - i - 1) - (m - j), n - i - 1)\n        ):\n            result.append((\"-\", i))\n            i += 1\n            remain -= 1\n        else:\n            result.append((\"+\", j))\n            j += 1\n            remain -= 1\n    return result\n```\n",
+  "wall_s": 289.665,
+  "usage": {
+    "subagent_tokens": 58778
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.08,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h2-run2.md",
+  "imported_at": "2026-10-18T17:21:09+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:27+09:00"
+}

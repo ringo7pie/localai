@@ -1,0 +1,148 @@
+{
+  "model": "opus-low",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 3,
+  "content": "```python\ndef count_tilings(grid: list[str]) -> int:\n    if not isinstance(grid, list):\n        raise ValueError(\"grid must be a list\")\n    if len(grid) == 0:\n        return 1\n    width0 = None\n    for row in grid:\n        if not isinstance(row, str):\n            raise ValueError(\"row must be str\")\n        if width0 is None:\n            width0 = len(row)\n        elif len(row) != width0:\n            raise ValueError(\"rows differ in length\")\n        for ch in row:\n            if ch not in \".#\":\n                raise ValueError(\"bad character\")\n    rows = [list(row) for row in grid]\n    height = len(rows)\n    width = width0\n    if width == 0:\n        return 1\n    if width > height:\n        rows = [[rows[r][c] for r in range(height)] for c in range(width)]\n        height, width = width, height\n    blocked = [[ch == \"#\" for ch in row] for row in rows]\n    if not any(not b for row in blocked for b in row):\n        return 1\n\n    def free(r, c, mask, off):\n        if r < 0 or r >= height or c < 0 or c >= width:\n            return False\n        if blocked[r][c]:\n            return False\n        return not (mask >> off) & 1\n\n    states = {0: 1}\n    for row_idx in range(height):\n        for col in range(width):\n            new_states = {}\n            for mask, cnt in states.items():\n                if blocked[row_idx][col] or (mask & 1):\n                    nm = mask >> 1\n                    new_states[nm] = new_states.get(nm, 0) + cnt\n                    continue\n                r1 = free(row_idx, col + 1, mask, 1)\n                dn = free(row_idx + 1, col, mask, width)\n                dl = free(row_idx + 1, col - 1, mask, width - 1)\n                dr = free(row_idx + 1, col + 1, mask, width + 1)\n                cands = []\n                if r1:\n                    cands.append(1 << 1)\n                if dn:\n                    cands.append(1 << width)\n                if r1 and dn:\n                    cands.append((1 << 1) | (1 << width))\n                if r1 and dr:\n                    cands.append((1 << 1) | (1 << (width + 1)))\n                if dn and dr:\n                    cands.append((1 << width) | (1 << (width + 1)))\n                if dn and dl:\n                    cands.append((1 << width) | (1 << (width - 1)))\n                for add in cands:\n                    nm = (mask | add) >> 1\n                    new_states[nm] = new_states.get(nm, 0) + cnt\n            states = new_states\n    return states.get(0, 0)\n```\n",
+  "wall_s": 18.902,
+  "usage": {
+    "subagent_tokens": 30577
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.33,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-low/coding_v3/h6-run3.md",
+  "imported_at": "2026-10-18T20:06:15+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:37+09:00"
+}

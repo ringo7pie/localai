@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-low",
+  "suite": "math",
+  "item": "m2",
+  "run": 2,
+  "content": "考え方: z を固定して xy 断面で考える。断面の半径 rho = sqrt(r^2 - z^2)。A を原点に取り直すと、V1 と V2 の断面の共通部分は、\n第2象限が正方形 rho x rho、他の 3 象限は 1/4 円となる。面積は rho^2 (1 + 3pi/4)。\nu = x-1 のモーメントは ∫u = -rho^3/6、∫y = +rho^3/6。z で積分する（∫rho^2 dz = 4r^3/3、∫rho^3 dz = 3pi r^4/8）。\n\nV1 の体積 = pi r^2 + 4 pi r^3/3、V1 のモーメントは x = 1/2 に関して対称。\n共通部分の体積 = 4r^3/3 + pi r^3、∫x = 体積 - pi r^4/16、∫y = pi r^4/16。\nr = 0.6 を代入すると、\nW の体積 = 0.432 pi - 0.288 ≈ 1.069168\n∫x dV = 0.1161 pi - 0.288 ≈ 0.0767389\n∫y dV = -0.0081 pi ≈ -0.0254469\n\n答え(a): 0.432*pi - 0.288\n答え(b): (0.1161*pi - 0.288)/(0.432*pi - 0.288)\n答え(c): -0.0081*pi/(0.432*pi - 0.288)\n\n数値: (a) 1.069168, (b) 0.071774, (c) -0.0238007\n",
+  "wall_s": 28.558,
+  "usage": {
+    "subagent_tokens": 32051
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(0.1161*pi - 0.288)/(0.432*pi - 0.288)",
+        "value": 0.07177441261846827,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.1601171477293466e-15
+      },
+      {
+        "key": "c",
+        "text": "-0.0081*pi/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-low/math/m2-run2.md",
+  "imported_at": "2026-10-18T19:56:42+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:52+09:00"
+}

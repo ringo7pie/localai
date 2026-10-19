@@ -1,0 +1,138 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h5",
+  "run": 3,
+  "content": "```python\nfrom collections import deque\n\n\ndef _check_alphabet(alphabet):\n    if not isinstance(alphabet, str):\n        raise ValueError(\"alphabet must be a string\")\n    if len(alphabet) == 0:\n        raise ValueError(\"alphabet must not be empty\")\n    if len(set(alphabet)) != len(alphabet):\n        raise ValueError(\"alphabet must not contain duplicates\")\n\n\nclass _NfaBuilder:\n    def __init__(self, pattern, alphabet):\n        self.pattern = pattern\n        self.alphabet = alphabet\n        self.full_mask = (1 << len(alphabet)) - 1\n        self.position = 0\n        self.epsilon = []\n        self.edges = []\n        self.letter_index = {ch: index for index, ch in enumerate(alphabet)}\n\n    def new_state(self):\n        self.epsilon.append([])\n        self.edges.append([])\n        return len(self.epsilon) - 1\n\n    def link(self, source, target):\n        self.epsilon[source].append(target)\n\n    def mask_fragment(self, mask):\n        start = self.new_state()\n        end = self.new_state()\n        if mask:\n            self.edges[start].append((mask, end))\n        return start, end\n\n    def literal_mask(self, ch):\n        index = self.letter_index.get(ch)\n        if index is None:\n            return 0\n        return 1 << index\n\n    def parse(self):\n        fragment = self.parse_alternation()\n        if self.position != len(self.pattern):\n            raise ValueError(\"unbalanced )\")\n        return fragment\n\n    def parse_alternation(self):\n        branches = [self.parse_concatenation()]\n        while (self.position < len(self.pattern)\n               and self.pattern[self.position] == \"|\"):\n            self.position += 1\n            branches.append(self.parse_concatenation())\n        if len(branches) == 1:\n            return branches[0]\n        start = self.new_state()\n        end = self.new_state()\n        for branch_start, branch_end in branches:\n            self.link(start, branch_start)\n            self.link(branch_end, end)\n        return start, end\n\n    def parse_concatenation(self):\n        fragments = []\n        while (self.position < len(self.pattern)\n               and self.pattern[self.position] not in \"|)\"):\n            fragments.append(self.parse_quantified())\n        if not fragments:\n            state = self.new_state()\n            return state, state\n        for index in range(len(fragments) - 1):\n            self.link(fragments[index][1], fragments[index + 1][0])\n        return fragments[0][0], fragments[-1][1]\n\n    def parse_quantified(self):\n        fragment = self.parse_atom()\n        pattern = self.pattern\n        if self.position < len(pattern) and pattern[self.position] in \"*+?\":\n            operator = pattern[self.position]\n            self.position += 1\n            if self.position < len(pattern) and pattern[self.position] in \"*+?\":\n                raise ValueError(\"repeated quantifier\")\n            inner_start, inner_end = fragment\n            start = self.new_state()\n            end = self.new_state()\n            self.link(start, inner_start)\n            self.link(inner_end, end)\n            if operator in \"*?\":\n                self.link(start, end)\n            if operator in \"*+\":\n                self.link(inner_end, inner_start)\n            fragment = (start, end)\n        return fragment\n\n    def parse_atom(self):\n        pattern = self.pattern\n        length = len(pattern)\n        char = pattern[self.position]\n        if char in \"*+?\":\n            raise ValueError(\"nothing to repeat\")\n        if char == \"(\":\n            self.position += 1\n            fragment = self.parse_alternation()\n            if self.position >= length or pattern[self.position] != \")\":\n                raise ValueError(\"unbalanced (\")\n            self.position += 1\n            return fragment\n        if char == \"[\":\n            return self.mask_fragment(self.parse_class())\n        if char == \".\":\n            self.position += 1\n            return self.mask_fragment(self.full_mask)\n        if char == \"\\\\\":\n            if self.position + 1 >= length:\n                raise ValueError(\"trailing backslash\")\n            escaped = pattern[self.position + 1]\n            self.position += 2\n            return self.mask_fragment(self.literal_mask(escaped))\n        self.position += 1\n        return self.mask_fragment(self.literal_mask(char))\n\n    def parse_class(self):\n        pattern = self.pattern\n        length = len(pattern)\n        position = self.position + 1\n        negate = False\n        if position < length and pattern[position] == \"^\":\n            negate = True\n            position += 1\n        ranges = []\n        while True:\n            if position >= length:\n                raise ValueError(\"unclosed class\")\n            char = pattern[position]\n            if char == \"]\":\n                position += 1\n                break\n            if char == \"\\\\\":\n                if position + 1 >= length:\n                    raise ValueError(\"unclosed class\")\n                low = pattern[position + 1]\n                position += 2\n            else:\n                low = char\n                position += 1\n            if (position + 1 < length and pattern[position] == \"-\"\n                    and pattern[position + 1] != \"]\"):\n                position += 1\n                char = pattern[position]\n                if char == \"\\\\\":\n                    if position + 1 >= length:\n                        raise ValueError(\"unclosed class\")\n                    high = pattern[position + 1]\n                    position += 2\n                else:\n                    high = char\n                    position += 1\n                if low > high:\n                    raise ValueError(\"bad range\")\n                ranges.append((low, high))\n            else:\n                ranges.append((low, low))\n        if not ranges:\n            raise ValueError(\"empty class\")\n        self.position = position\n        mask = 0\n        for index, ch in enumerate(self.alphabet):\n            for low, high in ranges:\n                if low <= ch <= high:\n                    mask |= 1 << index\n                    break\n        if negate:\n            mask = self.full_mask & ~mask\n        return mask\n\n\ndef _build_dfa(pattern, alphabet):\n    _check_alphabet(alphabet)\n    builder = _NfaBuilder(pattern, alphabet)\n    start, accept = builder.parse()\n    letter_count = len(alphabet)\n    state_count = len(builder.epsilon)\n\n    important = 1 << accept\n    for state in range(state_count):\n        if builder.edges[state]:\n            important |= 1 << state\n\n    kept = []\n    for state in range(state_count):\n        seen = 1 << state\n        stack = [state]\n        while stack:\n            current = stack.pop()\n            for following in builder.epsilon[current]:\n                if not (seen >> following) & 1:\n                    seen |= 1 << following\n                    stack.append(following)\n        kept.append(seen & important)\n\n    moves = [[0] * state_count for _ in range(letter_count)]\n    for state in range(state_count):\n        for mask, target in builder.edges[state]:\n            for letter in range(letter_count):\n                if (mask >> letter) & 1:\n                    moves[letter][state] |= kept[target]\n\n    start_mask = kept[start]\n    index_of = {start_mask: 0}\n    masks = [start_mask]\n    delta = []\n    cursor = 0\n    while cursor < len(masks):\n        current_mask = masks[cursor]\n        row = []\n        for letter in range(letter_count):\n            letter_moves = moves[letter]\n            following_mask = 0\n            remaining = current_mask\n            while remaining:\n                lowest = remaining & -remaining\n                following_mask |= letter_moves[lowest.bit_length() - 1]\n                remaining ^= lowest\n            following_index = index_of.get(following_mask)\n            if following_index is None:\n                following_index = len(masks)\n                index_of[following_mask] = following_index\n                masks.append(following_mask)\n            row.append(following_index)\n        delta.append(row)\n        cursor += 1\n    accepting = [bool((mask >> accept) & 1) for mask in masks]\n    return delta, accepting, letter_count\n\n\ndef _minimize(delta, accepting, letter_count):\n    state_count = len(delta)\n    accepting_states = [s for s in range(state_count) if accepting[s]]\n    rejecting_states = [s for s in range(state_count) if not accepting[s]]\n    if not accepting_states or not rejecting_states:\n        return [[0] * letter_count], [accepting[0]], 0\n\n    members = [accepting_states, rejecting_states]\n    block_of = [0] * state_count\n    for state in rejecting_states:\n        block_of[state] = 1\n\n    inverse = [[[] for _ in range(state_count)] for _ in range(letter_count)]\n    for state in range(state_count):\n        row = delta[state]\n        for letter in range(letter_count):\n            inverse[letter][row[letter]].append(state)\n\n    work = []\n    queued = set()\n    smaller = 0 if len(members[0]) <= len(members[1]) else 1\n    for letter in range(letter_count):\n        work.append((smaller, letter))\n        queued.add((smaller, letter))\n\n    while work:\n        block_id, letter = work.pop()\n        queued.discard((block_id, letter))\n        touched = {}\n        letter_inverse = inverse[letter]\n        for target in members[block_id]:\n            for source in letter_inverse[target]:\n                touched.setdefault(block_of[source], []).append(source)\n        for other, hit in touched.items():\n            if len(hit) == len(members[other]):\n                continue\n            hit_set = set(hit)\n            rest = [s for s in members[other] if s not in hit_set]\n            new_id = len(members)\n            members[other] = rest\n            members.append(hit)\n            for state in hit:\n                block_of[state] = new_id\n            for next_letter in range(letter_count):\n                if (other, next_letter) in queued:\n                    work.append((new_id, next_letter))\n                    queued.add((new_id, next_letter))\n                else:\n                    chosen = other if len(rest) <= len(hit) else new_id\n                    work.append((chosen, next_letter))\n                    queued.add((chosen, next_letter))\n\n    new_delta = []\n    new_accepting = []\n    for block in members:\n        representative = block[0]\n        new_delta.append([block_of[delta[representative][letter]]\n                          for letter in range(letter_count)])\n        new_accepting.append(accepting[representative])\n    return new_delta, new_accepting, block_of[0]\n\n\ndef _minimal_dfa(pattern, alphabet):\n    delta, accepting, letter_count = _build_dfa(pattern, alphabet)\n    return _minimize(delta, accepting, letter_count)\n\n\ndef min_dfa_size(pattern: str, alphabet: str) -> int:\n    delta, _accepting, _start = _minimal_dfa(pattern, alphabet)\n    return len(delta)\n\n\ndef distinguish(p1: str, p2: str, alphabet: str) -> str | None:\n    _check_alphabet(alphabet)\n    delta1, accepting1, start1 = _minimal_dfa(p1, alphabet)\n    delta2, accepting2, start2 = _minimal_dfa(p2, alphabet)\n    letter_count = len(alphabet)\n    size2 = len(delta2)\n\n    start_key = start1 * size2 + start2\n    parents = {start_key: None}\n    queue = deque([(start1, start2)])\n    while queue:\n        first, second = queue.popleft()\n        key = first * size2 + second\n        if accepting1[first] != accepting2[second]:\n            letters = []\n            while parents[key] is not None:\n                key, letter = parents[key]\n                letters.append(alphabet[letter])\n            letters.reverse()\n            return \"\".join(letters)\n        row1 = delta1[first]\n        row2 = delta2[second]\n        for letter in range(letter_count):\n            next_first = row1[letter]\n            next_second = row2[letter]\n            next_key = next_first * size2 + next_second\n            if next_key not in parents:\n                parents[next_key] = (key, letter)\n                queue.append((next_first, next_second))\n    return None\n```\n",
+  "wall_s": 130.516,
+  "usage": {
+    "subagent_tokens": 46925
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 19,
+    "total": 19,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_alphabets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_language_and_empty_string",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_dot_and_classes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_specials_are_ordinary_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_quantifiers_and_groups",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_alternation_with_empty_branches",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_counting_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_string_can_distinguish",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shortest_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_follow_alphabet_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_minimal_dfa",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_larger_alphabet",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_shortest_difference",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_equal_large_languages",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.37,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h5-run3.md",
+  "imported_at": "2026-10-18T17:51:51+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:43+09:00"
+}

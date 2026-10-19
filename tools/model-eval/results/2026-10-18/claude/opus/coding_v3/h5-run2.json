@@ -1,0 +1,138 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h5",
+  "run": 2,
+  "content": "```python\nfrom collections import deque\n\n_QUANTIFIERS = {\"*\": \"star\", \"+\": \"plus\", \"?\": \"opt\"}\n\n\ndef _check_alphabet(alphabet):\n    if not isinstance(alphabet, str) or len(alphabet) == 0:\n        raise ValueError(\"alphabet must be a non-empty string\")\n    if len(set(alphabet)) != len(alphabet):\n        raise ValueError(\"alphabet has duplicate characters\")\n\n\nclass _Parser:\n    def __init__(self, pattern, alphabet):\n        self.text = pattern\n        self.length = len(pattern)\n        self.pos = 0\n        self.alphabet = alphabet\n        self.index_of = {char: idx for idx, char in enumerate(alphabet)}\n        self.full_mask = (1 << len(alphabet)) - 1\n\n    def parse(self):\n        node = self._parse_alt()\n        if self.pos != self.length:\n            raise ValueError(\"unbalanced parenthesis\")\n        return node\n\n    def _parse_alt(self):\n        branches = [self._parse_concat()]\n        while self.pos < self.length and self.text[self.pos] == \"|\":\n            self.pos += 1\n            branches.append(self._parse_concat())\n        if len(branches) == 1:\n            return branches[0]\n        return (\"alt\", branches)\n\n    def _parse_concat(self):\n        items = []\n        while self.pos < self.length:\n            char = self.text[self.pos]\n            if char == \"|\" or char == \")\":\n                break\n            if char in \"*+?\":\n                raise ValueError(\"nothing to repeat\")\n            atom = self._parse_atom()\n            if self.pos < self.length and self.text[self.pos] in \"*+?\":\n                quant = self.text[self.pos]\n                self.pos += 1\n                if self.pos < self.length and self.text[self.pos] in \"*+?\":\n                    raise ValueError(\"multiple repeat\")\n                atom = (_QUANTIFIERS[quant], atom)\n            items.append(atom)\n        if not items:\n            return (\"empty\",)\n        if len(items) == 1:\n            return items[0]\n        return (\"cat\", items)\n\n    def _literal(self, char):\n        idx = self.index_of.get(char)\n        return (\"leaf\", 0 if idx is None else 1 << idx)\n\n    def _parse_atom(self):\n        char = self.text[self.pos]\n        if char == \"(\":\n            self.pos += 1\n            node = self._parse_alt()\n            if self.pos >= self.length or self.text[self.pos] != \")\":\n                raise ValueError(\"missing )\")\n            self.pos += 1\n            return node\n        if char == \"[\":\n            return self._parse_class()\n        if char == \".\":\n            self.pos += 1\n            return (\"leaf\", self.full_mask)\n        if char == \"\\\\\":\n            if self.pos + 1 >= self.length:\n                raise ValueError(\"trailing backslash\")\n            escaped = self.text[self.pos + 1]\n            self.pos += 2\n            return self._literal(escaped)\n        self.pos += 1\n        return self._literal(char)\n\n    def _parse_class(self):\n        text = self.text\n        length = self.length\n        cursor = self.pos + 1\n        negate = False\n        if cursor < length and text[cursor] == \"^\":\n            negate = True\n            cursor += 1\n        ranges = []\n        while True:\n            if cursor >= length:\n                raise ValueError(\"unterminated character class\")\n            char = text[cursor]\n            if char == \"]\":\n                cursor += 1\n                break\n            if char == \"\\\\\":\n                if cursor + 1 >= length:\n                    raise ValueError(\"unterminated character class\")\n                low_char = text[cursor + 1]\n                cursor += 2\n            else:\n                low_char = char\n                cursor += 1\n            if cursor + 1 < length and text[cursor] == \"-\" and text[cursor + 1] != \"]\":\n                cursor += 1\n                if text[cursor] == \"\\\\\":\n                    if cursor + 1 >= length:\n                        raise ValueError(\"unterminated character class\")\n                    high_char = text[cursor + 1]\n                    cursor += 2\n                else:\n                    high_char = text[cursor]\n                    cursor += 1\n                if ord(low_char) > ord(high_char):\n                    raise ValueError(\"bad character range\")\n                ranges.append((ord(low_char), ord(high_char)))\n            else:\n                ranges.append((ord(low_char), ord(low_char)))\n        if not ranges:\n            raise ValueError(\"empty character class\")\n        self.pos = cursor\n        mask = 0\n        for idx, symbol in enumerate(self.alphabet):\n            code = ord(symbol)\n            inside = any(low <= code <= high for low, high in ranges)\n            if inside != negate:\n                mask |= 1 << idx\n        return (\"leaf\", mask)\n\n\ndef _add_follow(follow, last_mask, first_mask):\n    if not first_mask:\n        return\n    while last_mask:\n        low_bit = last_mask & -last_mask\n        follow[low_bit.bit_length() - 1] |= first_mask\n        last_mask ^= low_bit\n\n\ndef _analyze(node, leaf_masks, follow):\n    kind = node[0]\n    if kind == \"leaf\":\n        position = len(leaf_masks)\n        leaf_masks.append(node[1])\n        follow.append(0)\n        bit = 1 << position\n        return False, bit, bit\n    if kind == \"empty\":\n        return True, 0, 0\n    if kind == \"cat\":\n        nullable, first, last = True, 0, 0\n        for child in node[1]:\n            child_null, child_first, child_last = _analyze(child, leaf_masks, follow)\n            _add_follow(follow, last, child_first)\n            if nullable:\n                first |= child_first\n            if child_null:\n                last |= child_last\n            else:\n                last = child_last\n            nullable = nullable and child_null\n        return nullable, first, last\n    if kind == \"alt\":\n        nullable, first, last = False, 0, 0\n        for child in node[1]:\n            child_null, child_first, child_last = _analyze(child, leaf_masks, follow)\n            nullable = nullable or child_null\n            first |= child_first\n            last |= child_last\n        return nullable, first, last\n    child_null, child_first, child_last = _analyze(node[1], leaf_masks, follow)\n    if kind == \"star\":\n        _add_follow(follow, child_last, child_first)\n        return True, child_first, child_last\n    if kind == \"plus\":\n        _add_follow(follow, child_last, child_first)\n        return child_null, child_first, child_last\n    return True, child_first, child_last\n\n\ndef _build_dfa(pattern, alphabet):\n    \"\"\"Glushkov 自動機械を部分集合構成した完全 DFA（到達可能な状態だけ）。状態 0 が開始。\"\"\"\n    tree = _Parser(pattern, alphabet).parse()\n    leaf_masks = [0]\n    follow = [0]\n    nullable, first, last = _analyze(tree, leaf_masks, follow)\n    follow[0] = first\n    accept_mask = last | (1 if nullable else 0)\n    position_count = len(follow)\n    symbol_count = len(alphabet)\n\n    char_masks = [0] * symbol_count\n    for position in range(1, position_count):\n        leaf_mask = leaf_masks[position]\n        for symbol in range(symbol_count):\n            if (leaf_mask >> symbol) & 1:\n                char_masks[symbol] |= 1 << position\n\n    tables = []\n    for chunk in range((position_count + 7) // 8):\n        table = [0] * 256\n        base = chunk * 8\n        for byte in range(1, 256):\n            low_bit = byte & -byte\n            position = base + low_bit.bit_length() - 1\n            extra = follow[position] if position < position_count else 0\n            table[byte] = table[byte ^ low_bit] | extra\n        tables.append(table)\n\n    state_ids = {1: 0}\n    order = [1]\n    transitions = []\n    cursor = 0\n    while cursor < len(order):\n        rest = order[cursor]\n        cursor += 1\n        reach = 0\n        for table in tables:\n            if not rest:\n                break\n            reach |= table[rest & 255]\n            rest >>= 8\n        row = []\n        for char_mask in char_masks:\n            target = reach & char_mask\n            target_id = state_ids.get(target)\n            if target_id is None:\n                target_id = len(order)\n                state_ids[target] = target_id\n                order.append(target)\n            row.append(target_id)\n        transitions.append(row)\n    accepting = [bool(state & accept_mask) for state in order]\n    return transitions, accepting\n\n\ndef _minimize(transitions, accepting, symbol_count):\n    \"\"\"Hopcroft のアルゴリズム。(各状態のブロック番号, ブロック数) を返す。\"\"\"\n    state_count = len(transitions)\n    inverse = [[[] for _ in range(state_count)] for _ in range(symbol_count)]\n    for state, row in enumerate(transitions):\n        for symbol in range(symbol_count):\n            inverse[symbol][row[symbol]].append(state)\n\n    blocks = []\n    block_of = [0] * state_count\n    accept_group = [state for state in range(state_count) if accepting[state]]\n    reject_group = [state for state in range(state_count) if not accepting[state]]\n    for group in (accept_group, reject_group):\n        if group:\n            block_id = len(blocks)\n            blocks.append(set(group))\n            for state in group:\n                block_of[state] = block_id\n\n    work = list(range(len(blocks)))\n    in_work = [True] * len(blocks)\n    while work:\n        splitter_id = work.pop()\n        in_work[splitter_id] = False\n        splitter = list(blocks[splitter_id])\n        for symbol in range(symbol_count):\n            inverse_symbol = inverse[symbol]\n            touched = {}\n            for target in splitter:\n                for source in inverse_symbol[target]:\n                    block_id = block_of[source]\n                    members = touched.get(block_id)\n                    if members is None:\n                        touched[block_id] = [source]\n                    else:\n                        members.append(source)\n            for block_id, members in touched.items():\n                block = blocks[block_id]\n                if len(members) == len(block):\n                    continue\n                new_id = len(blocks)\n                new_block = set(members)\n                block.difference_update(new_block)\n                blocks.append(new_block)\n                for state in members:\n                    block_of[state] = new_id\n                if in_work[block_id]:\n                    work.append(new_id)\n                    in_work.append(True)\n                elif len(new_block) <= len(block):\n                    work.append(new_id)\n                    in_work.append(True)\n                else:\n                    in_work.append(False)\n                    work.append(block_id)\n                    in_work[block_id] = True\n    return block_of, len(blocks)\n\n\ndef _minimal_dfa(pattern, alphabet):\n    transitions, accepting = _build_dfa(pattern, alphabet)\n    symbol_count = len(alphabet)\n    block_of, block_count = _minimize(transitions, accepting, symbol_count)\n    new_transitions = [None] * block_count\n    new_accepting = [False] * block_count\n    for state, row in enumerate(transitions):\n        block_id = block_of[state]\n        if new_transitions[block_id] is None:\n            new_transitions[block_id] = [block_of[target] for target in row]\n            new_accepting[block_id] = accepting[state]\n    return new_transitions, new_accepting, block_of[0]\n\n\ndef min_dfa_size(pattern: str, alphabet: str) -> int:\n    _check_alphabet(alphabet)\n    transitions, accepting = _build_dfa(pattern, alphabet)\n    _, block_count = _minimize(transitions, accepting, len(alphabet))\n    return block_count\n\n\ndef distinguish(p1: str, p2: str, alphabet: str) -> str | None:\n    _check_alphabet(alphabet)\n    trans_one, accept_one, start_one = _minimal_dfa(p1, alphabet)\n    trans_two, accept_two, start_two = _minimal_dfa(p2, alphabet)\n    symbol_count = len(alphabet)\n    width = len(trans_two)\n    start_key = start_one * width + start_two\n    parent = {start_key: None}\n    queue = deque([start_key])\n    while queue:\n        key = queue.popleft()\n        state_one, state_two = divmod(key, width)\n        if accept_one[state_one] != accept_two[state_two]:\n            chars = []\n            while parent[key] is not None:\n                previous, symbol = parent[key]\n                chars.append(alphabet[symbol])\n                key = previous\n            return \"\".join(reversed(chars))\n        row_one = trans_one[state_one]\n        row_two = trans_two[state_two]\n        for symbol in range(symbol_count):\n            next_key = row_one[symbol] * width + row_two[symbol]\n            if next_key not in parent:\n                parent[next_key] = (key, symbol)\n                queue.append(next_key)\n    return None\n```\n",
+  "wall_s": 193.861,
+  "usage": {
+    "subagent_tokens": 50799
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 19,
+    "total": 19,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_alphabets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_language_and_empty_string",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_dot_and_classes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_specials_are_ordinary_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_quantifiers_and_groups",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_alternation_with_empty_branches",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_counting_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_string_can_distinguish",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shortest_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_follow_alphabet_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_minimal_dfa",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_larger_alphabet",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_shortest_difference",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_equal_large_languages",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.12,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h5-run2.md",
+  "imported_at": "2026-10-18T17:24:45+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:28+09:00"
+}

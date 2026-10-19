@@ -1,0 +1,57 @@
+{
+  "model": "opus",
+  "suite": "math",
+  "item": "m3",
+  "run": 3,
+  "content": "## 問題 M3 の解答\n\n### 考え方\n\n立方体の中心を原点にとり、立方体を [-1/2, 1/2]^3 とする。立方体の体積は 1 なので、確率は体積と同じになる。\n\n- 面までの最小距離は 1/2 - max(|x|,|y|,|z|)。これが d 以下になる条件は max(|x|,|y|,|z|) >= a（a = 1/2 - d）。つまり P は内側の立方体 Q_a = [-a, a]^3 の外にある。\n- 内接球 B の半径は R = 1/2。\n\nよって次の式が成り立つ。\n\np(d) = Vol(B の外) - Vol(Q_a ∩ B の外) = (1 - pi/6) - [(2a)^3 - Vol(Q_a ∩ B)]\n\nB から Q_a の外を除く部分は、包除原理（inclusion-exclusion）で次のように数える。\n\n- C: 1 つの面の外側にある球冠（高さ h = R - a）の体積。C = pi h^2 (R - h/3)\n- E: 隣り合う 2 つの面の外側の共通部分 {x>a, y>a, r<R} の体積。2a^2 < R^2 のときだけ正になる\n- T: 3 つの面の外側の共通部分。3a^2 < R^2 のときだけ正になる\n\nVol(Q_a ∩ B) = pi/6 - 6C + 12E - 8T なので、次の式になる。\n\np(d) = 1 - (2a)^3 - 6C + 12E - 8T\n\nただし Q_a が B に丸ごと含まれる（sqrt(3) a <= R）ときは、Q_a ∩ B の外 が空になり、p = 1 - pi/6 となる。\n\n**E の閉じた式**（z で積分し、部分積分と置換 z = c sinθ を使って求めた）:\n\nE = (2/3) a^2 z0 - (2/3) a (3R^2 - a^2) atan(z0/a) + (4/3) R^3 atan(z0/R)、ここで z0 = sqrt(R^2 - 2a^2)\n\n検算: a = 0 では pi R^3 / 3（球の 1/4）になり、z0 = 0 では 0 になる。a = 0 での微分も -pi R^2 で合う。\n\n### (a) d = 1/4\n\na = 1/4 で、sqrt(3)/4 ≈ 0.433 < 1/2。Q_a は球の内側に丸ごと入る。\n\np = 1 - pi/6 ≈ 0.476401224\n\n### (b) d = 1/10\n\na = 2/5 で、2a^2 = 0.32 > 1/4。球冠どうしは重ならないので E = T = 0。h = 1/10 なので C = pi (1/100)(1/2 - 1/30) = 7pi/1500。\n\np = 1 - 0.512 - 6·7pi/1500 = 61/125 - 7pi/250 ≈ 0.400035406\n\n### (c) d = 3/20\n\na = 7/20 で、2a^2 = 0.245 < 0.25 < 3a^2 なので、E > 0、T = 0。\n\n- (2a)^3 = 0.343\n- h = 0.15 なので C = pi·0.0225·0.45 = 81pi/8000、6C = 243pi/4000\n- z0 = sqrt(1/4 - 98/400) = sqrt(2)/20、z0/a = sqrt(2)/7、z0/R = sqrt(2)/10\n- E = [49 sqrt(2) - 1757 atan(sqrt(2)/7) + 2000 atan(sqrt(2)/10)] / 12000 ≈ 1.90201e-6\n\np = 657/1000 - 243pi/4000 + [49 sqrt(2) - 1757 atan(sqrt(2)/7) + 2000 atan(sqrt(2)/10)]/1000 ≈ 0.466171070\n\n答え(a): 1 - pi/6\n答え(b): 61/125 - 7*pi/250\n答え(c): 657/1000 - 243*pi/4000 + (49*sqrt(2) - 1757*atan(sqrt(2)/7) + 2000*atan(sqrt(2)/10))/1000\n",
+  "wall_s": 122.556,
+  "usage": {
+    "subagent_tokens": 40950
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "61/125 - 7*pi/250",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "657/1000 - 243*pi/4000 + (49*sqrt(2) - 1757*atan(sqrt(2)/7) + 2000*atan(sqrt(2)/10))/1000",
+        "value": 0.46617107042778544,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 2.381578555714218e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus/math/m3-run3.md",
+  "imported_at": "2026-10-18T17:45:29+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:28+09:00"
+}

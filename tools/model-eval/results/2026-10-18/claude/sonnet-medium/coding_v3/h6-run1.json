@@ -1,0 +1,148 @@
+{
+  "model": "sonnet-medium",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 1,
+  "content": "```python\ndef count_tilings(grid: list[str]) -> int:\n    rows = len(grid)\n    if rows == 0:\n        return 1\n    cols = len(grid[0])\n    for row in grid:\n        if len(row) != cols:\n            raise ValueError(\"rows have different lengths\")\n        for ch in row:\n            if ch != \".\" and ch != \"#\":\n                raise ValueError(\"invalid character\")\n    if cols == 0:\n        return 1\n\n    cells = [[ch == \".\" for ch in row] for row in grid]\n    if rows < cols:\n        cells = [[cells[r][c] for r in range(rows)] for c in range(cols)]\n        rows, cols = cols, rows\n    # now cols <= rows (cols is the smaller dimension)\n\n    # placements anchored at the first cell (row-major order) of the piece\n    placements = [\n        [(0, 0), (0, 1)],\n        [(0, 0), (1, 0)],\n        [(0, 0), (0, 1), (1, 0)],\n        [(0, 0), (0, 1), (1, 1)],\n        [(0, 0), (1, 0), (1, 1)],\n        [(0, 0), (1, -1), (1, 0)],\n    ]\n\n    dp = {0: 1}\n    for r in range(rows):\n        for c in range(cols):\n            free = cells[r][c]\n            valid = []\n            if free:\n                for piece in placements:\n                    ok = True\n                    bits = 0\n                    for dr, dc in piece:\n                        rr = r + dr\n                        cc = c + dc\n                        if rr >= rows or cc < 0 or cc >= cols or not cells[rr][cc]:\n                            ok = False\n                            break\n                        bits |= 1 << (dr * cols + dc)\n                    if ok:\n                        valid.append(bits)\n            new_dp = {}\n            get = new_dp.get\n            for mask, ways in dp.items():\n                if mask & 1:\n                    key = mask >> 1\n                    new_dp[key] = get(key, 0) + ways\n                elif not free:\n                    key = mask >> 1\n                    new_dp[key] = get(key, 0) + ways\n                else:\n                    for bits in valid:\n                        if mask & bits:\n                            continue\n                        key = (mask | bits) >> 1\n                        new_dp[key] = get(key, 0) + ways\n            dp = new_dp\n            if not dp:\n                return 0\n    return dp.get(0, 0)\n```\n",
+  "wall_s": 19.783,
+  "usage": {
+    "subagent_tokens": 31234
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.19,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-medium/coding_v3/h6-run1.md",
+  "imported_at": "2026-10-18T19:05:55+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

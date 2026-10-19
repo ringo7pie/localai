@@ -1,0 +1,57 @@
+{
+  "model": "opus-low",
+  "suite": "math",
+  "item": "m2",
+  "run": 2,
+  "content": "考え方: a=x-1, b=y とし、高さ z の断面（s^2=r^2-z^2）で V1∩V2 を見ると、正方形 s^2 と四分円 3 つ（各 πs^2/4）になる。\n交わりの体積 I=(4/3+π)r^3、V1 の体積 πr^2+4πr^3/3 → W = 0.432π - 0.288。\nモーメント: V1 の x モーメント 0.324π、交わりの a モーメント -πr^4/16、b モーメント πr^4/16。\nMx(W) = 0.324π - (I - 0.0081π) = 0.1161π - 0.288、My(W) = -0.0081π。\n\n答え(a): 0.432*pi - 0.288\n答え(b): (0.1161*pi - 0.288)/(0.432*pi - 0.288)\n答え(c): -0.0081*pi/(0.432*pi - 0.288)\n",
+  "wall_s": 25.808,
+  "usage": {
+    "subagent_tokens": 30648
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(0.1161*pi - 0.288)/(0.432*pi - 0.288)",
+        "value": 0.07177441261846827,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.1601171477293466e-15
+      },
+      {
+        "key": "c",
+        "text": "-0.0081*pi/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-low/math/m2-run2.md",
+  "imported_at": "2026-10-18T19:56:43+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:37+09:00"
+}

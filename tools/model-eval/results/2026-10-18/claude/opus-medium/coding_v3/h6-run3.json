@@ -1,0 +1,148 @@
+{
+  "model": "opus-medium",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 3,
+  "content": "```python\ndef count_tilings(grid: list[str]) -> int:\n    if not isinstance(grid, list):\n        raise ValueError(\"grid must be a list\")\n    if not grid:\n        return 1\n    width0 = None\n    for row in grid:\n        if not isinstance(row, str):\n            raise ValueError(\"rows must be strings\")\n        if width0 is None:\n            width0 = len(row)\n        elif len(row) != width0:\n            raise ValueError(\"rows must have equal length\")\n        for ch in row:\n            if ch not in \".#\":\n                raise ValueError(\"invalid character\")\n    if width0 == 0:\n        return 1\n    rows = [list(row) for row in grid]\n    height = len(rows)\n    width = width0\n    if width > height:\n        rows = [[rows[r][c] for r in range(height)] for c in range(width)]\n        height, width = width, height\n\n    if not any(ch == \".\" for row in rows for ch in row):\n        return 1\n\n    total = height * width\n    blocked = [rows[idx // width][idx % width] == \"#\" for idx in range(total)]\n\n    def free(mask: int, pos: int, q: int) -> bool:\n        if q >= total:\n            return False\n        if blocked[q]:\n            return False\n        return not (mask >> (q - pos)) & 1\n\n    dp = {0: 1}\n    for pos in range(total):\n        r = pos // width\n        c = pos % width\n        has_right = c + 1 < width\n        has_left = c >= 1\n        has_down = r + 1 < height\n        ndp: dict[int, int] = {}\n        for mask, cnt in dp.items():\n            if (mask & 1) or blocked[pos]:\n                nm = mask >> 1\n                ndp[nm] = ndp.get(nm, 0) + cnt\n                continue\n            right = pos + 1\n            down = pos + width\n            down_right = pos + width + 1\n            down_left = pos + width - 1\n            options = []\n            right_free = has_right and free(mask, pos, right)\n            down_free = has_down and free(mask, pos, down)\n            if right_free:\n                options.append((right,))\n            if down_free:\n                options.append((down,))\n            if right_free and down_free:\n                options.append((right, down))\n            if right_free and has_down and free(mask, pos, down_right):\n                options.append((right, down_right))\n            if down_free and has_right and free(mask, pos, down_right):\n                options.append((down, down_right))\n            if down_free and has_left and free(mask, pos, down_left):\n                options.append((down_left, down))\n            for cells in options:\n                nm = mask | 1\n                for q in cells:\n                    nm |= 1 << (q - pos)\n                nm >>= 1\n                ndp[nm] = ndp.get(nm, 0) + cnt\n        dp = ndp\n    return dp.get(0, 0)\n```\n",
+  "wall_s": 27.027,
+  "usage": {
+    "subagent_tokens": 31329
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.36,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-medium/coding_v3/h6-run3.md",
+  "imported_at": "2026-10-18T19:37:30+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

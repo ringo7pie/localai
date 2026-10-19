@@ -493,7 +493,8 @@ def suite_rows(models, suite, *, key: str, tip_extra=None) -> list[dict[str, Any
 
 # 散布図の点の名前（短く。正式な名前はツールチップと表にある）
 SCATTER_SHORT_LABELS = {"sonnet": "Sonnet5.5", "opus": "Opus5.5", "qwen3.8-flash-next:IQ4_XS": "IQ4_XS",
-                        "strata-flash-next:IQ3_S": "RVN IQ3_S", "strata-official:IQ3_XXS": "official IQ3_XXS"}
+                        "strata-flash-next:IQ3_S": "RVN IQ3_S", "strata-official:IQ3_XXS": "official IQ3_XXS",
+                        "strata-official:IQ3_S": "official IQ3_S", "strata-swift:IQ3_XXS": "Swift IQ3_XXS"}
 
 
 def scatter_points(models, suite) -> list[dict[str, Any]]:

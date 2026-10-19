@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-low",
+  "suite": "math",
+  "item": "m3",
+  "run": 3,
+  "content": "考え方: a = 1/2 - d とおく。条件は「球の外」かつ「max|座標| >= a」。\np = (1 - pi/6) - (一辺 2a の内側立方体のうち球の外の体積)。\n\n(a) a=1/4。内側立方体の角までの距離は sqrt(3)/4 < 1/2 なので全部球の内側。p = 1 - pi/6。\n(b) a=2/5。球から 6 個の球冠(高さ 0.1)が出る。球冠どうしは重ならない。p = 0.488 - 0.028*pi。\n(c) a=7/20。球冠(高さ 0.15)6 個を引き、辺方向の重なり 12 箇所(各約 1.90198e-6)を足す。三重の重なりは無い。\np = 0.657 - 0.06075*pi + 12*W、W≈1.90198e-6。\n\n答え(a): 1 - pi/6\n答え(b): 0.488 - 0.028*pi\n答え(c): 0.466171\n",
+  "wall_s": 31.139,
+  "usage": {
+    "subagent_tokens": 32072
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "0.488 - 0.028*pi",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "0.466171",
+        "value": 0.466171,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.5107712600711135e-07
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-low/math/m3-run3.md",
+  "imported_at": "2026-10-18T20:07:15+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:52+09:00"
+}

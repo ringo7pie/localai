@@ -1,0 +1,163 @@
+{
+  "model": "sonnet-low",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 3,
+  "content": "```python\nfrom math import gcd\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    pts = list(set((int(x), int(y), int(z)) for x, y, z in points))\n    if len(pts) < 4:\n        raise ValueError(\"need at least 4 distinct points\")\n    count = len(pts)\n    X = [p[0] for p in pts]\n    Y = [p[1] for p in pts]\n    Z = [p[2] for p in pts]\n\n    def cross(ax, ay, az, bx, by, bz):\n        return (ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx)\n\n    # initial simplex\n    i0, i1 = 0, 1\n    i2 = -1\n    for idx in range(2, count):\n        c = cross(X[i1] - X[i0], Y[i1] - Y[i0], Z[i1] - Z[i0],\n                  X[idx] - X[i0], Y[idx] - Y[i0], Z[idx] - Z[i0])\n        if c != (0, 0, 0):\n            i2 = idx\n            normal0 = c\n            break\n    if i2 < 0:\n        raise ValueError(\"all points collinear\")\n    i3 = -1\n    for idx in range(2, count):\n        if idx == i2:\n            continue\n        val = (normal0[0] * (X[idx] - X[i0]) + normal0[1] * (Y[idx] - Y[i0])\n               + normal0[2] * (Z[idx] - Z[i0]))\n        if val != 0:\n            i3 = idx\n            break\n    if i3 < 0:\n        raise ValueError(\"all points coplanar\")\n\n    verts = []\n    nrm = []\n    dist = []\n    outs = []\n    alive = []\n    emap = {}\n\n    def make_face(a, b, c):\n        n = cross(X[b] - X[a], Y[b] - Y[a], Z[b] - Z[a],\n                  X[c] - X[a], Y[c] - Y[a], Z[c] - Z[a])\n        d = n[0] * X[a] + n[1] * Y[a] + n[2] * Z[a]\n        fid = len(verts)\n        verts.append((a, b, c))\n        nrm.append(n)\n        dist.append(d)\n        outs.append([])\n        alive.append(True)\n        emap[(a, b)] = fid\n        emap[(b, c)] = fid\n        emap[(c, a)] = fid\n        return fid\n\n    base = [i0, i1, i2, i3]\n    initial = []\n    for skip in range(4):\n        tri = [base[k] for k in range(4) if k != skip]\n        opp = base[skip]\n        a, b, c = tri\n        n = cross(X[b] - X[a], Y[b] - Y[a], Z[b] - Z[a],\n                  X[c] - X[a], Y[c] - Y[a], Z[c] - Z[a])\n        side = n[0] * (X[opp] - X[a]) + n[1] * (Y[opp] - Y[a]) + n[2] * (Z[opp] - Z[a])\n        if side > 0:\n            b, c = c, b\n        initial.append(make_face(a, b, c))\n\n    for q in range(count):\n        if q in base:\n            continue\n        for fid in initial:\n            n = nrm[fid]\n            if n[0] * X[q] + n[1] * Y[q] + n[2] * Z[q] - dist[fid] > 0:\n                outs[fid].append(q)\n                break\n\n    stack = [fid for fid in initial if outs[fid]]\n    while stack:\n        f = stack.pop()\n        if not alive[f] or not outs[f]:\n            continue\n        nx, ny, nz = nrm[f]\n        df = dist[f]\n        best = max(outs[f], key=lambda q: nx * X[q] + ny * Y[q] + nz * Z[q] - df)\n        bx, by, bz = X[best], Y[best], Z[best]\n\n        visible = {f}\n        frontier = [f]\n        hidden = set()\n        horizon = []\n        while frontier:\n            g = frontier.pop()\n            a, b, c = verts[g]\n            for u, v in ((a, b), (b, c), (c, a)):\n                h = emap[(v, u)]\n                if h in visible:\n                    continue\n                if h in hidden:\n                    horizon.append((u, v))\n                    continue\n                n = nrm[h]\n                if n[0] * bx + n[1] * by + n[2] * bz - dist[h] > 0:\n                    visible.add(h)\n                    frontier.append(h)\n                else:\n                    hidden.add(h)\n                    horizon.append((u, v))\n\n        pool = []\n        for g in visible:\n            pool.extend(outs[g])\n            a, b, c = verts[g]\n            del emap[(a, b)]\n            del emap[(b, c)]\n            del emap[(c, a)]\n            alive[g] = False\n            outs[g] = []\n\n        new_faces = [make_face(u, v, best) for u, v in horizon]\n        for q in pool:\n            if q == best:\n                continue\n            qx, qy, qz = X[q], Y[q], Z[q]\n            for fid in new_faces:\n                n = nrm[fid]\n                if n[0] * qx + n[1] * qy + n[2] * qz - dist[fid] > 0:\n                    outs[fid].append(q)\n                    break\n        for fid in new_faces:\n            if outs[fid]:\n                stack.append(fid)\n\n    volume6 = 0\n    planes = set()\n    vertex_normals = {}\n    for fid in range(len(verts)):\n        if not alive[fid]:\n            continue\n        a, b, c = verts[fid]\n        n = nrm[fid]\n        volume6 += (X[a] * (Y[b] * Z[c] - Z[b] * Y[c])\n                    - Y[a] * (X[b] * Z[c] - Z[b] * X[c])\n                    + Z[a] * (X[b] * Y[c] - Y[b] * X[c]))\n        g = gcd(gcd(abs(n[0]), abs(n[1])), abs(n[2]))\n        key = (n[0] // g, n[1] // g, n[2] // g)\n        planes.add((key, dist[fid] // g))\n        for v in (a, b, c):\n            vertex_normals.setdefault(v, set()).add(key)\n\n    n_vertices = 0\n    for normals in vertex_normals.values():\n        normals = list(normals)\n        first = normals[0]\n        second = None\n        for cand in normals:\n            if cross(*first, *cand) != (0, 0, 0):\n                second = cand\n                break\n        if second is None:\n            continue\n        axis = cross(*first, *second)\n        for cand in normals:\n            if axis[0] * cand[0] + axis[1] * cand[1] + axis[2] * cand[2] != 0:\n                n_vertices += 1\n                break\n\n    return (abs(volume6), len(planes), n_vertices)\n```\n",
+  "wall_s": 50.603,
+  "usage": {
+    "subagent_tokens": 35442
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.23,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-low/coding_v3/h1-run3.md",
+  "imported_at": "2026-10-18T20:03:18+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:48+09:00"
+}

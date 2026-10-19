@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "target": "qwen3.8-flash-next:IQ4_XS",
+  "label": "qwen3.8-flash-next:IQ4_XS",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8-flash-next:IQ4_XS",
+  "slug": "qwen3.8-flash-next-IQ4_XS",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 H6: ドミノと L トロミノの敷き詰めの数\n\n関数 `count_tilings(grid: list[str]) -> int` を書いてください。盤面 `grid` は同じ長さの文字列の並びで、`\".\"` は空きのマス、`\"#\"` は埋まっているマスです。空きのマスをすべて、重ならず、はみ出さずに、次の 2 種類の駒で覆う方法の数を返します。\n\n- ドミノ: 横に並んだ 2 マス、または縦に並んだ 2 マス。\n- L トロミノ: 2×2 の正方形から 1 マスを除いた 3 マス（4 つの向きがある）。\n\n駒どうしは区別しません。2 つの敷き詰めが違うのは、空きのマスを駒に分ける分け方が違うときです。埋まっているマス（`\"#\"`）は覆いません。\n\n### 入力と誤り\n\n- `grid` は 0 行以上。各行の長さが違う、または `\".\"` と `\"#\"` 以外の文字があれば `ValueError`。\n- 空きのマスが 1 つも無ければ 1（何も置かない 1 通り）。`grid == []` と `grid == [\"\"]` も 1。\n- 答えは非常に大きくなることがある（正確な整数で返す）。\n\n### 性能\n\n- 盤面は最大 16 行 × 16 列。ただし行数と列数の小さい方は 10 以下。最大の盤面でも 1 秒程度で答えること。敷き詰めを 1 つずつ数える探索は時間切れになる。\n\n例:\n- `count_tilings([\"..\", \"..\"])` → `2`（横のドミノ 2 つ、縦のドミノ 2 つ）\n- `count_tilings([\"...\", \"...\"])` → `5`\n- `count_tilings([\".#\", \"..\"])` → `1`（L トロミノ 1 つ）\n- `count_tilings([\".\"])` → `0`",
+  "prompt_chars": 1055,
+  "prompt_lang": "ja",
+  "limits": {
+    "max_tokens": 32768,
+    "reasoning_budget_tokens": null,
+    "request_timeout_s": 2400
+  },
+  "started_at": "2026-10-19T00:39:25+09:00",
+  "status": "skipped_time_budget",
+  "error": "累計 86.3 分が上限 70.0 分を超えた",
+  "content": "",
+  "thinking": "",
+  "has_answer": false,
+  "wall_s": null,
+  "wall_excl_load_s": null,
+  "grade": {
+    "kind": "coding_v3",
+    "score": 0.0,
+    "all_passed": false,
+    "no_answer": true,
+    "reason": "skipped_time_budget"
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "coding_v3",
+  "item": "h4",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 H4: 分母に上限のある最良の有理近似\n\n関数 `best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]` を書いてください。有理数 `x = num / den` を、分母が `max_den` 以下の分数 `p / q`（`p` は整数、`q` は `1 <= q <= max_den` の整数）で近似し、`(p, q)` を返します。標準ライブラリの `fractions` モジュールと `decimal` モジュールは使わないでください（使った答えは 0 点）。浮動小数点数で計算すると誤差で誤ります。整数だけで計算してください。\n\n### 選び方\n\n- `side == 0`: `|x - p/q|` が最小の分数。最小のものが複数あるときは、`q` が小さい方、それも同じなら `p` が小さい方（数として小さい方。`-1 < 0`）を返す。\n- `side == -1`: `p/q <= x` を満たす分数のうち、値が最大のもの。\n- `side == 1`: `p/q >= x` を満たす分数のうち、値が最小のもの。\n- 返す分数は既約にする（`q >= 1` かつ `p` と `q` の最大公約数が 1。`p == 0` なら `(0, 1)`）。同じ値の分数は 1 つと数える。\n- `x` 自身の既約分数の分母が `max_den` 以下なら、どの `side` でもその既約分数を返す。\n\n### 入力と誤り\n\n- `num` と `den` は任意の大きさの整数（負でもよい。`den` が負なら `x` は `num / den` の値どおり）。\n- `den == 0`、`max_den < 1`、`side` が `-1`・`0`・`1` 以外のときは `ValueError`。\n\n### 性能\n\n- `num`・`den`・`max_den` の絶対値は最大 10**40。1 回の呼び出しは分母の上限の大きさによらず、すぐ（1 ミリ秒程度で）答えること。分母を 1 つずつ調べる作りや、Stern–Brocot 木を 1 段ずつたどる作りは時間切れになる。\n\n例:\n- `best_rational(314159, 100000, 100)` → `(311, 99)`\n- `best_rational(1, 2, 1)` → `(0, 1)`（`0/1` と `1/1` は同じ距離。分母が同じなので分子の小さい方）\n- `best_rational(-1, 2, 1)` → `(-1, 1)`\n- `best_rational(314159, 100000, 100, side=1)` → `(22, 7)`\n- `best_rational(6, -4, 10)` → `(-3, 2)`",
+  "prompt_chars": 1499,
+  "prompt_lang": "ja",
+  "limits": {
+    "max_tokens": 32768,
+    "reasoning_budget_tokens": null,
+    "request_timeout_s": 2400
+  },
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-18T18:02:55+09:00",
+  "request_timeout_s": 2400.0,
+  "finished_at": "2026-10-18T18:09:54+09:00",
+  "content": "```python\nimport math\n\ndef best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]:\n    if den == 0 or max_den < 1 or side not in (-1, 0, 1):\n        raise ValueError(\"Invalid input\")\n\n    # Simplify x = num / den\n    if den < 0:\n        num, den = -num, -den\n    \n    common = math.gcd(num, den)\n    num //= common\n    den //= common\n    \n    # If the number itself is within the bound, return it\n    if den <= max_den:\n        return (num, den)\n\n    # Use Continued Fractions on |x| = y\n    y_num, y_den = abs(num), den\n    a_vals = []\n    n, d = y_num, y_den\n    while d > 0:\n        a_vals.append(n // d)\n        n, d = d, n % d\n    \n    p_prev, q_prev = 1, 0\n    p_curr, q_curr = a_vals[0], 1\n    \n    convergents = [(p_curr, q_curr)]\n    for a in a_vals[1:]:\n        p_next = a * p_curr + p_prev\n        q_next = a * q_curr + q_prev\n        convergents.append((p_next, q_next))\n        p_prev, q_prev = p_curr, q_curr\n        p_curr, q_curr = p_next, q_next\n        if q_next > max_den:\n            break\n\n    # Find the largest k such that q_k <= max_den\n    k = len(convergents) - 1\n    pk, qk = convergents[k]\n    pk_minus_1, qk_minus_1 = (convergents[k-1] if k > 0 else (1, 0))\n    \n    # Calculate the best lower bound L and best upper bound U for y = |x|\n    # L = pL/qL <= y, U = pU/qU >= y\n    if k % 2 == 0:\n        # k is even: C_k is the best lower bound\n        L = (pk, qk)\n        # Best upper bound is semi-convergent s_{k+1, m}\n        m = (max_den - qk_minus_1) // qk\n        # s_{k+1, m} = (m*pk + pk_minus_1) / (m*qk + qk_minus_1)\n        # If k=0, qk_minus_1=0, so m must be >= 1. If max_den >= 1, m=max_den.\n        # Note: s_{k+1, m} is an upper bound for k even, and decreases as m increases.\n        # m = 0 would give C_{k-1} if k > 0, which is an upper bound.\n        U = (m * pk + pk_minus_1, m * qk + qk_minus_1)\n        if U[1] == 0: # Case k=0 and m=0 (shouldn't happen as max_den >= 1)\n            U = (a_vals[0] + 1, 1) if len(a_vals) > 1 or a_vals[0] < y_num/y_den else (a_vals[0], 1)\n    else:\n        # k is odd: C_k is the best upper bound\n        U = (pk, qk)\n        # Best lower bound is semi-convergent s_{k+1, m}\n        m = (max_den - qk_minus_1) // qk\n        # s_{k+1, m} is a lower bound for k odd, and increases as m increases.\n        L = (m * pk + pk_minus_1, m * qk + qk_minus_1)\n\n    # Now translate y results back to x = num/den\n    if num >= 0:\n        # x >= 0, so Lx = Ly and Ux = Uy\n        res_L, res_U = L, U\n    else:\n        # x < 0, x = -y. p/q <= -y => -p/q >= y. So Lx = -Uy, Ux = -Ly.\n        res_L = (-U[0], U[1])\n        res_U = (-L[0], L[1])\n\n    if side == -1:\n        return res_L\n    if side == 1:\n        return res_U\n    \n    # side == 0: Minimize |x - p/q|\n    # |num/den - pL/qL| vs |num/den - pU/qU|\n    # dist = |num*q - p*den| / (den*q)\n    # Compare |num*qL - pL*den| / qL  vs  |num*qU - pU*den| / qU\n    pL, qL = res_L\n    pU, qU = res_U\n    \n    vL = abs(num * qL - pL * den) * qU\n    vU = abs(num * qU - pU * den) * qL\n    \n    if vL < vU:\n        return res_L\n    if vU < vL:\n        return res_U\n    \n    # Tie-break: smaller q, then smaller p\n    if qL < qU:\n        return res_L\n    if qU < qL:\n        return res_U\n    return res_L if pL < pU else res_U\n```",
+  "thinking": "*   Target: Find the best rational approximation $p/q$ to $x = num/den$ where $1 \\le q \\le max\\_den$.\n    *   Criteria for $p/q$:\n        *   `side == 0`: Minimize $|x - p/q|$. Tie-break: smaller $q$, then smaller $p$.\n        *   `side == -1`: Maximize $p/q$ such that $p/q \\le x$.\n        *   `side == 1`: Minimize $p/q$ such that $p/q \\ge x$.\n    *   Requirements:\n        *   Result $p/q$ must be irreducible ($q \\ge 1, \\gcd(p, q) = 1$).\n        *   $x = num/den$ given as integers.\n        *   Constraints: $num, den, max\\_den$ up to $10^{40}$.\n        *   Time: Very fast (millisecond scale, independent of $max\\_den$ size).\n        *   No `fractions`, no `decimal`, no floats. Use integers only.\n        *   `den == 0`, `max_den < 1`, `side \\notin \\{-1, 0, 1\\}` $\\Rightarrow$ `ValueError`.\n\n    *   Standard method for best rational approximation is using Continued Fractions.\n    *   Let $x = [a_0; a_1, a_2, \\dots, a_n]$. The convergents $C_k = p_k/q_k$ are the best rational approximations.\n    *   The convergents satisfy $p_k/q_k$ is the best approximation of the first kind.\n    *   For `side == 0` (best approximation), we look at convergents $p_k/q_k$ and semi-convergents.\n    *   For `side == -1` (lower bound) and `side == 1` (upper bound), the convergents oscillate around $x$.\n\n    *   Handle signs: Ensure $den > 0$.\n    *   Simplify $x = num/den$ to irreducible form initially. If the simplified denominator is $\\le max\\_den$, return it.\n    *   Compute the continued fraction expansion $x = [a_0; a_1, a_2, \\dots, a_n]$.\n    *   $p_{-2}=0, q_{-2}=1$ (Wait, usually $p_{-1}=1, q_{-1}=0$ and $p_{-2}=0, q_{-2}=1$ is not standard).\n    *   Standard: $p_{-1}=1, q_{-1}=0$; $p_0=a_0, q_0=1$.\n    *   Recurrence: $p_k = a_k p_{k-1} + p_{k-2}$, $q_k = a_k q_{k-1} + q_{k-2}$.\n    *   The convergents $C_k = p_k/q_k$ are:\n        *   $C_0, C_2, C_4, \\dots$ approach $x$ from below (or above if $x$ is negative?).\n        *   Wait, if $x > 0$: $C_0 \\le x \\le C_1$ is not quite right.\n        *   Actually: $C_0 < C_2 < C_4 < \\dots < x < \\dots < C_5 < C_3 < C_1$.\n        *   If $x < 0$, the order is reversed? No, let's work with $x \\ge 0$ and handle the sign later or be careful.\n\n    *   Let's work with $x \\ge 0$ first.\n    *   $C_k = p_k/q_k$.\n    *   $C_{2k}$ are increasing and $C_{2k} < x$.\n    *   $C_{2k+1}$ are decreasing and $C_{2k+1} > x$.\n    *   Semi-convergents: $s_{k, m} = \\frac{m p_{k-1} + p_{k-2}}{m q_{k-1} + q_{k-2}}$ for $1 \\le m < a_k$.\n    *   Semi-convergents $s_{k, m}$ for $k$ even: $C_{k-2} < s_{k, m} < C_k < x$.\n    *   Semi-convergents $s_{k, m}$ for $k$ odd: $x < C_k < s_{k, m} < C_{k-2}$.\n\n    *   For `side == -1` (max $p/q \\le x$):\n        *   We need the largest $q \\le max\\_den$ such that $p/q \\le x$.\n        *   The best candidates are the convergents $C_{2k}$ and the semi-convergents $s_{2k, m}$ that don't exceed $x$.\n        *   Actually, any $C_{2k}$ is the best lower approximation for its denominator.\n        *   The semi-convergents $s_{k, m}$ for $k$ even are also lower approximations.\n        *   Wait, the properties of continued fractions say that if we want the best rational $p/q \\le x$ with $q \\le max\\_den$, we should look at the last convergent $C_k$ such that $q_k \\le max\\_den$.\n        *   If $k$ is even, $C_k$ is the best lower approximation.\n        *   If $k$ is odd, $C_{k-1}$ is a lower approximation, but we can also check semi-convergents $s_{k+1, m}$ where $m q_k + q_{k-1} \\le max\\_den$. Since $k+1$ is even, these semi-convergents $s_{k+1, m}$ are also $\\le x$ and are better than $C_{k-1}$.\n        *   Correct logic for $p/q \\le x$:\n            1. Find largest $k$ such that $q_k \\le max\\_den$.\n            2. If $k$ is even, the best lower is $C_k$.\n            3. If $k$ is odd, the best lower is the largest semi-convergent $s_{k+1, m}$ such that $m q_k + q_{k-1} \\le max\\_den$. If no such semi-convergent (i.e., $m=0$), the best lower is $C_{k-1}$. Wait, $m$ must be at least 1? No, if $m=0$, $s_{k+1, 0} = C_{k-1}$.\n            4. Special case: $x$ itself is $C_n$ and $q_n \\le max\\_den$. Then $x$ is the best.\n\n    *   For `side == 1` (min $p/q \\ge x$):\n        *   Symmetric to `side == -1`.\n        *   If $k$ is odd, $C_k$ is the best upper.\n        *   If $k$ is even, the best upper is the largest semi-convergent $s_{k+1, m}$ (where $s_{k+1, m} = \\frac{m p_k + p_{k-1}}{m q_k + q_{k-1}}$) such that $m q_k + q_{k-1} \\le max\\_den$.\n        *   Note: $s_{k+1, m}$ for $k$ even are upper approximations because $k+1$ is odd. $s_{k+1, m}$ increases as $m$ increases? No, for $k+1$ odd, $s_{k+1, m}$ decreases as $m$ increases towards $C_{k+1}$.\n        *   Wait, let's re-evaluate.\n        *   Convergents: $C_0 < C_2 < C_4 < \\dots < x < \\dots < C_5 < C_3 < C_1$.\n        *   $C_k$ is the best approximation of the first kind.\n        *   For $p/q \\le x$:\n            *   We need the largest $p/q$ with $q \\le max\\_den$ and $p/q \\le x$.\n            *   This will be $C_k$ if $k$ is even and $q_k \\le max\\_den$ and $q_{k+1} > max\\_den$.\n            *   Or it could be a semi-convergent $s_{k+1, m}$ if $k+1$ is even.\n            *   Let's use the property: The best lower bound is either $C_{2k}$ or $s_{2k+1, m}$. No, that's not right.\n            *   Let's use:\n                - Convergents $C_k = p_k/q_k$.\n                - If $q_k \\le max\\_den < q_{k+1}$:\n                    - Lower bounds are $C_0, C_2, \\dots$ and semi-convergents $s_{k, m}$ if $k$ is even.\n                    - Upper bounds are $C_1, C_3, \\dots$ and semi-convergents $s_{k, m}$ if $k$ is odd.\n                - Specifically:\n                    - If $k$ is even:\n                        - Best lower bound is $C_k$.\n                        - Best upper bound is $s_{k+1, m}$ where $m$ is the largest integer such that $m q_k + q_{k-1} \\le max\\_den$ and $1 \\le m < a_{k+1}$. (If no such $m$, then $C_{k-1}$ if $k \\ge 1$, else no upper bound? But $C_1$ is always an upper bound if $q_1 \\le max\\_den$).\n                    - If $k$ is odd:\n                        - Best upper bound is $C_k$.\n                        - Best lower bound is $s_{k+1, m}$ where $m$ is the largest integer such that $m q_k + q_{k-1} \\le max\\_den$ and $1 \\le m < a_{k+1}$. (If no such $m$, then $C_{k-2}$ if $k \\ge 2$, else $C_0$).\n\n    *   For `side == 0` (absolute minimum $|x - p/q|$):\n        *   We compare the best lower bound $L$ and the best upper bound $U$ found above.\n        *   $L = p_L/q_L, U = p_U/q_U$.\n        *   Compare $|x - L|$ and $|x - U|$.\n        *   $|num/den - p_L/q_L| = |(num \\cdot q_L - p_L \\cdot den) / (den \\cdot q_L)|$\n        *   $|num/den - p_U/q_U| = |(num \\cdot q_U - p_U \\cdot den) / (den \\cdot q_U)|$\n        *   Compare $\\frac{|num \\cdot q_L - p_L \\cdot den|}{den \\cdot q_L}$ vs $\\frac{|num \\cdot q_U - p_U \\cdot den|}{den \\cdot q_U}$.\n        *   Since $den > 0$ and $q > 0$, compare $\\frac{|num \\cdot q_L - p_L \\cdot den|}{q_L}$ vs $\\frac{|num \\cdot q_U - p_U \\cdot den|}{q_U}$.\n        *   Cross-multiply: $|num \\cdot q_L - p_L \\cdot den| \\cdot q_U$ vs $|num \\cdot q_U - p_U \\cdot den| \\cdot q_L$.\n        *   Tie-break: Smaller $q$, then smaller $p$.\n\n    *   If $num/den$ is negative, let $x = -|num/den|$.\n    *   Let $y = |num/den|$. We find the best approximations for $y$ and then negate them.\n    *   If $y$ is approximated by $p/q$, then $x$ is approximated by $-p/q$.\n    *   Wait, the conditions $p/q \\le x$ and $p/q \\ge x$ will be flipped.\n    *   Let's be more careful.\n    *   Let $x = num/den$. Assume $den > 0$.\n    *   If $x \\ge 0$:\n        - `side == -1`: Max $p/q \\le x$. (Best lower bound)\n        - `side == 1`: Min $p/q \\ge x$. (Best upper bound)\n        - `side == 0`: Best of both.\n    *   If $x < 0$:\n        - Let $x = -y$ where $y > 0$.\n        - `side == -1`: Max $p/q \\le -y \\Rightarrow \\text{Min } -p/q \\ge y$. (Best upper bound of $y$, then negate)\n        - `side == 1`: Min $p/q \\ge -y \\Rightarrow \\text{Max } -p/q \\le y$. (Best lower bound of $y$, then negate)\n        - `side == 0`: Best of both.\n\n    *   Wait, let's just implement `get_best_lower(num, den, max_den)` and `get_best_upper(num, den, max_den)` for $x = num/den \\ge 0$.\n    *   `get_best_lower(num, den, max_den)`:\n        1. Find largest $k$ such that $q_k \\le max\\_den$.\n        2. If $k$ is even, return $C_k$.\n        3. If $k$ is odd, $s_{k+1, m}$ are lower bounds. The largest one is for $m = \\lfloor (max\\_den - q_{k-1}) / q_k \\rfloor$.\n           $s_{k+1, m} = \\frac{m p_k + p_{k-1}}{m q_k + q_{k-1}}$.\n           Since $m$ can be up to $a_{k+1}-1$, but also limited by $max\\_den$, $m = \\min(a_{k+1}-1, (max\\_den - q_{k-1}) // q_k)$.\n           Wait, if $k$ is odd, then $C_{k-1}$ is a lower bound. Semi-convergents $s_{k+1, m}$ are also lower bounds if $k+1$ is even.\n           Actually, the semi-convergents $s_{k, m}$ are between $C_{k-2}$ and $C_k$.\n           If $k$ is even, $C_{k-2} < s_{k, 1} < s_{k, 2} < \\dots < s_{k, a_k-1} < C_k < x$.\n           If $k$ is odd, $x < C_k < s_{k, a_k-1} < \\dots < s_{k, 1} < C_{k-2}$.\n           So if $k$ is even:\n           - $C_k$ is the best lower bound.\n           - Upper bounds are $C_1, C_3, \\dots, C_{k-1}$ and semi-convergents $s_{k+1, m}$ where $m q_k + q_{k-1} \\le max\\_den$.\n             $s_{k+1, m}$ are upper bounds since $k+1$ is odd, and they decrease as $m$ increases.\n             The smallest upper bound is $s_{k+1, m}$ for the largest possible $m$.\n             The largest possible $m$ is $\\lfloor (max\\_den - q_{k-1}) / q_k \\rfloor$.\n             But we must also have $m < a_{k+1}$. If $m \\ge a_{k+1}$, then $q_{k+1} \\le max\\_den$, which contradicts that $k$ was the largest.\n             So $m = (max\\_den - q_{k-1}) // q_k$.\n             The smallest upper bound is $s_{k+1, m}$ for this $m$.\n             Wait, if $k=0$, $C_{-1}=1/0$ is not useful. $C_1$ is the first upper bound. $C_1$ is $s_{1, a_1}$.\n             Let's use $p_{-1}=1, q_{-1}=0$ and $p_0=a_0, q_0=1$.\n             $q_1 = a_1 q_0 + q_{-1} = a_1 \\cdot 1 + 0 = a_1$.\n             $s_{1, m} = \\frac{m p_0 + p_{-1}}{m q_0 + q_{-1}} = \\frac{m a_0 + 1}{m \\cdot 1 + 0} = \\frac{m a_0 + 1}{m}$.\n             This is an upper bound for $x$ if $a_1$ exists.\n\n    *   Let $x = num/den \\ge 0$.\n    *   $p_{-1}=1, q_{-1}=0$\n    *   $p_0=a_0, q_0=1$\n    *   $p_k = a_k p_{k-1} + p_{k-2}$\n    *   $q_k = a_k q_{k-1} + q_{k-2}$\n    *   Find largest $k$ such that $q_k \\le max\\_den$.\n    *   If $k$ is even:\n        - Best lower: $C_k = p_k/q_k$.\n        - Best upper:\n            - If $k < n$ (where $n$ is the end of CF):\n                $m = (max\\_den - q_{k-1}) // q_k$\n                $m = \\min(m, a_{k+1} - 1)$ --- No, $m$ cannot be $a_{k+1}$ because then $q_{k+1} \\le max\\_den$.\n                So $m = (max\\_den - q_{k-1}) // q_k$.\n                Smallest upper: $s_{k+1, m} = (m p_k + p_{k-1}) / (m q_k + q_{k-1})$.\n                Wait, if $m=0$, $s_{k+1, 0} = p_{k-1}/q_{k-1}$. But $k-1$ is odd, so $C_{k-1}$ is an upper bound.\n                If $k=0$, $p_{-1}/q_{-1} = 1/0$ is not allowed.\n                But if $k=0$, then $q_0=1 \\le max\\_den$ and $q_1 = a_1 > max\\_den$.\n                The upper bounds are $s_{1, m} = (m p_0 + p_{-1}) / (m q_0 + q_{-1}) = (m a_0 + 1) / m$.\n                For $m=1$, $s_{1,1} = (a_0 + 1)/1$. This is the smallest upper bound if $q_1 > max\\_den$.\n                Is there always an upper bound?\n                If $x=0$, $num=0, den=1$. $a_0=0$. $p_0=0, q_0=1$. $C_0=0/1$.\n                $q_1$ doesn't exist (CF is just $[0]$).\n                If $x=0$, and $max\\_den=1$, $C_0=0/1$ is the best lower, and there's no upper bound $\\le max\\_den$ unless $x$ is represented as $0/1$.\n                But wait, $p/q \\ge 0$ always has an upper bound for $x=0$ if $q \\le max\\_den$, for example $1/1$ if $max\\_den \\ge 1$.\n                Is $1/1$ the smallest? For $x=0, max\\_den=1$, $p/q \\ge 0 \\Rightarrow p \\ge 0$. Smallest is $0/1$.\n                So if $x=0$, $p/q=0/1$ is both the best lower and best upper.\n\n    *   Let's refine:\n        - If $num/den$ is already $p/q$ with $q \\le max\\_den$, return it.\n        - For $x \\ge 0$, $C_0, C_2, \\dots$ are lower, $C_1, C_3, \\dots$ are upper.\n        - $s_{k, m}$ for $k$ even are lower, $s_{k, m}$ for $k$ odd are upper.\n        - If $q_k \\le max\\_den < q_{k+1}$:\n            - Best lower:\n                - If $k$ is even, $C_k$.\n                - If $k$ is odd, $s_{k+1, m}$ for $m = (max\\_den - q_{k-1}) // q_k$.\n                  (Note: if $k$ is odd, $k+1$ is even, so $s_{k+1, m}$ are lower bounds. $m=0$ gives $C_{k-1}$).\n            - Best upper:\n                - If $k$ is odd, $C_k$.\n                - If $k$ is even, $s_{k+1, m}$ for $m = (max\\_den - q_{k-1}) // q_k$.\n                  (Note: if $k$ is even, $k+1$ is odd, so $s_{k+1, m}$ are upper bounds. $m=0$ gives $C_{k-1}$, but $k-1$ is odd).\n                  Wait, if $k=0$, $C_{-1}=1/0$, so $m$ must be $\\ge 1$.\n                  $s_{1, m} = (m a_0 + 1) / m$. For $m=1, s_{1,1} = a_0+1$.\n                  If $x=0$, $a_0=0$, $s_{1,1} = 1$. But $0/1$ is also an upper bound.\n\n    *   Let's rethink:\n        The only case where $p/q = x$ is if the simplified $num/den$ has $den \\le max\\_den$.\n        Otherwise, $p/q$ can never be $x$.\n        If $p/q < x$, then $p/q \\le x$ is true.\n        If $p/q > x$, then $p/q \\ge x$ is true.\n        If $x > 0$:\n        - Lower bounds: $C_0 < s_{2,1} < \\dots < C_2 < s_{4,1} < \\dots < C_4 < \\dots < x$.\n        - Upper bounds: $x < \\dots < C_4 < s_{4, a_4-1} < \\dots < C_2 < s_{2, a_2-1} < \\dots < C_0$. No, that's not right.\n        - Upper bounds: $x < \\dots < C_3 < s_{3, a_3-1} < \\dots < C_1 < s_{1, a_1-1} < \\dots$.\n        Wait, let's use the property:\n        - $C_0, C_2, \\dots$ are the best lower approximations.\n        - $C_1, C_3, \\dots$ are the best upper approximations.\n        - The best lower approximation with $q \\le max\\_den$ is:\n            - If $k$ is even, $C_k$ is the best lower approximation with $q \\le q_k$.\n            - If $k$ is odd, $C_{k-1}$ is the best lower approximation with $q \\le q_{k-1}$.\n            - But we also have semi-convergents $s_{k+1, m}$ for $k+1$ even.\n            - $s_{k+1, m}$ are lower approximations and they are better than $C_{k-1}$ for $m \\ge 1$.\n            - So if $q_k \\le max\\_den < q_{k+1}$:\n                - If $k$ is even:\n                    - Best lower is $C_k$.\n                    - Best upper is $s_{k+1, m}$ for $m = (max\\_den - q_{k-1}) // q_k$.\n                      Wait, $s_{k+1, m} = (m p_k + p_{k-1}) / (m q_k + q_{k-1})$.\n                      Is this always $\\ge x$?\n                      If $k$ is even, $C_k < x$ and $C_{k+1} > x$.\n                      $s_{k+1, m}$ for $m=1, \\dots, a_{k+1}-1$ are between $C_{k-1}$ and $C_{k+1}$.\n                      Since $C_{k-1}$ is an upper bound and $C_{k+1}$ is an upper bound, and they are on the same side of $x$?\n                      No, $C_{k-1}$ is an upper bound ($k-1$ is odd) and $C_{k+1}$ is an upper bound ($k+1$ is odd).\n                      Wait, $C_0 < C_2 < \\dots < x < \\dots < C_3 < C_1$.\n                      So $C_{k-1}$ and $C_{k+1}$ are both $> x$.\n                      The semi-convergents $s_{k+1, m} = \\frac{m p_k + p_{k-1}}{m q_k + q_{k-1}}$ for $k$ even:\n                      $m=1: s_{k+1, 1} = (p_k + p_{k-1}) / (q_k + q_{k-1})$\n                      $m=a_{k+1}: s_{k+1, a_{k+1}} = C_{k+1}$.\n                      Since $k+1$ is odd, $s_{k+1, m}$ are all $> x$.\n                      And $s_{k+1, 1} > s_{k+1, 2} > \\dots > s_{k+1, a_{k+1}} = C_{k+1}$.\n                      So the smallest upper bound is the one with the largest $m$.\n                      $m = (max\\_den - q_{k-1}) // q_k$.\n                      The best upper bound is $s_{k+1, m}$.\n                      Wait, if $k=0$, $C_{-1} = 1/0$. $s_{1, m} = (m p_0 + 1) / (m q_0 + 0) = (m a_0 + 1) / m$.\n                      The smallest upper bound is $s_{1, m}$ for the largest $m = (max\\_den - 0) // 1 = max\\_den$.\n                      So $s_{1, max\\_den} = (max\\_den \\cdot a_0 + 1) / max\\_den$.\n                      Is this correct? For $x = 3.14159, max\\_den = 100$:\n                      $a_0 = 3, a_1 = 7, a_2 = 15, a_3 = 1, a_4 = 292$.\n                      $C_0 = 3/1, q_0=1$\n                      $C_1 = 22/7, q_1=7$\n                      $C_2 = 333/106, q_2=106$\n                      $max\\_den = 100$, so $k=1$.\n                      $k=1$ is odd.\n                      Best lower: $s_{2, m}$ for $m = (100 - 1) // 7 = 99 // 7 = 14$.\n                      $s_{2, 14} = (14 \\cdot 22 + 3) / (14 \\cdot 7 + 1) = (308 + 3) / (98 + 1) = 311/99$.\n                      Best upper: $k=1$ is odd, so $C_1 = 22/7$.\n                      Check: $311/99 \\approx 3.141414$, $22/7 \\approx 3.142857$.\n                      $|3.14159 - 3.141414| = 0.000176$\n                      $|3.14159 - 3.142857| = 0.001267$\n                      So $311/99$ is the best.\n                      This matches the example `best_rational(314159, 100000, 100) -> (311, 99)`.\n\n    *   Now consider $x < 0$.\n        Let $x = -y$ where $y > 0$.\n        - `side == -1`: Max $p/q \\le -y \\Rightarrow \\text{Min } -p/q \\ge y$. (Best upper bound of $y$, then negate)\n        - `side == 1`: Min $p/q \\ge -y \\Rightarrow \\text{Max } -p/q \\le y$. (Best lower bound of $y$, then negate)\n        - `side == 0`: Compare $|-y - p/q| = |y + p/q|$.\n          Wait, if $p/q$ is an approximation of $x$, let $p/q = -p'/q'$ where $p'/q'$ is an approximation of $y$.\n          $|x - p/q| = |-y - (-p'/q')| = |p'/q' - y|$.\n          So we can just find the best lower and upper approximations of $y$ and use them.\n\n    *   Wait, if $x$ is already $p/q$ with $q \\le max\\_den$, it should be returned.\n        Simplify $x = num/den$.\n        If $den < 0$: $num = -num, den = -den$.\n        $g = \\gcd(num, den)$\n        $num //= g, den //= g$.\n        If $den \\le max\\_den$, return $(num, den)$.\n\n    *   For $y = num/den > 0$:\n        1. $a_0 = num // den, r = num \\% den$.\n        2. $C_{-1} = 1/0, C_0 = a_0/1$.\n        3. While $r > 0$:\n           - $den, r = r, den \\% r$ (Wait, this is for $\\gcd$).\n           - Let's use the standard CF algorithm:\n             $n_0 = num, d_0 = den$.\n             $a_i = n_i // d_i$\n             $n_{i+1} = d_i$\n             $d_{i+1} = n_i \\% d_i$\n        4. We can precompute the $C_k$ and $a_k$ until $q_k > max\\_den$.\n\n    *   Correct refined algorithm for $y = num/den > 0$:\n        - $p_{-1} = 1, q_{-1} = 0$\n        - $p_0 = num // den, q_0 = 1$\n        - $n = num, d = den$\n        - $a = [n // d]$\n        - $n, d = d, n \\% d$\n        - While $d > 0$:\n            - $a.append(n // d)$\n            - $n, d = d, n \\% d$\n        - Now we have the CF $y = [a_0; a_1, a_2, \\dots, a_n]$.\n        - Convergents $p_k, q_k$:\n            - $p_{-1}=1, q_{-1}=0$\n            - $p_0=a_0, q_0=1$\n            - for $k=1 \\dots n$:\n                - $p_k = a_k p_{k-1} + p_{k-2}$\n                - $q_k = a_k q_{k-1} + q_{k-2}$\n        - Find $k$ such that $q_k \\le max\\_den < q_{k+1}$ (if $k=n$, $q_{n+1} = \\infty$).\n        - Best Lower $L$:\n            - If $k$ is even, $L = (p_k, q_k)$.\n            - If $k$ is odd:\n                - $m = (max\\_den - q_{k-1}) // q_k$\n                - $L = (m p_k + p_{k-1}, m q_k + q_{k-1})$\n                - (If $k=1$, $q_{k-1}=q_0=1$, $q_k=q_1=a_1$. $L = (m p_1 + p_0, m q_1 + q_0)$)\n                - Wait, if $k$ is odd, $s_{k+1, m}$ is the best lower bound.\n                - $s_{k+1, m} = (m p_k + p_{k-1}) / (m q_k + q_{k-1})$.\n                - For $k$ odd, $k+1$ is even, so $s_{k+1, m}$ are lower bounds.\n                - As $m$ increases, $s_{k+1, m}$ increases and approaches $x$.\n                - So the largest $m$ gives the best lower bound.\n                - $m = (max\\_den - q_{k-1}) // q_k$.\n                - The largest $m$ can be $a_{k+1}-1$.\n                - $m = \\min(a_{k+1}-1, (max\\_den - q_{k-1}) // q_k)$ if $k < n$.\n                - If $k=n$, then $a_{k+1}$ doesn't exist, so $m = (max\\_den - q_{k-1}) // q_k$.\n                - $L = (m p_k + p_{k-1}, m q_k + q_{k-1})$.\n                - Wait, if $m=0$, $L = (p_{k-1}, q_{k-1})$, which is correct since $k-1$ is even.\n\n        - Best Upper $U$:\n            - If $k$ is odd, $U = (p_k, q_k)$.\n            - If $k$ is even:\n                - $m = (max\\_den - q_{k-1}) // q_k$\n                - $U = (m p_k + p_{k-1}, m q_k + q_{k-1})$\n                - Since $k$ is even, $k+1$ is odd, so $s_{k+1, m}$ are upper bounds.\n                - As $m$ increases, $s_{k+1, m}$ decreases and approaches $x$.\n                - So the largest $m$ gives the best upper bound.\n                - $m = (max\\_den - q_{k-1}) // q_k$.\n                - $U = (m p_k + p_{k-1}, m q_k + q_{k-1})$.\n                - If $m=0$, $U = (p_{k-1}, q_{k-1})$, which is correct since $k-1$ is odd.\n                - Special case $k=0$: $q_{-1}=0, p_{-1}=1$.\n                  $m = (max\\_den - 0) // 1 = max\\_den$.\n                  $U = (max\\_den \\cdot p_0 + 1, max\\_den \\cdot 1 + 0) = (max\\_den \\cdot a_0 + 1, max\\_den)$.\n                  If $m=0$, $U = (1, 0)$ which is not allowed.\n                  But if $k=0$, $U$ must be $s_{1, m}$ for $m \\ge 1$.\n                  The smallest upper bound is $s_{1, m}$ for the largest $m = max\\_den$.\n                  What if $max\\_den = 0$? Not possible since $max\\_den \\ge 1$.\n                  What if $max\\_den=1, k=0$? $m=1, U=(a_0+1, 1)$. Correct.\n\n    *   Wait, if $y$ is an integer, $y = a_0$. CF is just $[a_0]$. $n=0$.\n        $p_{-1}=1, q_{-1}=0$\n        $p_0=a_0, q_0=1$\n        $k=0$ (since $q_0 \\le max\\_den$ and no $q_1$).\n        Best Lower: $k$ even, $L = (a_0, 1)$.\n        Best Upper: $k$ even, $m = (max\\_den - 0) // 1 = max\\_den$.\n        $U = (max\\_den \\cdot a_0 + 1, max\\_den)$.\n        If $y=0, a_0=0$, $L=(0, 1)$, $U=(1, max\\_den)$.\n        Is this correct for $x=0, max\\_den=1$?\n        $L=(0, 1), U=(1, 1)$.\n        $|0 - 0/1| = 0, |0 - 1/1| = 1$.\n        Best is $(0, 1)$. Correct.\n\n    *   Now handle $x < 0$:\n        - $x = -y$ where $y > 0$.\n        - Let $L_y, U_y$ be the best lower and upper approximations of $y$.\n        - Best lower of $x$: $p/q \\le -y \\Rightarrow -p/q \\ge y$.\n          So $L_x = -U_y$.\n        - Best upper of $x$: $p/q \\ge -y \\Rightarrow -p/q \\le y$.\n          So $U_x = -L_y$.\n        - Best approximation of $x$:\n          Compare $|x - L_x| = |-y - (-U_y)| = |U_y - y|$\n          and $|x - U_x| = |-y - (-L_y)| = |L_y - y|$.\n          This is just comparing the distance from $y$ to its best upper and best lower approximations.\n          Then the result is the negated one.\n          Tie-break: smaller $q$, then smaller $p$.\n          $L_x = (-p_{Uy}, q_{Uy})$, $U_x = (-p_{Ly}, q_{Ly})$.\n          If $|x - L_x| < |x - U_x|$, return $L_x$.\n          If $|x - U_x| < |x - L_x|$, return $U_x$.\n          If $|x - L_x| == |x - U_x|$:\n            Tie-break: smaller $q$.\n            If $q_{Uy} < q_{Ly}$, return $L_x$.\n            If $q_{Ly} < q_{Uy}$, return $U_x$.\n            If $q_{Uy} == q_{Ly}$, return the one with smaller $p$.\n            $p_{Lx} = -p_{Uy}, p_{Ux} = -p_{Ly}$.\n            Return the one with smaller $p$.\n\n    *   Final check on tie-break for `side == 0`:\n        $|x - p/q|$ is minimized.\n        If $|x - L| == |x - U|$, pick smaller $q$.\n        If $q_L == q_U$, pick smaller $p$.\n        For $x < 0$, $L = (-p_{Uy}, q_{Uy})$ and $U = (-p_{Ly}, q_{Ly})$.\n        Distance is the same.\n        Smallest $q$ is $\\min(q_{Uy}, q_{Ly})$.\n        If $q_{Uy} == q_{Ly}$, smallest $p$ is $\\min(-p_{Uy}, -p_{Ly})$.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 882,
+  "completion_tokens": 10871,
+  "ttft_s": 1.73,
+  "t_first_content_s": 364.895,
+  "wall_s": 419.029,
+  "load_s": 0.001,
+  "server_decode_tok_s": 26.04,
+  "server_prefill_tok_s": 554.22,
+  "server_timings": {
+    "total_duration": 419028788534,
+    "load_duration": 767313,
+    "prompt_eval_count": 882,
+    "prompt_eval_duration": 1591422000,
+    "eval_count": 10871,
+    "eval_duration": 417431784000
+  },
+  "delta_chunks": 9863,
+  "wall_decode_tok_s": 26.05,
+  "thinking_chars": 23561,
+  "content_chars": 3274,
+  "thinking_tokens_est": 9545,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 419.028,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.1905,
+    "all_passed": false,
+    "passed": 4,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": false,
+        "error": "AssertionError: expected (311, 99), got (333, 106)"
+      },
+      {
+        "name": "case_exact_value_is_returned_reduced",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers_and_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_max_den_one",
+        "ok": false,
+        "error": "AssertionError: expected (2, 1), got (7, 3)"
+      },
+      {
+        "name": "case_negative_values_and_sides",
+        "ok": false,
+        "error": "AssertionError: expected (-1, 2), got (-1, 3)"
+      },
+      {
+        "name": "case_ties_prefer_smaller_denominator",
+        "ok": false,
+        "error": "AssertionError: expected (1, 2), got (2, 5)"
+      },
+      {
+        "name": "case_ties_same_denominator_smaller_numerator",
+        "ok": false,
+        "error": "AssertionError: expected (1, 1), got (3, 2)"
+      },
+      {
+        "name": "case_semiconvergents_are_needed",
+        "ok": false,
+        "error": "AssertionError: expected (179, 57), got (333, 106)"
+      },
+      {
+        "name": "case_one_sided_semiconvergents",
+        "ok": false,
+        "error": "AssertionError: expected (179, 57), got (333, 106)"
+      },
+      {
+        "name": "case_value_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_reduced_int_tuple",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_nearest",
+        "ok": false,
+        "error": "AssertionError: expected 1711314544632677354, got 1015315229414870976"
+      },
+      {
+        "name": "case_small_random_lower",
+        "ok": false,
+        "error": "AssertionError: expected 1462374690503983648, got 1172220521789399913"
+      },
+      {
+        "name": "case_small_random_upper",
+        "ok": false,
+        "error": "AssertionError: expected 56162887021734051, got 2035895489796802548"
+      },
+      {
+        "name": "case_floats_are_not_precise_enough",
+        "ok": false,
+        "error": "AssertionError: expected (1, 1), got (1000000000000000000000000000001, 1000000000000000000000000000000)"
+      },
+      {
+        "name": "case_tiny_and_huge_values",
+        "ok": false,
+        "error": "AssertionError: expected (0, 1), got (1, 10000000000000000000000000000000000000000)"
+      },
+      {
+        "name": "case_fibonacci_ratios",
+        "ok": false,
+        "error": "AssertionError: expected (13, 8), got (21, 13)"
+      },
+      {
+        "name": "case_sqrt2_approximations",
+        "ok": false,
+        "error": "AssertionError: expected 1684979878832231977, got 1592379325989304019"
+      },
+      {
+        "name": "case_performance_far_from_simple_fractions",
+        "ok": false,
+        "error": "AssertionError: expected (1, 9999999999999999999999999999999999999999), got (1, 10000000000000000000000000000000000000000)"
+      },
+      {
+        "name": "case_performance_big_random_batch",
+        "ok": false,
+        "error": "AssertionError: expected 229010097546217820, got 15873405659670162"
+      },
+      {
+        "name": "case_performance_big_random_batch_negative_dens",
+        "ok": false,
+        "error": "AssertionError: expected 1134393567835406225, got 172876582567209103"
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.05,
+    "stderr_tail": ""
+  },
+  "attempts": 1
+}

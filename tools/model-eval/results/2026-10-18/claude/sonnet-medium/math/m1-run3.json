@@ -1,0 +1,49 @@
+{
+  "model": "sonnet-medium",
+  "suite": "math",
+  "item": "m1",
+  "run": 3,
+  "content": "凸多面体の平行体にシュタイナーの公式を使う。\n\nV(r) = Vol(T) + S r + M r^2 + (4/3) pi r^3\n\n- Vol(T) = sqrt(2)/12\n- 表面積 S = sqrt(3)\n- 辺の項: 二面角 theta = acos(1/3)。各辺で角度 (pi - theta) の扇形柱ができるので M = 6 * (pi - theta)/2 = 3(pi - acos(1/3))\n- 頂点の項: 頂点の法錐の立体角の合計は 4 pi なので球 1 個分 (4/3) pi r^3\n\n表面積は dV/dr = S + 2 M r + 4 pi r^2。\n\nr = 0.6:\n\nV = sqrt(2)/12 + 0.6 sqrt(3) + 1.08 (pi - acos(1/3)) + 0.288 pi ≈ 4.12534\n\nA = sqrt(3) + 3.6 (pi - acos(1/3)) + 1.44 pi ≈ 13.1342\n\n答え(a): sqrt(2)/12 + 0.6*sqrt(3) + 1.08*(pi - acos(1/3)) + 0.288*pi\n答え(b): sqrt(3) + 3.6*(pi - acos(1/3)) + 1.44*pi\n",
+  "wall_s": 16.557,
+  "usage": {
+    "subagent_tokens": 29817
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 2,
+    "total": 2,
+    "parts": [
+      {
+        "key": "a",
+        "text": "sqrt(2)/12 + 0.6*sqrt(3) + 1.08*(pi - acos(1/3)) + 0.288*pi",
+        "value": 4.125344194121884,
+        "expected": 4.125344194121884,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "sqrt(3) + 3.6*(pi - acos(1/3)) + 1.44*pi",
+        "value": 13.134223879234646,
+        "expected": 13.134223879234646,
+        "ok": true,
+        "rel_error": 0.0
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-medium/math/m1-run3.md",
+  "imported_at": "2026-10-18T19:28:29+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

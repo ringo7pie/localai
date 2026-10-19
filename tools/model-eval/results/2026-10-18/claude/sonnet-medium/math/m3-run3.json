@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-medium",
+  "suite": "math",
+  "item": "m3",
+  "run": 3,
+  "content": "立方体を [-1/2,1/2]^3 とし、a = 1/2 - d とする。最近接の面までの距離が d 以下 ⇔ max|x_i| >= a。\np = 1 - (2a)^3 - (球の体積) + V(a)。V(a) は球（半径 1/2）と立方体 [-a,a]^3 の共通部分の体積。\n\n(a) a=1/4。小立方体の角までの距離 sqrt(3)/4 < 1/2 なので小立方体は球に含まれ、V=1/8。p = 1 - pi/6。\n\n(b) a=2/5。球から高さ h=1/10 の球冠 6 個を除く（互いに重ならない）。\n球冠 1 個 = pi h^2 (3R-h)/3 = 0.014 pi / 3。\np = 1 - 0.512 - 6*(球冠) = 0.488 - 0.028 pi。\n\n(c) a=7/20, h=3/20。球冠は 1 個 0.010125 pi、6 個で 0.06075 pi。\n球冠どうし（辺ごと 12 組）は重なり、3 つの重なりは無い（3a^2 > 1/4）。\n2 つの球冠の重なり W = ∫∫_{x>a,y>a} 2 sqrt(R^2-x^2-y^2) dx dy を級数で数値積分すると W ≈ 1.90197e-6。\np = 1 - 0.343 - 0.06075 pi + 12 W = 0.657 - 0.06075 pi + 12 W ≈ 0.466171。\n\n答え(a): 1 - pi/6\n答え(b): 0.488 - 0.028*pi\n答え(c): 0.466171\n",
+  "wall_s": 48.259,
+  "usage": {
+    "subagent_tokens": 34524
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "0.488 - 0.028*pi",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "0.466171",
+        "value": 0.466171,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.5107712600711135e-07
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-medium/math/m3-run3.md",
+  "imported_at": "2026-10-18T19:39:38+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

@@ -1,3 +1,7 @@
 # 採点の作業場所（答えのコードを書いて動かす）・スモークの結果・ログ。毎回作り直すので追跡しない。
 work/
 .pytest_cache/
+
+# 計測中に残した journal の写し（LAN の IP・ホスト名・絶対パスを含む）と、進捗ファイルのロック。手元だけに置く。
+results/*/local/*/journal-*.txt
+results/*/progress.json.lock

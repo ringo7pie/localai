@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-high",
+  "suite": "math",
+  "item": "m2",
+  "run": 2,
+  "content": "## 方針\n\nA を原点とする座標 u = x - 1 を使う。V1 は u 軸上の線分 [-1, 0] のまわり、V2 は y 軸方向の線分 [0, 1] のまわりの太さ r のカプセルである。r = 0.6 < 1 なので、V1 と V2 が重なるのは A の近傍 (|u| <= r, |y| <= r) だけである。\n\n重なり I = V1 ∩ V2 を (u, y) の符号で 4 つの象限に分ける。\n\n- u > 0, y >= 0: V1 の条件 u^2 + y^2 + z^2 <= r^2 が V2 の条件より強い。球の 1/4 になる。\n- u <= 0, y < 0: V2 の条件が強い。球の 1/4 になる。\n- u > 0, y < 0: 両方とも同じ球の条件で、球の 1/4 になる。\n- u <= 0, y >= 0: 条件は z^2 <= r^2 - max(u^2, y^2) となる。体積 4r^3/3 の Steinmetz 型の部分である。\n\n### 体積\n\n|I| = pi r^3 + 4 r^3 / 3\n|V1| = pi r^2 + 4 pi r^3 / 3\n|W| = pi r^2 + pi r^3 / 3 - 4 r^3 / 3 = 0.432 pi - 0.288 ≈ 1.069168\n\n### モーメント\n\nV1 の u 方向のモーメントは -pi r^2 / 2 - 2 pi r^3 / 3 で、y 方向は 0 である。\n\nI のモーメントは次のとおり。\n\n- 球の 1/4 を 3 つ合わせると、u 方向が +pi r^4 / 8、y 方向が -pi r^4 / 8 になる。\n- Steinmetz 型の部分は、u 方向が -3 pi r^4 / 16、y 方向が +3 pi r^4 / 16 になる。\n- 合計は u 方向が -pi r^4 / 16、y 方向が +pi r^4 / 16 になる。\n\nW のモーメントは、V1 のモーメントから I のモーメントを引いたものである。\n\n- u 方向: -pi r^2 / 2 - 2 pi r^3 / 3 + pi r^4 / 16 = -0.3159 pi\n- y 方向: -pi r^4 / 16 = -0.0081 pi\n\n重心の x 座標は 1 + (u 方向のモーメント) / |W|、y 座標は (y 方向のモーメント) / |W| で求める。\n\n- x ≈ 0.0717744\n- y ≈ -0.0238007\n\n答え(a): 0.432*pi - 0.288\n答え(b): 1 - 0.3159*pi/(0.432*pi - 0.288)\n答え(c): -0.0081*pi/(0.432*pi - 0.288)\n",
+  "wall_s": 51.582,
+  "usage": {
+    "subagent_tokens": 34011
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "1 - 0.3159*pi/(0.432*pi - 0.288)",
+        "value": 0.07177441261846818,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 2.5135871534135846e-15
+      },
+      {
+        "key": "c",
+        "text": "-0.0081*pi/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-high/math/m2-run2.md",
+  "imported_at": "2026-10-18T18:24:12+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:47+09:00"
+}

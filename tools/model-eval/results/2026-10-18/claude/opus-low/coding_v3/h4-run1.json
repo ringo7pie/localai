@@ -1,0 +1,148 @@
+{
+  "model": "opus-low",
+  "suite": "coding_v3",
+  "item": "h4",
+  "run": 1,
+  "content": "```python\nfrom math import gcd\n\n\ndef best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]:\n    if not isinstance(num, int) or not isinstance(den, int) or not isinstance(max_den, int):\n        raise ValueError(\"integers required\")\n    if den == 0 or max_den < 1 or side not in (-1, 0, 1):\n        raise ValueError(\"invalid argument\")\n    if den < 0:\n        num, den = -num, -den\n    g = gcd(num, den)\n    num //= g\n    den //= g\n    if den <= max_den:\n        return (num, den)\n    n, d, N = num, den, max_den\n    lp, lq = n // d, 1\n    rp, rq = lp + 1, 1\n    while True:\n        mp, mq = lp + rp, lq + rq\n        if mq > N:\n            break\n        if mp * d < n * mq:\n            k = (n * lq - lp * d - 1) // (rp * d - n * rq)\n            k = min(k, (N - lq) // rq)\n            if k < 1:\n                k = 1\n            lp, lq = lp + k * rp, lq + k * rq\n        else:\n            k = (rp * d - n * rq - 1) // (n * lq - lp * d)\n            k = min(k, (N - rq) // lq)\n            if k < 1:\n                k = 1\n            rp, rq = rp + k * lp, rq + k * lq\n    if side == -1:\n        return (lp, lq)\n    if side == 1:\n        return (rp, rq)\n    dl = (n * lq - lp * d) * rq\n    du = (rp * d - n * rq) * lq\n    if dl < du:\n        return (lp, lq)\n    if du < dl:\n        return (rp, rq)\n    if lq != rq:\n        return (lp, lq) if lq < rq else (rp, rq)\n    return (lp, lq) if lp < rp else (rp, rq)\n```\n",
+  "wall_s": 21.503,
+  "usage": {
+    "subagent_tokens": 30869
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_value_is_returned_reduced",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers_and_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_max_den_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_values_and_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_prefer_smaller_denominator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_same_denominator_smaller_numerator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_semiconvergents_are_needed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_one_sided_semiconvergents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_reduced_int_tuple",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_nearest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_lower",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_upper",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_are_not_precise_enough",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tiny_and_huge_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fibonacci_ratios",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sqrt2_approximations",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_far_from_simple_fractions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch_negative_dens",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.1,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-low/coding_v3/h4-run1.md",
+  "imported_at": "2026-10-18T19:43:42+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:35+09:00"
+}

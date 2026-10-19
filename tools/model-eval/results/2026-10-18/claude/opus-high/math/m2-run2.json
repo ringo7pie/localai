@@ -1,0 +1,57 @@
+{
+  "model": "opus-high",
+  "suite": "math",
+  "item": "m2",
+  "run": 2,
+  "content": "## 考え方\n\nA を原点にとり u = x − 1 とする。V1 の O 側の半球（u ≤ −1）は V2（|u| ≤ r）と交わらず、V2 の B 側の半球（y ≥ 1）は V1（|y| ≤ r）と交わらない。よって A の近くでは\n\n- V1 = { y² + z² + max(u,0)² ≤ r² }\n- V2 = { u² + z² + min(y,0)² ≤ r² }\n\nV1 の体積 = πr²·1 + (4/3)πr³ = 0.648π、x 重心 0.5、y 重心 0。\n\n交わり I = V1 ∩ V2 を (u, y) の符号で 4 つに分ける。\n\n- u ≤ 0, y ≥ 0: 直交する 2 本の円柱の交わり（Steinmetz 立体）の 1/4 → 体積 4r³/3、∫u dV = −3πr⁴/16、∫y dV = +3πr⁴/16\n- 残り 3 象限: どれも球の 1/4 → 各体積 πr³/3、∫u, ∫y はそれぞれ ±πr⁴/8\n\n合計: Vol(I) = 4r³/3 + πr³、∫u dV = −πr⁴/16、∫y dV = +πr⁴/16。\n\nr = 0.6 のとき:\n\n- Vol(W) = 0.648π − 0.288 − 0.216π = 0.432π − 0.288 = (54π − 36)/125 ≈ 1.06916803\n- x のモーメント: 0.324π − (0.288 + 0.216π − 0.0081π) = 0.1161π − 0.288\n  → x̄ = (129π − 320)/(480π − 320) ≈ 0.0717744\n- y のモーメント: 0 − 0.0081π\n  → ȳ = −9π/(480π − 320) ≈ −0.0238007\n\n答え(a): (54*pi - 36)/125\n答え(b): (129*pi - 320)/(480*pi - 320)\n答え(c): -9*pi/(480*pi - 320)\n",
+  "wall_s": 49.436,
+  "usage": {
+    "subagent_tokens": 32140
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "(54*pi - 36)/125",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(129*pi - 320)/(480*pi - 320)",
+        "value": 0.07177441261846824,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.546822863639129e-15
+      },
+      {
+        "key": "c",
+        "text": "-9*pi/(480*pi - 320)",
+        "value": -0.023800656086705944,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 2.9154212718459503e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-high/math/m2-run2.md",
+  "imported_at": "2026-10-18T18:24:07+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:32+09:00"
+}

@@ -1,0 +1,163 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 2,
+  "content": "```python\nimport random\nfrom math import gcd\n\n\nclass _Face:\n    __slots__ = (\"a\", \"b\", \"c\", \"nx\", \"ny\", \"nz\", \"d\", \"out\", \"stamp\", \"vis\")\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    pts = list(dict.fromkeys((int(p[0]), int(p[1]), int(p[2])) for p in points))\n    count = len(pts)\n    if count < 4:\n        raise ValueError(\"need at least 4 distinct points\")\n\n    # ---- 最初の四面体を探す（整数だけで判定する） ----\n    ax, ay, az = pts[0]\n    ux, uy, uz = pts[1][0] - ax, pts[1][1] - ay, pts[1][2] - az\n    i2 = -1\n    base_normal = (0, 0, 0)\n    for idx in range(2, count):\n        vx, vy, vz = pts[idx][0] - ax, pts[idx][1] - ay, pts[idx][2] - az\n        cx = uy * vz - uz * vy\n        cy = uz * vx - ux * vz\n        cz = ux * vy - uy * vx\n        if cx or cy or cz:\n            i2 = idx\n            base_normal = (cx, cy, cz)\n            break\n    if i2 < 0:\n        raise ValueError(\"all points are collinear\")\n    i3 = -1\n    for idx in range(i2 + 1, count):\n        if (base_normal[0] * (pts[idx][0] - ax)\n                + base_normal[1] * (pts[idx][1] - ay)\n                + base_normal[2] * (pts[idx][2] - az)) != 0:\n            i3 = idx\n            break\n    if i3 < 0:\n        raise ValueError(\"all points are coplanar\")\n\n    def make_face(a: int, b: int, c: int) -> _Face:\n        pax, pay, paz = pts[a]\n        pbx, pby, pbz = pts[b]\n        pcx, pcy, pcz = pts[c]\n        e1x, e1y, e1z = pbx - pax, pby - pay, pbz - paz\n        e2x, e2y, e2z = pcx - pax, pcy - pay, pcz - paz\n        face = _Face()\n        face.a = a\n        face.b = b\n        face.c = c\n        face.nx = e1y * e2z - e1z * e2y\n        face.ny = e1z * e2x - e1x * e2z\n        face.nz = e1x * e2y - e1y * e2x\n        face.d = face.nx * pax + face.ny * pay + face.nz * paz\n        face.out = []\n        face.stamp = 0\n        face.vis = False\n        return face\n\n    edge_map: dict[tuple[int, int], _Face] = {}\n    initial_faces: list[_Face] = []\n    for a, b, c, opposite in (\n        (0, 1, i2, i3),\n        (0, 1, i3, i2),\n        (0, i2, i3, 1),\n        (1, i2, i3, 0),\n    ):\n        face = make_face(a, b, c)\n        ox, oy, oz = pts[opposite]\n        pax, pay, paz = pts[a]\n        if face.nx * (ox - pax) + face.ny * (oy - pay) + face.nz * (oz - paz) > 0:\n            face = make_face(a, c, b)\n        initial_faces.append(face)\n        edge_map[(face.a, face.b)] = face\n        edge_map[(face.b, face.c)] = face\n        edge_map[(face.c, face.a)] = face\n\n    used = {0, 1, i2, i3}\n    order = [idx for idx in range(count) if idx not in used]\n    random.Random(20261018).shuffle(order)\n\n    owner: list[_Face | None] = [None] * count\n    for idx in order:\n        qx, qy, qz = pts[idx]\n        for face in initial_faces:\n            if face.nx * qx + face.ny * qy + face.nz * qz > face.d:\n                face.out.append(idx)\n                owner[idx] = face\n                break\n\n    # ---- ランダム順の逐次追加（各点は、自分を見ている面を 1 つだけ持つ） ----\n    stamp = 0\n    for p in order:\n        start = owner[p]\n        if start is None:\n            continue\n        px, py, pz = pts[p]\n        stamp += 1\n        start.stamp = stamp\n        start.vis = True\n        visible = [start]\n        stack = [start]\n        horizon: list[tuple[int, int]] = []\n        while stack:\n            face = stack.pop()\n            fa, fb, fc = face.a, face.b, face.c\n            for u, v in ((fa, fb), (fb, fc), (fc, fa)):\n                neighbor = edge_map[(v, u)]\n                if neighbor.stamp != stamp:\n                    neighbor.stamp = stamp\n                    neighbor.vis = (neighbor.nx * px + neighbor.ny * py\n                                    + neighbor.nz * pz) > neighbor.d\n                    if neighbor.vis:\n                        visible.append(neighbor)\n                        stack.append(neighbor)\n                if not neighbor.vis:\n                    horizon.append((u, v))\n\n        for face in visible:\n            del edge_map[(face.a, face.b)]\n            del edge_map[(face.b, face.c)]\n            del edge_map[(face.c, face.a)]\n\n        tests = []\n        for u, v in horizon:\n            new_face = make_face(u, v, p)\n            edge_map[(u, v)] = new_face\n            edge_map[(v, p)] = new_face\n            edge_map[(p, u)] = new_face\n            tests.append((new_face.nx, new_face.ny, new_face.nz, new_face.d, new_face))\n\n        for face in visible:\n            for q in face.out:\n                if q == p:\n                    continue\n                qx, qy, qz = pts[q]\n                for nx, ny, nz, dd, new_face in tests:\n                    if nx * qx + ny * qy + nz * qz > dd:\n                        new_face.out.append(q)\n                        owner[q] = new_face\n                        break\n                else:\n                    owner[q] = None\n            face.out = []\n        owner[p] = None\n\n    # ---- 体積・面・頂点を数える ----\n    final_faces = set(edge_map.values())\n    volume6 = 0\n    plane_keys = set()\n    vertex_planes: dict[int, set] = {}\n    for face in final_faces:\n        pax, pay, paz = pts[face.a]\n        pbx, pby, pbz = pts[face.b]\n        pcx, pcy, pcz = pts[face.c]\n        volume6 += (pax * (pby * pcz - pbz * pcy)\n                    + pay * (pbz * pcx - pbx * pcz)\n                    + paz * (pbx * pcy - pby * pcx))\n        divisor = gcd(gcd(abs(face.nx), abs(face.ny)), abs(face.nz))\n        key = (face.nx // divisor, face.ny // divisor, face.nz // divisor, face.d // divisor)\n        plane_keys.add(key)\n        for vertex in (face.a, face.b, face.c):\n            vertex_planes.setdefault(vertex, set()).add(key)\n\n    n_vertices = sum(1 for keys in vertex_planes.values() if len(keys) >= 3)\n    return (volume6, len(plane_keys), n_vertices)\n```\n",
+  "wall_s": 202.323,
+  "usage": {
+    "subagent_tokens": 54102
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.17,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h1-run2.md",
+  "imported_at": "2026-10-18T17:04:17+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

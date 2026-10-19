@@ -1,0 +1,57 @@
+{
+  "model": "opus-medium",
+  "suite": "math",
+  "item": "m3",
+  "run": 1,
+  "content": "## 考え方\n\n立方体を [-1/2, 1/2]^3 に置く。面までの最小距離が d 以下 ⇔ max(|x|,|y|,|z|) ≥ a（a = 1/2 - d）。\nつまり条件は「球（半径 r = 1/2）の外」かつ「内側の立方体 [-a,a]^3 の外」。\n\np(d) = (1 - (2a)^3) - V_out、V_out = 球のうち内側立方体の外にある部分の体積。\n\n- 内側立方体の頂点距離 a√3 ≤ r なら V_out は 0 ではなく球全体が…ではなく、球が内側立方体をはみ出す部分を数える:\n  - r ≤ a: V_out = 0\n  - a < r ≤ a√2: V_out = 6 個の球冠（高さ h = r - a、体積 pi h^2 (3r - h)/3）、重なりなし\n  - a√2 < r ≤ a√3: V_out = 6 球冠 - 12 E（E は隣り合う 2 面の外側 x>a, y>a にある球の部分）\n  - a√3 ≤ r（内側立方体が球に含まれる）: 球の外は内側立方体の外に完全に含まれるので p = 1 - pi/6\n\nE の閉じた式（s = sqrt(r^2 - 2a^2)、b = sqrt(r^2 - a^2)）:\nE = (2r^3/3) atan(r s / a^2) + (2a^3/3 - 2 r^2 a) acos(a/b) + (2/3) a^2 s\n\n(a) d = 1/4: a = 1/4、a√3 ≈ 0.433 < 1/2。内側立方体は球に含まれる。p = 1 - pi/6 ≈ 0.476401\n\n(b) d = 1/10: a = 2/5、a < r < a√2。h = 1/10、球冠 = pi·0.01·1.4/3 = 0.014pi/3。\np = 0.488 - 6·0.014pi/3 = 0.488 - 7pi/250 ≈ 0.400035\n\n(c) d = 3/20: a = 7/20、a√2 ≈ 0.495 < r < a√3。h = 0.15、6 球冠 = 0.06075 pi。\ns = √2/20、a/b = 7/√51（acos(7/√51) = atan(√2/7)）、r s/a^2 = 10√2/49。\n12E = atan(10√2/49) - 1.757 atan(√2/7) + 0.049√2 ≈ 0.0000228\np = 0.657 - 0.06075 pi + atan(10*sqrt(2)/49) - 1.757 atan(sqrt(2)/7) + 0.049 sqrt(2) ≈ 0.466171\n\n答え(a): 1 - pi/6\n答え(b): 0.488 - 7*pi/250\n答え(c): 0.657 - 0.06075*pi + atan(10*sqrt(2)/49) - 1.757*atan(sqrt(2)/7) + 0.049*sqrt(2)\n",
+  "wall_s": 71.268,
+  "usage": {
+    "subagent_tokens": 35891
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "0.488 - 7*pi/250",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "0.657 - 0.06075*pi + atan(10*sqrt(2)/49) - 1.757*atan(sqrt(2)/7) + 0.049*sqrt(2)",
+        "value": 0.4661710704277854,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 3.5723678335713272e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-medium/math/m3-run1.md",
+  "imported_at": "2026-10-18T19:07:42+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

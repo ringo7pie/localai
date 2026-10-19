@@ -1,0 +1,148 @@
+{
+  "model": "opus-high",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 2,
+  "content": "```python\ndef count_tilings(grid: list[str]) -> int:\n    if not isinstance(grid, list):\n        raise ValueError(\"grid must be a list of strings\")\n    if len(grid) == 0:\n        return 1\n    width = None\n    for row in grid:\n        if not isinstance(row, str):\n            raise ValueError(\"each row must be a string\")\n        if width is None:\n            width = len(row)\n        elif len(row) != width:\n            raise ValueError(\"rows have different lengths\")\n        for ch in row:\n            if ch != \".\" and ch != \"#\":\n                raise ValueError(\"invalid character in grid\")\n    height = len(grid)\n    if width == 0:\n        return 1\n\n    rows = [list(row) for row in grid]\n    if width > height:\n        rows = [[rows[r][c] for r in range(height)] for c in range(width)]\n        height, width = width, height\n\n    if not any(ch == \".\" for row in rows for ch in row):\n        return 1\n\n    blocked = [[ch == \"#\" for ch in row] for row in rows]\n\n    # Pieces anchored at the first uncovered cell (r, c) in row-major order.\n    pieces = [\n        [(0, 0), (0, 1)],                 # horizontal domino\n        [(0, 0), (1, 0)],                 # vertical domino\n        [(0, 0), (0, 1), (1, 0)],         # L missing bottom-right\n        [(0, 0), (0, 1), (1, 1)],         # L missing bottom-left\n        [(0, 0), (1, 0), (1, 1)],         # L missing top-right\n        [(0, 0), (1, -1), (1, 0)],        # L missing top-left\n    ]\n\n    states = {0: 1}\n    for r in range(height):\n        for c in range(width):\n            new_states: dict[int, int] = {}\n            is_blocked = blocked[r][c]\n            for mask, count in states.items():\n                if is_blocked or (mask & 1):\n                    key = mask >> 1\n                    new_states[key] = new_states.get(key, 0) + count\n                    continue\n                for shape in pieces:\n                    bits = 0\n                    ok = True\n                    for dr, dc in shape:\n                        rr = r + dr\n                        cc = c + dc\n                        if rr >= height or cc < 0 or cc >= width:\n                            ok = False\n                            break\n                        if blocked[rr][cc]:\n                            ok = False\n                            break\n                        offset = dr * width + dc\n                        bit = 1 << offset\n                        if mask & bit:\n                            ok = False\n                            break\n                        bits |= bit\n                    if not ok:\n                        continue\n                    key = (mask | bits) >> 1\n                    new_states[key] = new_states.get(key, 0) + count\n            states = new_states\n            if not states:\n                return 0\n    return states.get(0, 0)\n```\n",
+  "wall_s": 25.328,
+  "usage": {
+    "subagent_tokens": 30069
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.56,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-high/coding_v3/h6-run2.md",
+  "imported_at": "2026-10-18T18:25:06+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:32+09:00"
+}

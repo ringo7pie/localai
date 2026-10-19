@@ -1,0 +1,138 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h5",
+  "run": 3,
+  "content": "```python\nfrom collections import deque\n\n_QUANTIFIERS = \"*+?\"\n\n\ndef _check_alphabet(alphabet):\n    if not isinstance(alphabet, str):\n        raise ValueError(\"alphabet must be a string\")\n    if len(alphabet) == 0:\n        raise ValueError(\"empty alphabet\")\n    if len(set(alphabet)) != len(alphabet):\n        raise ValueError(\"duplicate character in alphabet\")\n\n\nclass _Parser:\n    \"\"\"Parses a pattern and builds the Glushkov (position) automaton.\n\n    Fragments are tuples (nullable, first_bits, last_bits); position 0 is\n    reserved for the start state.\n    \"\"\"\n\n    def __init__(self, pattern, alphabet):\n        self.pattern = pattern\n        self.length = len(pattern)\n        self.pos = 0\n        self.alphabet = alphabet\n        self.alpha_set = frozenset(alphabet)\n        self.char_index = {ch: idx for idx, ch in enumerate(alphabet)}\n        self.follow = [0]\n        self.masks = [0] * len(alphabet)\n\n    def _new_position(self, chars):\n        position = len(self.follow)\n        self.follow.append(0)\n        bit = 1 << position\n        for ch in chars:\n            self.masks[self.char_index[ch]] |= bit\n        return (False, bit, bit)\n\n    def _add_follow(self, last, first):\n        if not first:\n            return\n        follow = self.follow\n        bits = last\n        while bits:\n            low = bits & -bits\n            follow[low.bit_length() - 1] |= first\n            bits ^= low\n\n    def _concat(self, left, right):\n        self._add_follow(left[2], right[1])\n        first = left[1] | (right[1] if left[0] else 0)\n        last = right[2] | (left[2] if right[0] else 0)\n        return (left[0] and right[0], first, last)\n\n    def _apply_quantifier(self, atom, quantifier):\n        nullable, first, last = atom\n        if quantifier == \"*\":\n            self._add_follow(last, first)\n            return (True, first, last)\n        if quantifier == \"+\":\n            self._add_follow(last, first)\n            return (nullable, first, last)\n        return (True, first, last)\n\n    def parse(self):\n        fragment = self._parse_alt()\n        if self.pos < self.length:\n            raise ValueError(\"unbalanced parenthesis\")\n        return fragment\n\n    def _parse_alt(self):\n        fragment = self._parse_cat()\n        while self.pos < self.length and self.pattern[self.pos] == \"|\":\n            self.pos += 1\n            other = self._parse_cat()\n            fragment = (\n                fragment[0] or other[0],\n                fragment[1] | other[1],\n                fragment[2] | other[2],\n            )\n        return fragment\n\n    def _parse_cat(self):\n        pattern = self.pattern\n        length = self.length\n        fragment = (True, 0, 0)\n        while self.pos < length:\n            ch = pattern[self.pos]\n            if ch == \"|\" or ch == \")\":\n                break\n            if ch in _QUANTIFIERS:\n                raise ValueError(\"nothing to repeat\")\n            atom = self._parse_atom()\n            if self.pos < length and pattern[self.pos] in _QUANTIFIERS:\n                quantifier = pattern[self.pos]\n                self.pos += 1\n                if self.pos < length and pattern[self.pos] in _QUANTIFIERS:\n                    raise ValueError(\"multiple repeat\")\n                atom = self._apply_quantifier(atom, quantifier)\n            fragment = self._concat(fragment, atom)\n        return fragment\n\n    def _parse_atom(self):\n        pattern = self.pattern\n        ch = pattern[self.pos]\n        if ch == \"(\":\n            self.pos += 1\n            inner = self._parse_alt()\n            if self.pos >= self.length or pattern[self.pos] != \")\":\n                raise ValueError(\"missing )\")\n            self.pos += 1\n            return inner\n        if ch == \".\":\n            self.pos += 1\n            return self._new_position(self.alphabet)\n        if ch == \"\\\\\":\n            if self.pos + 1 >= self.length:\n                raise ValueError(\"bad escape at end of pattern\")\n            literal = pattern[self.pos + 1]\n            self.pos += 2\n            return self._new_position([literal] if literal in self.alpha_set else [])\n        if ch == \"[\":\n            return self._parse_class()\n        self.pos += 1\n        return self._new_position([ch] if ch in self.alpha_set else [])\n\n    def _class_char(self, index):\n        pattern = self.pattern\n        if index >= self.length:\n            raise ValueError(\"unterminated character class\")\n        ch = pattern[index]\n        if ch == \"\\\\\":\n            if index + 1 >= self.length:\n                raise ValueError(\"bad escape in character class\")\n            return pattern[index + 1], index + 2\n        return ch, index + 1\n\n    def _parse_class(self):\n        pattern = self.pattern\n        length = self.length\n        index = self.pos + 1\n        negate = False\n        if index < length and pattern[index] == \"^\":\n            negate = True\n            index += 1\n        chosen = set()\n        item_count = 0\n        while True:\n            if index >= length:\n                raise ValueError(\"unterminated character class\")\n            if pattern[index] == \"]\":\n                break\n            low_char, index = self._class_char(index)\n            if index + 1 < length and pattern[index] == \"-\" and pattern[index + 1] != \"]\":\n                high_char, index = self._class_char(index + 1)\n                if ord(low_char) > ord(high_char):\n                    raise ValueError(\"bad character range\")\n                for letter in self.alphabet:\n                    if low_char <= letter <= high_char:\n                        chosen.add(letter)\n            else:\n                if low_char in self.alpha_set:\n                    chosen.add(low_char)\n            item_count += 1\n        if item_count == 0:\n            raise ValueError(\"empty character class\")\n        self.pos = index + 1\n        if negate:\n            chars = [letter for letter in self.alphabet if letter not in chosen]\n        else:\n            chars = [letter for letter in self.alphabet if letter in chosen]\n        return self._new_position(chars)\n\n\ndef _build_dfa(pattern, alphabet):\n    parser = _Parser(pattern, alphabet)\n    nullable, first, last = parser.parse()\n    follow = parser.follow\n    follow[0] = first\n    accept_mask = last | (1 if nullable else 0)\n    masks = parser.masks\n    index_of = {1: 0}\n    subsets = [1]\n    delta = []\n    current = 0\n    while current < len(subsets):\n        subset = subsets[current]\n        reach = 0\n        bits = subset\n        while bits:\n            low = bits & -bits\n            reach |= follow[low.bit_length() - 1]\n            bits ^= low\n        row = []\n        for mask in masks:\n            target = reach & mask\n            target_index = index_of.get(target)\n            if target_index is None:\n                target_index = len(subsets)\n                index_of[target] = target_index\n                subsets.append(target)\n            row.append(target_index)\n        delta.append(row)\n        current += 1\n    accept = [bool(subset & accept_mask) for subset in subsets]\n    return delta, accept\n\n\ndef _hopcroft(delta, accept, letter_count):\n    state_count = len(delta)\n    inverse = [[[] for _ in range(state_count)] for _ in range(letter_count)]\n    for state, row in enumerate(delta):\n        for letter in range(letter_count):\n            inverse[letter][row[letter]].append(state)\n    block_of = [0] * state_count\n    blocks = []\n    accepting = [state for state in range(state_count) if accept[state]]\n    rejecting = [state for state in range(state_count) if not accept[state]]\n    for group in (accepting, rejecting):\n        if group:\n            block_id = len(blocks)\n            blocks.append(set(group))\n            for state in group:\n                block_of[state] = block_id\n    pending = set()\n    stack = []\n    if len(blocks) == 2:\n        first_id = 0 if len(blocks[0]) <= len(blocks[1]) else 1\n        pending.add(first_id)\n        stack.append(first_id)\n    while stack:\n        splitter = stack.pop()\n        pending.discard(splitter)\n        splitter_states = list(blocks[splitter])\n        for letter in range(letter_count):\n            inverse_letter = inverse[letter]\n            touched = {}\n            for target in splitter_states:\n                predecessors = inverse_letter[target]\n                for state in predecessors:\n                    block_id = block_of[state]\n                    members = touched.get(block_id)\n                    if members is None:\n                        touched[block_id] = [state]\n                    else:\n                        members.append(state)\n            for block_id, members in touched.items():\n                block = blocks[block_id]\n                if len(members) == len(block):\n                    continue\n                new_id = len(blocks)\n                block.difference_update(members)\n                blocks.append(set(members))\n                for state in members:\n                    block_of[state] = new_id\n                if block_id in pending:\n                    pending.add(new_id)\n                    stack.append(new_id)\n                else:\n                    chosen = new_id if len(members) <= len(block) else block_id\n                    pending.add(chosen)\n                    stack.append(chosen)\n    return block_of, len(blocks)\n\n\ndef _minimal_dfa(pattern, alphabet):\n    delta, accept = _build_dfa(pattern, alphabet)\n    block_of, count = _hopcroft(delta, accept, len(alphabet))\n    min_delta = [None] * count\n    min_accept = [False] * count\n    for state, row in enumerate(delta):\n        block_id = block_of[state]\n        if min_delta[block_id] is None:\n            min_delta[block_id] = [block_of[target] for target in row]\n            min_accept[block_id] = accept[state]\n    return block_of[0], min_delta, min_accept\n\n\ndef min_dfa_size(pattern: str, alphabet: str) -> int:\n    _check_alphabet(alphabet)\n    delta, accept = _build_dfa(pattern, alphabet)\n    _, count = _hopcroft(delta, accept, len(alphabet))\n    return count\n\n\ndef distinguish(p1: str, p2: str, alphabet: str) -> str | None:\n    _check_alphabet(alphabet)\n    start1, delta1, accept1 = _minimal_dfa(p1, alphabet)\n    start2, delta2, accept2 = _minimal_dfa(p2, alphabet)\n    letter_count = len(alphabet)\n    width = len(delta2)\n    start_key = start1 * width + start2\n    parent = {start_key: None}\n    queue = deque([start_key])\n    while queue:\n        key = queue.popleft()\n        state1, state2 = divmod(key, width)\n        if accept1[state1] != accept2[state2]:\n            letters = []\n            current = key\n            while parent[current] is not None:\n                previous, letter = parent[current]\n                letters.append(alphabet[letter])\n                current = previous\n            letters.reverse()\n            return \"\".join(letters)\n        row1 = delta1[state1]\n        row2 = delta2[state2]\n        for letter in range(letter_count):\n            next_key = row1[letter] * width + row2[letter]\n            if next_key not in parent:\n                parent[next_key] = (key, letter)\n                queue.append(next_key)\n    return None\n```\n",
+  "wall_s": 197.563,
+  "usage": {
+    "subagent_tokens": 50096
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 19,
+    "total": 19,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_alphabets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_language_and_empty_string",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_dot_and_classes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_specials_are_ordinary_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_quantifiers_and_groups",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_alternation_with_empty_branches",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_counting_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_string_can_distinguish",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shortest_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_follow_alphabet_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_minimal_dfa",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_larger_alphabet",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_shortest_difference",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_equal_large_languages",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.12,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h5-run3.md",
+  "imported_at": "2026-10-18T17:56:25+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:28+09:00"
+}

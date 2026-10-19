@@ -1,0 +1,163 @@
+{
+  "model": "opus-low",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 3,
+  "content": "```python\nimport random\nfrom math import gcd\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    pts = list({(int(p[0]), int(p[1]), int(p[2])) for p in points})\n    n = len(pts)\n    if n < 4:\n        raise ValueError(\"fewer than 4 distinct points\")\n    pts.sort()\n    random.Random(1234567).shuffle(pts)\n    X = [p[0] for p in pts]\n    Y = [p[1] for p in pts]\n    Z = [p[2] for p in pts]\n\n    i0, i1 = 0, 1\n    ux, uy, uz = X[i1] - X[i0], Y[i1] - Y[i0], Z[i1] - Z[i0]\n    i2 = -1\n    cx = cy = cz = 0\n    for k in range(2, n):\n        vx, vy, vz = X[k] - X[i0], Y[k] - Y[i0], Z[k] - Z[i0]\n        cx = uy * vz - uz * vy\n        cy = uz * vx - ux * vz\n        cz = ux * vy - uy * vx\n        if cx or cy or cz:\n            i2 = k\n            break\n    if i2 < 0:\n        raise ValueError(\"all points are collinear\")\n    i3 = -1\n    for k in range(2, n):\n        if k == i2:\n            continue\n        if cx * (X[k] - X[i0]) + cy * (Y[k] - Y[i0]) + cz * (Z[k] - Z[i0]) != 0:\n            i3 = k\n            break\n    if i3 < 0:\n        raise ValueError(\"all points are coplanar\")\n\n    fa = []\n    fb = []\n    fc = []\n    fnx = []\n    fny = []\n    fnz = []\n    fd = []\n    alive = []\n    fpts = []\n    edge = {}\n\n    def newface(a, b, c):\n        ax, ay, az = X[a], Y[a], Z[a]\n        bx, by, bz = X[b] - ax, Y[b] - ay, Z[b] - az\n        qx, qy, qz = X[c] - ax, Y[c] - ay, Z[c] - az\n        nx = by * qz - bz * qy\n        ny = bz * qx - bx * qz\n        nz = bx * qy - by * qx\n        f = len(fa)\n        fa.append(a)\n        fb.append(b)\n        fc.append(c)\n        fnx.append(nx)\n        fny.append(ny)\n        fnz.append(nz)\n        fd.append(nx * ax + ny * ay + nz * az)\n        alive.append(True)\n        fpts.append([])\n        edge[(a, b)] = f\n        edge[(b, c)] = f\n        edge[(c, a)] = f\n        return f\n\n    init = (i0, i1, i2, i3)\n    sx = sum(X[k] for k in init)\n    sy = sum(Y[k] for k in init)\n    sz = sum(Z[k] for k in init)\n    for tri in ((i0, i1, i2), (i0, i1, i3), (i0, i2, i3), (i1, i2, i3)):\n        a, b, c = tri\n        ax, ay, az = X[a], Y[a], Z[a]\n        bx, by, bz = X[b] - ax, Y[b] - ay, Z[b] - az\n        qx, qy, qz = X[c] - ax, Y[c] - ay, Z[c] - az\n        nx = by * qz - bz * qy\n        ny = bz * qx - bx * qz\n        nz = bx * qy - by * qx\n        d = nx * ax + ny * ay + nz * az\n        if nx * sx + ny * sy + nz * sz - 4 * d > 0:\n            b, c = c, b\n        newface(a, b, c)\n\n    done = [False] * n\n    for k in init:\n        done[k] = True\n    pfaces = [None] * n\n    for k in range(n):\n        if done[k]:\n            continue\n        s = set()\n        px, py, pz = X[k], Y[k], Z[k]\n        for f in range(4):\n            if fnx[f] * px + fny[f] * py + fnz[f] * pz > fd[f]:\n                s.add(f)\n                fpts[f].append(k)\n        pfaces[k] = s\n\n    for p in range(n):\n        if done[p]:\n            continue\n        done[p] = True\n        vis = pfaces[p]\n        pfaces[p] = None\n        if not vis:\n            continue\n        horizon = []\n        for f in vis:\n            a, b, c = fa[f], fb[f], fc[f]\n            for u, v in ((a, b), (b, c), (c, a)):\n                g = edge[(v, u)]\n                if g not in vis:\n                    horizon.append((u, v, f, g))\n        for f in vis:\n            alive[f] = False\n            a, b, c = fa[f], fb[f], fc[f]\n            del edge[(a, b)]\n            del edge[(b, c)]\n            del edge[(c, a)]\n        for u, v, f, g in horizon:\n            h = newface(u, v, p)\n            nx, ny, nz, d = fnx[h], fny[h], fnz[h], fd[h]\n            hp = fpts[h]\n            seen = set()\n            for lst in (fpts[f], fpts[g]):\n                for q in lst:\n                    if done[q] or q in seen:\n                        continue\n                    seen.add(q)\n                    if nx * X[q] + ny * Y[q] + nz * Z[q] > d:\n                        hp.append(q)\n                        pfaces[q].add(h)\n        for f in vis:\n            for q in fpts[f]:\n                if not done[q]:\n                    pfaces[q].discard(f)\n            fpts[f] = []\n\n    vol6 = 0\n    planes = set()\n    vplanes = {}\n    for f in range(len(fa)):\n        if not alive[f]:\n            continue\n        a, b, c = fa[f], fb[f], fc[f]\n        ax, ay, az = X[a], Y[a], Z[a]\n        bx, by, bz = X[b], Y[b], Z[b]\n        qx, qy, qz = X[c], Y[c], Z[c]\n        vol6 += ax * (by * qz - bz * qy) + ay * (bz * qx - bx * qz) + az * (bx * qy - by * qx)\n        nx, ny, nz, d = fnx[f], fny[f], fnz[f], fd[f]\n        g = gcd(gcd(abs(nx), abs(ny)), gcd(abs(nz), abs(d)))\n        key = (nx // g, ny // g, nz // g, d // g)\n        planes.add(key)\n        for v in (a, b, c):\n            s = vplanes.get(v)\n            if s is None:\n                s = set()\n                vplanes[v] = s\n            s.add(key)\n    nverts = sum(1 for s in vplanes.values() if len(s) >= 3)\n    return (vol6, len(planes), nverts)\n```\n",
+  "wall_s": 48.494,
+  "usage": {
+    "subagent_tokens": 33977
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.31,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-low/coding_v3/h1-run3.md",
+  "imported_at": "2026-10-18T20:03:18+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:33+09:00"
+}

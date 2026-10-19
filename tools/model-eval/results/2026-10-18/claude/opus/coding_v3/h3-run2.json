@@ -1,0 +1,183 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h3",
+  "run": 2,
+  "content": "```python\n_GENERIC = 1 << 62\n\n_KEYWORDS = frozenset(('fun', 'let', 'rec', 'in', 'if', 'then', 'else', 'true', 'false'))\n_LOWER = 'abcdefghijklmnopqrstuvwxyz'\n_DIGIT_STR = '0123456789'\n_NAME_START = frozenset(_LOWER + '_')\n_NAME_CHARS = frozenset(_LOWER + _LOWER.upper() + _DIGIT_STR + \"_'\")\n_DIGITS = frozenset(_DIGIT_STR)\n_SPACES = frozenset(' \\t\\n\\r')\n_SINGLE = frozenset('(),+*=<')\n_BINOPS = {\n    '=': (1, False),\n    '<': (1, False),\n    '::': (2, True),\n    '+': (3, False),\n    '-': (3, False),\n    '*': (4, False),\n}\n\n_INT = 'int'\n_BOOL = 'bool'\n\n_LIT_INT = ('int',)\n_LIT_BOOL = ('bool',)\n_LIT_NIL = ('nil',)\n\n\nclass _TVar:\n    __slots__ = ('ref', 'level')\n\n    def __init__(self, level):\n        self.ref = None\n        self.level = level\n\n\ndef _prune(t):\n    if type(t) is not _TVar or t.ref is None:\n        return t\n    root = t.ref\n    while type(root) is _TVar and root.ref is not None:\n        root = root.ref\n    while t is not root:\n        nxt = t.ref\n        t.ref = root\n        t = nxt\n    return root\n\n\ndef _run(gen):\n    \"\"\"Drive generator-based 'recursion' with an explicit stack.\"\"\"\n    stack = [gen]\n    value = None\n    while True:\n        try:\n            sub = stack[-1].send(value)\n        except StopIteration as stop:\n            stack.pop()\n            value = stop.value\n            if not stack:\n                return value\n            continue\n        stack.append(sub)\n        value = None\n\n\ndef _tokenize(src):\n    kinds = []\n    vals = []\n    i = 0\n    n = len(src)\n    while i < n:\n        c = src[i]\n        if c in _SPACES:\n            i += 1\n            continue\n        if c in _DIGITS:\n            j = i + 1\n            while j < n and src[j] in _DIGITS:\n                j += 1\n            kinds.append('int')\n            vals.append(src[i:j])\n            i = j\n            continue\n        if c in _NAME_START:\n            j = i + 1\n            while j < n and src[j] in _NAME_CHARS:\n                j += 1\n            word = src[i:j]\n            if word in _KEYWORDS:\n                kinds.append(word)\n            else:\n                kinds.append('name')\n            vals.append(word)\n            i = j\n            continue\n        if c == '-':\n            if i + 1 < n and src[i + 1] == '>':\n                kinds.append('->')\n                vals.append('->')\n                i += 2\n            else:\n                kinds.append('-')\n                vals.append('-')\n                i += 1\n            continue\n        if c == ':':\n            if i + 1 < n and src[i + 1] == ':':\n                kinds.append('::')\n                vals.append('::')\n                i += 2\n                continue\n            raise SyntaxError(\"unexpected ':'\")\n        if c == '[':\n            if i + 1 < n and src[i + 1] == ']':\n                kinds.append('nil')\n                vals.append('[]')\n                i += 2\n                continue\n            raise SyntaxError(\"'[' must be followed by ']'\")\n        if c in _SINGLE:\n            kinds.append(c)\n            vals.append(c)\n            i += 1\n            continue\n        raise SyntaxError(\"unexpected character %r\" % c)\n    kinds.append('eof')\n    vals.append(None)\n    return kinds, vals\n\n\ndef _mkfun(params, body):\n    for param in reversed(params):\n        body = ('fun', param, body)\n    return body\n\n\nclass _Parser:\n    def __init__(self, kinds, vals):\n        self.kinds = kinds\n        self.vals = vals\n        self.pos = 0\n\n    def _expect(self, kind):\n        if self.kinds[self.pos] != kind:\n            raise SyntaxError(\"expected %s\" % kind)\n        self.pos += 1\n\n    def _name(self):\n        if self.kinds[self.pos] != 'name':\n            raise SyntaxError(\"expected a name\")\n        value = self.vals[self.pos]\n        self.pos += 1\n        return value\n\n    def _names(self):\n        out = []\n        kinds = self.kinds\n        while kinds[self.pos] == 'name':\n            out.append(self.vals[self.pos])\n            self.pos += 1\n        return out\n\n    def expr(self):\n        kinds = self.kinds\n        k = kinds[self.pos]\n        if k == 'fun':\n            self.pos += 1\n            params = self._names()\n            if not params:\n                raise SyntaxError(\"fun needs at least one parameter\")\n            self._expect('->')\n            body = yield self.expr()\n            return _mkfun(params, body)\n        if k == 'let':\n            self.pos += 1\n            is_rec = False\n            if kinds[self.pos] == 'rec':\n                is_rec = True\n                self.pos += 1\n            name = self._name()\n            params = self._names()\n            if is_rec and not params:\n                raise SyntaxError(\"let rec needs at least one parameter\")\n            self._expect('=')\n            rhs = yield self.expr()\n            self._expect('in')\n            body = yield self.expr()\n            if params:\n                rhs = _mkfun(params, rhs)\n            return ('letrec' if is_rec else 'let', name, rhs, body)\n        if k == 'if':\n            self.pos += 1\n            cond = yield self.binary()\n            self._expect('then')\n            then_branch = yield self.expr()\n            self._expect('else')\n            else_branch = yield self.expr()\n            return ('if', cond, then_branch, else_branch)\n        return (yield self.binary())\n\n    def binary(self):\n        kinds = self.kinds\n        first = yield self.app()\n        out = [first]\n        ops = []\n        while True:\n            k = kinds[self.pos]\n            info = _BINOPS.get(k)\n            if info is None:\n                break\n            self.pos += 1\n            prec, right = info\n            while ops:\n                top_prec = _BINOPS[ops[-1]][0]\n                if top_prec > prec or (top_prec == prec and not right):\n                    op = ops.pop()\n                    rhs = out.pop()\n                    lhs = out.pop()\n                    out.append(('bin', op, lhs, rhs))\n                else:\n                    break\n            ops.append(k)\n            operand = yield self.app()\n            out.append(operand)\n        while ops:\n            op = ops.pop()\n            rhs = out.pop()\n            lhs = out.pop()\n            out.append(('bin', op, lhs, rhs))\n        return out[0]\n\n    def app(self):\n        kinds = self.kinds\n        func = None\n        while True:\n            k = kinds[self.pos]\n            if k == 'name':\n                arg = ('var', self.vals[self.pos])\n                self.pos += 1\n            elif k == 'int':\n                arg = _LIT_INT\n                self.pos += 1\n            elif k == 'true' or k == 'false':\n                arg = _LIT_BOOL\n                self.pos += 1\n            elif k == 'nil':\n                arg = _LIT_NIL\n                self.pos += 1\n            elif k == '(':\n                self.pos += 1\n                first = yield self.expr()\n                if kinds[self.pos] == ',':\n                    self.pos += 1\n                    second = yield self.expr()\n                    self._expect(')')\n                    arg = ('tuple', first, second)\n                else:\n                    self._expect(')')\n                    arg = first\n            else:\n                if func is None:\n                    raise SyntaxError(\"unexpected token %s\" % k)\n                return func\n            func = arg if func is None else ('app', func, arg)\n\n\ndef _bind(var, t):\n    if type(t) is _TVar:\n        if t.level > var.level:\n            t.level = var.level\n        var.ref = t\n        return\n    if type(t) is not str:\n        lvl = var.level\n        stack = [t]\n        seen = set()\n        while stack:\n            node = _prune(stack.pop())\n            if type(node) is _TVar:\n                if node is var:\n                    raise TypeError(\"recursive type\")\n                if node.level > lvl:\n                    node.level = lvl\n            elif type(node) is tuple:\n                key = id(node)\n                if key in seen:\n                    continue\n                seen.add(key)\n                stack.extend(node[1:])\n    var.ref = t\n\n\ndef _unify(a, b):\n    work = [(a, b)]\n    while work:\n        x, y = work.pop()\n        x = _prune(x)\n        y = _prune(y)\n        if x is y:\n            continue\n        if type(x) is _TVar:\n            _bind(x, y)\n        elif type(y) is _TVar:\n            _bind(y, x)\n        elif type(x) is str or type(y) is str:\n            if not (type(x) is str and type(y) is str and x == y):\n                raise TypeError(\"type mismatch\")\n        else:\n            if x[0] != y[0]:\n                raise TypeError(\"type mismatch\")\n            if x[0] == 'list':\n                work.append((x[1], y[1]))\n            else:\n                work.append((x[2], y[2]))\n                work.append((x[1], y[1]))\n\n\ndef _generalize(t, level):\n    found = False\n    stack = [t]\n    seen = set()\n    while stack:\n        node = _prune(stack.pop())\n        if type(node) is _TVar:\n            if node.level > level and node.level != _GENERIC:\n                node.level = _GENERIC\n                found = True\n            elif node.level == _GENERIC:\n                found = True\n        elif type(node) is tuple:\n            key = id(node)\n            if key in seen:\n                continue\n            seen.add(key)\n            stack.extend(node[1:])\n    return found\n\n\nclass _Infer:\n    def __init__(self):\n        self.level = 0\n        self.env = {}\n        a, b = _TVar(_GENERIC), _TVar(_GENERIC)\n        self.env['fst'] = [(('->', ('*', a, b), a), True)]\n        a, b = _TVar(_GENERIC), _TVar(_GENERIC)\n        self.env['snd'] = [(('->', ('*', a, b), b), True)]\n        a = _TVar(_GENERIC)\n        self.env['hd'] = [(('->', ('list', a), a), True)]\n        a = _TVar(_GENERIC)\n        self.env['tl'] = [(('->', ('list', a), ('list', a)), True)]\n        a = _TVar(_GENERIC)\n        self.env['null'] = [(('->', ('list', a), _BOOL), True)]\n\n    def _push(self, name, t, poly):\n        stack = self.env.get(name)\n        if stack is None:\n            self.env[name] = [(t, poly)]\n        else:\n            stack.append((t, poly))\n\n    def _pop(self, name):\n        self.env[name].pop()\n\n    def _instantiate(self, t):\n        level = self.level\n        root = _prune(t)\n        memo = {}\n        stack = [root]\n        while stack:\n            node = stack[-1]\n            key = id(node)\n            if key in memo:\n                stack.pop()\n                continue\n            if type(node) is _TVar:\n                memo[key] = _TVar(level) if node.level == _GENERIC else node\n                stack.pop()\n                continue\n            if type(node) is str:\n                memo[key] = node\n                stack.pop()\n                continue\n            kids = [_prune(child) for child in node[1:]]\n            missing = [child for child in kids if id(child) not in memo]\n            if missing:\n                stack.extend(missing)\n                continue\n            memo[key] = (node[0],) + tuple(memo[id(child)] for child in kids)\n            stack.pop()\n        return memo[id(root)]\n\n    def walk(self, node):\n        kind = node[0]\n        if kind == 'var':\n            name = node[1]\n            stack = self.env.get(name)\n            if not stack:\n                raise NameError(\"name %r is not defined\" % name)\n            t, poly = stack[-1]\n            return self._instantiate(t) if poly else t\n        if kind == 'int':\n            return _INT\n        if kind == 'bool':\n            return _BOOL\n        if kind == 'nil':\n            return ('list', _TVar(self.level))\n        if kind == 'app':\n            func_t = yield self.walk(node[1])\n            arg_t = yield self.walk(node[2])\n            result = _TVar(self.level)\n            _unify(func_t, ('->', arg_t, result))\n            return result\n        if kind == 'tuple':\n            first_t = yield self.walk(node[1])\n            second_t = yield self.walk(node[2])\n            return ('*', first_t, second_t)\n        if kind == 'bin':\n            op = node[1]\n            left_t = yield self.walk(node[2])\n            if op == '=':\n                right_t = yield self.walk(node[3])\n                _unify(left_t, right_t)\n                return _BOOL\n            if op == '::':\n                right_t = yield self.walk(node[3])\n                list_t = ('list', left_t)\n                _unify(right_t, list_t)\n                return list_t\n            _unify(left_t, _INT)\n            right_t = yield self.walk(node[3])\n            _unify(right_t, _INT)\n            return _BOOL if op == '<' else _INT\n        if kind == 'if':\n            cond_t = yield self.walk(node[1])\n            _unify(cond_t, _BOOL)\n            then_t = yield self.walk(node[2])\n            else_t = yield self.walk(node[3])\n            _unify(then_t, else_t)\n            return then_t\n        if kind == 'fun':\n            param = node[1]\n            param_t = _TVar(self.level)\n            self._push(param, param_t, False)\n            body_t = yield self.walk(node[2])\n            self._pop(param)\n            return ('->', param_t, body_t)\n        if kind == 'let' or kind == 'letrec':\n            name = node[1]\n            if kind == 'let':\n                self.level += 1\n                bound_t = yield self.walk(node[2])\n                self.level -= 1\n            else:\n                self.level += 1\n                self_t = _TVar(self.level)\n                self._push(name, self_t, False)\n                rhs_t = yield self.walk(node[2])\n                self._pop(name)\n                _unify(self_t, rhs_t)\n                self.level -= 1\n                bound_t = self_t\n            poly = _generalize(bound_t, self.level)\n            self._push(name, bound_t, poly)\n            body_t = yield self.walk(node[3])\n            self._pop(name)\n            return body_t\n        raise SyntaxError(\"unknown node\")\n\n\ndef _varname(index):\n    letter = _LOWER[index % 26]\n    suffix = index // 26\n    return \"'\" + letter + (str(suffix) if suffix else '')\n\n\ndef _push_wrapped(stack, t, tags):\n    pruned = _prune(t)\n    if type(pruned) is tuple and pruned[0] in tags:\n        stack.append((0, ')'))\n        stack.append((1, pruned))\n        stack.append((0, '('))\n    else:\n        stack.append((1, pruned))\n\n\ndef _show(t):\n    names = {}\n    out = []\n    stack = [(1, t)]\n    arrow_only = ('->',)\n    arrow_or_tuple = ('->', '*')\n    while stack:\n        tag, item = stack.pop()\n        if tag == 0:\n            out.append(item)\n            continue\n        node = _prune(item)\n        if type(node) is _TVar:\n            key = id(node)\n            index = names.get(key)\n            if index is None:\n                index = len(names)\n                names[key] = index\n            out.append(_varname(index))\n        elif type(node) is str:\n            out.append(node)\n        else:\n            head = node[0]\n            if head == '->':\n                stack.append((1, node[2]))\n                stack.append((0, ' -> '))\n                _push_wrapped(stack, node[1], arrow_only)\n            elif head == '*':\n                _push_wrapped(stack, node[2], arrow_or_tuple)\n                stack.append((0, ' * '))\n                _push_wrapped(stack, node[1], arrow_or_tuple)\n            else:\n                stack.append((0, ' list'))\n                _push_wrapped(stack, node[1], arrow_or_tuple)\n    return ''.join(out)\n\n\ndef infer(src: str) -> str:\n    kinds, vals = _tokenize(src)\n    parser = _Parser(kinds, vals)\n    tree = _run(parser.expr())\n    if kinds[parser.pos] != 'eof':\n        raise SyntaxError(\"unexpected token %s\" % kinds[parser.pos])\n    checker = _Infer()\n    result = _run(checker.walk(tree))\n    return _show(result)\n```\n",
+  "wall_s": 329.129,
+  "usage": {
+    "subagent_tokens": 64930
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 28,
+    "total": 28,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_literals_and_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_operators",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shadowing_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_curried_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_polymorphism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lambda_bound_is_monomorphic",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_generalization_of_environment_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_occurs_check",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec_polymorphic_after_in",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_if",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_printing_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_variable_naming_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_than_26_type_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_name_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_keyword_expressions_need_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors_come_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_names_and_reserved_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_whitespace_and_layout",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_programs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_lets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_many_nested_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_program",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.06,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h3-run2.md",
+  "imported_at": "2026-10-18T17:10:11+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:27+09:00"
+}

@@ -1,0 +1,30 @@
+{
+  "item": "m3",
+  "parts": [
+    {
+      "key": "a",
+      "value": 0.4764012244017012,
+      "rel_tol": 1e-05,
+      "formula": "1 - pi/6",
+      "monte_carlo": 0.4762946,
+      "monte_carlo_std_error": 6.4e-05
+    },
+    {
+      "key": "b",
+      "value": 0.4000354056994857,
+      "rel_tol": 1e-05,
+      "formula": "0.488 - 0.028*pi",
+      "monte_carlo": 0.4000837,
+      "monte_carlo_std_error": 6.3e-05
+    },
+    {
+      "key": "c",
+      "value": 0.46617107042778555,
+      "rel_tol": 1e-05,
+      "formula": "1 - pi/6 - 8E（E は角 1 つ分の球の外の体積。reference.py の 1 次元積分）",
+      "monte_carlo": 0.4661306,
+      "monte_carlo_std_error": 6.4e-05
+    }
+  ],
+  "note": "value は reference.py の answers()。monte_carlo は suites/math/verify_numeric.py（numpy、標本 4,000 万〜6,000 万）の検算。採点は相対誤差 rel_tol 以内で正解。"
+}

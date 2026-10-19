@@ -1,0 +1,57 @@
+{
+  "model": "sonnet",
+  "suite": "math",
+  "item": "m2",
+  "run": 3,
+  "content": "## 解法\n\nu = x - 1 とおく。V1 は線分 u∈[-1,0]（y=z=0）のまわりの距離 r 以内、V2 は線分 y∈[0,1]（u=z=0）のまわりの距離 r 以内の立体。\nW = V1 \\ V2 なので、体積・モーメントとも V1 の値から交わり I = V1∩V2 の値を引く。\n\n### V1\n- 体積 Vol1 = pi r^2 + (4/3) pi r^3\n- 対称性から x の重心は 0.5、y の重心は 0。よって ∫x dV = 0.5 Vol1、∫y dV = 0。\n\n### 交わり I\nI は u∈[-r,r]、y∈[-r,r] の範囲にあり、(u,y) の符号で 4 つに分かれる。\n- u<=0, y>=0: V1 の条件は y^2+z^2<=r^2、V2 の条件は u^2+z^2<=r^2 となる。2 本の円柱の交わり（Steinmetz 立体）の 1/4 で、体積は 4r^3/3。\n  z ごとに s = sqrt(r^2-z^2) として箱 [-s,0]×[0,s] になる。\n  ∫u dV = -(1/2)∫s^3 dz = -3 pi r^4/16、∫y dV = +3 pi r^4/16。\n- それ以外の 3 つ（u>0,y>=0 / u<=0,y<0 / u>0,y<0）: 両方の条件が球 u^2+y^2+z^2<=r^2 になる。各 1/4 球で、体積は pi r^3/3、\n  ∫u dV = ±pi r^4/8、∫y dV = ±pi r^4/8（符号は u と y の符号どおり）。\n\n合計\n- Vol_I = 4r^3/3 + pi r^3\n- ∫u dV (I) = -3pi r^4/16 + pi r^4/8 - pi r^4/8 + pi r^4/8 = -pi r^4/16\n- ∫y dV (I) = 3pi r^4/16 + pi r^4/8 - pi r^4/8 - pi r^4/8 = +pi r^4/16\n- ∫x dV (I) = ∫u dV + Vol_I = Vol_I - pi r^4/16\n\n### W\n- 体積 V = Vol1 - Vol_I = pi r^2 + (pi-4) r^3/3\n  r = 0.6 を入れると V = 0.432 pi - 0.288 ≈ 1.069168\n- ∫x dV (W) = 0.5 Vol1 - (Vol_I - pi r^4/16) = pi r^2/2 - pi r^3/3 - 4r^3/3 + pi r^4/16\n  r = 0.6 を入れると 0.1161 pi - 0.288 ≈ 0.0767389\n- ∫y dV (W) = -pi r^4/16 = -0.0081 pi ≈ -0.0254469\n\n### 重心\n- x = (0.1161 pi - 0.288)/(0.432 pi - 0.288) ≈ 0.0717744\n- y = -0.0081 pi/(0.432 pi - 0.288) ≈ -0.0238007\n\n答え(a): 0.432*pi - 0.288\n答え(b): (0.1161*pi - 0.288)/(0.432*pi - 0.288)\n答え(c): -0.0081*pi/(0.432*pi - 0.288)\n",
+  "wall_s": 46.969,
+  "usage": {
+    "subagent_tokens": 33982
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(0.1161*pi - 0.288)/(0.432*pi - 0.288)",
+        "value": 0.07177441261846827,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.1601171477293466e-15
+      },
+      {
+        "key": "c",
+        "text": "-0.0081*pi/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet/math/m2-run3.md",
+  "imported_at": "2026-10-18T17:41:41+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:44+09:00"
+}

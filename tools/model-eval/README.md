@@ -1,7 +1,11 @@
 # model-eval
 
-10 の AI（Claude 2 種・Ollama 5 種・Strata 3 種）を、頭の良さ（3D 数学）・コーディング 6 問・追加の 3 試験で比べる道具。
+11 の AI（Claude 2 種・Ollama 4 種・Strata 5 種。Strata の公式 IQ3_S と Swift 1.5 は 2026-10-16 に `targets.py` へ足したもので、
+計測はまだ。Ollama の `gemma4:31b-ctx32k` は 2026-10-18 に消したので、2026-10-08 の評価の記録にだけ残る）を、
+頭の良さ（3D 数学）・コーディング 6 問・追加の 3 試験で比べる道具。
 結果は `summarize.py` → `build_report.py` で `Documents/AIモデル評価_2026-10-08.html` にまとめる。
+2026-10-18 には、Sonnet と Opus で差が付くように作った難しいコーディング 6 問と数学 3 問で測り直した
+（下の「2026-10-18 の評価」。`build_report_hard.py` → `Documents/AIモデル評価_2026-10-18.html`）。
 標準ライブラリだけで書いてあり、`/usr/bin/python3`（3.12）で動く。venv は作らない。
 
 計画は `~/.claude/plans/graceful-questing-panda.md`（方針 1〜7）。
@@ -10,18 +14,24 @@
 
 | パス | 内容 |
 |---|---|
-| `run_eval.py` | 入口。`run`（ローカルの 1 モデルを流して採点。`--max-tokens`・`--reasoning-budget`・`--prompt-lang`・`--retry-eos`）・`grade-claude`・`regrade`・`unload`・`pending`・`show-prompt`・`list` |
-| `targets.py` | 10 の AI の定義（API のモデル名・ポート・unit・表示名・系統） |
+| `run_eval.py` | 入口。`run`（ローカルの 1 モデルを流して採点。`--max-tokens`・`--reasoning-budget`・`--prompt-lang`・`--retry-eos`・`--deadline`・`--progress`）・`grade-claude`・`claude-prompt`・`import-claude`・`regrade`・`unload`・`pending`・`show-prompt`・`list` |
+| `targets.py` | 11 の AI の定義（API のモデル名・ポート・unit・表示名・系統） |
 | `evallib/clients.py` | Ollama `/api/chat`（NDJSON）と Strata `/v1/chat/completions`（SSE）のストリームを同じ形の結果に揃える |
 | `evallib/sandbox.py` | コーディングの採点（コードの取り出し・静的な走査・隠しテストの実行） |
 | `evallib/scoring.py` | ランキングの式（能力・速度点・総合） |
-| `evallib/common.py` | パス・問の一覧・上限・問題文の組み立て・記録の読み書き |
+| `evallib/common.py` | パス・問の一覧・上限・問題文の組み立て・記録の読み書き（`HARD_ORDER` は 2026-10-18 の 9 問の流す順） |
+| `evallib/progress.py` | 進捗の状態ファイル（`progress.json`）の読み書きと、経過・残り時間の計算 |
+| `progress.py` | 進捗の表示（いま何を試験中か・工程と全行程の経過と残り）と、工程の境・Claude の各回の書き込み |
 | `suites/coding/` | `PREAMBLE.md`（共通の指示）、`c1`〜`c6/` の `prompt.md`・`tests.py`（隠しテスト）・`reference.py`（参照解）、`harness.py`。英語版 `PREAMBLE.en.md`・`c4/prompt.en.md`・`c5/prompt.en.md` と、日本語版との対応表 `TRANSLATION_NOTES.md` |
 | `suites/extra/` | `inst1`〜`3`・`needle1`〜`3`・`json1`〜`3/` の `prompt.md`・`answer.json`、採点器 `grade_extra.py`、`make_needle.py` |
+| `suites/coding_v3/` | 2026-10-18 の難しいコーディング 6 問。`PREAMBLE.md`（v2 と同文）、`h1`〜`h6/` の `prompt.md`・`tests.py`・`reference.py`・`oracle.py`（h3・h5 は乱数の入力を作る `gen_*.py` も） |
+| `suites/math/` | 2026-10-18 の数学 3 問。`POSTAMBLE.md`（答えの書き方）、`m1`〜`m3/` の `prompt.md`・`answer.json`・`reference.py`、採点器 `grade_math.py`、検算 `verify_numeric.py`（numpy） |
 | `summarize.py` | `results/<日付>/` を集めて `summary.json` を作る |
 | `build_report.py` | `summary.json`（と `findings.json`）から HTML を作る |
+| `build_report_hard.py` | 2026-10-18 の評価の HTML（Sonnet と Opus の差・時間の実績の節つき）。表と図は `build_report.py` の部品を使う |
+| `build_problem_guide_hard.py` | 2026-10-18 の 9 問の解説書（`Documents/AIモデル評価_出題内容_2026-10-18.html`）を作る。本文は `suites/problem_guide_hard.json`、結果のマスは `summary.json` |
 | `build_problem_guide.py` | 出した 16 問の解説書（`Documents/AIモデル評価_出題内容_2026-10-08.html`）を作る。本文は `suites/problem_guide.json`、結果のマスは `summary.json` |
-| `run_local.sh` | ローカルの 7 モデルを決めた順に全部流す（再開できる。最後に `results/<日付>/DONE`） |
+| `run_local.sh` | ローカルのモデルを決めた順に全部流す（再開できる。最後に `results/<日付>/DONE`）。`ORDER`・`SUITE`・`BUDGET_MIN`・`DEADLINE`・`--dry-run` |
 | `run_kv_compare.sh` | Strata 3 種で KV キャッシュの型（int8 / fp16）を変えて C4・C5 を流す（下の「KV キャッシュの比べ」）。最後に `results/2026-10-09-kv/DONE` |
 | `run_fix_compare.sh` | Strata 3 種のコーディング性能の調査。C4・C5 を思考の上限なし・生成 65,536 で流し（実験 A）、問題文を英語にしても流す（実験 B）（下の「コーディング性能の調査」）。最後に `results/2026-10-09-fix/DONE` |
 | `cond_compare.py` | 条件を変えて流した C4・C5 の集計（`summarize`）・HTML（`report`）と、`run_fix_compare.sh`・`run_kv_compare.sh` が使う小道具（`server-info`・`journal-counts`・`pending`・`copy-baseline`・`check-kv`・`copy-int8-rep1`）。条件名は任意 |
@@ -133,6 +143,82 @@ uvx --with pytest pytest tools/model-eval/tests -q
 
 一時ファイルは `work/pytest/` の下に作って消す（/tmp を使わない）。`pytest.ini` でキャッシュも作らない。
 
+## 2026-10-18 の評価（Sonnet と Opus で差が付く難問 + ローカル 9 モデル + 18 時間の工程管理）
+
+前回（2026-10-08）は Claude 2 種がすべての試験で満点になり能力の差が測れなかったので、差が付くように問題を作り直した。
+計画は `~/.claude/plans/pasted-content-id-9510-home-mt-proj-loc-purrfect-hopcroft.md`。結果は `results/2026-10-18/`、
+文書は `Documents/AIモデル評価_2026-10-18.html`（`build_report_hard.py`）。
+
+| 試験 | 問 | 採点 |
+|---|---|---|
+| `suites/coding_v3/`（難しいコーディング 6 問） | H1 3D 凸包（整数・同一平面の面をまとめる）・H2 最短で辞書順最小の編集スクリプト（O(ND)）・H3 Hindley–Milner の型推論・H4 分母上限つきの最良有理近似・H5 正規表現の最小 DFA と区別する最短の文字列・H6 ドミノと L トロミノの敷き詰めの数 | 隠しテストの合格率（18〜28 ケース・部分点）。各問に `reference.py`（参照解）と `oracle.py`（別の作りの総当たり）。期待値は参照解で計算し、オラクルと照合した（`tests/test_hard.py`） |
+| `suites/math/`（数学 3 問） | M1 正四面体の平行体（体積・表面積）・M2 2 本の線分のまわりの立体の差（体積・重心）・M3 立方体の中の点の確率（3 つの d） | 本文の `答え(a): <値>` の行を `grade_math.py` が読み、相対誤差 1e-5 で比べる。正解は `reference.py` の閉じた式と、`verify_numeric.py`（numpy のモンテカルロ）で検算した値（`answer.json`） |
+
+- 流す順は `common.HARD_ORDER`（H4 → M1 → H1 → H3 → M2 → H6 → M3 → H2 → H5、易しい順）。`run_eval.py run --suite hard`。
+- 問題は計測の前に凍結した（`results/2026-10-18/frozen.json` に sha256）。変えたら全モデル流し直しになる。
+- 条件は前回と同じ（生成 32,768・Strata の思考予算 24,576・1 要求 40 分・thinking あり）。ローカルは各問 1 回、Claude は各問 3 回。
+  Claude は Sonnet・Opus × effort xhigh・high・medium・low の 8 種（`targets.CLAUDE_EFFORT_PAIRS`）。
+- 1 モデルの累計時間の上限は、はじめ 70 分。`run_local.sh` の `DEADLINE`（全モデルの締切）から逆算して、後ろのモデルの上限を詰める。
+  `run_eval.py run --deadline` は締切を過ぎた問を飛ばし、1 要求の時間上限も締切までに縮める。
+- 10-19 00:47 に利用者の指示で期限と上限を外した。上限で飛ばされた問（qwen3.8:27b 3 問・qwen3.8-flash-next:IQ4_XS 5 問）の元の記録を
+  `results/2026-10-18/skipped-budget70/` に写し、`BUDGET_MIN=100000`（上限なし）・`DEADLINE` なし・`--retry-skipped` で流し直した。
+  `summarize.py` はこの置き場から `budget_reruns`（流し直した問と結果）を、`meta.json` の argv から `model_budgets_min`（渡した上限の並び。
+  例 `[70, 100000]`）を作り、HTML の 6 節に 70 分の時点の点と流し直した後の点を並べる。
+- 採点の改定（問題文は変えず、隠しテストと採点器だけ）は `frozen.json` の `amendments` に理由と sha256 を残した。最後に、ほかの計測の
+  止まった機体で全記録を 2 回続けて採点し直し、2 回の点が一致することを確かめた。
+
+```bash
+# ローカル 9 モデル（背景で。終わりは results/2026-10-18/DONE）
+ORDER="gemma4:e4b,qwen3.8:27b,gemma4:31b-it-qat,strata-official:IQ3_XXS,strata-official:IQ3_S,strata-swift:IQ3_XXS,strata-flash-coder:IQ1_M,strata-flash-next:IQ3_S,qwen3.8-flash-next:IQ4_XS" \
+  SUITE=hard RUN_DATE=2026-10-18 BUDGET_MIN=70 DEADLINE=2026-10-19T06:40:41+09:00 ./run_local.sh
+./run_local.sh --dry-run            # 順番・上限・命令を出すだけ（同じ環境変数で）
+# 時間の上限で飛ばされた問だけを、上限なしで流し直す（10-19 の P1b）
+ORDER="qwen3.8:27b,qwen3.8-flash-next:IQ4_XS" SUITE=hard RUN_DATE=2026-10-18 BUDGET_MIN=100000 ./run_local.sh --retry-skipped
+# Claude（メインが Agent ツールで起動）。問題文のファイルを書き、受験用の指示文を出す
+./run_eval.py claude-prompt --date 2026-10-18 --model opus --suite coding_v3 --item h1 --run 1
+# 受験側が保存した答え（claude-raw/）を記録にする。ツールは Read・Write・SubagentHandback の 3 回だけ許す
+./run_eval.py import-claude --date 2026-10-18 --model opus --suite coding_v3 --item h1 --run 1 --wall-s 120 --tokens 40000 \
+  --tool-uses-raw 3 --tool-names Read,Write,SubagentHandback
+./run_eval.py grade-claude --date 2026-10-18
+./run_eval.py regrade --date 2026-10-18          # ローカルの記録を今の採点器で採点し直す
+./summarize.py --results-dir results/2026-10-18 --suites coding_v3,math --no-math3d
+./build_report_hard.py                           # 所見は results/2026-10-18/findings.json（facts・opinions）
+./build_problem_guide_hard.py                    # 9 問の解説書（Documents/AIモデル評価_出題内容_2026-10-18.html）
+```
+
+9 問の解説書は、2026-10-08 の解説書（`build_problem_guide.py`）と同じ作り。解説の本文は `suites/problem_guide_hard.json`（手で書く）で、
+問題ごとに、やること・具体例・何が難しいか・何の力を見るか・採点の仕方（隠しテストの種類と件数）・用語・結果のマス（Claude は 3 回の
+平均と回ごとの点）・問題文の原文を載せる。数学は図（M1 は 2 次元で描いた同じ考え方、M2・M3 は断面）と、answer.json の正解の式と値、
+H6 は 2 × 3 の 5 通りの敷き詰めの図を付ける。読み込みのときに、具体例の文字列が問題文にあること、隠しテストの件数が `tests.py` の
+`def case_` の数と合うこと、数学の小問が `answer.json` と合うことを確かめ、食い違えば HTML を作らず終了コード 1 で止まる。
+
+### 進捗の表示（`progress.py`）
+
+いま何を試験中か・工程ごとの経過と残り・全行程の経過と残りを 1 画面に出す。状態は `results/2026-10-18/progress.json`
+（`run_local.sh` と `run_eval.py --progress` がモデルと問の開始・終了を、メインが工程の境と Claude の各回を書く）。読み取りだけ。
+
+```bash
+./progress.py show                 # 1 回だけ表示
+./progress.py show --watch 30      # 30 秒ごとに表示し直す（Ctrl-C で止める）
+./progress.py show --json          # 同じ内容を JSON で
+ssh <サーバー> ~/Proj/localai/tools/model-eval/progress.py show --watch 30   # 他の PC から
+
+# 途中で計画を変えたとき（メインが書く）
+./progress.py phase add P1b --label "ローカルの流し直し（時間の上限なし）" --planned-min 160 --depends P1 --before P3 --lane local
+./progress.py deadline lift --note "ユーザーの指示"   # 全行程の期限を外す（deadline restore で戻す）
+```
+
+- 工程の残り = 計画 − 経過（超過なら「超過」）。ローカルの計測（P1 と `--lane local` で足した工程）は、いまのモデルの上限の残り +
+  後のモデル数 ×（上限 + 切替 5 分）を締切で頭打ちにした値。1 モデルの上限が 10000 分以上（`BUDGET_MIN=100000` など）なら「上限なし」と
+  みなし、いまのモデルの残りの問 × 1 問の見込み（記録済みの累計 ÷ 記録済みの問。無ければ `est_item_min`、既定 15 分）+
+  後のモデルの残りの問（`run_local.sh` が書く `items_after`）× `est_item_min` + 後のモデル数 × 切替 5 分にする。
+- まだ始まっていない工程の開始の見込みは、前の工程（状態ファイルの `depends`。無ければ P3 は P1・P2）の終了の見込みから出す。
+  `phase add --before P3` で足した工程は P3 の `depends` にも入る。
+- 全行程は「期限（T0 + 18 時間）まで残り」と「見込みの残り（各工程の終了の見込みの最大）」の両方を出す。`deadline lift` のあとは
+  「期限まで残り」の代わりに、外した時刻と理由を出す。
+- 2026-10-18 の評価では、10-19 00:47 に期限を外し、時間の上限で飛ばされた問を上限なしで流し直す工程 P1b を足した
+  （飛ばされた元の記録は `results/2026-10-18/skipped-budget70/` に残す）。
+
 ## 問題文（ローカルと Claude で同じもの）
 
 system メッセージは使わない。user メッセージの全文は次のとおり（`run_eval.py show-prompt` で確かめられる）。
@@ -238,8 +324,9 @@ results/2026-10-08/claude/<sonnet|opus>/<math3d|coding|extra>/<問ID>-run<n>.jso
 | 追加 3 種 × 3 問 | 8,192 | 6,144 | 20 分 |
 
 - thinking はすべてあり（Ollama `think: true`、Strata `reasoning_effort: "high"`）。
-- サンプリング: Ollama は送らない（各 Modelfile の既定）。`num_ctx` も送らない（it-qat はサーバーの既定 65536、
-  ctx32k は Modelfile の 32768。差がそのまま測れる）。Strata は temperature 1.0 / top_p 0.95 / top_k 20 を送る。
+- サンプリング: Ollama は送らない（各 Modelfile の既定）。`num_ctx` も送らない（各 Modelfile の `num_ctx`。2026-10-18 から
+  A30 に載る最大を Modelfile に持たせている: `tools/qwen-model-bench/README.md` の「文脈長の上限」。2026-10-08 の評価のときは
+  it-qat がサーバーの既定 65536、ctx32k が Modelfile の 32768 だった）。Strata は temperature 1.0 / top_p 0.95 / top_k 20 を送る。
 - Ollama は最初に `/api/generate` で読み込んでから流す（ロード時間を問の時間から外す）。keep_alive は 15 分で、
   1 モデル終わるごとに `unload`（keep_alive:0）で降ろす。
 - 上の値は `run_eval.py run` の既定。`--max-tokens` と `--reasoning-budget`（0 = 上限なし。Strata の要求にだけ効く）で上書きでき、
@@ -269,7 +356,8 @@ results/2026-10-08/claude/<sonnet|opus>/<math3d|coding|extra>/<問ID>-run<n>.jso
   `os.fork`・削除系・動的な `__import__` を見つけたら実行せず 0 点。
 - 実行中: `python3 -I -S -B`、禁止モジュールの import を `sys.meta_path` で拒む、`open` と os のプロセス・書き込み・削除系の
   関数を差し替える、`print` は捨てる。
-- 資源: 壁時計 10 秒・CPU 10 秒・アドレス空間 1 GiB・書けるファイル 1 MiB・子プロセスを作れない（RLIMIT_NPROC 0）。
+- 資源: 壁時計 10 秒・CPU 10 秒・アドレス空間 2 GiB（2026-10-18 に 1 GiB から変更）・書けるファイル 1 MiB。子プロセスは静的な走査と実行時の差し替えで止める。
+  2026-10-08 の評価のときは RLIMIT_NPROC 0 でスレッドも作れなかった。2026-10-18 に外した（スレッドで深い再帰を動かす答えが、問題文で禁じていないのに全部落ちたため）。2026-10-08 の記録は採点し直していない
   1 ケース 3 秒（SIGALRM）。作業ディレクトリは `work/` の下で、/tmp は使わない。
 
 ## ランキングの式（計画の方針 6。HTML にも出す）

@@ -1,0 +1,49 @@
+{
+  "model": "opus-medium",
+  "suite": "math",
+  "item": "m1",
+  "run": 1,
+  "content": "## 考え方\n\nK は凸体 T の平行体なので、シュタイナーの公式（Steiner formula）が使える。\n\n- 中身: T 自体。体積 V_T = sqrt(2)/12、表面積 S = sqrt(3)。\n- 面の上: 各面を厚さ r だけ押し出した角柱。体積 S r、表面積 S。\n- 辺のまわり: 円柱の一部。辺の外角は pi - θ（θ = acos(1/3) は二面角）。辺 6 本・長さ 1 なので\n  体積 6 · (1/2)(pi - θ) r^2 = 3(pi - θ) r^2、表面積 6 · (pi - θ) r = 6(pi - θ) r。\n- 頂点のまわり: 球の一部。4 つ合わせてちょうど球 1 個分。体積 (4/3)pi r^3、表面積 4 pi r^2。\n\nr = 0.6 を代入する。\n\n(a) V = sqrt(2)/12 + 0.6 sqrt(3) + 1.08 (pi - acos(1/3)) + 0.288 pi\n ≈ 0.1178511 + 1.0392305 + 2.0634839 + 0.9047787 ≈ 4.125344\n\n(b) A = sqrt(3) + 3.6 (pi - acos(1/3)) · 2 + 1.44 pi\n = sqrt(3) + 7.2 (pi - acos(1/3)) + 1.44 pi\n ≈ 1.7320508 + 6.8782796 + 4.5238934 ≈ 13.134224\n\n答え(a): sqrt(2)/12 + 3*sqrt(3)/5 + (27/25)*(pi - acos(1/3)) + (36/125)*pi\n答え(b): sqrt(3) + (36/5)*(pi - acos(1/3)) + (36/25)*pi\n",
+  "wall_s": 17.586,
+  "usage": {
+    "subagent_tokens": 29846
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 0.5,
+    "all_passed": false,
+    "passed": 1,
+    "total": 2,
+    "parts": [
+      {
+        "key": "a",
+        "text": "sqrt(2)/12 + 3*sqrt(3)/5 + (27/25)*(pi - acos(1/3)) + (36/125)*pi",
+        "value": 4.125344194121885,
+        "expected": 4.125344194121884,
+        "ok": true,
+        "rel_error": 2.1529801585178563e-16
+      },
+      {
+        "key": "b",
+        "text": "sqrt(3) + (36/5)*(pi - acos(1/3)) + (36/25)*pi",
+        "value": 20.012503529731113,
+        "expected": 13.134223879234646,
+        "ok": false,
+        "rel_error": 0.523691366443898
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-medium/math/m1-run1.md",
+  "imported_at": "2026-10-18T18:51:42+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

@@ -1,0 +1,133 @@
+{
+  "model": "sonnet-high",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 3,
+  "content": "```python\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n = len(a)\n    m = len(b)\n    ra = a[::-1]\n    rb = b[::-1]\n    NEG = -10**9\n\n    # 末尾側から Myers 法を走らせる。\n    # W[d][k + d] = 対角 k (= p - q) 上で、a[i:] と b[j:] の編集距離が d 以下になる\n    # 点のうち最も遠い p (p = n - i, q = m - j)。\n    # 対角に沿って編集距離は単調非減少なので、「p <= W[d][k + d]」と\n    # 「その点の距離 <= d」は同値になる。\n    W = []\n    target = n - m\n    d = 0\n    while True:\n        cur = [NEG] * (2 * d + 1)\n        prev = W[d - 1] if d >= 1 else None\n        prev2 = W[d - 2] if d >= 2 else None\n        for k in range(-d, d + 1, 2):\n            if d == 0:\n                x = 0\n            else:\n                x = NEG\n                if k - 1 >= -(d - 1):\n                    v = prev[k - 1 + d - 1]\n                    if v > NEG and v + 1 <= n and v + 1 > x:\n                        x = v + 1\n                if k + 1 <= d - 1:\n                    v = prev[k + 1 + d - 1]\n                    if v > NEG and v - k <= m and v > x:\n                        x = v\n                if d >= 2 and -(d - 2) <= k <= d - 2:\n                    v = prev2[k + d - 2]\n                    if v > x:\n                        x = v\n                if x == NEG:\n                    continue\n            y = x - k\n            while x < n and y < m and ra[x] == rb[y]:\n                x += 1\n                y += 1\n            cur[k + d] = x\n        W.append(cur)\n        if -d <= target <= d and cur[target + d] == n:\n            break\n        d += 1\n    remaining = d\n\n    def feasible(i: int, j: int, budget: int) -> bool:\n        if budget < 0:\n            return False\n        p = n - i\n        q = m - j\n        k = p - q\n        if k < -budget or k > budget:\n            return False\n        return p <= W[budget][k + budget]\n\n    result = []\n    i = 0\n    j = 0\n    while i < n or j < m:\n        if i < n and j < m and a[i] == b[j]:\n            result.append((\"=\", i, j))\n            i += 1\n            j += 1\n        elif i < n and feasible(i + 1, j, remaining - 1):\n            result.append((\"-\", i))\n            i += 1\n            remaining -= 1\n        else:\n            result.append((\"+\", j))\n            j += 1\n            remaining -= 1\n    return result\n```\n",
+  "wall_s": 66.602,
+  "usage": {
+    "subagent_tokens": 37452
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.1,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-high/coding_v3/h2-run3.md",
+  "imported_at": "2026-10-18T18:47:18+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:45+09:00"
+}

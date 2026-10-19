@@ -1,0 +1,201 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 1,
+  "prompt": "次の仕様を満たす Python 3.12 のコードを書いてください。\n\n守ること:\n- 標準ライブラリだけを使う。外部のパッケージは使わない。\n- ファイルの読み書き、ネットワーク、サブプロセス、標準入力からの読み込みをしない。\n- 仕様にある関数名・クラス名・引数の名前をそのまま使う。\n- 答えは ```python で始まるコードブロック 1 つだけにする。ブロックには仕様の関数やクラスの定義と、それが使う import・補助の関数だけを入れ、テスト・使用例・print は入れない。ブロックの外の説明は要らない。\n\n## 問題 H1: 整数座標の 3 次元凸包\n\n関数 `hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]` を書いてください。3 次元空間の整数座標の点の集まりの凸包（すべての点を含む最小の凸多面体）について、`(volume6, n_faces, n_vertices)` を返します。\n\n- `volume6`: 凸包の体積の 6 倍（整数になる）。\n- `n_faces`: 凸包の面の数。同じ平面にある三角形はまとめて 1 つの面（多角形）と数える。たとえば立方体の面は 6。\n- `n_vertices`: 凸包の頂点（角）の数。辺の途中や面の内側、凸包の内部にある点は頂点ではない。同じ座標の点が何度あっても 1 つと数える。\n\n### 入力と誤り\n\n- 座標は絶対値が 10**6 以下の整数。点は最大 3,000 個。同じ座標の点が重なっていてもよい。\n- 異なる点が 4 つ未満のとき、またはすべての点が 1 つの平面上（直線上も含む）にあるときは `ValueError`。\n- 浮動小数点数で計算すると、同じ平面にあるかの判定を誤る。整数だけで計算してください。\n\n### 性能\n\n- 3,000 点（すべての点が凸包の表面にある場合や、格子状に並んで同じ平面に多くの点がある場合も含む）で、1 回の呼び出しが 1 秒程度で終わること。O(n**4) の総当たりや、点を追加するたびにすべての面を調べ直す作りでは時間切れになることがある。\n\n例:\n- `hull3d([(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)])` → `(1, 4, 4)`\n- 立方体の 8 つの角 `[(x, y, z) for x in (0, 1) for y in (0, 1) for z in (0, 1)]` → `(6, 6, 8)`\n- 0〜2 の格子点 27 個（各辺の中点・各面の中心・中心を含む）→ `(48, 6, 8)`",
+  "prompt_chars": 1148,
+  "prompt_lang": "ja",
+  "limits": {
+    "max_tokens": 32768,
+    "reasoning_budget_tokens": null,
+    "request_timeout_s": 2400
+  },
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-18T18:13:39+09:00",
+  "request_timeout_s": 2400.0,
+  "finished_at": "2026-10-18T18:21:02+09:00",
+  "content": "```python\nfrom math import gcd\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    # Remove duplicate points\n    unique_points = list(set(points))\n    n = len(unique_points)\n    if n < 4:\n        raise ValueError(\"Not enough distinct points to form a 3D convex hull.\")\n\n    # Find initial tetrahedron to avoid collinear or coplanar cases\n    p0 = unique_points[0]\n    p1 = None\n    idx1 = -1\n    for i in range(1, n):\n        if unique_points[i] != p0:\n            p1 = unique_points[i]\n            idx1 = i\n            break\n    if p1 is None:\n        raise ValueError(\"All points are the same.\")\n\n    p2 = None\n    idx2 = -1\n    for i in range(1, n):\n        if i == idx1:\n            continue\n        # Cross product (p1-p0) x (pi-p0)\n        a = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])\n        b = (unique_points[i][0] - p0[0], unique_points[i][1] - p0[1], unique_points[i][2] - p0[2])\n        cp = (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])\n        if cp != (0, 0, 0):\n            p2 = unique_points[i]\n            idx2 = i\n            break\n    if p2 is None:\n        raise ValueError(\"All points are collinear.\")\n\n    p3 = None\n    idx3 = -1\n    # Normal of plane p0-p1-p2\n    a = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])\n    b = (p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2])\n    n_init = (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])\n    for i in range(1, n):\n        if i == idx1 or i == idx2:\n            continue\n        # Dot product n_init . (pi-p0)\n        dp = n_init[0] * (unique_points[i][0] - p0[0]) + \\\n             n_init[1] * (unique_points[i][1] - p0[1]) + \\\n             n_init[2] * (unique_points[i][2] - p0[2])\n        if dp != 0:\n            p3 = unique_points[i]\n            idx3 = i\n            break\n    if p3 is None:\n        raise ValueError(\"All points are coplanar.\")\n\n    # Reorder points so the first 4 form the initial tetrahedron\n    ordered_points = [p0, p1, p2, p3]\n    others = []\n    for i in range(1, n):\n        if i != idx1 and i != idx2 and i != idx3:\n            others.append(unique_points[i])\n    ordered_points.extend(others)\n    points = ordered_points\n\n    def get_normal(face):\n        p1, p2, p3 = points[face[0]], points[face[1]], points[face[2]]\n        nx = (p2[1] - p1[1]) * (p3[2] - p1[2]) - (p2[2] - p1[2]) * (p3[1] - p1[1])\n        ny = (p2[2] - p1[2]) * (p3[0] - p1[0]) - (p2[0] - p1[0]) * (p3[2] - p1[2])\n        nz = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0])\n        d = nx * p1[0] + ny * p1[1] + nz * p1[2]\n        return (nx, ny, nz, d)\n\n    faces = {(0, 1, 2), (0, 2, 3), (0, 3, 1), (1, 3, 2)}\n    normals = {face: get_normal(face) for face in faces}\n\n    # Orient initial faces outward\n    nx, ny, nz, d = normals[(0, 1, 2)]\n    p3_coord = points[3]\n    if nx * p3_coord[0] + ny * p3_coord[1] + nz * p3_coord[2] - d > 0:\n        new_faces = set()\n        for f in faces:\n            new_faces.add((f[0], f[2], f[1]))\n        faces = new_faces\n        normals = {face: get_normal(face) for face in faces}\n\n    for p_idx in range(4, len(points)):\n        px, py, pz = points[p_idx]\n        visible_faces = []\n        for face in faces:\n            nx, ny, nz, d = normals[face]\n            if nx * px + ny * py + nz * pz - d > 0:\n                visible_faces.append(face)\n        \n        if not visible_faces:\n            continue\n        \n        visible_edges = set()\n        for face in visible_faces:\n            visible_edges.add((face[0], face[1]))\n            visible_edges.add((face[1], face[2]))\n            visible_edges.add((face[2], face[0]))\n            \n        horizon = []\n        for edge in visible_edges:\n            if (edge[1], edge[0]) not in visible_edges:\n                horizon.append(edge)\n        \n        for face in visible_faces:\n            faces.remove(face)\n            del normals[face]\n            \n        for edge in horizon:\n            new_face = (edge[0], edge[1], p_idx)\n            faces.add(new_face)\n            normals[new_face] = get_normal(new_face)\n\n    # Volume * 6\n    vol6 = 0\n    for f in faces:\n        p1, p2, p3 = points[f[0]], points[f[1]], points[f[2]]\n        cx = p1[1] * p2[2] - p1[2] * p2[1]\n        cy = p1[2] * p2[0] - p1[0] * p2[2]\n        cz = p1[0] * p2[1] - p1[1] * p2[0]\n        vol6 += cx * p3[0] + cy * p3[1] + cz * p3[2]\n    vol6 = abs(vol6)\n\n    # Distinct vertices\n    hull_vertices = set()\n    for f in faces:\n        hull_vertices.update(f)\n    n_vertices = len(hull_vertices)\n\n    # Distinct planes (merging coplanar faces)\n    unique_planes = set()\n    for f in faces:\n        nx, ny, nz, d = get_normal(f)\n        g = gcd(gcd(abs(nx), abs(ny)), abs(nz))\n        unique_planes.add((nx // g, ny // g, nz // g, d // g))\n    n_faces = len(unique_planes)\n\n    return (vol6, n_faces, n_vertices)\n```",
+  "thinking": "*   Input: A list of points $(x, y, z)$ where $x, y, z$ are integers.\n    *   Output: A tuple `(volume6, n_faces, n_vertices)`.\n    *   `volume6`: 6 times the volume of the 3D convex hull (must be an integer).\n    *   `n_faces`: Number of faces (coplanar faces merged into one).\n    *   `n_vertices`: Number of vertices on the convex hull.\n    *   Constraints:\n        *   Points: up to 3,000.\n        *   Coordinates: $|x, y, z| \\le 10^6$.\n        *   Time limit: ~1 second for 3,000 points.\n        *   Memory/Standard Library: Only standard library.\n        *   Robustness: No floating point calculations; handle coplanar/collinear points.\n        *   Errors: `ValueError` if points are < 4 distinct or all coplanar.\n\n    *   A common algorithm for 3D convex hull is the Incremental Algorithm.\n    *   Standard Incremental: $O(n^2)$ in worst case, often faster.\n    *   Given $N=3000$ and a 1s time limit, $O(n^2)$ might be tight but acceptable in Python if implemented efficiently.\n    *   *Alternative*: Quickhull 3D. Usually faster on average.\n    *   *Important*: Must handle coplanar faces correctly to count `n_faces`.\n\n    1.  Remove duplicate points.\n    2.  Find 4 non-coplanar points to form an initial tetrahedron.\n        - Find two distinct points $P_0, P_1$.\n        - Find $P_2$ not on the line $P_0 P_1$.\n        - Find $P_3$ not on the plane $P_0 P_1 P_2$.\n        - If no such points, raise `ValueError`.\n    3.  Initialize faces of the tetrahedron. Ensure they are oriented outwards.\n    4.  Iterate through the remaining points. For each point $P$:\n        - Find all faces visible from $P$ (a face is visible if $P$ is on the positive side of the face's plane).\n        - If no faces are visible, $P$ is inside or on the hull; skip.\n        - If some faces are visible, find the \"horizon\" edges (edges that are shared by one visible and one invisible face).\n        - Remove all visible faces.\n        - Create new faces by connecting the horizon edges to $P$.\n    5.  Post-processing:\n        - Volume: The sum of signed volumes of tetrahedra formed by a fixed point (e.g., origin) and each triangular face. $6 \\times \\text{Volume} = \\sum |(\\vec{A} \\times \\vec{B}) \\cdot \\vec{C}|$. Wait, if we use oriented faces, $\\sum (\\vec{A} \\times \\vec{B}) \\cdot \\vec{C}$ works.\n        - Vertices: All unique points that are part of at least one face.\n        - Faces: Merge coplanar triangles that share an edge.\n\n    *   A face is defined by vertices $(A, B, C)$ in counter-clockwise order when viewed from outside.\n    *   The normal vector is $\\vec{n} = (B-A) \\times (C-A)$.\n    *   A point $P$ is visible from face $(A, B, C)$ if $(P-A) \\cdot \\vec{n} > 0$.\n    *   Volume: $6V = \\sum (A \\times B) \\cdot C$ for all triangular faces $(A, B, C)$. (Note: this is for faces oriented CCW from outside).\n\n    *   The incremental algorithm naturally produces a triangulation.\n    *   Two adjacent triangular faces $(A, B, C)$ and $(A, C, D)$ are coplanar if they have the same normal vector (scaled).\n    *   Better: Two faces are coplanar if they lie on the same plane. A plane is defined by its normal $\\vec{n} = (n_x, n_y, n_z)$ (normalized/reduced) and a constant $d = \\vec{n} \\cdot A$.\n    *   To reduce $\\vec{n}$: $\\vec{n} = (n_x, n_y, n_z)$, divide by $\\gcd(|n_x|, |n_y|, |n_z|)$. Ensure the first non-zero component is positive.\n    *   However, the \"merged faces\" should be connected. If two triangles are coplanar AND share an edge, they are part of the same face.\n    *   Actually, the problem says \"same plane... summarize as 1 face\". This usually implies that any two triangles on the same plane that form a connected component of the hull surface are one face. Since the hull is convex, all triangles on the same plane automatically form a single convex polygon.\n    *   So:\n        1.  For each triangular face, calculate its plane equation $(\\vec{n}, d)$ where $\\vec{n}$ is the reduced normal.\n        2.  Group faces by $(\\vec{n}, d)$.\n        3.  The number of unique $(\\vec{n}, d)$ is `n_faces`.\n\n    *   $N=3000$ means $O(n^2)$ might be slow. We must optimize.\n    *   Use a set of active faces.\n    *   Use a dictionary to track edges to find the horizon.\n    *   Pre-shuffle points to avoid worst-case $O(n^2)$.\n    *   To handle collinear/coplanar points during the initial tetrahedron search:\n        - $P_0$: first point.\n        - $P_1$: first point different from $P_0$.\n        - $P_2$: first point $P$ such that $(P-P_0) \\times (P-P_1) \\neq \\vec{0}$.\n        - $P_3$: first point $P$ such that $((P-P_0) \\times (P-P_1)) \\cdot (P-P_2) \\neq 0$.\n\n    *   Use `math.gcd`.\n    *   Avoid `numpy`.\n    *   Avoid `float`.\n\n    *   The incremental algorithm usually produces triangles.\n    *   A point $P$ is visible from a face if $\\text{dist}(P, \\text{plane}) > 0$.\n    *   If $\\text{dist} = 0$, $P$ is on the plane. Does it make the face visible?\n    *   Standard Incremental: $P$ is visible if $\\text{dist} > 0$. If $\\text{dist} \\le 0$, it's not visible.\n    *   Wait, if $P$ is on the plane of a face, the face is not \"visible\" but the new face formed might be coplanar.\n    *   If we only remove faces where $\\text{dist} > 0$, the horizon is the boundary of the union of all faces for which $\\text{dist} > 0$.\n    *   This is correct.\n\n    1.  Remove duplicates: `points = list(set(points))`.\n    2.  Handle the $N < 4$ case.\n    3.  Find initial 4 points:\n        - $P_0, P_1$ (distinct)\n        - $P_2$ (not collinear)\n        - $P_3$ (not coplanar)\n        - If not found, `ValueError`.\n    4.  Initial faces: $(0, 1, 2), (0, 2, 3), (0, 3, 1), (1, 3, 2)$.\n        - Check if $P_3$ is on the positive side of $(0, 1, 2)$. If so, flip the normals of all initial faces.\n    5.  For $P$ in remaining points:\n        - Find faces where $\\text{dist}(P, \\text{face}) > 0$.\n        - If no such faces, continue.\n        - Find horizon edges: edges $(u, v)$ that are part of one visible face and one non-visible face.\n        - Remove visible faces.\n        - For each horizon edge $(u, v)$, add a new face $(u, v, P)$.\n    6.  Compute:\n        - `volume6`: $\\sum (A \\times B) \\cdot C$ for all faces $(A, B, C)$.\n        - `n_vertices`: count unique points used in any face.\n        - `n_faces`: count unique $(\\vec{n}, d)$.\n\n    *   A horizon edge $(u, v)$ is an edge of a visible face whose twin edge $(v, u)$ is an edge of a non-visible face.\n    *   Wait, the faces are oriented. For a face $(A, B, C)$, edges are $(A, B), (B, C), (C, A)$.\n    *   If face $f$ is visible and face $f'$ is not, and they share edge $(u, v)$ (meaning $f$ has edge $(u, v)$ and $f'$ has edge $(v, u)$), then $(u, v)$ is a horizon edge.\n    *   The new face will be $(u, v, P)$.\n\n    *   Face: $(A, B, C)$.\n    *   Normal: $\\vec{n} = (B-A) \\times (C-A)$.\n    *   $d = \\vec{n} \\cdot A$.\n    *   Reduced normal: $g = \\gcd(|n_x|, |n_y|, |n_z|)$, $\\vec{n}_{red} = (n_x/g, n_y/g, n_z/g)$.\n    *   Wait, if $g=0$, the points were collinear (shouldn't happen for a valid face).\n    *   But we need to be careful. If we use the reduced normal $\\vec{n}_{red}$, we also need to reduce $d$: $d_{red} = d/g$.\n    *   Then a plane is $(\\vec{n}_{red}, d_{red})$.\n\n    *   Points can be up to 3,000.\n    *   For each point, we check all current faces.\n    *   The number of faces in a 3D convex hull is at most $2n-4$.\n    *   Total complexity: $O(n^2)$.\n    *   With $n=3000$, $n^2 = 9 \\times 10^6$. This should fit in 1s in Python if we are efficient.\n    *   Optimization: Only keep track of faces that are not deleted.\n\n    ```python\n    def cross_product(a, b):\n        return (a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0])\n\n    def dot_product(a, b):\n        return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]\n\n    def subtract(a, b):\n        return (a[0]-b[0], a[1]-b[1], a[2]-b[2])\n    ```\n\n    *   To ensure $O(n^2)$, we should shuffle the points.\n    *   The number of faces could grow, so we need an efficient way to manage them.\n    *   `faces = set()` where each face is a tuple of indices `(i, j, k)`.\n    *   Wait, the horizon edges:\n        ```python\n        horizon = []\n        visible_faces = []\n        for face in faces:\n            if is_visible(face, P):\n                visible_faces.append(face)\n        \n        if not visible_faces: continue\n        \n        edges = {}\n        for face in visible_faces:\n            for edge in [(face[0], face[1]), (face[1], face[2]), (face[2], face[0])]:\n                edges[edge] = edges.get(edge, 0) + 1\n                rev_edge = (edge[1], edge[0])\n                edges[rev_edge] = edges.get(rev_edge, 0) - 1\n        \n        # This is not quite right. Horizon edges are edges that belong to \n        # exactly one visible face.\n        ```\n        Correct logic for horizon:\n        An edge $(u, v)$ is on the horizon if it belongs to a visible face, but its opposite edge $(v, u)$ belongs to a non-visible face.\n\n        ```python\n        horizon = []\n        for face in visible_faces:\n            for edge in [(face[0], face[1]), (face[1], face[2]), (face[2], face[0])]:\n                # Check if the twin edge is in any non-visible face\n                # This is slow. Better:\n                pass\n        ```\n        Actually, the simpler way:\n        An edge is on the horizon if it's shared by one visible face and one non-visible face.\n        1. Collect all edges of all visible faces.\n        2. For each such edge $(u, v)$, if $(v, u)$ is NOT an edge of any visible face, then $(u, v)$ is a horizon edge.\n\n        ```python\n        visible_edges = set()\n        for face in visible_faces:\n            visible_edges.add((face[0], face[1]))\n            visible_edges.add((face[1], face[2]))\n            visible_edges.add((face[2], face[0]))\n        \n        horizon = []\n        for edge in visible_edges:\n            if (edge[1], edge[0]) not in visible_edges:\n                horizon.append(edge)\n        ```\n        This is much faster.\n\n    *   $P_0 = points[0]$\n    *   $P_1 = points[i]$ where $P_i \\neq P_0$\n    *   $P_2 = points[j]$ where $(P_1-P_0) \\times (P_j-P_0) \\neq \\vec{0}$\n    *   $P_3 = points[k]$ where $((P_1-P_0) \\times (P_2-P_0)) \\cdot (P_k-P_0) \\neq 0$\n    *   If not found, `ValueError`.\n\n    *   Initial faces: `f1=(0, 1, 2)`, `f2=(0, 2, 3)`, `f3=(0, 3, 1)`, `f4=(1, 3, 2)`.\n    *   Check if $P_3$ is visible from `f1`. If `dist(P_3, f1) > 0`, then `f1` is oriented incorrectly (it's facing inwards).\n    *   Actually, if $P_3$ is visible from `(0, 1, 2)`, then `(0, 1, 2)` is an \"internal\" face.\n    *   Let's use a simpler way:\n        - Let the initial 4 points be $P_0, P_1, P_2, P_3$.\n        - Form face $(0, 1, 2)$.\n        - If $(P_3-P_0) \\cdot ((P_1-P_0) \\times (P_2-P_0)) > 0$:\n            - Face $(0, 2, 1)$ is oriented outwards.\n            - Other faces: $(0, 1, 3), (1, 2, 3), (2, 0, 3)$.\n        - Else:\n            - Face $(0, 1, 2)$ is oriented outwards.\n            - Other faces: $(0, 3, 1), (1, 3, 2), (2, 3, 0)$.\n\n    *   Wait, let's re-verify the \"else\" case:\n        - If $(P_3-P_0) \\cdot ((P_1-P_0) \\times (P_2-P_0)) \\le 0$:\n            - $(0, 1, 2)$ is outward.\n            - Face $(0, 3, 1)$: $P_2$ should be on the opposite side.\n              $(P_2-P_0) \\cdot ((P_3-P_0) \\times (P_1-P_0)) = (P_1-P_0) \\cdot ((P_2-P_0) \\times (P_3-P_0)) \\le 0$ (Wait, this is confusing).\n        \n        Let's use the \"center point\" method:\n        1.  Pick 4 points $P_0, P_1, P_2, P_3$.\n        2.  Create 4 faces: $(0, 1, 2), (0, 2, 3), (0, 3, 1), (1, 3, 2)$.\n        3.  For each face $(A, B, C)$, calculate the normal $\\vec{n} = (B-A) \\times (C-A)$.\n        4.  Find the centroid $M = (P_0+P_1+P_2+P_3)/4$.\n        5.  The face normal should point away from $M$.\n        6.  If $(M-A) \\cdot \\vec{n} > 0$, flip the face to $(A, C, B)$.\n\n        Wait, the centroid $M$ is always inside the tetrahedron. So if $(M-A) \\cdot \\vec{n} > 0$, the normal $\\vec{n}$ points *inward*. So we flip it. Correct.\n\n    *   Points are $(x, y, z)$.\n    *   Duplicates: `points = list(set(points))`.\n    *   $n$ is the number of unique points.\n    *   `volume6`:\n        ```python\n        vol6 = 0\n        for face in faces:\n            A, B, C = points[face[0]], points[face[1]], points[face[2]]\n            vol6 += dot_product(cross_product(A, B), C)\n        return abs(vol6)\n        ```\n        (This is 6 times the signed volume. Since faces are oriented outwards, it should be positive, but `abs()` is safe).\n\n    *   Faces:\n        - For each face $(A, B, C)$, calculate the normal $\\vec{n} = (B-A) \\times (C-A)$.\n        - $g = \\gcd(|n_x|, |n_y|, |n_z|)$.\n        - Normal $\\vec{n}_{red} = (n_x/g, n_y/g, n_z/g)$.\n        - $d_{red} = \\vec{n}_{red} \\cdot A$.\n        - Count unique $(\\vec{n}_{red}, d_{red})$.\n\n    *   Vertices:\n        - All $i$ that appear in any face in `faces`.\n\n    *   `points = list(set(points))`\n    *   If `len(points) < 4`, `ValueError`.\n    *   Finding $P_0, P_1, P_2, P_3$:\n        ```python\n        p0 = points[0]\n        p1 = None\n        for i in range(1, len(points)):\n            if points[i] != p0:\n                p1 = points[i]\n                idx1 = i\n                break\n        if p1 is None: raise ValueError\n        \n        p2 = None\n        for i in range(1, len(points)):\n            if i == idx1: continue\n            if any(cross_product(subtract(points[i], p0), subtract(p1, p0))):\n                p2 = points[i]\n                idx2 = i\n                break\n        if p2 is None: raise ValueError\n        \n        p3 = None\n        n_init = cross_product(subtract(p1, p0), subtract(p2, p0))\n        for i in range(1, len(points)):\n            if i == idx1 or i == idx2: continue\n            if dot_product(n_init, subtract(points[i], p0)) != 0:\n                p3 = points[i]\n                idx3 = i\n                break\n        if p3 is None: raise ValueError\n        ```\n        Wait, this is only for the *initial* tetrahedron. The points in `points` list should be used by their indices. Let's re-order `points` so that the first 4 are $P_0, P_1, P_2, P_3$.\n\n    *   `points` has 3000 points.\n    *   `faces` has up to 6000 triangles.\n    *   For each point $P$, we check all faces: $3000 \\times 6000 = 1.8 \\times 10^7$.\n    *   This might be slow in Python. Let's optimize the `is_visible` check.\n    *   The `is_visible` check:\n        ```python\n        def is_visible(face, p_idx):\n            A = points[face[0]]\n            B = points[face[1]]\n            C = points[face[2]]\n            # Normal: (B-A) x (C-A)\n            # dot((P-A), Normal) > 0\n            # (P.x-A.x)*((B.y-A.y)*(C.z-A.z) - (B.z-A.z)*(C.y-A.y)) + ...\n            pass\n        ```\n        We can precompute the normal for each face.\n        ```python\n        # For each face, store (normal, d) where d = normal . A\n        # Then is_visible is: normal . P - d > 0\n        ```\n        This reduces the check to 3 multiplications and 3 additions per face.\n        $1.8 \\times 10^7$ such operations should fit in 1 second.\n\n    *   Wait, if $P$ is on the plane of a face, the problem says \"same plane... summarize as 1 face\". This means we should only remove faces where $P$ is *strictly* outside the plane. This is exactly what `dot(normal, P) - d > 0` does.\n\n    *   $P_0, P_1, P_2, P_3$ are indices 0, 1, 2, 3.\n    *   Centroid $M = (P_0+P_1+P_2+P_3)/4$.\n    *   For face $(0, 1, 2)$: $\\vec{n} = (P_1-P_0) \\times (P_2-P_0)$.\n    *   $M-P_0 = (P_1+P_2+P_3)/4 - P_0 = (P_1-P_0 + P_2-P_0 + P_3-P_0)/4$.\n    *   $(M-P_0) \\cdot \\vec{n} = \\frac{1}{4} (P_3-P_0) \\cdot \\vec{n}$ (because $(P_1-P_0) \\cdot \\vec{n} = 0$ and $(P_2-P_0) \\cdot \\vec{n} = 0$).\n    *   So if $(P_3-P_0) \\cdot \\vec{n} > 0$, then $\\vec{n}$ points *inward*. Flip it.\n\n    *   Wait, the `faces` list will change as we add and remove. We need to store the normals and $d$ values for the current faces.\n    *   `face_to_normal = {face: normal}`\n    *   `face_to_d = {face: d}`\n    *   When a face is removed, remove it from these dictionaries. When a new face is added, calculate its normal and $d$.\n\n    *   The standard incremental algorithm is $O(n^2)$, but the number of faces can be $O(n)$. For each point, we may check all faces.\n    *   To further optimize, we could use a conflict graph (each face stores the points that can see it, and each point stores the faces it can see), but that's more complex to implement. Let's start with the $O(n^2)$ approach and optimize the inner loop.\n    *   Points shuffling: `random.shuffle(points)` is important. (But the problem doesn't allow `import random`? No, it says \"standard library\", so `import random` is okay. Actually, let's use a simple shuffle or just use the points as they are if $O(n^2)$ is fast enough. The coordinates might be sorted, which could be a worst-case. Let's use `random.shuffle`.)\n\n    *   If we just count unique $(\\vec{n}_{red}, d_{red})$, we get the number of planes.\n    *   Since the hull is convex, all the triangles on one plane will form a single convex polygon.\n    *   So the number of unique planes *is* the number of faces.\n\n    *   $n=3000$, $O(n^2)$ is $1.8 \\times 10^7$ iterations. In Python, this might be slightly slow.\n    *   Let's optimize the `is_visible` check by using a flat list for normals and $d$ values.\n    *   Actually, the number of faces is often much smaller than $2n$. Let's see.\n    *   Wait, let's avoid `dot_product` and `subtract` functions in the inner loop; inline them.\n\n    *   `volume6`: 6 times the volume.\n    *   `n_faces`: Number of coplanar faces.\n    *   `n_vertices`: Number of unique vertices on the hull.\n\n    Let's refine the initial tetrahedron search and shuffling:\n    ```python\n    import random\n    \n    def hull3d(points):\n        points = list(set(points))\n        n = len(points)\n        if n < 4: raise ValueError\n        \n        # To avoid O(n^2) worst case, shuffle points\n        random.shuffle(points)\n        # ... initial tetrahedron ...\n    ```\n    Wait, the problem doesn't specify `random`, but the coordinates could be a grid. Let's use `random.shuffle` to be safe.\n\n    Wait, let's double-check the `n_faces` part again.\n    \"The same plane... summarize as 1 face\".\n    Is it possible for one plane to have two separate components of the hull surface?\n    No, for a convex hull, the intersection of a plane and the hull is always a single convex polygon (or a point or a line).\n    So yes, the number of unique planes is correct.\n\n    *   The `faces` are represented as `(i, j, k)`.\n    *   The normal is $\\vec{n} = (P_j-P_i) \\times (P_k-P_i)$.\n    *   `d = n.x * P_i.x + n.y * P_i.y + n.z * P_i.z`.\n    *   `is_visible`: `n.x * P.x + n.y * P.y + n.z * P.z - d > 0`.\n\n    ```python\n    from math import gcd\n\n    def get_reduced_plane(face, points):\n        p1 = points[face[0]]\n        p2 = points[face[1]]\n        p3 = points[face[2]]\n        \n        nx = (p2[1]-p1[1])*(p3[2]-p1[2]) - (p2[2]-p1[2])*(p3[1]-p1[1])\n        ny = (p2[2]-p1[2])*(p3[0]-p1[0]) - (p2[0]-p1[0])*(p3[2]-p1[2])\n        nz = (p2[0]-p1[0])*(p3[1]-p1[1]) - (p2[1]-p1[1])*(p3[0]-p1[0])\n        \n        g = gcd(gcd(abs(nx), abs(ny)), abs(nz))\n        nx //= g\n        ny //= g\n        nz //= g\n        \n        d = nx*p1[0] + ny*p1[1] + nz*p1[2]\n        \n        # To make the reduced normal unique for the plane, \n        # we must ensure it's consistently oriented.\n        # But wait, we only care about planes that are actually part \n        # of the convex hull. These will all have the same \n        # outward-facing normal.\n        # So (nx, ny, nz, d) should be unique for each face.\n        return (nx, ny, nz, d)\n    ```\n    Wait, if we use the *outward* normal, then each face's normal will already be uniquely determined.\n\n    ```python\n    def get_outward_normal(face, points):\n        p1 = points[face[0]]\n        p2 = points[face[1]]\n        p3 = points[face[2]]\n        nx = (p2[1]-p1[1])*(p3[2]-p1[2]) - (p2[2]-p1[2])*(p3[1]-p1[1])\n        ny = (p2[2]-p1[2])*(p3[0]-p1[0]) - (p2[0]-p1[0])*(p3[2]-p1[2])\n        nz = (p2[0]-p1[0])*(p3[1]-p1[1]) - (p2[1]-p1[1])*(p3[0]-p1[0])\n        return (nx, ny, nz)\n    ```\n\n    Wait, for the `n_faces` part, we must merge triangles that are on the *same* plane.\n    A plane is defined by $\\vec{n}_{red}$ and $d_{red}$ as calculated before.\n    Let's re-verify:\n    If two triangles $(A, B, C)$ and $(D, E, F)$ are on the same plane, they will have the same $\\vec{n}_{red}$ and $d_{red}$ (if we make the first non-zero component of $\\vec{n}_{red}$ positive).\n    Wait, this is only true if they are on the *same* plane. Since they are both on the surface of the convex hull, they must have the *same* outward normal.\n    So we don't even need to make the first non-zero component positive. The outward normal $\\vec{n}$ will already be the same for all triangles on the same face.\n\n    So:\n    1. For each face $(A, B, C)$, calculate $\\vec{n} = (B-A) \\times (C-A)$.\n    2. $g = \\gcd(|n_x|, |n_y|, |n_z|)$.\n    3. $\\vec{n}_{red} = (n_x/g, n_y/g, n_z/g)$.\n    4. $d_{red} = \\vec{n}_{red} \\cdot A$.\n    5. Count unique $(\\vec{n}_{red}, d_{red})$.\n\n    Example: Cube.\n    Face 1: (0,0,0), (1,0,0), (1,1,0), (0,1,0).\n    This face will be split into two triangles: `(0, 1, 2)` and `(0, 2, 3)`.\n    Both will have the same outward normal $\\vec{n} = (0, 0, -1)$ and $d=0$.\n    Reduced normal $\\vec{n}_{red} = (0, 0, -1)$ and $d_{red} = 0$.\n    Both triangles will be grouped into the same face. Correct.\n\n    Wait, the `ValueError` should be raised if all points are coplanar.\n    My initial tetrahedron search already handles this.\n\n    ```python\n    p0 = points[0]\n    # p1: different from p0\n    # p2: not on line p0-p1\n    # p3: not on plane p0-p1-p2\n    ```\n    If this search fails, all points are coplanar. Raise `ValueError`.\n\n    *   Use a list of `faces` and a `set` of `removed_faces`.\n    *   Or just a `set` of `faces`.\n    *   To optimize the `is_visible` check, maybe we can use a list of tuples `(nx, ny, nz, d)`.\n\n    ```python\n    faces = set()\n    # ... initial faces ...\n    # normals = {face: (nx, ny, nz, d)}\n    \n    for p_idx in range(4, n):\n        px, py, pz = points[p_idx]\n        visible_faces = []\n        for face in faces:\n            nx, ny, nz, d = normals[face]\n            if nx * px + ny * py + nz * pz - d > 0:\n                visible_faces.append(face)\n        \n        if not visible_faces:\n            continue\n            \n        # Find horizon\n        visible_edges = set()\n        for face in visible_faces:\n            visible_edges.add((face[0], face[1]))\n            visible_edges.add((face[1], face[2]))\n            visible_edges.add((face[2], face[0]))\n            \n        horizon = []\n        for edge in visible_edges:\n            if (edge[1], edge[0]) not in visible_edges:\n                horizon.append(edge)\n        \n        for face in visible_faces:\n            faces.remove(face)\n            del normals[face]\n            \n        for edge in horizon:\n            new_face = (edge[0], edge[1], p_idx)\n            faces.add(new_face)\n            # Calculate normal and d for new_face\n            # ...\n    ```\n\n    Wait, let me double check the horizon edge logic.\n    If we have a visible face `(A, B, C)`, its edges are `(A, B)`, `(B, C)`, `(C, A)`.\n    If `(A, B)` is a horizon edge, then `(B, A)` must be an edge of a *non-visible* face.\n    Is it possible that `(B, A)` is an edge of another *visible* face?\n    Yes, if two visible faces share an edge, that edge is *not* on the horizon.\n    If only one visible face has the edge `(A, B)`, then its twin `(B, A)` must belong to a non-visible face (since every edge in a closed manifold has exactly two faces).\n    So the logic: `(edge[1], edge[0]) not in visible_edges` is correct.\n\n    ```python\n    def get_normal(face, points):\n        p1 = points[face[0]]\n        p2 = points[face[1]]\n        p3 = points[face[2]]\n        nx = (p2[1]-p1[1])*(p3[2]-p1[2]) - (p2[2]-p1[2])*(p3[1]-p1[1])\n        ny = (p2[2]-p1[2])*(p3[0]-p1[0]) - (p2[0]-p1[0])*(p3[2]-p1[2])\n        nz = (p2[0]-p1[0])*(p3[1]-p1[1]) - (p2[1]-p1[1])*(p3[0]-p1[0])\n        d = nx*p1[0] + ny*p1[1] + nz*p1[2]\n        return (nx, ny, nz, d)\n    ```\n\n    Initial faces:\n    ```python\n    # Initial points p0, p1, p2, p3 are at indices 0, 1, 2, 3\n    faces = {(0, 1, 2), (0, 2, 3), (0, 3, 1), (1, 3, 2)}\n    normals = {}\n    for f in faces:\n        normals[f] = get_normal(f, points)\n    \n    # Centroid check:\n    # P3 is at index 3. Let's check if face (0, 1, 2) is outward.\n    nx, ny, nz, d = normals[(0, 1, 2)]\n    p3 = points[3]\n    if nx * p3[0] + ny * p3[1] + nz * p3[2] - d > 0:\n        # (0, 1, 2) is inward, so all are flipped\n        new_faces = set()\n        for f in faces:\n            new_faces.add((f[0], f[2], f[1]))\n        faces = new_faces\n        normals = {}\n        for f in faces:\n            normals[f] = get_normal(f, points)\n    ```\n\n    Wait, I should be careful about $P_3$ being *on* the plane of $(0, 1, 2)$. But the initial search ensures $P_3$ is not coplanar with $P_0, P_1, P_2$. So `nx * p3[0] + ny * p3[1] + nz * p3[2] - d` will never be zero.\n\n    - `points` can have duplicates: `points = list(set(points))`.\n    - `n < 4`: `ValueError`.\n    - All coplanar: `ValueError`.\n    - `volume6`: `abs(sum(dot_product(cross_product(A, B), C)))`.\n    - `n_faces`: Unique `(nx_red, ny_red, nz_red, d_red)`.\n    - `n_vertices`: Unique indices in `faces`.\n\n    One more thing: the `volume6` calculation.\n    If the faces are `(A, B, C)` oriented outwards, then $6V = \\sum (A \\times B) \\cdot C$ should be positive.\n    Let's use:\n    ```python\n    vol6 = 0\n    for f in faces:\n        p1, p2, p3 = points[f[0]], points[f[1]], points[f[2]]\n        # cross product p1 x p2\n        cx = p1[1]*p2[2] - p1[2]*p2[1]\n        cy = p1[2]*p2[0] - p1[0]*p2[2]\n        cz = p1[0]*p2[1] - p1[1]*p2[0]\n        # dot product (p1 x p2) . p3\n        vol6 += cx*p3[0] + cy*p3[1] + cz*p3[2]\n    return abs(vol6)\n    ```\n    Wait, is this formula correct for any origin?\n    Yes, $\\sum (A \\times B) \\cdot C$ for oriented faces is 6 times the volume of the polyhedron, regardless of the origin. (Wait, this is only if the faces are oriented consistently). Since our faces are all outward-oriented, this will work.\n\n    Wait, one small detail: the problem says \"same plane... summarize as 1 face\". I'll use the `(nx_red, ny_red, nz_red, d_red)` approach.\n    Wait, `gcd` can be 0 if two of the normal components are 0. `math.gcd(0, 0)` is 0.\n    `math.gcd(0, x)` is `abs(x)`.\n    So `gcd(gcd(abs(nx), abs(ny)), abs(nz))` will be 0 only if `nx=ny=nz=0`, which only happens if the points are collinear. But we ensured our faces are not collinear.\n\n    - Time: $O(n^2)$ with $n=3000$. $1.8 \\times 10^7$ operations.\n    - Python's `set` and `dict` are fast.\n    - The inner loop:\n      ```python\n      for face in faces:\n          nx, ny, nz, d = normals[face]\n          if nx * px + ny * py + nz * pz - d > 0:\n              visible_faces.append(face)\n      ```\n      This is the most time-consuming part. To speed it up, I'll use a list of normals.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 684,
+  "completion_tokens": 11465,
+  "ttft_s": 1.613,
+  "t_first_content_s": 366.38,
+  "wall_s": 443.173,
+  "load_s": 0.001,
+  "server_decode_tok_s": 25.96,
+  "server_prefill_tok_s": 582.81,
+  "server_timings": {
+    "total_duration": 443171933214,
+    "load_duration": 1156182,
+    "prompt_eval_count": 684,
+    "prompt_eval_duration": 1173615000,
+    "eval_count": 11465,
+    "eval_duration": 441672687000
+  },
+  "delta_chunks": 10157,
+  "wall_decode_tok_s": 25.96,
+  "thinking_chars": 27003,
+  "content_chars": 4878,
+  "thinking_tokens_est": 9711,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 443.172,
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.5833,
+    "all_passed": false,
+    "passed": 14,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": false,
+        "error": "AssertionError: expected (48, 6, 8), got (48, 6, 18)"
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": false,
+        "error": "AssertionError: expected (384, 6, 8), got (384, 6, 12)"
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": false,
+        "error": "AssertionError: expected (64, 8, 8), got (64, 8, 9)"
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": false,
+        "error": "AssertionError: expected (8000000000000000000, 4, 4), got (8000000000000000000, 4, 5)"
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": false,
+        "error": "AssertionError: expected (3999986000000, 5, 5), got (3999986000000, 5, 6)"
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": false,
+        "error": "AssertionError: expected (3999988000008, 5, 5), got (3999988000008, 5, 6)"
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": false,
+        "error": "AssertionError: expected 571661612283429173, got 2038904813033142329"
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": false,
+        "error": "AssertionError: expected 2281345516023730212, got 864946913076352650"
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": false,
+        "error": "AssertionError: expected (972, 12, 14), got (972, 12, 64)"
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": false,
+        "error": "AssertionError: expected (10368, 6, 8), got (10368, 6, 89)"
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 1.84,
+    "stderr_tail": ""
+  },
+  "attempts": 1
+}

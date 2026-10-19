@@ -1,0 +1,57 @@
+{
+  "model": "sonnet",
+  "suite": "math",
+  "item": "m2",
+  "run": 2,
+  "content": "## 解法\n\nA を原点とする座標 u = x - 1 を使う。V1 は OA のまわりのカプセル、V2 は AB のまわりのカプセル。r = 0.6 < 1 なので、V1 ∩ V2 は |u| <= r、|y| <= r の範囲に収まる。\n\nV1 の条件: z^2 + y^2 + (max(u,0))^2 <= r^2（u >= -1 の範囲）\nV2 の条件: z^2 + u^2 + (max(-y,0))^2 <= r^2（y <= 1 の範囲）\n\n(u, y) の象限ごとに V1 ∩ V2 を調べる。\n\n- u>=0, y>=0: 球 z^2+y^2+u^2 <= r^2 の 1/4（体積 pi r^3/3）\n- u>=0, y<0: 同じく球の 1/4\n- u<0, y<0: 同じく球の 1/4\n- u<0, y>=0: 2 本の円柱 z^2+y^2 <= r^2 と z^2+u^2 <= r^2 の共通部分の 1/4（体積 4 r^3/3）\n\nよって Vol(V1 ∩ V2) = pi r^3 + 4 r^3 / 3。\nVol(V1) = pi r^2 + 4 pi r^3 / 3。\n\n### (a) 体積\n\nVol(W) = pi r^2 + pi r^3 / 3 - 4 r^3 / 3 = 0.432 pi - 0.288 = 1.06916803\n\n### モーメント\n\nV1 は x = 1/2 について対称、y = 0 について対称。\nMx(V1) = (1/2)(pi r^2 + 4 pi r^3 / 3)、My(V1) = 0。\n\n交わり I の (u, y) モーメント（球の 1/4 の重心は各座標で 3r/8 離れる）:\n\n- 3 つの球 1/4 の ∫u, ∫y は、それぞれ ±pi r^4/8\n- 円柱の共通部分の 1/4（u<0, y>=0）は ∫y = 3 pi r^4/16、∫u = -3 pi r^4/16\n\n合計: ∫u dV = -pi r^4/16、∫y dV = +pi r^4/16\n\nx = 1 + u なので ∫x dV(I) = Vol(I) - pi r^4/16。\n\nMx(W) = Mx(V1) - Mx(I) = pi r^2/2 - pi r^3/3 - 4 r^3/3 + pi r^4/16 = 0.1161 pi - 0.288 = 0.07673891\nMy(W) = 0 - pi r^4/16 = -0.0081 pi = -0.02544690\n\n検算: W を「x<0.4 の部分（円柱 + 半球）」と「残りの部分」に分けて体積と x のモーメントを足しても同じ値になった。\n\n### (b), (c) 重心\n\nx の重心 = 0.07673891 / 1.06916803 = 0.07177441\ny の重心 = -0.02544690 / 1.06916803 = -0.02380066\n\n答え(a): 1.06916803\n答え(b): 0.07177441\n答え(c): -0.02380066\n",
+  "wall_s": 67.974,
+  "usage": {
+    "subagent_tokens": 36887
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1.06916803",
+        "value": 1.06916803,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 3.413129711267396e-09
+      },
+      {
+        "key": "b",
+        "text": "0.07177441",
+        "value": 0.07177441,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 3.6481919715943573e-08
+      },
+      {
+        "key": "c",
+        "text": "-0.02380066",
+        "value": -0.02380066,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.6441958782729414e-07
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet/math/m2-run2.md",
+  "imported_at": "2026-10-18T17:11:43+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:44+09:00"
+}

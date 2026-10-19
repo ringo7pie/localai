@@ -1,0 +1,148 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 1,
+  "content": "```python\nfrom collections import defaultdict\n\n\ndef count_tilings(grid: list[str]) -> int:\n    if not isinstance(grid, (list, tuple)):\n        raise ValueError(\"grid must be a list of strings\")\n    rows = list(grid)\n    if not rows:\n        return 1\n    for row in rows:\n        if not isinstance(row, str):\n            raise ValueError(\"each row must be a string\")\n    width = len(rows[0])\n    for row in rows:\n        if len(row) != width:\n            raise ValueError(\"rows must have the same length\")\n        for ch in row:\n            if ch != \".\" and ch != \"#\":\n                raise ValueError(f\"invalid character: {ch!r}\")\n    height = len(rows)\n    if width == 0:\n        return 1\n\n    # 列数を小さい方にそろえる（転置しても駒の集合は変わらない）\n    if width > height:\n        rows = [\"\".join(row[col] for row in rows) for col in range(width)]\n        height, width = width, height\n\n    free_count = sum(row.count(\".\") for row in rows)\n    if free_count == 0:\n        return 1\n    if free_count == 1:\n        return 0\n\n    full = (1 << width) - 1\n    blocked = []\n    for row in rows:\n        mask = 0\n        for col, ch in enumerate(row):\n            if ch == \"#\":\n                mask |= 1 << col\n        blocked.append(mask)\n\n    # 状態: 下位 width ビット = 現在の行の埋まり、上位 width ビット = 次の行の埋まり\n    states = {0: 1}\n    for r in range(height):\n        blk_cur = blocked[r]\n        blk_nxt = blocked[r + 1] if r + 1 < height else full\n        blk_all = blk_cur | (blk_nxt << width)\n        for c in range(width):\n            bit = 1 << c\n            if blk_cur & bit:\n                continue\n            down = bit << width\n            candidates = []\n            if c + 1 < width:\n                right = bit << 1\n                candidates.append(right)                    # 横ドミノ\n                candidates.append(right | down)             # L: (r,c),(r,c+1),(r+1,c)\n                candidates.append(right | (down << 1))      # L: (r,c),(r,c+1),(r+1,c+1)\n                candidates.append(down | (down << 1))       # L: (r,c),(r+1,c),(r+1,c+1)\n            candidates.append(down)                         # 縦ドミノ\n            if c >= 1:\n                candidates.append(down | (down >> 1))       # L: (r,c),(r+1,c-1),(r+1,c)\n            pieces = tuple(m for m in candidates if not m & blk_all)\n\n            new_states = defaultdict(int)\n            for st, cnt in states.items():\n                if st & bit:\n                    new_states[st ^ bit] += cnt\n                else:\n                    for m in pieces:\n                        if not st & m:\n                            new_states[st | m] += cnt\n            if not new_states:\n                return 0\n            states = new_states\n        next_states = {}\n        for st, cnt in states.items():\n            if st & full:\n                continue\n            key = st >> width\n            next_states[key] = next_states.get(key, 0) + cnt\n        states = next_states\n        if not states:\n            return 0\n    return states.get(0, 0)\n```\n",
+  "wall_s": 78.012,
+  "usage": {
+    "subagent_tokens": 35847
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.25,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h6-run1.md",
+  "imported_at": "2026-10-18T16:47:59+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:28+09:00"
+}

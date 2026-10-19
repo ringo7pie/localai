@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-low",
+  "suite": "math",
+  "item": "m2",
+  "run": 1,
+  "content": "V1 の体積は pi*r^2*1 + 4/3*pi*r^3。V1∩V2 の体積は pi*r^3 + 4/3*r^3。\n\nモーメント: V1 は x=0.5 について対称なので、V1 の x 方向モーメントは 0.5*|V1|、y 方向モーメントは 0。\nV1∩V2 は次のモーメントを持つ。\n- ∫(x-1) dV = -pi*r^4/16\n- ∫y dV = +pi*r^4/16\n\nr = 0.6 を代入する。\n- |W| = 0.432*pi - 0.288 = 1.069168\n- Mx(W) = 0.1161*pi - 0.288 = 0.076739\n- My(W) = -0.0081*pi = -0.025447\n\n答え(a): 0.432*pi - 0.288\n答え(b): (0.1161*pi - 0.288)/(0.432*pi - 0.288)\n答え(c): (-0.0081*pi)/(0.432*pi - 0.288)\n\n数値は (a) 1.069168、(b) 0.071775、(c) -0.023800。\n",
+  "wall_s": 27.235,
+  "usage": {
+    "subagent_tokens": 31701
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(0.1161*pi - 0.288)/(0.432*pi - 0.288)",
+        "value": 0.07177441261846827,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.1601171477293466e-15
+      },
+      {
+        "key": "c",
+        "text": "(-0.0081*pi)/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-low/math/m2-run1.md",
+  "imported_at": "2026-10-18T19:47:34+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:52+09:00"
+}

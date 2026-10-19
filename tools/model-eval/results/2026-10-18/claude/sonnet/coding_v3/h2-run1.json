@@ -1,0 +1,133 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 1,
+  "content": "```python\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    len_a = len(a)\n    len_b = len(b)\n    rev_a = a[::-1]\n    rev_b = b[::-1]\n\n    # 逆向きの問題（後ろから読む）で、対角線 k = x - y ごとに\n    # 「編集 d 以下で行ける最も先の x」を持つ。\n    # frontiers[d][k + d] が d 回以内で届く最大の x（届かなければ -1）。\n    # 対角線上で距離は単調に増えるので、x がこの値以下の点はすべて d 以内で届く。\n    start_x = 0\n    while start_x < len_a and start_x < len_b and rev_a[start_x] == rev_b[start_x]:\n        start_x += 1\n    frontiers = [[start_x]]\n    target_diag = len_a - len_b\n\n    depth = 0\n    while not (abs(target_diag) <= depth and frontiers[depth][target_diag + depth] >= len_a):\n        depth += 1\n        prev_depth = depth - 1\n        prev = frontiers[prev_depth]\n        cur = [-1] + prev + [-1]\n        for diag in range(-depth, depth + 1, 2):\n            if diag < -len_b or diag > len_a:\n                continue\n            best = cur[diag + depth]\n            cand = -1\n            # a の要素を消す手: 対角線 diag - 1 から\n            src = diag - 1\n            if src >= -prev_depth:\n                reach = prev[src + prev_depth]\n                if reach >= 0:\n                    src_x = reach if reach < len_a else len_a - 1\n                    if src_x >= 0 and src_x >= src:\n                        cand = src_x + 1\n            # b の要素を足す手: 対角線 diag + 1 から\n            src = diag + 1\n            if src <= prev_depth:\n                reach = prev[src + prev_depth]\n                if reach >= 0:\n                    src_x = reach if reach < len_b + diag else len_b + diag\n                    if src_x >= 0 and src_x >= src and src_x > cand:\n                        cand = src_x\n            if cand > best:\n                pos_x = cand\n                pos_y = pos_x - diag\n                while pos_x < len_a and pos_y < len_b and rev_a[pos_x] == rev_b[pos_y]:\n                    pos_x += 1\n                    pos_y += 1\n                cur[diag + depth] = pos_x\n        frontiers.append(cur)\n\n    total = depth\n\n    def within(next_i: int, next_j: int, budget: int) -> bool:\n        # a[next_i:] と b[next_j:] の編集距離が budget 以下か\n        if budget < 0:\n            return False\n        x_rev = len_a - next_i\n        y_rev = len_b - next_j\n        diag = x_rev - y_rev\n        if diag > budget or -diag > budget:\n            return False\n        return frontiers[budget][diag + budget] >= x_rev\n\n    script: list[tuple] = []\n    i = 0\n    j = 0\n    remaining = total\n    while i < len_a or j < len_b:\n        if i < len_a and j < len_b and a[i] == b[j]:\n            script.append((\"=\", i, j))\n            i += 1\n            j += 1\n        elif i < len_a and within(i + 1, j, remaining - 1):\n            script.append((\"-\", i))\n            i += 1\n            remaining -= 1\n        else:\n            script.append((\"+\", j))\n            j += 1\n            remaining -= 1\n    return script\n```\n",
+  "wall_s": 164.934,
+  "usage": {
+    "subagent_tokens": 50640
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.1,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h2-run1.md",
+  "imported_at": "2026-10-18T16:54:37+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:42+09:00"
+}

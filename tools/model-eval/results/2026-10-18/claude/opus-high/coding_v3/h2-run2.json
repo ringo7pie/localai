@@ -1,0 +1,133 @@
+{
+  "model": "opus-high",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 2,
+  "content": "```python\ndef _backward_frontiers(a, b):\n    \"\"\"Myers の貪欲法を逆順の列に適用する。\n    hist[d][k + d] は、逆順の座標で対角線 k (= x - y) 上の、編集 d 回以下で届く最も遠い x。\n    届かなければ -1。\"\"\"\n    ra = a[::-1]\n    rb = b[::-1]\n    len_a = len(ra)\n    len_b = len(rb)\n    hist = []\n    prev = None\n    d = 0\n    while True:\n        cur = [-1] * (2 * d + 1)\n        finished = False\n        for k in range(-d, d + 1):\n            if (d - k) % 2:\n                if prev is not None and -(d - 1) <= k <= d - 1:\n                    cur[k + d] = prev[k + d - 1]\n                continue\n            if d == 0:\n                best = 0\n            else:\n                best = -1\n                if -(d - 1) <= k <= d - 1:\n                    best = prev[k + d - 1]\n                if k + 1 <= d - 1:\n                    px = prev[k + 1 + d - 1]\n                    if px >= 0 and px - k <= len_b and px > best:\n                        best = px\n                if k - 1 >= -(d - 1):\n                    px = prev[k - 1 + d - 1]\n                    if px >= 0 and px + 1 <= len_a and px + 1 > best:\n                        best = px + 1\n            if best < 0:\n                continue\n            x = best\n            y = x - k\n            while x < len_a and y < len_b and ra[x] == rb[y]:\n                x += 1\n                y += 1\n            cur[k + d] = x\n            if x == len_a and y == len_b:\n                finished = True\n        hist.append(cur)\n        if finished:\n            return hist, d\n        prev = cur\n        d += 1\n\n\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n = len(a)\n    m = len(b)\n    hist, total = _backward_frontiers(a, b)\n\n    def reach(x, y, d):\n        # 逆順の座標 (x, y) に、編集 d 回以下で届くか\n        if d < 0:\n            return False\n        k = x - y\n        if k > d or k < -d:\n            return False\n        if d >= len(hist):\n            d = len(hist) - 1\n            if k > d or k < -d:\n                return False\n        v = hist[d][k + d]\n        return v >= 0 and x <= v\n\n    result = []\n    i = 0\n    j = 0\n    remaining = total\n    while i < n or j < m:\n        if i < n and j < m and a[i] == b[j]:\n            result.append((\"=\", i, j))\n            i += 1\n            j += 1\n            continue\n        if i < n and (j == m or reach(n - i - 1, m - j, remaining - 1)):\n            result.append((\"-\", i))\n            i += 1\n        else:\n            result.append((\"+\", j))\n            j += 1\n        remaining -= 1\n    return result\n```\n",
+  "wall_s": 78.946,
+  "usage": {
+    "subagent_tokens": 35705
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.12,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-high/coding_v3/h2-run2.md",
+  "imported_at": "2026-10-18T18:29:07+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:29+09:00"
+}

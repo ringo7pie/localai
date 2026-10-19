@@ -1,0 +1,133 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 1,
+  "content": "```python\ndef _myers_snapshots(ra: list[int], rb: list[int]) -> tuple[int, list[list[int]]]:\n    \"\"\"Run Myers' O((N+M)D) algorithm on (ra, rb) and keep, for every round d,\n    the furthest-reaching x on each diagonal k in [-d, d] (index k + d).\"\"\"\n    n = len(ra)\n    m = len(rb)\n    max_d = n + m\n    offset = max_d + 1\n    frontier = [0] * (2 * max_d + 3)\n    snapshots: list[list[int]] = []\n    target = n - m\n    for d in range(max_d + 1):\n        found = False\n        for k in range(-d, d + 1, 2):\n            if k == -d or (k != d and frontier[offset + k - 1] < frontier[offset + k + 1]):\n                x = frontier[offset + k + 1]\n            else:\n                x = frontier[offset + k - 1] + 1\n            y = x - k\n            while x < n and y < m and ra[x] == rb[y]:\n                x += 1\n                y += 1\n            frontier[offset + k] = x\n            if k == target and x >= n:\n                found = True\n                break\n        snapshots.append(frontier[offset - d: offset + d + 1])\n        if found:\n            return d, snapshots\n    return max_d, snapshots\n\n\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n = len(a)\n    m = len(b)\n    ids: dict[str, int] = {}\n    a_ids = [ids.setdefault(item, len(ids)) for item in a]\n    b_ids = [ids.setdefault(item, len(ids)) for item in b]\n\n    # Distances to the end of the original sequences are distances from the\n    # origin on the reversed sequences.\n    total, snapshots = _myers_snapshots(a_ids[::-1], b_ids[::-1])\n\n    def remaining_at_most(i: int, j: int, limit: int) -> bool:\n        # True iff the edit distance between a[i:] and b[j:] is <= limit,\n        # given that it has the same parity as limit (it is limit or limit + 2).\n        if limit < 0:\n            return False\n        x = n - i\n        y = m - j\n        diagonal = x - y\n        if diagonal < -limit or diagonal > limit:\n            return False\n        return snapshots[limit][diagonal + limit] >= x\n\n    script: list[tuple] = []\n    i = 0\n    j = 0\n    current = total\n    while i < n or j < m:\n        if i < n and j < m and a_ids[i] == b_ids[j]:\n            script.append((\"=\", i, j))\n            i += 1\n            j += 1\n        elif i == n:\n            script.append((\"+\", j))\n            j += 1\n            current -= 1\n        elif j == m:\n            script.append((\"-\", i))\n            i += 1\n            current -= 1\n        elif remaining_at_most(i + 1, j, current - 1):\n            script.append((\"-\", i))\n            i += 1\n            current -= 1\n        else:\n            script.append((\"+\", j))\n            j += 1\n            current -= 1\n    return script\n```\n",
+  "wall_s": 155.28,
+  "usage": {
+    "subagent_tokens": 44224
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.08,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h2-run1.md",
+  "imported_at": "2026-10-18T16:54:32+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:27+09:00"
+}

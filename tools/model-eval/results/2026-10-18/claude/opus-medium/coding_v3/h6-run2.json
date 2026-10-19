@@ -1,0 +1,148 @@
+{
+  "model": "opus-medium",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 2,
+  "content": "```python\ndef count_tilings(grid: list[str]) -> int:\n    if not isinstance(grid, list):\n        raise ValueError(\"grid must be a list of strings\")\n    if len(grid) == 0:\n        return 1\n    for row in grid:\n        if not isinstance(row, str):\n            raise ValueError(\"each row must be a string\")\n    width = len(grid[0])\n    for row in grid:\n        if len(row) != width:\n            raise ValueError(\"rows have different lengths\")\n        for ch in row:\n            if ch != \".\" and ch != \"#\":\n                raise ValueError(\"invalid character\")\n    if width == 0:\n        return 1\n\n    rows = list(grid)\n    height = len(rows)\n    if width > height:\n        rows = [\"\".join(rows[r][c] for r in range(height)) for c in range(width)]\n        height, width = width, height\n\n    full = (1 << width) - 1\n    blocked = []\n    for row in rows:\n        mask = 0\n        for c, ch in enumerate(row):\n            if ch == \"#\":\n                mask |= 1 << c\n        blocked.append(mask)\n\n    if all(mask == full for mask in blocked):\n        return 1\n\n    # state: dict mapping (cur | nxt << width) -> count\n    states = {blocked[0]: 1}  # nxt part filled in at row start\n    for r in range(height):\n        nxt_init = blocked[r + 1] if r + 1 < height else full\n        cur_states = {}\n        for cur, cnt in states.items():\n            key = cur | (nxt_init << width)\n            cur_states[key] = cur_states.get(key, 0) + cnt\n        for c in range(width):\n            bit = 1 << c\n            new_states = {}\n            for key, cnt in cur_states.items():\n                cur = key & full\n                nxt = key >> width\n                if cur & bit:\n                    new_states[key] = new_states.get(key, 0) + cnt\n                    continue\n                has_right = c + 1 < width and not (cur & (bit << 1))\n                right = bit << 1\n                nxt_c_free = not (nxt & bit)\n                nxt_r_free = c + 1 < width and not (nxt & (bit << 1))\n                nxt_l_free = c >= 1 and not (nxt & (bit >> 1))\n\n                def add(new_cur, new_nxt):\n                    k = new_cur | (new_nxt << width)\n                    new_states[k] = new_states.get(k, 0) + cnt\n\n                # horizontal domino\n                if has_right:\n                    add(cur | bit | right, nxt)\n                # vertical domino\n                if nxt_c_free:\n                    add(cur | bit, nxt | bit)\n                # L: (r,c),(r,c+1),(r+1,c)\n                if has_right and nxt_c_free:\n                    add(cur | bit | right, nxt | bit)\n                # L: (r,c),(r,c+1),(r+1,c+1)\n                if has_right and nxt_r_free:\n                    add(cur | bit | right, nxt | (bit << 1))\n                # L: (r,c),(r+1,c),(r+1,c+1)\n                if nxt_c_free and nxt_r_free:\n                    add(cur | bit, nxt | bit | (bit << 1))\n                # L: (r,c),(r+1,c-1),(r+1,c)\n                if nxt_c_free and nxt_l_free:\n                    add(cur | bit, nxt | bit | (bit >> 1))\n            cur_states = new_states\n            if not cur_states:\n                return 0\n        states = {}\n        for key, cnt in cur_states.items():\n            cur = key & full\n            if cur != full:\n                continue\n            nxt = key >> width\n            states[nxt] = states.get(nxt, 0) + cnt\n        if not states:\n            return 0\n\n    return sum(cnt for nxt, cnt in states.items() if nxt == full)\n```\n",
+  "wall_s": 28.364,
+  "usage": {
+    "subagent_tokens": 31586
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.32,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-medium/coding_v3/h6-run2.md",
+  "imported_at": "2026-10-18T19:20:37+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

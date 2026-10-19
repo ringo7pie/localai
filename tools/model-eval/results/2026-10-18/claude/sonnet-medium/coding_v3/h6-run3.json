@@ -1,0 +1,148 @@
+{
+  "model": "sonnet-medium",
+  "suite": "coding_v3",
+  "item": "h6",
+  "run": 3,
+  "content": "```python\ndef count_tilings(grid: list[str]) -> int:\n    rows = list(grid)\n    if rows:\n        width0 = len(rows[0])\n        for row in rows:\n            if len(row) != width0:\n                raise ValueError(\"rows have different lengths\")\n            for ch in row:\n                if ch != \".\" and ch != \"#\":\n                    raise ValueError(\"invalid character\")\n    height = len(rows)\n    width = len(rows[0]) if rows else 0\n    if height == 0 or width == 0:\n        return 1\n\n    if width > height:\n        rows = [\"\".join(rows[r][c] for r in range(height)) for c in range(width)]\n        height, width = width, height\n\n    blocked = [rows[r][c] == \"#\" for r in range(height) for c in range(width)]\n    total = height * width\n\n    dp = {0: 1}\n    for pos in range(total):\n        row, col = divmod(pos, width)\n        has_right = col + 1 < width\n        has_down = row + 1 < height\n        has_left = col >= 1\n        nxt = {}\n\n        if blocked[pos]:\n            for mask, ways in dp.items():\n                if mask & 1:\n                    continue\n                key = mask >> 1\n                nxt[key] = nxt.get(key, 0) + ways\n            dp = nxt\n            continue\n\n        # Candidate pieces: offset lists with feasibility conditions.\n        pieces = []\n        if has_right:\n            pieces.append((1,))\n        if has_down:\n            pieces.append((width,))\n        if has_right and has_down:\n            pieces.append((1, width))\n            pieces.append((1, width + 1))\n            pieces.append((width, width + 1))\n        if has_left and has_down:\n            pieces.append((width - 1, width))\n\n        valid = []\n        for offsets in pieces:\n            bits = 1\n            ok = True\n            for off in offsets:\n                if blocked[pos + off]:\n                    ok = False\n                    break\n                bits |= 1 << off\n            if ok:\n                valid.append(bits)\n\n        for mask, ways in dp.items():\n            if mask & 1:\n                key = mask >> 1\n                nxt[key] = nxt.get(key, 0) + ways\n                continue\n            for bits in valid:\n                if mask & bits:\n                    continue\n                key = (mask | bits) >> 1\n                nxt[key] = nxt.get(key, 0) + ways\n        dp = nxt\n\n    return dp.get(0, 0)\n```\n",
+  "wall_s": 22.564,
+  "usage": {
+    "subagent_tokens": 31308
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nothing_to_cover",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_single_rows_and_columns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_invalid_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_each_l_orientation",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_l_reaching_down_left",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_two_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_three_by_n_sequence",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_full_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_holes_and_isolated_cells",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_disconnected_regions_multiply",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ring_and_l_regions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_transposed_boards_agree",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_medium_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tall_thin_boards",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_big_answer_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_tall_board",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_wide_board_with_holes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_patterned_holes",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.19,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-medium/coding_v3/h6-run3.md",
+  "imported_at": "2026-10-18T19:37:30+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

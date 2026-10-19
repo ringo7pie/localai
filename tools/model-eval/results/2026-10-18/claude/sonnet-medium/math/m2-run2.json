@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-medium",
+  "suite": "math",
+  "item": "m2",
+  "run": 2,
+  "content": "V1 と V2 の共通部分 I を 4 つの象限 (u = x-1, y の符号) に分けて求める。\n\n- u<=0, y>=0: 各 z で一辺 sqrt(r^2-z^2) の正方形。体積 4r^3/3\n- 残り 3 象限: それぞれ球の 1/4。体積 pi r^3/3 ずつ\n\nI = 4r^3/3 + pi r^3\n\nW の体積 = (pi r^2 + 4/3 pi r^3) - I = pi r^2 + pi r^3/3 - 4r^3/3\n\nモーメント:\n- V1 の x モーメントは (V1 の体積)/2、y モーメントは 0\n- I の x モーメントは I - pi r^4/16、y モーメントは +pi r^4/16\n- よって W の x モーメントは Mx = V1/2 - I + pi r^4/16、y モーメントは My = -pi r^4/16\n\nr = 0.6 を入れると、体積 = 1.0691681、Mx = 0.0767389、My = -0.0254469。\n\n答え(a): pi*0.36 + pi*0.072 - 0.288\n答え(b): 0.0717746\n答え(c): -0.0238005\n",
+  "wall_s": 24.929,
+  "usage": {
+    "subagent_tokens": 31442
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "pi*0.36 + pi*0.072 - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "0.0717746",
+        "value": 0.0717746,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 2.610701011715637e-06
+      },
+      {
+        "key": "c",
+        "text": "-0.0238005",
+        "value": -0.0238005,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 6.5580841708774346e-06
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-medium/math/m2-run2.md",
+  "imported_at": "2026-10-18T19:19:17+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

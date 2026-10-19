@@ -1,0 +1,133 @@
+{
+  "model": "sonnet-high",
+  "suite": "coding_v3",
+  "item": "h2",
+  "run": 1,
+  "content": "```python\ndef _edit_distance(a, b):\n    n = len(a)\n    m = len(b)\n    limit = n + m\n    if limit == 0:\n        return 0\n    offset = limit + 1\n    furthest = [0] * (2 * limit + 3)\n    for d in range(limit + 1):\n        for k in range(-d, d + 1, 2):\n            if k == -d or (k != d and furthest[offset + k - 1] < furthest[offset + k + 1]):\n                x = furthest[offset + k + 1]\n            else:\n                x = furthest[offset + k - 1] + 1\n            y = x - k\n            while x < n and y < m and a[x] == b[y]:\n                x += 1\n                y += 1\n            furthest[offset + k] = x\n            if x >= n and y >= m:\n                return d\n    return limit\n\n\ndef shortest_edit_script(a: list[str], b: list[str]) -> list[tuple]:\n    n = len(a)\n    m = len(b)\n    distance = _edit_distance(a, b)\n\n    # 対角線 k = i - j の範囲。最短の道は、この範囲の外に出ない。\n    diff = n - m\n    extra = (distance - abs(diff)) // 2 + 1\n    low = min(0, diff) - extra\n    high = max(0, diff) + extra\n    width = high - low + 1\n    inf = 10 ** 9\n\n    # rows[i][pos] = (i, j) から終わりまでの最小の編集数。pos = (i - j) - low + 1。\n    rows = [None] * (n + 1)\n    next_row = [inf] * (width + 2)\n    for i in range(n, -1, -1):\n        current = [inf] * (width + 2)\n        j_min = max(0, i - high)\n        j_max = min(m, i - low)\n        a_item = a[i] if i < n else None\n        for j in range(j_max, j_min - 1, -1):\n            pos = i - j - low + 1\n            if i == n and j == m:\n                current[pos] = 0\n            elif i < n and j < m and a_item == b[j]:\n                current[pos] = next_row[pos]\n            else:\n                best = inf\n                if i < n:\n                    candidate = next_row[pos + 1] + 1\n                    if candidate < best:\n                        best = candidate\n                if j < m:\n                    candidate = current[pos - 1] + 1\n                    if candidate < best:\n                        best = candidate\n                current[pos] = best\n        rows[i] = current\n        next_row = current\n\n    script = []\n    i = 0\n    j = 0\n    while i < n or j < m:\n        pos = i - j - low + 1\n        remaining = rows[i][pos]\n        if i < n and j < m and a[i] == b[j]:\n            script.append((\"=\", i, j))\n            i += 1\n            j += 1\n        elif i < n and rows[i + 1][pos + 1] + 1 == remaining:\n            script.append((\"-\", i))\n            i += 1\n        else:\n            script.append((\"+\", j))\n            j += 1\n    return script\n```\n",
+  "wall_s": 39.702,
+  "usage": {
+    "subagent_tokens": 32919
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 18,
+    "total": 18,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_identical",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_completely_different",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_replaced_line_deletes_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_repeated_lines_keep_early",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_greedy_match_must_stay_shortest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_list_of_tuples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exhaustive_tiny",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_small",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_many_edits",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_edits_near_both_ends",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_random_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_small_vocabulary",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_same_lines",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_block_move",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_scattered_edits",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.26,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-high/coding_v3/h2-run1.md",
+  "imported_at": "2026-10-18T18:12:34+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:45+09:00"
+}

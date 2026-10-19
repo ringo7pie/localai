@@ -1,0 +1,148 @@
+{
+  "model": "opus",
+  "suite": "coding_v3",
+  "item": "h4",
+  "run": 3,
+  "content": "```python\nfrom math import gcd\n\n\ndef best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]:\n    if den == 0:\n        raise ValueError(\"den must not be zero\")\n    if max_den < 1:\n        raise ValueError(\"max_den must be >= 1\")\n    if side not in (-1, 0, 1):\n        raise ValueError(\"side must be -1, 0 or 1\")\n\n    if den < 0:\n        num, den = -num, -den\n    common = gcd(num, den)\n    num //= common\n    den //= common\n\n    if den <= max_den:\n        return (num, den)\n\n    # 連分数展開で、分母が max_den を超える直前の収束子まで進める\n    p0, q0, p1, q1 = 0, 1, 1, 0\n    numer, denom = num, den\n    while True:\n        quotient = numer // denom\n        q2 = q0 + quotient * q1\n        if q2 > max_den:\n            break\n        p0, q0, p1, q1 = p1, q1, p0 + quotient * p1, q2\n        numer, denom = denom, numer - quotient * denom\n\n    # 中間近似分数（semiconvergent）で分母の上限まで寄せる\n    steps = (max_den - q0) // q1\n    cand_a = (p0 + steps * p1, q0 + steps * q1)\n    cand_b = (p1, q1)\n\n    # 2 つは x を挟む隣接 Farey 分数（どちらも既約）\n    if cand_a[0] * cand_b[1] < cand_b[0] * cand_a[1]:\n        lower, upper = cand_a, cand_b\n    else:\n        lower, upper = cand_b, cand_a\n\n    if side == -1:\n        return lower\n    if side == 1:\n        return upper\n\n    low_p, low_q = lower\n    up_p, up_q = upper\n    # x - lower = (num*low_q - low_p*den) / (den*low_q)\n    # upper - x = (up_p*den - num*up_q) / (den*up_q)\n    dist_low = (num * low_q - low_p * den) * up_q\n    dist_up = (up_p * den - num * up_q) * low_q\n    if dist_low < dist_up:\n        return lower\n    if dist_up < dist_low:\n        return upper\n    if low_q < up_q:\n        return lower\n    if up_q < low_q:\n        return upper\n    return lower\n```\n",
+  "wall_s": 49.321,
+  "usage": {
+    "subagent_tokens": 33097
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_value_is_returned_reduced",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers_and_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_max_den_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_values_and_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_prefer_smaller_denominator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_same_denominator_smaller_numerator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_semiconvergents_are_needed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_one_sided_semiconvergents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_reduced_int_tuple",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_nearest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_lower",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_upper",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_are_not_precise_enough",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tiny_and_huge_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fibonacci_ratios",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sqrt2_approximations",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_far_from_simple_fractions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch_negative_dens",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.05,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus/coding_v3/h4-run3.md",
+  "imported_at": "2026-10-18T17:25:58+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:27+09:00"
+}

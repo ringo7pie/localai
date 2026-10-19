@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "target": "gemma4:e4b",
+  "label": "gemma4:e4b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:e4b",
+  "slug": "gemma4-e4b",
+  "suite": "math",
+  "item": "m1",
+  "run": 1,
+  "prompt": "## 問題 M1: 正四面体のまわりの立体\n\n1 辺の長さが 1 の正四面体 T がある。T からの距離が r 以下の点全体（T の内部も含む）がつくる立体を K とする（中心が T の上を動く半径 r の球が通過する範囲と同じ）。r = 0.6 のとき、次を求めよ。\n\n(a) K の体積\n\n(b) K の表面積\n\n### 答えの書き方\n\n- 途中の考え方は自由に書いてよい。最後に、小問ごとに 1 行ずつ `答え(a): <値>` の形で書く（`(b)` 以降も同じ）。\n- `<値>` は 1 つの数。厳密な式（円周率は `pi`、平方根は `sqrt(...)`、逆三角関数は `acos(...)` `atan(...)` など、べき乗は `**`）か、有効数字 6 桁以上の小数で書く。単位や説明は付けない。",
+  "prompt_chars": 360,
+  "prompt_lang": "ja",
+  "limits": {
+    "max_tokens": 32768,
+    "reasoning_budget_tokens": null,
+    "request_timeout_s": 2400
+  },
+  "request": {
+    "model": "gemma4:e4b",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-18T16:27:44+09:00",
+  "request_timeout_s": 2400.0,
+  "finished_at": "2026-10-18T16:28:41+09:00",
+  "content": "この問題は、凸立体 $T$ に厚さ $r$ の球を和集合した立体 $K$ の体積および表面積を求める問題であり、ステファン公式（またはバルタの定理）を用いて計算します。\n\n### 準備：正四面体のパラメータ\n\n一辺の長さ $s=1$ の正四面体 $T$ の基本的な値は以下の通りです。\n1. 体積 $V(T)$:\n$$V(T) = \\frac{s^3}{6\\sqrt{2}} = \\frac{1}{6\\sqrt{2}} = \\frac{\\sqrt{2}}{12}$$\n2. 表面積 $A(T)$:\n$$A(T) = s^2\\sqrt{3} = \\sqrt{3}$$\n3. エッジの数 $N_e = 6$ (全ての辺の長さ $L_e = 1$)。\n4. 各エッジ $e$ における二面角 $\\theta_e$ は、正四面体の面が作る角であり、\n$$\\theta = \\arccos(1/3)$$\n\n### (a) K の体積 $V(K)$ の計算\n\n一般的に、凸体 $T$ の周りの厚さ $r$ の層 $K$ の体積 $V(K)$ は、以下の公式（ステファン公式の多面体版）で与えられます。\n\n$$V(K) = V(T) + r A(T) + r^2 \\sum_{e} L_e \\frac{\\pi - \\theta_e}{2} + r^3 \\frac{4\\pi}{3}$$\n\nパラメータを代入します。$r=0.6$, $L_e=1$, $\\theta_e=\\theta$ です。\n\n$$V(K) = V(T) + r A(T) + 6 r^2 \\frac{\\pi - \\theta}{2} + r^3 \\frac{4\\pi}{3}$$\n\nここで、$\\theta = \\arccos(1/3)$ を使用し、数値計算を行います。\n$$V(K) = \\frac{\\sqrt{2}}{12} + 0.6 \\sqrt{3} + 6 (0.6)^2 \\frac{\\pi - \\arccos(1/3)}{2} + (0.6)^3 \\frac{4\\pi}{3}$$\n$$V(K) = \\frac{\\sqrt{2}}{12} + 0.6 \\sqrt{3} + 2.16 \\frac{\\pi - \\arccos(1/3)}{2} + 0.288 \\pi$$\n\n数値計算を実行します。\n$$\\frac{\\sqrt{2}}{12} \\approx 0.117851$$\n$$0.6 \\sqrt{3} \\approx 1.039230$$\n$$\\pi - \\arccos(1/3) \\approx 3.141593 - 1.230959 \\approx 1.910634$$\n$$2.16 \\frac{1.910634}{2} \\approx 2.063485$$\n$$0.288 \\pi \\approx 0.904779$$\n\n$$V(K) \\approx 0.117851 + 1.039230 + 2.063485 + 0.904779 \\approx 4.125345$$\n\n### (b) K の表面積 $A(K)$ の計算\n\n$K$ の表面積 $A(K)$ は、以下の公式（ステファン公式の多面体版）を用いて計算できます。\n\n$$A(K) = A(T) + r \\sum_{e} L_e (\\pi - \\theta_e) + 4\\pi r^2$$\n\nパラメータを代入します。\n$$A(K) = \\sqrt{3} + 0.6 \\cdot 6 \\cdot (\\pi - \\arccos(1/3)) + 4\\pi (0.6)^2$$\n$$A(K) = \\sqrt{3} + 3.6 (\\pi - \\arccos(1/3)) + 1.44 \\pi$$\n\n数値計算を実行します。\n$$\\sqrt{3} \\approx 1.732051$$\n$$3.6 (\\pi - \\arccos(1/3)) \\approx 3.6 \\cdot 1.910634 \\approx 6.878282$$\n$$1.44 \\pi \\approx 4.523893$$\n\n$$A(K) \\approx 1.732051 + 6.878282 + 4.523893 \\approx 13.134226$$\n\n***\n\n答え(a): 4.12534\n答え(b): 13.13423",
+  "thinking": "ユーザーは「正四面体のまわりを動く半径 $r$ の球が通過する範囲」によってできる立体 $K$ の体積と表面積を計算するように求めている。\n与えられたパラメータは、正四面体 $T$ の一辺の長さ $s=1$、そして半径 $r=0.6$ である。\n\nこの問題は、一般的に「厚み $r$ を持つ正四面体の外側」や「Minkowski和」に関連する幾何学的計算である。\n$K = T \\oplus B(0, r)$、ここで $B(0, r)$ は原点を中心とする半径 $r$ の球である。\n\n$T$ は凸多面体であるため、その厚み $r$ を持つ立体 $K$ の体積 $V(K)$ と表面積 $A(K)$ は、一般化されたステファン公式（またはバルタの定理）によって計算できる。\n\n---\n**1. 正四面体 $T$ の基本的な特性の確認**\n\n一辺の長さ $s=1$ の正四面体 $T$ を考える。\n$T$ の体積 $V(T)$ は:\n$V(T) = \\frac{s^3}{6\\sqrt{2}} = \\frac{1}{6\\sqrt{2}} = \\frac{\\sqrt{2}}{12}$.\n\n$T$ の表面積 $A(T)$ は、底面の面積 $A_{face}$ が $s^2\\sqrt{3}/4$ なので:\n$A(T) = 4 \\times \\frac{s^2\\sqrt{3}}{4} = s^2\\sqrt{3} = \\sqrt{3}$.\n\n$T$ のエッジ（辺）の数は $E=6$。\n$T$ の頂点の数は $V_{vert}=4$。\n\n$r=0.6$ が与えられている。\n\n---\n**2. 体積 $V(K)$ の計算 (ステファン公式)**\n\n一般に、凸体 $T$ に厚み $r$ の球を和集合するとできる立体 $K$ の体積 $V(K)$ は、以下の公式で近似される（$r$ が小さい場合や、特に多面体の場合に適用される）。\n\n$V(K) = V(T) + r \\cdot A(T) + r^2 \\cdot M(T) + r^3 \\cdot \\frac{4\\pi}{3} \\cdot \\chi(T)$\nただし、$\\chi(T)$ はオイラー標数。凸多面体なので $\\chi(T)=1$。\n\nしかし、より正確なステファン公式の形で、多面体のケースでは、特にエッジと角の部分が重要になる。\n\n$V(K) = V(T) + r \\cdot A(T) + r^2 \\cdot L(T) \\cdot \\frac{\\pi - \\sum \\theta_i}{2\\pi} + r^3 \\cdot \\frac{4\\pi}{3}$\n\nここで、より一般的に使われる公式（角の構造を含む）を用いる。\n$V(K) = V(T) + r A(T) + r^2 \\sum_{e} L_e \\cdot \\alpha_e + r^3 \\cdot \\frac{4\\pi}{3}$.\nただし、この形の公式は少し複雑であり、代わりに幾何学的な分解を用いる方が確実である。\n\n$K$ は、以下の要素の和で構成される。\n1. $T$ 自体。\n2. $T$ の各面 $F_i$ に張り付いた厚さ $r$ の円柱状の層 (Area $A(F_i) \\cdot r$, Thickness $r$). $\\rightarrow$ これは厳密には正しくない。\n3. $T$ の各エッジ $E_j$ に沿った円柱状の「隅」。\n4. $T$ の各頂点 $V_k$ にある球状の「角」。\n\n体積の追加分 $\\Delta V = V(K) - V(T)$ は、以下の成分からなる。\n\n1. **面からの寄与:** 各面 $F_i$ に対して、その平面に垂直な厚さ $r$ の層。\n   $\\sum A(F_i) \\cdot r$\n\n2. **エッジからの寄与:** 各エッジ $E_j$ に沿って、断面が扇形となる部分。\n   エッジ $E_j$ の長さ $L_j$ に対する寄与は、角度 $\\phi_j$ の円弧が張る面積の円柱体積のようなもの。\n   この寄与は $L_j \\cdot r^2 \\cdot (\\pi - \\gamma_j)$ に関連するが、これは誤りやすい。\n\n正確なステファン公式の適用（多面体の場合）：\n$V(K) = V(T) + r \\cdot A(T) + r^2 \\cdot (\\sum_{j=1}^E L_j (\\pi - \\theta_j)) / 2 + r^3 \\cdot \\frac{4\\pi}{3}$.\nここで $\\theta_j$ はエッジ $j$ における面の角度の和（二面角）。\n\n正四面体 $T$ の場合:\n$s=1$.\n$A(T) = \\sqrt{3}$.\n\nエッジ $L_j = 1$ (6本)。\nエッジ $E$ における二面角 $\\theta_j$ は、隣接する2面が作る角である。正四面体の面は正三角形なので、隣接する2面が作る二面角は $\\arccos(1/3)$.\n$\\theta = \\arccos(1/3)$.\n\n立体 $K$ の体積 $V(K)$ は、より単純な形で表されることが多い。\n\n$V(K) = V(T) + r A(T) + r^2 \\sum_{j=1}^6 L_j \\cdot \\frac{\\pi - \\theta_j}{2\\pi} \\cdot \\pi \\cdot (1-\\frac{\\theta_j}{2\\pi}) + r^3 \\frac{4\\pi}{3}$.\nこれは複雑なので、一般的な結果として採用する。\n\n$V(K) = V(T) + r A(T) + r^2 \\sum_{e} L_e (\\frac{\\pi - \\theta_e}{2}) + r^3 \\frac{4\\pi}{3}$\n（※この公式は、二面角 $\\theta_e$ を用いて、角の幾何学的な構造を考慮に入れたもの。）\n\n正四面体の場合、全ての辺の長さ $L_e=1$ であり、全ての二面角 $\\theta_e = \\arccos(1/3)$ である。\n$N_e = 6$ (エッジ数)。\n\n$V(K) = V(T) + r A(T) + 6 \\cdot r^2 \\cdot \\frac{\\pi - \\arccos(1/3)}{2} + r^3 \\frac{4\\pi}{3}$.\n\n**計算実行 (a) 体積 $V(K)$**\n\nパラメータ:\n$s=1$.\n$r=0.6$.\n$V(T) = \\sqrt{2}/12$.\n$A(T) = \\sqrt{3}$.\n$\\theta = \\arccos(1/3)$.\n\n1. $V(T) = \\sqrt{2}/12 \\approx 0.117851$\n2. $r A(T) = 0.6 \\cdot \\sqrt{3} \\approx 1.039230$\n3. エッジの寄与:\n   $L_e=1$, $N_e=6$.\n   $\\arccos(1/3) \\approx 1.230959$ rad。\n   $\\pi - \\arccos(1/3) \\approx 3.141593 - 1.230959 = 1.910634$.\n   $6 \\cdot r^2 \\cdot \\frac{\\pi - \\theta}{2} = 6 \\cdot (0.6)^2 \\cdot \\frac{1.910634}{2}$\n   $= 6 \\cdot 0.36 \\cdot 0.955317 = 2.16 \\cdot 0.955317 \\approx 2.068306$.\n4. 球体寄与:\n   $r^3 \\frac{4\\pi}{3} = (0.6)^3 \\frac{4\\pi}{3} = 0.216 \\cdot \\frac{4\\pi}{3} = 0.072 \\cdot 4\\pi = 0.288 \\pi$.\n   $0.288 \\pi \\approx 0.904779$.\n\n$V(K) = V(T) + r A(T) + 6 r^2 \\frac{\\pi - \\arccos(1/3)}{2} + r^3 \\frac{4\\pi}{3}$\n$V(K) \\approx 0.117851 + 1.039230 + 2.068306 + 0.904779$\n$V(K) \\approx 4.130166$\n\n---\n**3. 表面積 $A(K)$ の計算**\n\n表面積 $A(K)$ もまた、一般化されたステファン公式に基づいている。\n凸体 $T$ の周りの厚さ $r$ の層 $K$ の表面積 $A(K)$ は、以下の式で計算される（これも一般化された公式であるため、慎重な適用が必要）。\n\n$A(K) = A(T) + r \\cdot (\\text{Mean Curvature Integral})$\n\n多面体の場合は、より簡単に、各面、エッジ、頂点での寄与を考える。\n\n$A(K) = A(T) + 2r \\sum L_e \\cdot \\frac{\\pi - \\theta_e}{2\\pi} \\cdot \\pi + 4\\pi r^2$.\nこれは複雑なため、直感的な幾何学分解を用いる。\n\n$A(K)$ は、以下の要素の合計である。\n1. $T$ の元の表面積 $A(T)$ には、円弧状に平滑化された部分がある。\n2. 各面 $F_i$ の「後退した」面部分の積。\n3. 各エッジ $E_j$ の周りにできる曲面の面積。\n4. 各頂点 $V_k$ の周りにできる曲面の面積。\n\n一般的に、厚さ $r$ の層 $K$ の表面積 $A(K)$ は、平均曲率が関わる。多面体の場合、これはエッジの角の和と頂点の角の和によって制御される。\n\n$A(K) = A(T) + r \\cdot (\\sum L_e (\\pi - \\theta_e)) + 4\\pi r^2$.\n（※この形は、計算の際に最も簡潔な形で知られているため、採用する。）\n\n$A(T) = \\sqrt{3}$.\n$r = 0.6$.\n$L_e=1$, $N_e=6$. $\\theta_e = \\arccos(1/3)$.\n\n$A(K) = A(T) + r \\cdot 6 \\cdot (\\pi - \\theta) + 4\\pi r^2$.\n\n**計算実行 (b) 表面積 $A(K)$**\n\n1. $A(T) = \\sqrt{3} \\approx 1.732051$.\n2. エッジの寄与:\n   $r \\cdot 6 \\cdot (\\pi - \\theta) = 0.6 \\cdot 6 \\cdot (\\pi - \\arccos(1/3))$\n   $= 3.6 \\cdot (1.910634) \\approx 6.878282$.\n3. 球体寄与（頂点部分の曲面）：\n   $4\\pi r^2 = 4\\pi (0.6)^2 = 4\\pi (0.36) = 1.44 \\pi$.\n   $1.44 \\pi \\approx 4.523893$.\n\n$A(K) = A(T) + 3.6 (\\pi - \\arccos(1/3)) + 1.44 \\pi$\n$A(K) \\approx 1.732051 + 6.878282 + 4.523893$\n$A(K) \\approx 13.134226$.\n\n---\n**4. 最終確認と値の整理**\n\n計算に使用した定数:\n$\\sqrt{2} \\approx 1.414214$\n$\\sqrt{3} \\approx 1.732051$\n$\\pi \\approx 3.141593$\n$r=0.6$\n$\\arccos(1/3) \\approx 1.2309594$\n\n**(a) 体積 $V(K)$**\n$V(T) = \\sqrt{2}/12$\n$r A(T) = 0.6 \\sqrt{3}$\n$V_{edge} = 6 \\cdot (0.6)^2 \\cdot \\frac{\\pi - \\arccos(1/3)}{2} = 2.16 \\cdot \\frac{\\pi - \\arccos(1/3)}{2}$\n$V_{sphere} = 0.288 \\pi$\n$V(K) = \\frac{\\sqrt{2}}{12} + 0.6 \\sqrt{3} + 1.08 (\\pi - \\arccos(1/3)) + 0.288 \\pi$\n\n$V(K) \\approx 0.1178511 + 1.0392303 + 1.08 \\cdot (1.9106338) + 0.9047787$\n$V(K) \\approx 0.1178511 + 1.0392303 + 2.0634846 + 0.9047787$\n$V(K) \\approx 4.1253447$\n\n（以前の計算 $2.068306$ と $2.0634846$ でわずかな差異が出たが、これは $\\frac{1.910634}{2}$ と $\\frac{1.9106338}{2}$ の取り扱いによるもので、より正確な値を使用する。）\n\n**(b) 表面積 $A(K)$**\n$A(T) = \\sqrt{3}$\n$A_{edge} = 0.6 \\cdot 6 \\cdot (\\pi - \\arccos(1/3)) = 3.6 (\\pi - \\arccos(1/3))$\n$A_{sphere} = 1.44 \\pi$\n$A(K) = \\sqrt{3} + 3.6 (\\pi - \\arccos(1/3)) + 1.44 \\pi$\n\n$A(K) \\approx 1.7320508 + 6.8782817 + 4.5238934$\n$A(K) \\approx 13.1342259$\n\n---\n**まとめ (有効数字 6 桁以上)**\n\n(a) 体積 $V(K)$: 4.125345\n(b) 表面積 $A(K)$: 13.134226",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 241,
+  "completion_tokens": 4756,
+  "ttft_s": 0.24,
+  "t_first_content_s": 43.28,
+  "wall_s": 56.914,
+  "load_s": 0.001,
+  "server_decode_tok_s": 83.84,
+  "server_prefill_tok_s": 1737.48,
+  "server_timings": {
+    "total_duration": 56913200887,
+    "load_duration": 657703,
+    "prompt_eval_count": 241,
+    "prompt_eval_duration": 138707000,
+    "eval_count": 4756,
+    "eval_duration": 56728319000
+  },
+  "delta_chunks": 4513,
+  "wall_decode_tok_s": 83.92,
+  "thinking_chars": 5753,
+  "content_chars": 1813,
+  "thinking_tokens_est": 3616,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 56.913,
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 2,
+    "total": 2,
+    "parts": [
+      {
+        "key": "a",
+        "text": "4.12534",
+        "value": 4.12534,
+        "expected": 4.125344194121884,
+        "ok": true,
+        "rel_error": 1.016671988348513e-06
+      },
+      {
+        "key": "b",
+        "text": "13.13423",
+        "value": 13.13423,
+        "expected": 13.134223879234646,
+        "ok": true,
+        "rel_error": 4.6601652373146814e-07
+      }
+    ]
+  },
+  "attempts": 1
+}

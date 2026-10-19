@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "target": "qwen3.8:27b",
+  "label": "qwen3.8:27b",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "slug": "qwen3.8-27b",
+  "suite": "math",
+  "item": "m3",
+  "run": 1,
+  "prompt": "## 問題 M3: 立方体の中の点\n\n1 辺の長さが 1 の立方体の内部から、一様にランダムに点 P を選ぶ。次の 2 つの条件を両方とも満たす確率を p(d) とする。\n\n- P は、立方体に内接する球（中心は立方体の中心、半径 1/2）の外側にある。\n- P から立方体の 6 つの面までの距離のうち、最も小さいものが d 以下である。\n\n次を求めよ。\n\n(a) p(1/4)\n\n(b) p(1/10)\n\n(c) p(3/20)\n\n### 答えの書き方\n\n- 途中の考え方は自由に書いてよい。最後に、小問ごとに 1 行ずつ `答え(a): <値>` の形で書く（`(b)` 以降も同じ）。\n- `<値>` は 1 つの数。厳密な式（円周率は `pi`、平方根は `sqrt(...)`、逆三角関数は `acos(...)` `atan(...)` など、べき乗は `**`）か、有効数字 6 桁以上の小数で書く。単位や説明は付けない。",
+  "prompt_chars": 419,
+  "prompt_lang": "ja",
+  "limits": {
+    "max_tokens": 32768,
+    "reasoning_budget_tokens": null,
+    "request_timeout_s": 2400
+  },
+  "started_at": "2026-10-18T18:02:36+09:00",
+  "status": "skipped_time_budget",
+  "error": "累計 79.4 分が上限 70.0 分を超えた",
+  "content": "",
+  "thinking": "",
+  "has_answer": false,
+  "wall_s": null,
+  "wall_excl_load_s": null,
+  "grade": {
+    "kind": "math",
+    "score": 0.0,
+    "all_passed": false,
+    "no_answer": true,
+    "reason": "skipped_time_budget"
+  }
+}

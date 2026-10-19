@@ -1,0 +1,49 @@
+{
+  "model": "opus-high",
+  "suite": "math",
+  "item": "m1",
+  "run": 3,
+  "content": "## 問題 M1 の解答\n\nK は凸体 T の平行体（parallel body）なので、シュタイナーの公式（Steiner formula）で求められる。\n\nK は次の部分に分かれる。\n- T 自身: 体積 V = sqrt(2)/12、表面積 S = sqrt(3)\n- 各面の上の厚さ r の板: 体積 S·r\n- 各辺のまわりの円柱の一部: 二面角を θ = acos(1/3) とすると、外側の角は π − θ = acos(-1/3)。長さ 1 の辺 1 本につき体積 (π−θ)/(2π)·π r²·1 = acos(-1/3)·r²/2。辺は 6 本なので合計 3·acos(-1/3)·r²\n- 各頂点のまわりの球の一部: 4 つの頂点の分を合わせると球 1 個分になり、(4/3)π r³\n\nしたがって\nV(r) = sqrt(2)/12 + sqrt(3)·r + 3·acos(-1/3)·r² + (4/3)π r³\n\n表面積はこれを r で微分したもの:\nS(r) = sqrt(3) + 6·acos(-1/3)·r + 4π r²\n\nr = 0.6 を代入する。\n(a) sqrt(2)/12 + 0.6·sqrt(3) + 1.08·acos(-1/3) + 0.288π\n = 0.1178511 + 1.0392305 + 2.0634839 + 0.9047787 ≈ 4.125344\n(b) sqrt(3) + 3.6·acos(-1/3) + 1.44π\n = 1.7320508 + 6.8782797 + 4.5238934 ≈ 13.134224\n\n答え(a): sqrt(2)/12 + 0.6*sqrt(3) + 1.08*acos(-1/3) + 0.288*pi\n答え(b): sqrt(3) + 3.6*acos(-1/3) + 1.44*pi\n",
+  "wall_s": 19.774,
+  "usage": {
+    "subagent_tokens": 28776
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 2,
+    "total": 2,
+    "parts": [
+      {
+        "key": "a",
+        "text": "sqrt(2)/12 + 0.6*sqrt(3) + 1.08*acos(-1/3) + 0.288*pi",
+        "value": 4.125344194121884,
+        "expected": 4.125344194121884,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "sqrt(3) + 3.6*acos(-1/3) + 1.44*pi",
+        "value": 13.134223879234646,
+        "expected": 13.134223879234646,
+        "ok": true,
+        "rel_error": 0.0
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-high/math/m1-run3.md",
+  "imported_at": "2026-10-18T18:33:22+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:32+09:00"
+}

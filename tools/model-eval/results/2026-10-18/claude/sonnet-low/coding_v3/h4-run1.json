@@ -1,0 +1,148 @@
+{
+  "model": "sonnet-low",
+  "suite": "coding_v3",
+  "item": "h4",
+  "run": 1,
+  "content": "```python\nfrom math import gcd\n\n\ndef best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]:\n    if den == 0 or max_den < 1 or side not in (-1, 0, 1):\n        raise ValueError(\"invalid argument\")\n    if den < 0:\n        num, den = -num, -den\n    g = gcd(num, den)\n    num //= g\n    den //= g\n    if den <= max_den:\n        return (num, den)\n\n    n, d = num, den\n    h0, k0 = 0, 1\n    h1, k1 = 1, 0\n    cand = None\n    while d != 0:\n        a = n // d\n        n, d = d, n - a * d\n        h2 = a * h1 + h0\n        k2 = a * k1 + k0\n        if k2 > max_den:\n            t = (max_den - k0) // k1\n            cand = [(h1, k1), (h0 + t * h1, k0 + t * k1)]\n            break\n        h0, k0, h1, k1 = h1, k1, h2, k2\n    # cand は必ず設定される（既約の分母が max_den を超えるため）\n    (p1, q1), (p2, q2) = cand\n    if p1 * q2 <= p2 * q1:\n        low, high = (p1, q1), (p2, q2)\n    else:\n        low, high = (p2, q2), (p1, q1)\n    if side == -1:\n        return low\n    if side == 1:\n        return high\n    dist_low = (num * low[1] - low[0] * den) * high[1]\n    dist_high = (high[0] * den - num * high[1]) * low[1]\n    if dist_low < dist_high:\n        return low\n    if dist_high < dist_low:\n        return high\n    return min(low, high, key=lambda frac: (frac[1], frac[0]))\n```\n",
+  "wall_s": 20.038,
+  "usage": {
+    "subagent_tokens": 31306
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_value_is_returned_reduced",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers_and_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_max_den_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_values_and_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_prefer_smaller_denominator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_same_denominator_smaller_numerator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_semiconvergents_are_needed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_one_sided_semiconvergents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_reduced_int_tuple",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_nearest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_lower",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_upper",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_are_not_precise_enough",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tiny_and_huge_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fibonacci_ratios",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sqrt2_approximations",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_far_from_simple_fractions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch_negative_dens",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.05,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-low/coding_v3/h4-run1.md",
+  "imported_at": "2026-10-18T19:43:42+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:49+09:00"
+}

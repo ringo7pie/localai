@@ -1,0 +1,57 @@
+{
+  "model": "opus-high",
+  "suite": "math",
+  "item": "m3",
+  "run": 2,
+  "content": "## 考え方\n\n立方体の中心を原点にとり、立方体を [-1/2, 1/2]^3、内接球を半径 R = 1/2 の球 B とする。\n「面までの最小距離が d 以下」は、P が内側の立方体 Q = [-a, a]^3（a = 1/2 - d）の外にあることと同じ。\n\np(d) = (立方体のうち B の外の体積) - (Q のうち B の外の体積)\n     = (1 - pi/6) - (8a^3 - V(a))、 V(a) = vol(B ∩ Q)\n\n### (a) d = 1/4, a = 1/4\na*sqrt(3) = 0.433 < 1/2 なので Q は B に完全に含まれる。V = 8a^3。\np = 1 - pi/6\n\n### (b) d = 1/10, a = 2/5\na < R かつ a*sqrt(2) > R なので、B は Q の 6 面から球冠がはみ出すだけ（辺には届かない）。\n球冠の高さ h = 1/10、体積 C = pi h^2 (3R - h)/3 = 7pi/1500、6C = 7pi/250。\nV = pi/6 - 7pi/250、8a^3 = 0.512。\np = 1 - 0.512 - 7pi/250 = 61/125 - 7pi/250 ≈ 0.400035\n\n### (c) d = 3/20, a = 7/20\na*sqrt(2) < R < a*sqrt(3) なので、球冠どうしが辺の近くで重なる（頂点には届かない）。\n包除原理で V = pi/6 - 6C + 12W。\nC: h = 3/20、C = pi(0.0225)(1.35)/3 = 0.010125 pi、6C = 243pi/4000。\nW = vol{x > a, y > a} ∩ B は積分して\nW = -2aR^2 φ + (2/3)a^3 φ + (2/3)a^2 k + (2R^3/3)(pi/2 - atan(a^2/(R k)))、\nk = sqrt(R^2 - 2a^2) = sqrt(2)/20、φ = acos(a/sqrt(R^2 - a^2)) = atan(sqrt(2)/7)。\n代入すると\n12W = -(1757/1000) atan(sqrt(2)/7) + 49 sqrt(2)/1000 + atan(10 sqrt(2)/49) ≈ 2.28241e-5\n8a^3 = 0.343 なので\np = 1 - 0.343 - 243pi/4000 + 12W\n  = 657/1000 - 243*pi/4000 + 49*sqrt(2)/1000 - (1757/1000)*atan(sqrt(2)/7) + atan(10*sqrt(2)/49)\n  ≈ 0.466171070\n\n答え(a): 1 - pi/6\n答え(b): 61/125 - 7*pi/250\n答え(c): 657/1000 - 243*pi/4000 + 49*sqrt(2)/1000 - (1757/1000)*atan(sqrt(2)/7) + atan(10*sqrt(2)/49)\n",
+  "wall_s": 104.546,
+  "usage": {
+    "subagent_tokens": 38541
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "61/125 - 7*pi/250",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "657/1000 - 243*pi/4000 + 49*sqrt(2)/1000 - (1757/1000)*atan(sqrt(2)/7) + atan(10*sqrt(2)/49)",
+        "value": 0.4661710704277855,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.190789277857109e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/opus-high/math/m3-run2.md",
+  "imported_at": "2026-10-18T18:27:19+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:32+09:00"
+}

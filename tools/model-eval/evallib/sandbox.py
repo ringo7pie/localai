@@ -2,7 +2,7 @@
 
 実行の形（計画の方針 3）:
 - `python3 -I -S -B suites/coding/harness.py <tests.py> <solution.py>` を work/ の下で起動する。/tmp は使わない。
-- 資源の上限: 全体 10 秒（壁時計）、CPU 10 秒、アドレス空間 1 GiB、書けるファイル 1 MiB、子プロセスを作らない。
+- 資源の上限: 全体 10 秒（壁時計）、CPU 10 秒、アドレス空間 2 GiB、書けるファイル 1 MiB、子プロセスを作らない。
 - 禁止モジュールの import は、静的な走査（実行前）と harness の meta path（実行中）の両方で拒む。
   静的な走査で違反が見つかったら実行せずに 0 点にする。
 
@@ -27,7 +27,10 @@ HARNESS = Path(__file__).resolve().parent.parent / "suites" / "coding" / "harnes
 
 WALL_TIMEOUT_S = 10
 CPU_LIMIT_S = 10
-ADDRESS_SPACE_BYTES = 1 << 30
+# 2026-10-18 に 1 GiB から 2 GiB にした。512 MiB のスタックのスレッドで深い再帰を動かす答えが、1 GiB では
+# malloc の arena の予約と配置の乱数しだいで「can't start new thread」になり、同じ答えの点が採点のたびに揺れた
+# （20 回中 5 回落ちた。2 GiB では 20 回とも同じ）
+ADDRESS_SPACE_BYTES = 2 << 30
 FILE_SIZE_BYTES = 1 << 20
 
 # harness.py の DENIED_MODULES と同じ一覧（tests/test_units.py で一致を確かめる）
@@ -154,8 +157,9 @@ def _limit_resources() -> None:
     resource.setrlimit(resource.RLIMIT_AS, (ADDRESS_SPACE_BYTES, ADDRESS_SPACE_BYTES))
     resource.setrlimit(resource.RLIMIT_FSIZE, (FILE_SIZE_BYTES, FILE_SIZE_BYTES))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    # 0 にすると、この利用者の新しいプロセス（fork）を作れない。exec はプロセスを増やさないので通る
-    resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
+    # RLIMIT_NPROC は掛けない（2026-10-18 に外した）。0 にするとスレッドも作れず、深い再帰のために大きなスタックの
+    # スレッドで動かす答え（問題文では禁じていない）が全部落ちた。子プロセスは静的な走査（subprocess・multiprocessing
+    # などの import）と、harness.py の実行時の差し替え（os.fork・os.posix_spawn など）で止める
     os.setsid()
 
 

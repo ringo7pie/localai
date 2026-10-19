@@ -1,0 +1,138 @@
+{
+  "model": "sonnet-low",
+  "suite": "coding_v3",
+  "item": "h5",
+  "run": 3,
+  "content": "```python\nfrom collections import deque\n\n\ndef _check_alphabet(alphabet):\n    if not isinstance(alphabet, str) or len(alphabet) == 0 or len(set(alphabet)) != len(alphabet):\n        raise ValueError(\"bad alphabet\")\n    if len(alphabet) > 8:\n        raise ValueError(\"bad alphabet\")\n\n\nclass _NFA:\n    def __init__(self):\n        self.eps = []\n        self.trans = []\n\n    def new(self):\n        self.eps.append(set())\n        self.trans.append({})\n        return len(self.eps) - 1\n\n\ndef _build_nfa(pattern, alphabet):\n    nfa = _NFA()\n    alpha_set = set(alphabet)\n    n = len(pattern)\n    pos = [0]\n\n    def empty_frag():\n        s = nfa.new()\n        e = nfa.new()\n        nfa.eps[s].add(e)\n        return s, e\n\n    def set_frag(chars):\n        s = nfa.new()\n        e = nfa.new()\n        for ch in chars:\n            nfa.trans[s].setdefault(ch, set()).add(e)\n        return s, e\n\n    def read_class_char():\n        if pos[0] >= n:\n            raise ValueError(\"unclosed class\")\n        ch = pattern[pos[0]]\n        if ch == \"\\\\\":\n            pos[0] += 1\n            if pos[0] >= n:\n                raise ValueError(\"dangling escape\")\n            ch = pattern[pos[0]]\n        pos[0] += 1\n        return ch\n\n    def parse_class():\n        # pos is just after '['\n        negate = False\n        if pos[0] < n and pattern[pos[0]] == \"^\":\n            negate = True\n            pos[0] += 1\n        listed = set()\n        count = 0\n        while True:\n            if pos[0] >= n:\n                raise ValueError(\"unclosed class\")\n            if pattern[pos[0]] == \"]\":\n                pos[0] += 1\n                break\n            first = read_class_char()\n            if (pos[0] + 1 < n and pattern[pos[0]] == \"-\"\n                    and pattern[pos[0] + 1] != \"]\"):\n                pos[0] += 1\n                last = read_class_char()\n                if first > last:\n                    raise ValueError(\"bad range\")\n                for ch in alphabet:\n                    if first <= ch <= last:\n                        listed.add(ch)\n            else:\n                listed.add(first)\n            count += 1\n        if count == 0:\n            raise ValueError(\"empty class\")\n        if negate:\n            return alpha_set - listed\n        return alpha_set & listed\n\n    def parse_alt():\n        frags = [parse_seq()]\n        while pos[0] < n and pattern[pos[0]] == \"|\":\n            pos[0] += 1\n            frags.append(parse_seq())\n        if len(frags) == 1:\n            return frags[0]\n        s = nfa.new()\n        e = nfa.new()\n        for fs, fe in frags:\n            nfa.eps[s].add(fs)\n            nfa.eps[fe].add(e)\n        return s, e\n\n    def parse_seq():\n        result = None\n        while pos[0] < n and pattern[pos[0]] not in \"|)\":\n            ch = pattern[pos[0]]\n            if ch in \"*+?\":\n                raise ValueError(\"nothing to repeat\")\n            if ch == \"(\":\n                pos[0] += 1\n                frag = parse_alt()\n                if pos[0] >= n or pattern[pos[0]] != \")\":\n                    raise ValueError(\"unbalanced (\")\n                pos[0] += 1\n            elif ch == \"[\":\n                pos[0] += 1\n                frag = set_frag(parse_class())\n            elif ch == \".\":\n                pos[0] += 1\n                frag = set_frag(alpha_set)\n            elif ch == \"\\\\\":\n                pos[0] += 1\n                if pos[0] >= n:\n                    raise ValueError(\"dangling escape\")\n                lit = pattern[pos[0]]\n                pos[0] += 1\n                frag = set_frag({lit} & alpha_set)\n            else:\n                pos[0] += 1\n                frag = set_frag({ch} & alpha_set)\n            if pos[0] < n and pattern[pos[0]] in \"*+?\":\n                q = pattern[pos[0]]\n                pos[0] += 1\n                s1, e1 = frag\n                if q == \"*\":\n                    s = nfa.new()\n                    e = nfa.new()\n                    nfa.eps[s].update((s1, e))\n                    nfa.eps[e1].update((s1, e))\n                    frag = (s, e)\n                elif q == \"+\":\n                    e = nfa.new()\n                    nfa.eps[e1].update((s1, e))\n                    frag = (s1, e)\n                else:\n                    s = nfa.new()\n                    e = nfa.new()\n                    nfa.eps[s].update((s1, e))\n                    nfa.eps[e1].add(e)\n                    frag = (s, e)\n                if pos[0] < n and pattern[pos[0]] in \"*+?\":\n                    raise ValueError(\"repeated quantifier\")\n            if result is None:\n                result = frag\n            else:\n                nfa.eps[result[1]].add(frag[0])\n                result = (result[0], frag[1])\n        if result is None:\n            result = empty_frag()\n        return result\n\n    start, end = parse_alt()\n    if pos[0] < n:\n        raise ValueError(\"unbalanced )\")\n    return nfa, start, end\n\n\ndef _build_min_dfa(pattern, alphabet):\n    nfa, start, end = _build_nfa(pattern, alphabet)\n    count = len(nfa.eps)\n    closure = []\n    for state in range(count):\n        seen = {state}\n        stack = [state]\n        while stack:\n            cur = stack.pop()\n            for nxt in nfa.eps[cur]:\n                if nxt not in seen:\n                    seen.add(nxt)\n                    stack.append(nxt)\n        closure.append(frozenset(seen))\n\n    start_set = closure[start]\n    index = {start_set: 0}\n    sets = [start_set]\n    table = []\n    queue = deque([start_set])\n    while queue:\n        cur = queue.popleft()\n        row = []\n        for ch in alphabet:\n            target = set()\n            for state in cur:\n                dests = nfa.trans[state].get(ch)\n                if dests:\n                    for dest in dests:\n                        target |= closure[dest]\n            target = frozenset(target)\n            if target not in index:\n                index[target] = len(sets)\n                sets.append(target)\n                queue.append(target)\n            row.append(index[target])\n        table.append(row)\n    size = len(sets)\n    accepting = [end in sets[i] for i in range(size)]\n\n    # Moore partition refinement\n    block = [1 if accepting[i] else 0 for i in range(size)]\n    num_blocks = len(set(block))\n    while True:\n        signature_ids = {}\n        new_block = [0] * size\n        for i in range(size):\n            sig = (block[i],) + tuple(block[t] for t in table[i])\n            if sig not in signature_ids:\n                signature_ids[sig] = len(signature_ids)\n            new_block[i] = signature_ids[sig]\n        new_count = len(signature_ids)\n        block = new_block\n        if new_count == num_blocks:\n            break\n        num_blocks = new_count\n\n    min_table = [None] * num_blocks\n    min_accept = [False] * num_blocks\n    for i in range(size):\n        b = block[i]\n        if min_table[b] is None:\n            min_table[b] = [block[t] for t in table[i]]\n            min_accept[b] = accepting[i]\n    return block[0], min_table, min_accept\n\n\ndef min_dfa_size(pattern: str, alphabet: str) -> int:\n    _check_alphabet(alphabet)\n    _, table, _ = _build_min_dfa(pattern, alphabet)\n    return len(table)\n\n\ndef distinguish(p1: str, p2: str, alphabet: str) -> str | None:\n    _check_alphabet(alphabet)\n    start1, table1, acc1 = _build_min_dfa(p1, alphabet)\n    start2, table2, acc2 = _build_min_dfa(p2, alphabet)\n    first = (start1, start2)\n    if acc1[start1] != acc2[start2]:\n        return \"\"\n    parent = {first: None}\n    queue = deque([first])\n    while queue:\n        pair = queue.popleft()\n        for idx, ch in enumerate(alphabet):\n            nxt = (table1[pair[0]][idx], table2[pair[1]][idx])\n            if nxt in parent:\n                continue\n            parent[nxt] = (pair, ch)\n            if acc1[nxt[0]] != acc2[nxt[1]]:\n                chars = []\n                cur = nxt\n                while parent[cur] is not None:\n                    cur, letter = parent[cur]\n                    chars.append(letter)\n                return \"\".join(reversed(chars))\n            queue.append(nxt)\n    return None\n```\n",
+  "wall_s": 34.753,
+  "usage": {
+    "subagent_tokens": 35081
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 19,
+    "total": 19,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_alphabets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_bad_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_language_and_empty_string",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_dot_and_classes",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_specials_are_ordinary_characters",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_quantifiers_and_groups",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_alternation_with_empty_branches",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_counting_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_patterns",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_equal_languages",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_empty_string_can_distinguish",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shortest_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_follow_alphabet_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_large_minimal_dfa",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_larger_alphabet",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_shortest_difference",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_equal_large_languages",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.34,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-low/coding_v3/h5-run3.md",
+  "imported_at": "2026-10-18T20:09:24+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:50+09:00"
+}

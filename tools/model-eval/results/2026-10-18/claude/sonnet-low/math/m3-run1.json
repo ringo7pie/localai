@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-low",
+  "suite": "math",
+  "item": "m3",
+  "run": 1,
+  "content": "考え方: 座標を中心からの絶対値 u_i (0〜1/2) とし、p = 1 - pi/6 - 8V、V = {u in [0,1/2-d]^3 かつ |u|>1/2} の体積。\n(a) 角 (1/4,1/4,1/4) でも |u|<1/2 なので V=0。p = 1 - pi/6。\n(b) V = 0.064 - pi/48 + 7pi/2000 より p = 0.488 - 7pi/250。\n(c) c=0.35。球の 1/8 から 3 つの帽子を引き、2 つの重なり(微小)を足して数値積分。8V ≈ 0.01023。\n\n答え(a): 1 - pi/6\n答え(b): 0.488 - 7*pi/250\n答え(c): 0.466172\n",
+  "wall_s": 34.166,
+  "usage": {
+    "subagent_tokens": 32162
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "1 - pi/6",
+        "value": 0.4764012244017012,
+        "expected": 0.4764012244017012,
+        "ok": true,
+        "rel_error": 0.0
+      },
+      {
+        "key": "b",
+        "text": "0.488 - 7*pi/250",
+        "value": 0.4000354056994858,
+        "expected": 0.4000354056994857,
+        "ok": true,
+        "rel_error": 2.775311906914503e-16
+      },
+      {
+        "key": "c",
+        "text": "0.466172",
+        "value": 0.466172,
+        "expected": 0.46617107042778555,
+        "ok": true,
+        "rel_error": 1.9940581331491178e-06
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-low/math/m3-run1.md",
+  "imported_at": "2026-10-18T19:50:04+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:52+09:00"
+}

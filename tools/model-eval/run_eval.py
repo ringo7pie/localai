@@ -6,6 +6,8 @@
   run_eval.py run --target strata-official:IQ3_XXS --suite extra --retry-errors
   run_eval.py run --target strata-official:IQ3_XXS --suite coding --items c4,c5 --reasoning-budget 0 --max-tokens 65536 \\
       --prompt-lang en --results-dir work/fix                     # 思考の上限なし・生成 65,536・英語の問題文
+  run_eval.py run --target qwen3.8:27b --suite hard --date 2026-10-18 --time-budget-min 70 \\
+      --deadline 2026-10-19T06:40:41+09:00 --progress results/2026-10-18/progress.json   # 2026-10-18 の難問 9 問
   run_eval.py grade-claude                                        # results/<日付>/claude/ の答えを採点して書き戻す
   run_eval.py regrade --target gemma4:e4b                         # ローカルの記録を（問い合わせずに）採点し直す
   run_eval.py unload --target gemma4:e4b                          # Ollama のモデルを VRAM から降ろす（keep_alive:0）
@@ -24,6 +26,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import subprocess
 import sys
@@ -38,7 +41,9 @@ if str(TOOL_DIR) not in sys.path:
 
 import targets as targets_module  # noqa: E402
 from evallib import clients, common, sandbox  # noqa: E402
+from evallib import progress as progress_lib  # noqa: E402
 from suites.extra import grade_extra  # noqa: E402
+from suites.math import grade_math  # noqa: E402
 
 # Ollama のモデルを読み込む要求の時間上限（IQ4_XS は 97 GB をディスクから読む）
 PRELOAD_TIMEOUT_S = 30 * 60
@@ -63,10 +68,13 @@ def grade_answer(suite: str, item: str, content: str, status: str, work_dir: Pat
     if not (content or "").strip():
         reason = "length（上限に達して本文が無い）" if status == common.STATUS_LENGTH else "本文が無い"
         return {"kind": suite, "score": 0.0, "all_passed": False, "no_answer": True, "reason": reason}
-    if suite == "coding":
+    kind = common.SUITE_KIND.get(suite)
+    if kind == "coding":
         return sandbox.grade_coding(content, common.item_dir(suite, item), work_dir)
-    if suite == "extra":
+    if kind == "extra":
         return grade_extra.grade_extra(content, common.item_dir(suite, item))
+    if kind == "math":
+        return grade_math.grade_math(content, common.item_dir(suite, item))
     raise ValueError(f"採点器が無い試験: {suite}")
 
 
@@ -118,8 +126,9 @@ def build_payload(target: targets_module.Target, suite: str, prompt: str, keep_a
     raise ValueError(f"{target.key} はローカルのモデルではない")
 
 
-def send(target: targets_module.Target, payload: dict[str, Any], suite: str) -> dict[str, Any]:
-    deadline = common.SUITE_LIMITS[suite]["request_timeout_s"]
+def send(target: targets_module.Target, payload: dict[str, Any], suite: str,
+         timeout_s: float | None = None) -> dict[str, Any]:
+    deadline = timeout_s if timeout_s is not None else common.SUITE_LIMITS[suite]["request_timeout_s"]
     if target.backend == "ollama":
         return clients.chat_ollama(target.base_url, payload, stall_s=common.STALL_TIMEOUT_S, deadline_s=deadline)
     return clients.chat_strata(target.base_url, payload, stall_s=common.STALL_TIMEOUT_S, deadline_s=deadline)
@@ -210,9 +219,17 @@ def used_seconds(results_dir: Path, target: targets_module.Target) -> float:
     return total
 
 
+SUITE_CHOICES = ["coding", "extra", "all", "coding_v3", "math", "hard"]
+
+
 def selected_items(suite_arg: str, items_arg: str | None, limit: int | None) -> list[tuple[str, str]]:
-    suites = ("coding", "extra") if suite_arg == "all" else (suite_arg,)
-    pairs = [(suite, item) for suite in suites for item in common.SUITE_ITEMS[suite]]
+    """--suite と --items から（試験, 問）の並びを作る。hard は common.HARD_ORDER（2026-10-18 の 9 問を易しい順）。"""
+
+    if suite_arg == "hard":
+        pairs = list(common.HARD_ORDER)
+    else:
+        suites = ("coding", "extra") if suite_arg == "all" else (suite_arg,)
+        pairs = [(suite, item) for suite in suites for item in common.SUITE_ITEMS[suite]]
     if items_arg:
         wanted = {item.strip() for item in items_arg.split(",") if item.strip()}
         unknown = wanted - {item for _suite, item in pairs}
@@ -244,13 +261,16 @@ def base_record(target: targets_module.Target, suite: str, item: str, prompt: st
 
 
 def run_attempt(target: targets_module.Target, suite: str, item: str, prompt: str, payload: dict[str, Any],
-                work_dir: Path, *, lang: str, limits: dict[str, Any]) -> dict[str, Any]:
+                work_dir: Path, *, lang: str, limits: dict[str, Any],
+                timeout_s: float | None = None) -> dict[str, Any]:
     """1 要求を送って、採点まで済ませた記録を返す（書き出しは呼び出し側）。"""
 
     record = base_record(target, suite, item, prompt, lang=lang, limits=limits)
     record["request"] = {key: value for key, value in payload.items() if key != "messages"}
     record["started_at"] = common.now_iso()
-    result = send(target, payload, suite)
+    if timeout_s is not None:
+        record["request_timeout_s"] = round(timeout_s, 1)
+    result = send(target, payload, suite, timeout_s)
     record["finished_at"] = common.now_iso()
     record.update(result)
     record["has_answer"] = bool((record.get("content") or "").strip())
@@ -277,6 +297,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             raise SystemExit(f"--{name.replace('_', '-')} は 0 以上")
     results_dir = Path(args.results_dir).resolve() if args.results_dir else common.results_dir_for(args.date)
     budget_s = args.time_budget_min * 60
+    deadline = progress_lib.parse_time(args.deadline) if args.deadline else None
+    progress_path = Path(args.progress).resolve() if args.progress else None
     pairs = selected_items(args.suite, args.items, args.limit)
     todo = [(suite, item) for suite, item in pairs
             if should_run(common.local_record_path(results_dir, target.slug, suite, item), args)]
@@ -300,28 +322,50 @@ def cmd_run(args: argparse.Namespace) -> int:
     session.update(preflight(target, args.keep_alive, preload=not args.no_preload))
     append_meta(results_dir, target, session)
 
+    def note_progress(**fields: Any) -> None:
+        if progress_path is not None:
+            progress_lib.set_lane(progress_path, "local", **fields)
+
+    def timeout_for(suite: str) -> float | None:
+        """締切があれば、1 要求の時間上限を締切までに縮める（最短 60 秒）。"""
+
+        if deadline is None:
+            return None
+        left = (deadline - datetime.datetime.now().astimezone()).total_seconds()
+        return max(60.0, min(float(common.SUITE_LIMITS[suite]["request_timeout_s"]), left))
+
     errors = 0
+    done = len(pairs) - len(todo)
+    note_progress(target=target.key, total=len(pairs), done=done, spent_min=round(used_seconds(results_dir, target) / 60, 1),
+                  budget_min=args.time_budget_min, item=None, suite=None, item_started_at=None)
     for suite, item in todo:
         path = common.local_record_path(results_dir, target.slug, suite, item)
         prompt = common.build_prompt(suite, item, lang)
         limits = effective_limits(suite, args.max_tokens, args.reasoning_budget)
         spent = used_seconds(results_dir, target)
-        if spent >= budget_s:
+        past_deadline = deadline is not None and datetime.datetime.now().astimezone() >= deadline
+        if spent >= budget_s or past_deadline:
             record = base_record(target, suite, item, prompt, lang=lang, limits=limits)
-            record.update({"started_at": common.now_iso(), "status": common.STATUS_SKIPPED,
-                           "error": f"累計 {spent / 60:.1f} 分が上限 {args.time_budget_min} 分を超えた",
+            reason = (f"締切 {args.deadline} を過ぎた" if past_deadline
+                      else f"累計 {spent / 60:.1f} 分が上限 {args.time_budget_min} 分を超えた")
+            record.update({"started_at": common.now_iso(), "status": common.STATUS_SKIPPED, "error": reason,
                            "content": "", "thinking": "", "has_answer": False, "wall_s": None,
                            "wall_excl_load_s": None})
             record["grade"] = grade_answer(suite, item, "", common.STATUS_SKIPPED, Path())
             common.write_json(path, record)
-            log(f"{suite}/{item}: skipped_time_budget（累計 {spent / 60:.1f} 分）")
+            log(f"{suite}/{item}: skipped_time_budget（{reason}）")
+            done += 1
+            note_progress(done=done, last=f"{item}: 飛ばした")
             continue
         payload = build_payload(target, suite, prompt, args.keep_alive,
                                 max_tokens=args.max_tokens, reasoning_budget=args.reasoning_budget,
                                 reasoning_effort=args.reasoning_effort)
         work_dir = common.WORK_DIR / results_dir.name / target.slug / item
         log(f"{suite}/{item}: 送信（累計 {spent / 60:.1f} 分）")
-        record = run_attempt(target, suite, item, prompt, payload, work_dir, lang=lang, limits=limits)
+        note_progress(suite=suite, item=item, item_started_at=common.now_iso(), done=done,
+                      spent_min=round(spent / 60, 1))
+        record = run_attempt(target, suite, item, prompt, payload, work_dir, lang=lang, limits=limits,
+                             timeout_s=timeout_for(suite))
         record["attempts"] = 1
         log_record(suite, item, record)
         if record["status"] == common.STATUS_EOS_IN_THINKING and args.retry_eos:
@@ -329,13 +373,18 @@ def cmd_run(args: argparse.Namespace) -> int:
             first_status = record["status"]
             common.write_json(common.attempt_record_path(path, 1), record)
             log(f"{suite}/{item}: 思考中に停止トークン。1 回やり直す（1 回目の記録は {common.attempt_record_path(path, 1).name}）")
-            record = run_attempt(target, suite, item, prompt, payload, work_dir, lang=lang, limits=limits)
+            record = run_attempt(target, suite, item, prompt, payload, work_dir, lang=lang, limits=limits,
+                                 timeout_s=timeout_for(suite))
             record["attempts"] = 2
             record["first_attempt_status"] = first_status
             log_record(suite, item, record)
         common.write_json(path, record)
         if record["status"] == common.STATUS_ERROR:
             errors += 1
+        done += 1
+        note_progress(done=done, item=None, suite=None, item_started_at=None,
+                      spent_min=round(used_seconds(results_dir, target) / 60, 1),
+                      last=f"{item}: {record['status']} 点 {record['grade'].get('score')}")
     return 1 if errors else 0
 
 
@@ -403,6 +452,80 @@ def cmd_regrade(args: argparse.Namespace) -> int:
     return 0
 
 
+# ------------------------------------------------------------------------------------------------ Claude の答えの取り込み
+
+CLAUDE_RAW_DIR = "claude-raw"
+CLAUDE_PROMPT_DIR = "claude-prompts"
+# 受験側のエージェントに許すツールの回数: 問題文の Read・答えの Write・結果を返す SubagentHandback の各 1 回
+# （どれも解くためのツールではない）
+CLAUDE_ALLOWED_TOOL_USES = 3
+CLAUDE_ALLOWED_TOOL_NAMES = ("Read", "Write", "SubagentHandback")
+
+
+def claude_task_prompt(problem_path: Path, save_path: Path) -> str:
+    """Claude の受験用の指示文（2026-10-18）。問題文はローカルと同じ全文をファイルで渡し、答えは Write で保存させる。"""
+
+    return (
+        "あなたは評価の受験者です。次のファイルに書かれた問題に答えてください。\n"
+        f"問題のファイル: {problem_path}\n\n"
+        "規則:\n"
+        "- ツールは 2 回だけ使う。1 回目は Read で上の問題のファイルを読む。2 回目は Write で答えを保存する。\n"
+        "- ほかのファイルを読む・コードを実行する・検索する・Web を見るなど、それ以外のツールは使わない。考えるのは頭の中だけで行う。\n"
+        f"- 答えの全文（問題が求める形式どおり）を、Write ツールで次のファイルに 1 回だけ保存する: {save_path}\n"
+        "- 保存したら、最後の返答は「保存しました」の 1 行だけにする（答えを繰り返さない）。"
+    )
+
+
+def claude_paths(results_dir: Path, model: str, suite: str, item: str, run: int) -> tuple[Path, Path]:
+    problem = results_dir / CLAUDE_PROMPT_DIR / suite / f"{item}.md"
+    save = results_dir / CLAUDE_RAW_DIR / model / suite / f"{item}-run{run}.md"
+    return problem, save
+
+
+def cmd_claude_prompt(args: argparse.Namespace) -> int:
+    """問題文のファイル（ローカルに送る全文と同じ）を書き、受験用の指示文を出す。"""
+
+    results_dir = Path(args.results_dir).resolve() if args.results_dir else common.results_dir_for(args.date)
+    problem, save = claude_paths(results_dir, args.model, args.suite, args.item, args.run)
+    problem.parent.mkdir(parents=True, exist_ok=True)
+    text = common.build_prompt(args.suite, args.item)
+    if not problem.exists() or problem.read_text(encoding="utf-8") != text:
+        problem.write_text(text, encoding="utf-8")
+    save.parent.mkdir(parents=True, exist_ok=True)
+    sys.stdout.write(claude_task_prompt(problem, save) + "\n")
+    return 0
+
+
+def cmd_import_claude(args: argparse.Namespace) -> int:
+    """claude-raw/<model>/<suite>/<問>-run<n>.md（受験側が保存した答え）を claude/ の記録（JSON）にする。"""
+
+    results_dir = Path(args.results_dir).resolve() if args.results_dir else common.results_dir_for(args.date)
+    raw = results_dir / CLAUDE_RAW_DIR / args.model / args.suite / f"{args.item}-run{args.run}.md"
+    if not raw.is_file():
+        raise SystemExit(f"答えのファイルが無い: {raw}")
+    content = raw.read_text(encoding="utf-8")
+    names = [name for name in (args.tool_names or "").split(",") if name]
+    solving_tools = max(0, args.tool_uses_raw - CLAUDE_ALLOWED_TOOL_USES)
+    if names:
+        solving_tools = max(solving_tools, sum(1 for name in names if name not in CLAUDE_ALLOWED_TOOL_NAMES),
+                            max(names.count(name) for name in CLAUDE_ALLOWED_TOOL_NAMES) - 1)
+    record = {
+        "model": args.model, "suite": args.suite, "item": args.item, "run": args.run, "content": content,
+        "wall_s": args.wall_s, "usage": {"subagent_tokens": args.tokens} if args.tokens else None,
+        "tool_uses": solving_tools, "tool_uses_raw": args.tool_uses_raw,
+        "tool_names": names or None,
+        "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+        "effort": args.effort or targets_module.get(args.model).effort, "grade": None,
+        "raw_path": str(raw.relative_to(results_dir)),
+        "imported_at": common.now_iso(),
+    }
+    path = results_dir / "claude" / args.model / args.suite / f"{args.item}-run{args.run}.json"
+    common.write_json(path, record)
+    print(f"{path.relative_to(results_dir)}: {len(content):,} 文字、{args.wall_s} 秒、ツール {args.tool_uses_raw} 回"
+          + ("（無効: 解くためのツールを使った）" if solving_tools else ""))
+    return 1 if solving_tools else 0
+
+
 # ------------------------------------------------------------------------------------------------ その他
 
 
@@ -468,7 +591,8 @@ def main(argv: list[str] | None = None) -> int:
 
     run = sub.add_parser("run", help="ローカルの 1 モデルに問題を解かせて採点する")
     run.add_argument("--target", required=True, help="targets.py の key（例 gemma4:e4b）か slug")
-    run.add_argument("--suite", choices=["coding", "extra", "all"], default="all")
+    run.add_argument("--suite", choices=SUITE_CHOICES, default="all",
+                     help="all = coding + extra（2026-10-08）、hard = coding_v3 と math の 9 問（2026-10-18、易しい順）")
     run.add_argument("--items", default=None, help="カンマ区切りで問を絞る（例 c1,c3）")
     run.add_argument("--limit", type=int, default=None, help="先頭から N 問だけ")
     add_results(run)
@@ -490,14 +614,38 @@ def main(argv: list[str] | None = None) -> int:
                      help="問題文の言語（既定 ja）。en は coding の PREAMBLE.en.md と prompt.en.md")
     run.add_argument("--reasoning-effort", choices=REASONING_EFFORTS, default=DEFAULT_REASONING_EFFORT,
                      help="Strata に送る思考の強さ（既定 high = テンプレートの xhigh）。Ollama には関係ない")
+    run.add_argument("--deadline", default=None,
+                     help="締切（ISO）。過ぎたら残りの問を skipped_time_budget にし、1 要求の時間上限も締切までに縮める")
+    run.add_argument("--progress", default=None, help="進捗の状態ファイル（progress.json）。問の送信と完了を書く")
     run.add_argument("--retry-eos", action=argparse.BooleanOptionalAction, default=True,
                      help="思考中に停止トークンが出て本文が空だった要求を 1 回だけ流し直す（既定 あり。--no-retry-eos でなし）")
     run.set_defaults(func=cmd_run)
 
     grade_claude = sub.add_parser("grade-claude", help="results/<日付>/claude/ のコーディングと追加の答えを採点して書き戻す")
     add_results(grade_claude)
-    grade_claude.add_argument("--model", choices=["sonnet", "opus"], default=None)
+    grade_claude.add_argument("--model", choices=list(targets_module.CLAUDE_KEYS), default=None)
     grade_claude.set_defaults(func=cmd_grade_claude)
+
+    claude_prompt = sub.add_parser("claude-prompt", help="Claude の受験用の指示文を出す（2026-10-18。問題文は Read、答えは Write）")
+    add_results(claude_prompt)
+    claude_prompt.add_argument("--model", choices=list(targets_module.CLAUDE_KEYS), required=True)
+    claude_prompt.add_argument("--suite", choices=["coding_v3", "math"], required=True)
+    claude_prompt.add_argument("--item", required=True)
+    claude_prompt.add_argument("--run", type=int, required=True)
+    claude_prompt.set_defaults(func=cmd_claude_prompt)
+
+    import_claude = sub.add_parser("import-claude", help="受験側が保存した Claude の答えを記録（JSON）にする")
+    add_results(import_claude)
+    import_claude.add_argument("--model", choices=list(targets_module.CLAUDE_KEYS), required=True)
+    import_claude.add_argument("--suite", choices=["coding_v3", "math"], required=True)
+    import_claude.add_argument("--item", required=True)
+    import_claude.add_argument("--run", type=int, required=True)
+    import_claude.add_argument("--wall-s", type=float, required=True, help="Agent の結果の duration（秒）")
+    import_claude.add_argument("--tokens", type=int, default=None, help="Agent の結果のトークン数")
+    import_claude.add_argument("--tool-uses-raw", type=int, required=True, help="Agent の結果のツール使用回数（保存の 1 回を含む）")
+    import_claude.add_argument("--tool-names", default=None, help="使ったツールの名前（カンマ区切り。記録の確認用）")
+    import_claude.add_argument("--effort", default=None, help="既定は targets.py のそのモデルの effort")
+    import_claude.set_defaults(func=cmd_import_claude)
 
     regrade = sub.add_parser("regrade", help="ローカルの記録を（問い合わせずに）採点し直す")
     add_results(regrade)
@@ -506,7 +654,7 @@ def main(argv: list[str] | None = None) -> int:
 
     pending = sub.add_parser("pending", help="流す必要のある問の数を出す（run と同じ再開の規則）")
     pending.add_argument("--target", required=True)
-    pending.add_argument("--suite", choices=["coding", "extra", "all"], default="all")
+    pending.add_argument("--suite", choices=SUITE_CHOICES, default="all")
     add_results(pending)
     pending.add_argument("--retry-errors", action="store_true")
     pending.add_argument("--retry-skipped", action="store_true")
@@ -518,7 +666,7 @@ def main(argv: list[str] | None = None) -> int:
     unload.set_defaults(func=cmd_unload)
 
     show = sub.add_parser("show-prompt", help="送る問題文の全文を出す")
-    show.add_argument("--suite", choices=["coding", "extra"], required=True)
+    show.add_argument("--suite", choices=list(common.SUITE_ITEMS), required=True)
     show.add_argument("--item", required=True)
     show.add_argument("--for-claude", action="store_true", help=f"最後に「{common.CLAUDE_SUFFIX}」を足す")
     show.add_argument("--prompt-lang", choices=common.PROMPT_LANGS, default=common.DEFAULT_PROMPT_LANG,

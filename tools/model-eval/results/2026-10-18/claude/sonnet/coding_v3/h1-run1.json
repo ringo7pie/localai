@@ -1,0 +1,163 @@
+{
+  "model": "sonnet",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 1,
+  "content": "```python\nimport math\nimport random\n\n\ndef _spans_space(normals):\n    first_x, first_y, first_z = normals[0]\n    for second_x, second_y, second_z in normals:\n        cross_x = first_y * second_z - first_z * second_y\n        cross_y = first_z * second_x - first_x * second_z\n        cross_z = first_x * second_y - first_y * second_x\n        if cross_x or cross_y or cross_z:\n            for third_x, third_y, third_z in normals:\n                if cross_x * third_x + cross_y * third_y + cross_z * third_z:\n                    return True\n            return False\n    return False\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    unique = sorted({(int(item[0]), int(item[1]), int(item[2])) for item in points})\n    if len(unique) < 4:\n        raise ValueError(\"convex hull needs at least 4 distinct points\")\n    random.Random(20261018).shuffle(unique)\n    count = len(unique)\n\n    # ---- 初期の四面体を選ぶ（整数だけで判定する） ----\n    origin_x, origin_y, origin_z = unique[0]\n    edge_x = unique[1][0] - origin_x\n    edge_y = unique[1][1] - origin_y\n    edge_z = unique[1][2] - origin_z\n    third = -1\n    base_nx = base_ny = base_nz = 0\n    for index in range(2, count):\n        diff_x = unique[index][0] - origin_x\n        diff_y = unique[index][1] - origin_y\n        diff_z = unique[index][2] - origin_z\n        base_nx = edge_y * diff_z - edge_z * diff_y\n        base_ny = edge_z * diff_x - edge_x * diff_z\n        base_nz = edge_x * diff_y - edge_y * diff_x\n        if base_nx or base_ny or base_nz:\n            third = index\n            break\n    if third < 0:\n        raise ValueError(\"all points are collinear\")\n    fourth = -1\n    for index in range(third + 1, count):\n        px, py, pz = unique[index]\n        if (\n            base_nx * (px - origin_x)\n            + base_ny * (py - origin_y)\n            + base_nz * (pz - origin_z)\n            != 0\n        ):\n            fourth = index\n            break\n    if fourth < 0:\n        raise ValueError(\"all points are coplanar\")\n\n    chosen = (0, 1, third, fourth)\n    chosen_set = set(chosen)\n    ordered = [unique[index] for index in chosen]\n    ordered.extend(unique[index] for index in range(count) if index not in chosen_set)\n    xs = [item[0] for item in ordered]\n    ys = [item[1] for item in ordered]\n    zs = [item[2] for item in ordered]\n\n    # ---- 三角形の面の表。面は外向きの反時計回り (a, b, c) で持つ ----\n    face_vertices = []\n    face_plane = []\n    face_conflict = []\n    face_alive = []\n    edge_owner = {}  # 有向辺 (tail -> head) を key = tail * count + head にして面 id を引く\n    point_faces = [[] for _ in range(count)]\n\n    def plane_of(first, second, third_vertex):\n        base_x, base_y, base_z = xs[first], ys[first], zs[first]\n        u_x = xs[second] - base_x\n        u_y = ys[second] - base_y\n        u_z = zs[second] - base_z\n        v_x = xs[third_vertex] - base_x\n        v_y = ys[third_vertex] - base_y\n        v_z = zs[third_vertex] - base_z\n        normal_x = u_y * v_z - u_z * v_y\n        normal_y = u_z * v_x - u_x * v_z\n        normal_z = u_x * v_y - u_y * v_x\n        offset = normal_x * base_x + normal_y * base_y + normal_z * base_z\n        return normal_x, normal_y, normal_z, offset\n\n    def add_face(first, second, third_vertex, candidates):\n        normal_x, normal_y, normal_z, offset = plane_of(first, second, third_vertex)\n        seen_by = [\n            point\n            for point in candidates\n            if normal_x * xs[point] + normal_y * ys[point] + normal_z * zs[point] > offset\n        ]\n        face_id = len(face_vertices)\n        face_vertices.append((first, second, third_vertex))\n        face_plane.append((normal_x, normal_y, normal_z, offset))\n        face_conflict.append(seen_by)\n        face_alive.append(True)\n        edge_owner[first * count + second] = face_id\n        edge_owner[second * count + third_vertex] = face_id\n        edge_owner[third_vertex * count + first] = face_id\n        for point in seen_by:\n            point_faces[point].append(face_id)\n        return face_id\n\n    for first, second, third_vertex, opposite in (\n        (0, 1, 2, 3),\n        (0, 1, 3, 2),\n        (0, 2, 3, 1),\n        (1, 2, 3, 0),\n    ):\n        normal_x, normal_y, normal_z, offset = plane_of(first, second, third_vertex)\n        if (\n            normal_x * xs[opposite] + normal_y * ys[opposite] + normal_z * zs[opposite]\n            > offset\n        ):\n            second, third_vertex = third_vertex, second\n        add_face(first, second, third_vertex, range(4, count))\n\n    # ---- 点を 1 つずつ足す（衝突リスト付きのランダム増分法） ----\n    for apex in range(4, count):\n        visible = [face for face in point_faces[apex] if face_alive[face]]\n        if not visible:\n            continue\n        visible_set = set(visible)\n        horizon = []\n        for face in visible:\n            va, vb, vc = face_vertices[face]\n            for tail, head in ((va, vb), (vb, vc), (vc, va)):\n                neighbor = edge_owner[head * count + tail]\n                if neighbor not in visible_set:\n                    horizon.append((tail, head, face, neighbor))\n        for face in visible:\n            va, vb, vc = face_vertices[face]\n            del edge_owner[va * count + vb]\n            del edge_owner[vb * count + vc]\n            del edge_owner[vc * count + va]\n            face_alive[face] = False\n        for tail, head, face, neighbor in horizon:\n            candidates = set(face_conflict[face])\n            candidates.update(face_conflict[neighbor])\n            add_face(tail, head, apex, candidates)\n        for face in visible:\n            face_conflict[face] = ()\n\n    # ---- 集計 ----\n    volume6 = 0\n    planes = set()\n    incident = {}\n    for face in range(len(face_vertices)):\n        if not face_alive[face]:\n            continue\n        normal_x, normal_y, normal_z, offset = face_plane[face]\n        volume6 += offset\n        divisor = math.gcd(math.gcd(normal_x, normal_y), math.gcd(normal_z, offset))\n        planes.add(\n            (\n                normal_x // divisor,\n                normal_y // divisor,\n                normal_z // divisor,\n                offset // divisor,\n            )\n        )\n        for vertex in face_vertices[face]:\n            incident.setdefault(vertex, []).append((normal_x, normal_y, normal_z))\n\n    vertex_count = 0\n    for normals in incident.values():\n        if _spans_space(normals):\n            vertex_count += 1\n\n    return volume6, len(planes), vertex_count\n```\n",
+  "wall_s": 250.932,
+  "usage": {
+    "subagent_tokens": 62014
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "xhigh",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.31,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet/coding_v3/h1-run1.md",
+  "imported_at": "2026-10-18T16:34:43+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:41+09:00"
+}

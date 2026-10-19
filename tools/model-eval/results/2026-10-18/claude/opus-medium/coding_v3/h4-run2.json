@@ -1,0 +1,148 @@
+{
+  "model": "opus-medium",
+  "suite": "coding_v3",
+  "item": "h4",
+  "run": 2,
+  "content": "```python\nfrom math import gcd\n\n\ndef best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]:\n    if not isinstance(num, int) or not isinstance(den, int) or not isinstance(max_den, int):\n        raise ValueError(\"arguments must be integers\")\n    if den == 0:\n        raise ValueError(\"den must not be zero\")\n    if max_den < 1:\n        raise ValueError(\"max_den must be >= 1\")\n    if side not in (-1, 0, 1):\n        raise ValueError(\"side must be -1, 0 or 1\")\n\n    if den < 0:\n        num, den = -num, -den\n    common = gcd(num, den)\n    num //= common\n    den //= common\n    if den <= max_den:\n        return (num, den)\n\n    whole = num // den\n    target_n = num - whole * den  # 0 < target_n < den\n    target_d = den\n    limit = max_den\n\n    lo_p, lo_q = 0, 1\n    hi_p, hi_q = 1, 1\n    while lo_q + hi_q <= limit:\n        # gap_hi = hi - x (scaled), gap_lo = x - lo (scaled)\n        gap_hi = hi_p * target_d - target_n * hi_q\n        gap_lo = target_n * lo_q - lo_p * target_d\n        steps_left = (gap_hi - 1) // gap_lo\n        if steps_left >= 1:\n            cap = (limit - hi_q) // lo_q\n            steps = min(steps_left, cap)\n            hi_p += steps * lo_p\n            hi_q += steps * lo_q\n            if steps < steps_left:\n                break\n            continue\n        steps_right = (gap_lo - 1) // gap_hi\n        if steps_right >= 1:\n            cap = (limit - lo_q) // hi_q\n            steps = min(steps_right, cap)\n            lo_p += steps * hi_p\n            lo_q += steps * hi_q\n            if steps < steps_right:\n                break\n            continue\n        break\n\n    lower = (lo_p + whole * lo_q, lo_q)\n    upper = (hi_p + whole * hi_q, hi_q)\n\n    if side == -1:\n        return lower\n    if side == 1:\n        return upper\n\n    gap_lo = target_n * lo_q - lo_p * target_d  # distance lo: gap_lo / (d*lo_q)\n    gap_hi = hi_p * target_d - target_n * hi_q  # distance hi: gap_hi / (d*hi_q)\n    left_side = gap_lo * hi_q\n    right_side = gap_hi * lo_q\n    if left_side < right_side:\n        return lower\n    if right_side < left_side:\n        return upper\n    if lo_q < hi_q:\n        return lower\n    if hi_q < lo_q:\n        return upper\n    return lower if lower[0] <= upper[0] else upper\n```\n",
+  "wall_s": 35.749,
+  "usage": {
+    "subagent_tokens": 32120
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_value_is_returned_reduced",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers_and_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_max_den_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_values_and_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_prefer_smaller_denominator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_same_denominator_smaller_numerator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_semiconvergents_are_needed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_one_sided_semiconvergents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_reduced_int_tuple",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_nearest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_lower",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_upper",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_are_not_precise_enough",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tiny_and_huge_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fibonacci_ratios",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sqrt2_approximations",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_far_from_simple_fractions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch_negative_dens",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.08,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-medium/coding_v3/h4-run2.md",
+  "imported_at": "2026-10-18T19:12:22+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:39+09:00"
+}

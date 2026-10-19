@@ -1,0 +1,57 @@
+{
+  "model": "sonnet-medium",
+  "suite": "math",
+  "item": "m2",
+  "run": 3,
+  "content": "高さ z の断面では、V1 は半径 rho = sqrt(r^2 - z^2) のスタジアム形（OA のまわり）、V2 は AB のまわりのスタジアム形になる。rho < 1 なので、交わりは A の近くだけで起きる。A を原点にした局所座標 (u, y) = (x - 1, y) で 4 つの象限に分けて数える。\n\n- 交わりの断面積: rho^2 (1 + 3 pi / 4)\n- 交わりの体積: V12 = (4/3) r^3 (1 + 3 pi / 4)\n- 断面の積分: ∫u dA = -rho^3 / 6、∫y dA = +rho^3 / 6\n- z 方向の積分: ∫ rho^3 dz = 3 pi r^4 / 8\n- V1 の体積: pi r^2 + (4/3) pi r^3。重心は (1/2, 0, 0)。\n\nW の体積は V1 - V12 = pi r^2 + pi r^3 / 3 - 4 r^3 / 3。\n\nW の x 方向のモーメントは V1/2 - V12 + pi r^4 / 16、y 方向のモーメントは -pi r^4 / 16。\n\nr = 0.6 を代入する。\n\n- 体積 = 0.432 pi - 0.288 ≈ 1.069168\n- x のモーメント = 0.1161 pi - 0.288 ≈ 0.076739\n- y のモーメント = -0.0081 pi ≈ -0.025447\n\n答え(a): 0.432*pi - 0.288\n答え(b): (0.1161*pi - 0.288)/(0.432*pi - 0.288)\n答え(c): -0.0081*pi/(0.432*pi - 0.288)\n\n数値は (a) 1.069168、(b) 0.071775、(c) -0.023801。\n",
+  "wall_s": 32.102,
+  "usage": {
+    "subagent_tokens": 32341
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 3,
+    "total": 3,
+    "parts": [
+      {
+        "key": "a",
+        "text": "0.432*pi - 0.288",
+        "value": 1.0691680263507906,
+        "expected": 1.0691680263507908,
+        "ok": true,
+        "rel_error": 2.0767980284904175e-16
+      },
+      {
+        "key": "b",
+        "text": "(0.1161*pi - 0.288)/(0.432*pi - 0.288)",
+        "value": 0.07177441261846827,
+        "expected": 0.07177441261846836,
+        "ok": true,
+        "rel_error": 1.1601171477293466e-15
+      },
+      {
+        "key": "c",
+        "text": "-0.0081*pi/(0.432*pi - 0.288)",
+        "value": -0.02380065608670594,
+        "expected": -0.023800656086705937,
+        "ok": true,
+        "rel_error": 1.4577106359229752e-16
+      }
+    ]
+  },
+  "raw_path": "claude-raw/sonnet-medium/math/m2-run3.md",
+  "imported_at": "2026-10-18T19:35:02+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:56+09:00"
+}

@@ -1,0 +1,163 @@
+{
+  "model": "opus-low",
+  "suite": "coding_v3",
+  "item": "h1",
+  "run": 2,
+  "content": "```python\nimport random\nfrom math import gcd\n\n\ndef hull3d(points: list[tuple[int, int, int]]) -> tuple[int, int, int]:\n    pts = list(dict.fromkeys(tuple(int(c) for c in p) for p in points))\n    count = len(pts)\n    if count < 4:\n        raise ValueError(\"fewer than 4 distinct points\")\n\n    def sub(p, q):\n        return (p[0] - q[0], p[1] - q[1], p[2] - q[2])\n\n    def cross(u, v):\n        return (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])\n\n    def dot(u, v):\n        return u[0] * v[0] + u[1] * v[1] + u[2] * v[2]\n\n    p0 = pts[0]\n    i1 = 1\n    i2 = None\n    for idx in range(2, count):\n        if cross(sub(pts[i1], p0), sub(pts[idx], p0)) != (0, 0, 0):\n            i2 = idx\n            break\n    if i2 is None:\n        raise ValueError(\"collinear\")\n    nrm = cross(sub(pts[i1], p0), sub(pts[i2], p0))\n    i3 = None\n    for idx in range(count):\n        if dot(nrm, sub(pts[idx], p0)) != 0:\n            i3 = idx\n            break\n    if i3 is None:\n        raise ValueError(\"coplanar\")\n\n    init = [0, i1, i2, i3]\n    rest = [idx for idx in range(count) if idx not in (0, i1, i2, i3)]\n    rng = random.Random(12345)\n    rng.shuffle(rest)\n\n    face_verts = []\n    face_norm = []\n    face_alive = []\n    face_conf = []\n    edge_face = {}\n    point_faces = [set() for _ in range(count)]\n\n    def make_face(a, b, c):\n        pa = pts[a]\n        n = cross(sub(pts[b], pa), sub(pts[c], pa))\n        fid = len(face_verts)\n        face_verts.append((a, b, c))\n        face_norm.append((n, dot(n, pa)))\n        face_alive.append(True)\n        face_conf.append(set())\n        edge_face[(a, b)] = fid\n        edge_face[(b, c)] = fid\n        edge_face[(c, a)] = fid\n        return fid\n\n    a, b, c, d = init\n    if dot(cross(sub(pts[b], pts[a]), sub(pts[c], pts[a])), sub(pts[d], pts[a])) > 0:\n        b, c = c, b\n    initial = [make_face(a, b, c), make_face(a, d, b), make_face(b, d, c), make_face(c, d, a)]\n\n    for q in rest:\n        pq = pts[q]\n        for fid in initial:\n            n, off = face_norm[fid]\n            if n[0] * pq[0] + n[1] * pq[1] + n[2] * pq[2] > off:\n                face_conf[fid].add(q)\n                point_faces[q].add(fid)\n\n    for p in rest:\n        visible = point_faces[p]\n        if not visible:\n            continue\n        visible = set(visible)\n        horizon = []\n        for fid in visible:\n            va, vb, vc = face_verts[fid]\n            for e0, e1 in ((va, vb), (vb, vc), (vc, va)):\n                g = edge_face[(e1, e0)]\n                if g not in visible:\n                    horizon.append((e0, e1, fid, g))\n        for fid in visible:\n            face_alive[fid] = False\n            va, vb, vc = face_verts[fid]\n            for e in ((va, vb), (vb, vc), (vc, va)):\n                if edge_face.get(e) == fid:\n                    del edge_face[e]\n        for fid in visible:\n            for q in face_conf[fid]:\n                point_faces[q].discard(fid)\n        pp = pts[p]\n        for e0, e1, f1, f2 in horizon:\n            nf = make_face(e0, e1, p)\n            n, off = face_norm[nf]\n            nx, ny, nz = n\n            conf = face_conf[nf]\n            for q in face_conf[f1] | face_conf[f2]:\n                if q == p or q in conf:\n                    continue\n                pq = pts[q]\n                if nx * pq[0] + ny * pq[1] + nz * pq[2] > off:\n                    conf.add(q)\n                    point_faces[q].add(nf)\n        for fid in visible:\n            face_conf[fid] = set()\n        point_faces[p] = set()\n\n    vol6 = 0\n    keys = set()\n    vert_planes = {}\n    for fid, alive in enumerate(face_alive):\n        if not alive:\n            continue\n        va, vb, vc = face_verts[fid]\n        vol6 += dot(pts[va], cross(pts[vb], pts[vc]))\n        n = face_norm[fid][0]\n        g = gcd(gcd(abs(n[0]), abs(n[1])), abs(n[2]))\n        key = (n[0] // g, n[1] // g, n[2] // g)\n        keys.add(key)\n        for v in (va, vb, vc):\n            vert_planes.setdefault(v, set()).add(key)\n    n_vertices = sum(1 for s in vert_planes.values() if len(s) >= 3)\n    return (vol6, len(keys), n_vertices)\n```\n",
+  "wall_s": 39.131,
+  "usage": {
+    "subagent_tokens": 32808
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "low",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 24,
+    "total": 24,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_example_tetrahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_example_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_duplicates_count_once",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_interior_points_are_ignored",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_too_few_distinct_points",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_collinear_or_coplanar",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_square_pyramid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_triangular_prism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_octahedron_and_cuboctahedron",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_points_on_edges_and_faces_are_not_vertices",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_pyramid_on_a_cube_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_point_in_a_face_plane_outside_the_face",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_large_coordinates_exact",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_nearly_flat_with_large_coordinates",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_coplanar_points_with_huge_products",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_medium_grid_sets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lattice_points_in_a_tilted_region",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_random_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_cube",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_lattice_sphere",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_paraboloid_grid",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_all_points_extreme",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.31,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/opus-low/coding_v3/h1-run2.md",
+  "imported_at": "2026-10-18T19:54:26+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:32+09:00"
+}

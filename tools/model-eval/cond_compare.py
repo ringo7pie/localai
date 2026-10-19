@@ -107,8 +107,9 @@ SERVER_STATUSES = ("ok", "start_failed", "kv_mismatch", "server_died")
 JOURNAL_PATTERNS = {"repeated_reasoning": "repeated reasoning detected",
                     "thinking_budget_reached": "thinking budget reached",
                     "max_tokens_reached": "the reply reached max tokens"}
-# 計画に書いた文脈長（起動行の --max-context が読めればそちらを使う）
-DEFAULT_CONTEXT = 131072
+# 計画に書いた文脈長（起動行の --max-context が読めればそちらを使う）。2026-10-18 に 131072 から広げた
+# （tools/strata/stra/config.py の DEFAULT_MAX_CONTEXT と同じ値）
+DEFAULT_CONTEXT = 262144
 
 # 点の判定の結果（文字）
 JUDGE_UP = "上がった"

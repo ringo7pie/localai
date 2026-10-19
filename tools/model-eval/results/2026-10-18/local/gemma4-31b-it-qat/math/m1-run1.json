@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "target": "gemma4:31b-it-qat",
+  "label": "gemma4:31b-it-qat",
+  "family": "ollama",
+  "backend": "ollama",
+  "model": "gemma4:31b-it-qat",
+  "slug": "gemma4-31b-it-qat",
+  "suite": "math",
+  "item": "m1",
+  "run": 1,
+  "prompt": "## 問題 M1: 正四面体のまわりの立体\n\n1 辺の長さが 1 の正四面体 T がある。T からの距離が r 以下の点全体（T の内部も含む）がつくる立体を K とする（中心が T の上を動く半径 r の球が通過する範囲と同じ）。r = 0.6 のとき、次を求めよ。\n\n(a) K の体積\n\n(b) K の表面積\n\n### 答えの書き方\n\n- 途中の考え方は自由に書いてよい。最後に、小問ごとに 1 行ずつ `答え(a): <値>` の形で書く（`(b)` 以降も同じ）。\n- `<値>` は 1 つの数。厳密な式（円周率は `pi`、平方根は `sqrt(...)`、逆三角関数は `acos(...)` `atan(...)` など、べき乗は `**`）か、有効数字 6 桁以上の小数で書く。単位や説明は付けない。",
+  "prompt_chars": 360,
+  "prompt_lang": "ja",
+  "limits": {
+    "max_tokens": 32768,
+    "reasoning_budget_tokens": null,
+    "request_timeout_s": 2400
+  },
+  "request": {
+    "model": "gemma4:31b-it-qat",
+    "stream": true,
+    "think": true,
+    "options": {
+      "num_predict": 32768
+    },
+    "keep_alive": "15m"
+  },
+  "started_at": "2026-10-18T18:09:54+09:00",
+  "request_timeout_s": 2400.0,
+  "finished_at": "2026-10-18T18:13:39+09:00",
+  "content": "正四面体 $T$ の 1 辺の長さを $a=1$、半径を $r=0.6$ とします。\n正四面体 $T$ からの距離が $r$ 以下の点全体がつくる立体 $K$ は、以下の 4 つの部分の体積の和として求められます。\n\n1.  **正四面体 $T$ そのもの**:\n    体積 $V_T = \\frac{a^3}{6\\sqrt{2}} = \\frac{1}{6\\sqrt{2}}$\n2.  **各面の上に載る直方体（厚さ $r$）**:\n    正四面体には 4 つの面があり、それぞれの面積は $\\frac{\\sqrt{3}}{4}a^2 = \\frac{\\sqrt{3}}{4}$ です。\n    体積 $V_{faces} = 4 \\times \\left( \\frac{\\sqrt{3}}{4} \\times r \\right) = \\sqrt{3}r$\n3.  **各辺に沿った円柱の一部（半径 $r$）**:\n    正四面体には 6 つの辺があり、それぞれの長さは $a=1$ です。\n    正四面体の二面角を $\\phi$ とすると、$\\cos \\phi = \\frac{1}{3}$ です。外角は $\\theta = \\pi - \\phi = \\arccos(-1/3)$ となります。\n    各辺における円柱部分の断面積は $\\frac{\\theta}{2\\pi} \\times \\pi r^2 = \\frac{\\theta}{2}r^2$ です。\n    体積 $V_{edges} = 6 \\times \\left( a \\times \\frac{\\theta}{2}r^2 \\right) = 3ar^2\\theta = 3r^2 \\arccos(-1/3)$\n4.  **各頂点における球の一部（半径 $r$）**:\n    凸多面体の頂点における外角（立体角）の総和は $4\\pi$ ステラジアンであるため、4 つの頂点部分を合わせると半径 $r$ の球 1 個分になります。\n    体積 $V_{vertices} = \\frac{4}{3}\\pi r^3$\n\nしたがって、全体の体積 $V(K)$ は：\n$V(K) = \\frac{1}{6\\sqrt{2}} + \\sqrt{3}r + 3r^2 \\arccos(-1/3) + \\frac{4}{3}\\pi r^3$\n$r = 0.6$ を代入すると：\n$V(K) = \\frac{1}{6\\sqrt{2}} + 0.6\\sqrt{3} + 1.08 \\arccos(-1/3) + 0.288\\pi$\n$V(K) \\approx 0.117851 + 1.039230 + 2.063484 + 0.904779 = 4.125344$\n\n次に表面積 $S(K)$ を求めます。これは体積 $V(K)$ を $r$ で微分することで得られます。\n$S(K) = \\frac{dV}{dr} = \\sqrt{3} + 6r \\arccos(-1/3) + 4\\pi r^2$\n$r = 0.6$ を代入すると：\n$S(K) = \\sqrt{3} + 3.6 \\arccos(-1/3) + 1.44\\pi$\n$S(K) \\approx 1.732051 + 6.878280 + 4.523893 = 13.134224$\n\n答え(a): 4.12534\n答え(b): 13.1342",
+  "thinking": "*   A regular tetrahedron $T$ with side length $a = 1$.\n    *   The region $K$ is the set of points at a distance $\\le r = 0.6$ from $T$.\n    *   This is effectively the Minkowski sum of $T$ and a ball $B(0, r)$.\n    *   We need to find the volume $V(K)$ and the surface area $S(K)$.\n\n    The Minkowski sum of a convex polyhedron $P$ and a ball of radius $r$ consists of:\n    1.  The original polyhedron $P$.\n    2.  Prisms (or \"slabs\") on each face of $P$, with height $r$.\n    3.  Cylindrical sectors on each edge of $P$, with radius $r$ and angle equal to the exterior angle at that edge.\n    4.  Spherical sectors at each vertex of $P$, with radius $r$ and solid angle equal to the exterior angle at that vertex.\n\n    *   **Volume $V(K)$:**\n        $V(K) = V(P) + \\sum (\\text{Area of face}_i \\times r) + \\sum (\\text{Length of edge}_j \\times \\text{Area of cylindrical sector}_j) + \\sum (\\text{Volume of spherical sector}_k)$\n        Actually, the formula for the volume of the Minkowski sum of a convex polytope and a ball is:\n        $V(K) = V(P) + S(P)r + (\\sum L_i f(\\alpha_i)) r^2 + \\frac{4}{3}\\pi r^3$\n        Wait, that's not quite it. The Steiner formula for convex bodies in 3D is:\n        $V(K) = V(P) + S(P)r + M(P)r^2 + \\frac{4}{3}\\pi r^3$\n        where $M(P) = \\sum L_i \\tan(\\frac{\\theta_i}{2})$? No.\n        Let's be more precise.\n\n        *   **Volume of $T$:**\n            $V(T) = \\frac{a^3}{6\\sqrt{2}}$. Since $a=1$, $V(T) = \\frac{1}{6\\sqrt{2}}$.\n\n        *   **Faces (Prisms):**\n            There are 4 faces, each an equilateral triangle of area $A_f = \\frac{\\sqrt{3}}{4} a^2 = \\frac{\\sqrt{3}}{4}$.\n            Total volume from faces = $4 \\times (\\frac{\\sqrt{3}}{4} \\times r) = \\sqrt{3} r$.\n\n        *   **Edges (Cylindrical sectors):**\n            There are 6 edges, each of length $a=1$.\n            The dihedral angle $\\phi$ of a regular tetrahedron is $\\cos \\phi = 1/3$.\n            The exterior angle $\\theta$ is $\\pi - \\phi$.\n            The area of the cylindrical sector for one edge is $\\frac{\\theta}{2\\pi} \\times \\pi r^2 = \\frac{\\theta}{2} r^2$.\n            Total volume from edges = $6 \\times (a \\times \\frac{\\theta}{2} r^2) = 3 a \\theta r^2 = 3 \\theta r^2$ (since $a=1$).\n            $\\theta = \\pi - \\arccos(1/3) = \\arccos(-1/3)$.\n\n        *   **Vertices (Spherical sectors):**\n            The four spherical sectors at the vertices together form a full sphere of radius $r$.\n            Total volume from vertices = $\\frac{4}{3}\\pi r^3$.\n            (This is a property of convex polyhedra: the sum of the exterior angles at the vertices is $4\\pi$ steradians).\n\n        Summing them up:\n        $V(K) = \\frac{1}{6\\sqrt{2}} + \\sqrt{3} r + 3 r^2 \\arccos(-1/3) + \\frac{4}{3}\\pi r^3$.\n\n    *   **Surface Area $S(K)$:**\n        The surface area is the derivative of the volume with respect to $r$.\n        $S(K) = \\frac{dV}{dr} = S(T) + 6 r \\arccos(-1/3) + 4\\pi r^2$.\n        Check:\n        $S(T) = 4 \\times \\frac{\\sqrt{3}}{4} = \\sqrt{3}$.\n        $S(K) = \\sqrt{3} + 6 r \\arccos(-1/3) + 4\\pi r^2$.\n\n    *   $a = 1$\n    *   $r = 0.6$\n    *   $\\arccos(-1/3) \\approx 1.910633$ radians.\n    *   $\\sqrt{2} \\approx 1.41421356$\n    *   $\\sqrt{3} \\approx 1.73205081$\n    *   $\\pi \\approx 3.14159265$\n\n    (a) $V(K) = \\frac{1}{6\\sqrt{2}} + \\sqrt{3}(0.6) + 3(0.6)^2 \\arccos(-1/3) + \\frac{4}{3}\\pi (0.6)^3$\n    $V(K) = \\frac{1}{8.48528} + 1.03923 + 1.08(1.910633) + 1.33333(3.14159)(0.216)$\n    $V(K) = 0.117851 + 1.039230 + 2.063484 + 0.904779$\n    $V(K) = 4.125344$\n\n    Wait, let's recalculate carefully.\n    $V(T) = 1 / (6 * \\sqrt{2}) = 0.11785113$\n    $V_{faces} = \\sqrt{3} * 0.6 = 1.73205081 * 0.6 = 1.03923048$\n    $V_{edges} = 3 * 0.6^2 * \\text{acos}(-1/3) = 3 * 0.36 * 1.91063324 = 1.08 * 1.91063324 = 2.06348390$\n    $V_{vertices} = (4/3) * \\pi * 0.6^3 = 1.33333333 * 3.14159265 * 0.216 = 0.90477868$\n    Sum = $0.11785113 + 1.03923048 + 2.06348390 + 0.90477868 = 4.12534419$\n\n    (b) $S(K) = \\sqrt{3} + 6(0.6) \\arccos(-1/3) + 4\\pi (0.6)^2$\n    $S(K) = 1.73205081 + 3.6 * 1.91063324 + 4 * 3.14159265 * 0.36$\n    $S(K) = 1.73205081 + 6.87827966 + 4.52389342$\n    $S(K) = 13.13422389$\n\n    $V(K) = V(P) + S(P)r + \\left( \\sum L_i \\frac{\\theta_i}{2} \\cdot 2 \\right) r^2/2$? No.\n    Let's re-derive the edge part.\n    The edge contribution is a cylinder sector. Area of sector = $\\frac{1}{2} r^2 \\theta$.\n    Volume = Length $\\times$ Area = $a \\cdot \\frac{1}{2} r^2 \\theta$.\n    There are 6 edges. Total $V_{edges} = 6 \\cdot \\frac{1}{2} a r^2 \\theta = 3 a r^2 \\theta$.\n    This matches my formula $3 \\theta r^2$ (since $a=1$).\n\n    The vertex contribution is a spherical sector.\n    The sum of the solid angles of the exterior regions at the vertices of a convex polyhedron is $4\\pi$.\n    Total $V_{vertices} = \\frac{4}{3} \\pi r^3$.\n    This also matches.\n\n    Dihedral angle $\\phi$ of a regular tetrahedron: $\\cos \\phi = 1/3$.\n    Exterior angle $\\theta = \\pi - \\phi$.\n    $\\theta = \\pi - \\arccos(1/3) = \\arccos(-1/3)$. Correct.\n\n    Let's double check the calculations.\n    $\\arccos(-1/3) \\approx 1.910633236$\n    $1.08 * 1.910633236 = 2.06348389$\n    $4/3 * \\pi * 0.216 = 0.90477868$\n    $1.73205081 * 0.6 = 1.03923048$\n    $1 / (6 * \\sqrt{2}) = 0.11785113$\n    Total $V = 0.11785113 + 1.03923048 + 2.06348389 + 0.90477868 = 4.12534418$\n\n    $S = \\sqrt{3} + 3.6 * 1.91063324 + 4 * \\pi * 0.36$\n    $S = 1.73205081 + 6.87827966 + 4.52389342 = 13.13422389$\n\n    Is there any other possible interpretation of \"distance from T\"?\n    \"Tからの距離がr以下の点全体\" usually means the Minkowski sum of $T$ and a ball of radius $r$. This matches my interpretation.\n\n    The answer format asks for either a strict formula or a decimal.\n    $V(K) = \\frac{1}{6\\sqrt{2}} + 0.6\\sqrt{3} + 1.08 \\arccos(-1/3) + 0.288 \\pi$\n    $S(K) = \\sqrt{3} + 3.6 \\arccos(-1/3) + 1.44 \\pi$\n\n    Let's provide the decimal values.\n    $V(K) \\approx 4.12534$\n    $S(K) \\approx 13.1342$\n\n    Wait, let's check the calculations one more time.\n    $V = 0.11785113 + 1.03923048 + 2.06348389 + 0.90477868 = 4.12534418$\n    $S = 1.73205081 + 6.87827966 + 4.52389342 = 13.13422389$\n\n    Let's check the dihedral angle again.\n    For a regular tetrahedron, $\\cos \\phi = 1/3$.\n    Exterior angle $\\theta = \\pi - \\phi$.\n    $\\sin \\phi = \\sqrt{1 - 1/9} = \\sqrt{8}/3 = 2\\sqrt{2}/3$.\n    $\\phi \\approx 70.5287^\\circ$.\n    $\\theta \\approx 109.4712^\\circ$.\n    $\\theta$ in radians: $109.4712 * \\pi / 180 = 1.910633$. Correct.\n\n    Let's re-evaluate $S(K)$.\n    $S(K) = 4 \\times (\\sqrt{3}/4) + 6 \\times (1 \\times r \\times \\theta) + 4\\pi r^2$\n    $S(K) = \\sqrt{3} + 6(0.6)(1.910633) + 4\\pi(0.6^2)$\n    $S(K) = 1.73205 + 3.6(1.910633) + 1.44\\pi$\n    $S(K) = 1.73205 + 6.87828 + 4.52389 = 13.13422$\n\n    Correct.\n\n    Formula for Volume of Minkowski sum of a convex polytope and a sphere of radius $r$:\n    $V(P + B_r) = V(P) + S(P)r + (\\sum_{edges} L_i \\frac{\\pi - \\phi_i}{2\\pi} \\pi r^2) + \\frac{4}{3}\\pi r^3$ ? No.\n    Let's use the general Steiner formula for a convex body $K \\subset \\mathbb{R}^3$:\n    $V(K + B_r) = V(K) + S(K)r + M(K)r^2 + \\frac{4}{3}\\pi r^3$\n    where $M(K) = \\int_{\\partial K} H dA$, and $H$ is the mean curvature.\n    For a polytope, $M(K) = \\sum L_i \\frac{\\theta_i}{2}$? No.\n    Let's check the formula for $M(P)$.\n    For a polytope, $M(P) = \\sum L_i f(\\theta_i)$ where $f(\\theta)$ is related to the angle.\n    Actually, the \"cylindrical part\" volume is $\\sum L_i \\times (\\text{area of circular sector})$.\n    The area of the circular sector is $\\frac{1}{2} r^2 \\theta_i$.\n    So $V_{edges} = \\sum L_i \\frac{1}{2} r^2 \\theta_i = r^2 \\sum \\frac{L_i \\theta_i}{2}$.\n    This means $M(P) = \\sum \\frac{L_i \\theta_i}{2}$.\n    In our case, $M(P) = 6 \\times \\frac{1 \\times \\theta}{2} = 3 \\theta$.\n    This matches my $V_{edges} = 3 \\theta r^2$.\n\n    Let's verify $M(P)$ for a cube.\n    $L_i = 1$, $\\theta_i = \\pi/2$. 12 edges.\n    $M(P) = 12 \\times \\frac{1 \\times \\pi/2}{2} = 3\\pi$.\n    Steiner formula for cube: $V = 1 + 6r + 3\\pi r^2 + \\frac{4}{3}\\pi r^3$.\n    Check:\n    Original: $1$\n    Faces: $6 \\times 1^2 \\times r = 6r$\n    Edges: $12 \\times (1 \\times \\frac{1}{4} \\pi r^2) = 3\\pi r^2$\n    Vertices: $8 \\times (\\frac{1}{8} \\frac{4}{3}\\pi r^3) = \\frac{4}{3}\\pi r^3$\n    Matches.\n\n    So the formulas are:\n    $V = V(T) + S(T)r + 3 \\theta r^2 + \\frac{4}{3}\\pi r^3$\n    $S = S(T) + 6 \\theta r + 4\\pi r^2$\n    where $\\theta = \\arccos(-1/3)$.\n\n    $V(T) = \\frac{1}{6\\sqrt{2}} \\approx 0.117851130$\n    $S(T) = \\sqrt{3} \\approx 1.732050808$\n    $r = 0.6$\n    $S(T)r = 1.732050808 \\times 0.6 = 1.039230485$\n    $\\theta = \\arccos(-1/3) \\approx 1.910633236$\n    $3 \\theta r^2 = 3 \\times 1.910633236 \\times 0.36 = 1.08 \\times 1.910633236 = 2.063483895$\n    $\\frac{4}{3}\\pi r^3 = \\frac{4}{3} \\times \\pi \\times 0.216 = 0.288\\pi \\approx 0.904778684$\n    $V = 0.117851130 + 1.039230485 + 2.063483895 + 0.904778684 = 4.125344194$\n\n    $S = S(T) + 6 \\theta r + 4\\pi r^2$\n    $S(T) = 1.732050808$\n    $6 \\theta r = 6 \\times 1.910633236 \\times 0.6 = 3.6 \\times 1.910633236 = 6.87827965$\n    $4\\pi r^2 = 4 \\times \\pi \\times 0.36 = 1.44\\pi \\approx 4.523893421$\n    $S = 1.732050808 + 6.87827965 + 4.523893421 = 13.134223879$\n\n    Check calculations again.\n    $0.11785113 + 1.03923049 + 2.06348390 + 0.90477868 = 4.12534420$\n    $1.73205081 + 6.87827965 + 4.52389342 = 13.13422388$\n\n    Wait, I should use the exact expressions if possible, or provide high-precision decimals.\n    $V = \\frac{1}{6\\sqrt{2}} + 0.6\\sqrt{3} + 1.08 \\arccos(-1/3) + 0.288 \\pi$\n    $S = \\sqrt{3} + 3.6 \\arccos(-1/3) + 1.44 \\pi$\n\n    Wait, let's just re-calculate $0.288 \\times 3.1415926535$\n    $0.288 * 3.1415926535 = 0.9047786842$\n    $1.44 * 3.1415926535 = 4.5238934211$\n    $3.6 * 1.910633236 = 6.8782796496$\n    $1.08 * 1.910633236 = 2.0634838949$\n    $V = 0.1178511302 + 1.0392304845 + 2.0634838949 + 0.9047786842 = 4.1253441898$\n    $S = 1.7320508076 + 6.8782796496 + 4.5238934211 = 13.1342238783$\n\n    The prompt says: \"厳密な式（円周率は pi、平方根は sqrt(...)、逆三角関数は acos(...) atan(...) など、べき乗は **）か、有効数字 6 桁以上の小数で書く。\"\n    I will provide the results as decimals with more than 6 digits.\n\n    Double check the question again.\n    r = 0.6. Side length = 1.\n    Distance from $T \\le r$. $K$ is the union of balls of radius $r$ centered at all points of $T$.\n    Everything seems correct.",
+  "finish": "stop",
+  "status": "ok",
+  "error": null,
+  "prompt_tokens": 241,
+  "completion_tokens": 5946,
+  "ttft_s": 1.208,
+  "t_first_content_s": 190.391,
+  "wall_s": 224.554,
+  "load_s": 0.001,
+  "server_decode_tok_s": 26.61,
+  "server_prefill_tok_s": 501.71,
+  "server_timings": {
+    "total_duration": 224553598716,
+    "load_duration": 618340,
+    "prompt_eval_count": 241,
+    "prompt_eval_duration": 480357000,
+    "eval_count": 5946,
+    "eval_duration": 223459929000
+  },
+  "delta_chunks": 5375,
+  "wall_decode_tok_s": 26.62,
+  "thinking_chars": 10222,
+  "content_chars": 1438,
+  "thinking_tokens_est": 5213,
+  "thinking_tokens_source": "estimate: 出力トークン × 思考の文字数 ÷ (思考 + 本文の文字数)",
+  "has_answer": true,
+  "wall_excl_load_s": 224.553,
+  "grade": {
+    "kind": "math",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 2,
+    "total": 2,
+    "parts": [
+      {
+        "key": "a",
+        "text": "4.12534",
+        "value": 4.12534,
+        "expected": 4.125344194121884,
+        "ok": true,
+        "rel_error": 1.016671988348513e-06
+      },
+      {
+        "key": "b",
+        "text": "13.1342",
+        "value": 13.1342,
+        "expected": 13.134223879234646,
+        "ok": true,
+        "rel_error": 1.8180925546946243e-06
+      }
+    ]
+  },
+  "attempts": 1
+}

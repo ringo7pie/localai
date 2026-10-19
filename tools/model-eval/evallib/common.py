@@ -24,13 +24,23 @@ EXTRA_KINDS = {
     "json": ("json1", "json2", "json3"),
 }
 EXTRA_ITEMS = tuple(item for items in EXTRA_KINDS.values() for item in items)
-SUITE_ITEMS = {"coding": CODING_ITEMS, "extra": EXTRA_ITEMS}
+# 2026-10-18 の評価: Sonnet と Opus で差が付くように作った難しいコーディング 6 問と、数で採点する数学 3 問
+CODING_V3_ITEMS = ("h1", "h2", "h3", "h4", "h5", "h6")
+MATH_ITEMS = ("m1", "m2", "m3")
+SUITE_ITEMS = {"coding": CODING_ITEMS, "extra": EXTRA_ITEMS, "coding_v3": CODING_V3_ITEMS, "math": MATH_ITEMS}
 EXTRA_KIND_LABELS = {"inst": "日本語の指示に従う", "needle": "長い資料からの検索", "json": "JSON の構造化出力"}
+# 採点の種類（coding_v3 は coding と同じ隠しテストの採点、math は答えの行を数で比べる）
+SUITE_KIND = {"coding": "coding", "extra": "extra", "coding_v3": "coding", "math": "math"}
+# --suite hard で流す順（全モデル共通。易しい問から。累計時間の上限で飛ぶのは難しい問から）
+HARD_ORDER = (("coding_v3", "h4"), ("math", "m1"), ("coding_v3", "h1"), ("coding_v3", "h3"), ("math", "m2"),
+              ("coding_v3", "h6"), ("math", "m3"), ("coding_v3", "h2"), ("coding_v3", "h5"))
 
 # 試験ごとの上限（計画の方針 2）。Ollama の num_predict = Strata の max_tokens
 SUITE_LIMITS = {
     "coding": {"max_tokens": 32768, "reasoning_budget_tokens": 24576, "request_timeout_s": 40 * 60},
     "extra": {"max_tokens": 8192, "reasoning_budget_tokens": 6144, "request_timeout_s": 20 * 60},
+    "coding_v3": {"max_tokens": 32768, "reasoning_budget_tokens": 24576, "request_timeout_s": 40 * 60},
+    "math": {"max_tokens": 32768, "reasoning_budget_tokens": 24576, "request_timeout_s": 40 * 60},
 }
 # 何も届かないまま、この秒数が過ぎたら打ち切る（stall）
 STALL_TIMEOUT_S = 300
@@ -62,14 +72,17 @@ def item_dir(suite: str, item: str) -> Path:
 def build_prompt(suite: str, item: str, lang: str = DEFAULT_PROMPT_LANG) -> str:
     """ローカルのモデルに user メッセージとして送る全文。system メッセージは使わない。
 
-    - coding: suites/coding/PREAMBLE.md の全文 + 空行 + suites/coding/<item>/prompt.md の全文
-      （lang="en" なら PREAMBLE.en.md と prompt.en.md。日本語版の忠実な英訳）
+    - coding / coding_v3: suites/<suite>/PREAMBLE.md の全文 + 空行 + suites/<suite>/<item>/prompt.md の全文
+      （coding だけ lang="en" で PREAMBLE.en.md と prompt.en.md。日本語版の忠実な英訳）
+    - math: suites/math/<item>/prompt.md の全文 + 空行 + suites/math/POSTAMBLE.md（答えの書き方）の全文
     - extra:  suites/extra/<item>/prompt.md の全文（前置きなし。英語版は無い）
     前後の空白は落としてからつなぐ。
     """
 
     if lang not in PROMPT_LANGS:
         raise ValueError(f"unknown prompt lang: {lang}（候補: {', '.join(PROMPT_LANGS)}）")
+    if suite not in SUITE_ITEMS:
+        raise ValueError(f"unknown suite: {suite}")
     if lang == "en" and suite != "coding":
         raise ValueError(f"{suite} には英語版の問題文が無い（英語版は coding だけ）")
     suffix = ".en.md" if lang == "en" else ".md"
@@ -77,15 +90,16 @@ def build_prompt(suite: str, item: str, lang: str = DEFAULT_PROMPT_LANG) -> str:
     if not body_path.is_file():
         raise FileNotFoundError(f"{lang} の問題文が無い: {body_path}")
     body = body_path.read_text(encoding="utf-8").strip()
-    if suite == "coding":
-        preamble_path = SUITES_DIR / "coding" / f"PREAMBLE{suffix}"
+    parts = [body]
+    preamble_path = SUITES_DIR / suite / f"PREAMBLE{suffix}"
+    if SUITE_KIND[suite] == "coding":
         if not preamble_path.is_file():
             raise FileNotFoundError(f"{lang} の共通の指示が無い: {preamble_path}")
-        preamble = preamble_path.read_text(encoding="utf-8").strip()
-        return f"{preamble}\n\n{body}"
-    if suite == "extra":
-        return body
-    raise ValueError(f"unknown suite: {suite}")
+        parts.insert(0, preamble_path.read_text(encoding="utf-8").strip())
+    postamble_path = SUITES_DIR / suite / "POSTAMBLE.md"
+    if postamble_path.is_file():
+        parts.append(postamble_path.read_text(encoding="utf-8").strip())
+    return "\n\n".join(parts)
 
 
 def results_dir_for(date: str | None = None) -> Path:

@@ -1,0 +1,148 @@
+{
+  "model": "sonnet-high",
+  "suite": "coding_v3",
+  "item": "h4",
+  "run": 3,
+  "content": "```python\nfrom math import gcd\n\n\ndef best_rational(num: int, den: int, max_den: int, side: int = 0) -> tuple[int, int]:\n    if den == 0:\n        raise ValueError(\"den must not be zero\")\n    if max_den < 1:\n        raise ValueError(\"max_den must be >= 1\")\n    if side not in (-1, 0, 1):\n        raise ValueError(\"side must be -1, 0 or 1\")\n\n    if den < 0:\n        num, den = -num, -den\n    divisor = gcd(num, den)\n    num //= divisor\n    den //= divisor\n\n    if den <= max_den:\n        return (num, den)\n\n    # x = num / den is not an integer here (den > max_den >= 1).\n    # lo = p0/q0 < x < hi = p1/q1, adjacent in the Stern-Brocot tree.\n    p0 = num // den\n    q0 = 1\n    p1 = p0 + 1\n    q1 = 1\n\n    while True:\n        moved = False\n\n        # Move lo toward x: (p0 + k*p1) / (q0 + k*q1) <= x, denominator <= max_den.\n        gap_lo = num * q0 - p0 * den  # > 0 : x - lo scaled\n        gap_hi = p1 * den - num * q1  # > 0 : hi - x scaled\n        steps = min(gap_lo // gap_hi, (max_den - q0) // q1)\n        if steps > 0:\n            p0 += steps * p1\n            q0 += steps * q1\n            moved = True\n\n        # Move hi toward x: (p1 + k*p0) / (q1 + k*q0) >= x, denominator <= max_den.\n        gap_lo = num * q0 - p0 * den\n        gap_hi = p1 * den - num * q1\n        steps = min(gap_hi // gap_lo, (max_den - q1) // q0)\n        if steps > 0:\n            p1 += steps * p0\n            q1 += steps * q0\n            moved = True\n\n        if not moved:\n            break\n\n    if side == -1:\n        return (p0, q0)\n    if side == 1:\n        return (p1, q1)\n\n    # side == 0: compare x - lo and hi - x exactly.\n    # x - lo = gap_lo / (den * q0), hi - x = gap_hi / (den * q1)\n    gap_lo = num * q0 - p0 * den\n    gap_hi = p1 * den - num * q1\n    left = gap_lo * q1\n    right = gap_hi * q0\n    if left < right:\n        return (p0, q0)\n    if left > right:\n        return (p1, q1)\n    if q0 <= q1:\n        return (p0, q0)\n    return (p1, q1)\n```\n",
+  "wall_s": 32.039,
+  "usage": {
+    "subagent_tokens": 31315
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "high",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 1.0,
+    "all_passed": true,
+    "passed": 21,
+    "total": 21,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_exact_value_is_returned_reduced",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_integers_and_zero",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_max_den_one",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_negative_values_and_sides",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_prefer_smaller_denominator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_ties_same_denominator_smaller_numerator",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_semiconvergents_are_needed",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_one_sided_semiconvergents",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_value_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_result_is_reduced_int_tuple",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_nearest",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_lower",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_small_random_upper",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_floats_are_not_precise_enough",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_tiny_and_huge_values",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_fibonacci_ratios",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_sqrt2_approximations",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_far_from_simple_fractions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_big_random_batch_negative_dens",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.08,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-high/coding_v3/h4-run3.md",
+  "imported_at": "2026-10-18T18:32:30+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:46+09:00"
+}

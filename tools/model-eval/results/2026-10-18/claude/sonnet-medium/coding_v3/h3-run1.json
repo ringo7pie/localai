@@ -1,0 +1,183 @@
+{
+  "model": "sonnet-medium",
+  "suite": "coding_v3",
+  "item": "h3",
+  "run": 1,
+  "content": "```python\nimport sys\nimport threading\n\n_KEYWORDS = {\"fun\", \"let\", \"rec\", \"in\", \"if\", \"then\", \"else\", \"true\", \"false\"}\n_GENERIC = 1 << 60\n\n\ndef _tokenize(src):\n    tokens = []\n    i = 0\n    n = len(src)\n    while i < n:\n        c = src[i]\n        if c in \" \\t\\n\":\n            i += 1\n        elif \"0\" <= c <= \"9\":\n            j = i\n            while j < n and \"0\" <= src[j] <= \"9\":\n                j += 1\n            tokens.append((\"int\", src[i:j]))\n            i = j\n        elif (\"a\" <= c <= \"z\") or c == \"_\":\n            j = i + 1\n            while j < n and ((\"a\" <= src[j] <= \"z\") or (\"A\" <= src[j] <= \"Z\")\n                             or (\"0\" <= src[j] <= \"9\") or src[j] in \"_'\"):\n                j += 1\n            word = src[i:j]\n            if word in _KEYWORDS:\n                tokens.append((word, word))\n            else:\n                tokens.append((\"name\", word))\n            i = j\n        elif c == \"-\":\n            if i + 1 < n and src[i + 1] == \">\":\n                tokens.append((\"->\", \"->\"))\n                i += 2\n            else:\n                tokens.append((\"-\", \"-\"))\n                i += 1\n        elif c == \":\":\n            if i + 1 < n and src[i + 1] == \":\":\n                tokens.append((\"::\", \"::\"))\n                i += 2\n            else:\n                raise SyntaxError(\"bad ':'\")\n        elif c == \"[\":\n            j = i + 1\n            while j < n and src[j] in \" \\t\\n\":\n                j += 1\n            if j < n and src[j] == \"]\":\n                tokens.append((\"[]\", \"[]\"))\n                i = j + 1\n            else:\n                raise SyntaxError(\"bad '['\")\n        elif c in \"(),+*=<\":\n            tokens.append((c, c))\n            i += 1\n        else:\n            raise SyntaxError(\"bad character\")\n    tokens.append((\"eof\", \"\"))\n    return tokens\n\n\nclass _Parser:\n    def __init__(self, tokens):\n        self.tokens = tokens\n        self.pos = 0\n\n    def peek(self):\n        return self.tokens[self.pos][0]\n\n    def next(self):\n        tok = self.tokens[self.pos]\n        self.pos += 1\n        return tok\n\n    def expect(self, kind):\n        tok = self.tokens[self.pos]\n        if tok[0] != kind:\n            raise SyntaxError(\"expected \" + kind)\n        self.pos += 1\n        return tok\n\n    def parse_all(self):\n        expr = self.parse_expr()\n        if self.peek() != \"eof\":\n            raise SyntaxError(\"trailing tokens\")\n        return expr\n\n    def parse_expr(self):\n        kind = self.peek()\n        if kind == \"fun\":\n            self.next()\n            params = []\n            while self.peek() == \"name\":\n                params.append(self.next()[1])\n            if not params:\n                raise SyntaxError(\"fun needs params\")\n            self.expect(\"->\")\n            body = self.parse_expr()\n            return (\"fun\", params, body)\n        if kind == \"let\":\n            self.next()\n            is_rec = False\n            if self.peek() == \"rec\":\n                self.next()\n                is_rec = True\n            name = self.expect(\"name\")[1]\n            params = []\n            while self.peek() == \"name\":\n                params.append(self.next()[1])\n            if is_rec and not params:\n                raise SyntaxError(\"let rec needs params\")\n            self.expect(\"=\")\n            bound = self.parse_expr()\n            self.expect(\"in\")\n            body = self.parse_expr()\n            if is_rec:\n                return (\"letrec\", name, params, bound, body)\n            if params:\n                bound = (\"fun\", params, bound)\n            return (\"let\", name, bound, body)\n        if kind == \"if\":\n            self.next()\n            cond = self.parse_expr()\n            self.expect(\"then\")\n            then_branch = self.parse_expr()\n            self.expect(\"else\")\n            else_branch = self.parse_expr()\n            return (\"if\", cond, then_branch, else_branch)\n        return self.parse_cmp()\n\n    def parse_cmp(self):\n        left = self.parse_cons()\n        while self.peek() in (\"=\", \"<\"):\n            op = self.next()[0]\n            right = self.parse_cons()\n            left = (\"bin\", op, left, right)\n        return left\n\n    def parse_cons(self):\n        left = self.parse_add()\n        if self.peek() == \"::\":\n            self.next()\n            right = self.parse_cons()\n            return (\"bin\", \"::\", left, right)\n        return left\n\n    def parse_add(self):\n        left = self.parse_mul()\n        while self.peek() in (\"+\", \"-\"):\n            op = self.next()[0]\n            right = self.parse_mul()\n            left = (\"bin\", op, left, right)\n        return left\n\n    def parse_mul(self):\n        left = self.parse_app()\n        while self.peek() == \"*\":\n            self.next()\n            right = self.parse_app()\n            left = (\"bin\", \"*\", left, right)\n        return left\n\n    def parse_app(self):\n        left = self.parse_atom()\n        while self.peek() in (\"int\", \"name\", \"true\", \"false\", \"[]\", \"(\"):\n            arg = self.parse_atom()\n            left = (\"app\", left, arg)\n        return left\n\n    def parse_atom(self):\n        kind, value = self.tokens[self.pos]\n        if kind == \"int\":\n            self.pos += 1\n            return (\"int\",)\n        if kind == \"true\" or kind == \"false\":\n            self.pos += 1\n            return (\"bool\",)\n        if kind == \"name\":\n            self.pos += 1\n            return (\"var\", value)\n        if kind == \"[]\":\n            self.pos += 1\n            return (\"nil\",)\n        if kind == \"(\":\n            self.pos += 1\n            first = self.parse_expr()\n            if self.peek() == \",\":\n                self.next()\n                second = self.parse_expr()\n                self.expect(\")\")\n                return (\"tuple\", first, second)\n            self.expect(\")\")\n            return first\n        raise SyntaxError(\"unexpected token \" + kind)\n\n\nclass _Var:\n    __slots__ = (\"ref\", \"level\")\n\n    def __init__(self, level):\n        self.ref = None\n        self.level = level\n\n\nclass _Con:\n    __slots__ = (\"name\", \"args\")\n\n    def __init__(self, name, args=()):\n        self.name = name\n        self.args = args\n\n\ndef _prune(ty):\n    while isinstance(ty, _Var) and ty.ref is not None:\n        ty = ty.ref\n    return ty\n\n\n_INT = _Con(\"int\")\n_BOOL = _Con(\"bool\")\n\n\ndef _fn(a, b):\n    return _Con(\"->\", (a, b))\n\n\ndef _list(a):\n    return _Con(\"list\", (a,))\n\n\ndef _pair(a, b):\n    return _Con(\"*\", (a, b))\n\n\ndef _unify(t1, t2):\n    t1 = _prune(t1)\n    t2 = _prune(t2)\n    if t1 is t2:\n        return\n    if isinstance(t1, _Var):\n        _bind(t1, t2)\n        return\n    if isinstance(t2, _Var):\n        _bind(t2, t1)\n        return\n    if t1.name != t2.name or len(t1.args) != len(t2.args):\n        raise TypeError(\"mismatch\")\n    for left, right in zip(t1.args, t2.args):\n        _unify(left, right)\n\n\ndef _bind(var, ty):\n    _occurs_adjust(var, ty)\n    var.ref = ty\n\n\ndef _occurs_adjust(var, ty):\n    ty = _prune(ty)\n    if isinstance(ty, _Var):\n        if ty is var:\n            raise TypeError(\"occurs check\")\n        if ty.level > var.level:\n            ty.level = var.level\n        return\n    for arg in ty.args:\n        _occurs_adjust(var, arg)\n\n\ndef _instantiate(ty, mapping):\n    ty = _prune(ty)\n    if isinstance(ty, _Var):\n        if ty.level == _GENERIC:\n            if ty not in mapping:\n                mapping[ty] = _Var(_State.level)\n            return mapping[ty]\n        return ty\n    if not ty.args:\n        return ty\n    new_args = tuple(_instantiate(arg, mapping) for arg in ty.args)\n    return _Con(ty.name, new_args)\n\n\ndef _generalize(ty):\n    ty = _prune(ty)\n    if isinstance(ty, _Var):\n        if ty.level > _State.level:\n            ty.level = _GENERIC\n        return\n    for arg in ty.args:\n        _generalize(arg)\n\n\nclass _State:\n    level = 0\n\n\ndef _builtins():\n    def gen():\n        return _Var(_GENERIC)\n\n    env = {}\n    a, b = gen(), gen()\n    env[\"fst\"] = _fn(_pair(a, b), a)\n    a, b = gen(), gen()\n    env[\"snd\"] = _fn(_pair(a, b), b)\n    a = gen()\n    env[\"hd\"] = _fn(_list(a), a)\n    a = gen()\n    env[\"tl\"] = _fn(_list(a), _list(a))\n    a = gen()\n    env[\"null\"] = _fn(_list(a), _BOOL)\n    return env\n\n\ndef _fresh():\n    return _Var(_State.level)\n\n\ndef _infer(node, env):\n    kind = node[0]\n    if kind == \"int\":\n        return _INT\n    if kind == \"bool\":\n        return _BOOL\n    if kind == \"var\":\n        name = node[1]\n        if name not in env:\n            raise NameError(name)\n        return _instantiate(env[name], {})\n    if kind == \"nil\":\n        return _list(_fresh())\n    if kind == \"tuple\":\n        first = _infer(node[1], env)\n        second = _infer(node[2], env)\n        return _pair(first, second)\n    if kind == \"app\":\n        fn_type = _infer(node[1], env)\n        arg_type = _infer(node[2], env)\n        result = _fresh()\n        _unify(fn_type, _fn(arg_type, result))\n        return result\n    if kind == \"bin\":\n        op = node[1]\n        left = _infer(node[2], env)\n        right = _infer(node[3], env)\n        if op in (\"+\", \"-\", \"*\"):\n            _unify(left, _INT)\n            _unify(right, _INT)\n            return _INT\n        if op == \"<\":\n            _unify(left, _INT)\n            _unify(right, _INT)\n            return _BOOL\n        if op == \"=\":\n            _unify(left, right)\n            return _BOOL\n        _unify(right, _list(left))\n        return right\n    if kind == \"if\":\n        cond = _infer(node[1], env)\n        _unify(cond, _BOOL)\n        then_type = _infer(node[2], env)\n        else_type = _infer(node[3], env)\n        _unify(then_type, else_type)\n        return then_type\n    if kind == \"fun\":\n        return _infer_fun(node[1], node[2], env)\n    if kind == \"let\":\n        name = node[1]\n        _State.level += 1\n        try:\n            bound = _infer(node[2], env)\n        finally:\n            _State.level -= 1\n        _generalize(bound)\n        return _with_binding(env, name, bound, node[3])\n    if kind == \"letrec\":\n        name = node[1]\n        _State.level += 1\n        try:\n            self_type = _fresh()\n            old_found, old = name in env, env.get(name)\n            env[name] = self_type\n            try:\n                body_type = _infer_fun(node[2], node[3], env)\n            finally:\n                if old_found:\n                    env[name] = old\n                else:\n                    del env[name]\n            _unify(self_type, body_type)\n        finally:\n            _State.level -= 1\n        _generalize(self_type)\n        return _with_binding(env, name, self_type, node[4])\n    raise SyntaxError(\"unknown node\")\n\n\ndef _with_binding(env, name, ty, body):\n    old_found, old = name in env, env.get(name)\n    env[name] = ty\n    try:\n        return _infer(body, env)\n    finally:\n        if old_found:\n            env[name] = old\n        else:\n            del env[name]\n\n\ndef _infer_fun(params, body, env):\n    saved = []\n    param_types = []\n    try:\n        for name in params:\n            saved.append((name, name in env, env.get(name)))\n            param_type = _fresh()\n            param_types.append(param_type)\n            env[name] = param_type\n        result = _infer(body, env)\n    finally:\n        for name, found, old in reversed(saved):\n            if found:\n                env[name] = old\n            else:\n                del env[name]\n    for param_type in reversed(param_types):\n        result = _fn(param_type, result)\n    return result\n\n\ndef _var_name(index):\n    letter = chr(ord(\"a\") + index % 26)\n    if index >= 26:\n        return \"'\" + letter + str(index // 26)\n    return \"'\" + letter\n\n\ndef _show(ty, ctx, names):\n    ty = _prune(ty)\n    if isinstance(ty, _Var):\n        if ty not in names:\n            names[ty] = _var_name(len(names))\n        return names[ty]\n    if ty.name == \"->\":\n        text = _show(ty.args[0], 1, names) + \" -> \" + _show(ty.args[1], 0, names)\n        return \"(\" + text + \")\" if ctx >= 1 else text\n    if ty.name == \"*\":\n        text = _show(ty.args[0], 2, names) + \" * \" + _show(ty.args[1], 2, names)\n        return \"(\" + text + \")\" if ctx >= 2 else text\n    if ty.name == \"list\":\n        return _show(ty.args[0], 3, names) + \" list\"\n    return ty.name\n\n\ndef _run(src):\n    tree = _Parser(_tokenize(src)).parse_all()\n    _State.level = 0\n    env = _builtins()\n    ty = _infer(tree, env)\n    return _show(ty, 0, {})\n\n\ndef infer(src: str) -> str:\n    outcome = {}\n\n    def worker():\n        try:\n            outcome[\"value\"] = _run(src)\n        except BaseException as error:\n            outcome[\"error\"] = error\n\n    old_limit = sys.getrecursionlimit()\n    old_stack = None\n    try:\n        sys.setrecursionlimit(1000000)\n        try:\n            old_stack = threading.stack_size(512 * 1024 * 1024)\n        except (ValueError, RuntimeError):\n            old_stack = None\n        thread = threading.Thread(target=worker)\n        thread.start()\n        thread.join()\n    finally:\n        sys.setrecursionlimit(old_limit)\n        if old_stack is not None:\n            try:\n                threading.stack_size(old_stack)\n            except (ValueError, RuntimeError):\n                pass\n    if \"error\" in outcome:\n        raise outcome[\"error\"]\n    return outcome[\"value\"]\n```\n",
+  "wall_s": 56.31,
+  "usage": {
+    "subagent_tokens": 38488
+  },
+  "tool_uses": 0,
+  "tool_uses_raw": 3,
+  "tool_names": [
+    "Read",
+    "Write",
+    "SubagentHandback"
+  ],
+  "tool_uses_note": "raw のうち 3 回は問題文の Read・答えの保存（Write）・結果を返す SubagentHandback。それ以外があれば無効",
+  "effort": "medium",
+  "grade": {
+    "kind": "coding",
+    "extract": "python_block",
+    "score": 0.9643,
+    "all_passed": false,
+    "passed": 27,
+    "total": 28,
+    "violations": [],
+    "warnings": [],
+    "syntax_error": null,
+    "cases": [
+      {
+        "name": "case_examples",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_literals_and_pairs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_operators",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lists",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_shadowing_builtins",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_curried_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_polymorphism",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_lambda_bound_is_monomorphic",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_no_generalization_of_environment_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_occurs_check",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_let_rec_polymorphic_after_in",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_if",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_printing_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_type_variable_naming_order",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_more_than_26_type_variables",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_name_errors",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors",
+        "ok": false,
+        "error": "AssertionError: infer('[ ]',): expected SyntaxError, returned \"'a list\""
+      },
+      {
+        "name": "case_keyword_expressions_need_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_syntax_errors_come_first",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_names_and_reserved_words",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_whitespace_and_layout",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_random_programs",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_parentheses",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_deep_lets",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_many_nested_functions",
+        "ok": true,
+        "error": null
+      },
+      {
+        "name": "case_performance_long_program",
+        "ok": true,
+        "error": null
+      }
+    ],
+    "import_error": null,
+    "finished": true,
+    "killed_reason": null,
+    "returncode": 0,
+    "seconds": 0.11,
+    "stderr_tail": ""
+  },
+  "raw_path": "claude-raw/sonnet-medium/coding_v3/h3-run1.md",
+  "imported_at": "2026-10-18T18:56:20+09:00",
+  "graded_by": "run_eval.py grade-claude",
+  "graded_at": "2026-10-19T04:38:54+09:00"
+}
