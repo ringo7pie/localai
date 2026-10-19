@@ -5,10 +5,12 @@
 setup-server.sh は venv を作る前に git を操作するため、同じ値を直値でも持っている。
 片方を変えたらもう片方も変えること（tests/test_units.py が一致を確かめる）。
 
-動かすモデルは 3 つある（同じ engine・venv・MTP の draft 層を共有し、同時には載せない）:
+動かすモデルは 5 つある（同じ engine・venv・MTP の draft 層を共有し、同時には載せない）:
 - rvn: RVN-Qwen3.8-Flash-Next IQ3_S（汎用版。ポート 8082、unit strata）。最初に入れたもの。
 - coder: Qwen3.8-Flash-Next Coder IQ1_M（コード向け版。ポート 8083、unit strata-coder）。
 - official: Qwen3.8-Flash-Next IQ3_XXS（公式・非 abliterated。ポート 8084、unit strata-official）。
+- official-iq3s: Qwen3.8-Flash-Next IQ3_S（公式の軽い量子化。ポート 8085、unit strata-official-iq3s）。2026-10-16 に追加。
+- swift: Swift 1.5 Qwen3.8-Flash-Next IQ3_XXS（思考を短く終える fine-tune。ポート 8086、unit strata-swift）。2026-10-16 に追加。
 モデルごとの値は ModelSpec にまとめ、MODELS から --model の名前で引く。rvn の値は、以前からある
 モジュール直下の定数（MODEL_DIR・GGUF_PATH・PORT ...）にも残す（既存の呼び出し元と試験の互換のため）。
 """
@@ -99,9 +101,12 @@ MODEL_FILES: tuple[tuple[str, int, str], ...] = (
 # pack/native_experts.txt の見出しの total（48 層 x 512 エキスパートの合計バイト数、53.3 GiB）。
 EXPERT_BYTES = 57252249600
 
-# コンテキスト長。65536 から始め、2026-10-07 の実測で 131072 に広げた（生成は 5〜7% 遅くなるだけで、
-# RAM の固定は 38.53→39.42 GiB）。env ファイルの STRATA_MAX_CONTEXT で変えられる。
-DEFAULT_MAX_CONTEXT = 131072
+# コンテキスト長。モデルの上限 262144（5 つの GGUF の context_length）。65536 → 131072（2026-10-07 の実測: 生成は 5〜7% 遅くなるだけで、
+# RAM の固定は 38.53→39.42 GiB）→ 262144（2026-10-18、利用者の指示「A30 に収まる最大に」）と広げた。KV は int8 で VRAM に置く
+# （約 13.7 KB/トークン。262144 で約 3.5 GiB）ので RAM はほぼ増えず、減るのは GPU のエキスパートの枠（10-07 の Coder の実測で
+# 131072 → 262144 は 8138 → 7136）。通常モードは --kv-grow（使った分だけ KV を確保）で枠を取り戻す（各 ModelSpec の engine_extra_args）。
+# env ファイルの STRATA_MAX_CONTEXT で変えられる。
+DEFAULT_MAX_CONTEXT = 262144
 ENV_FILE = Path.home() / ".config" / "strata" / "strata.env"
 MAX_CONTEXT_ENV_VAR = "STRATA_MAX_CONTEXT"
 # 思考の予算（トークン数）。0 で無効。設定 JSON の reasoning_budget_tokens に入る（run-strata serve が毎回書き直す）。
@@ -116,8 +121,10 @@ OLLAMA_URL = "http://127.0.0.1:11434"
 
 # doctor の RAM の目安。engine は GPU が持たないエキスパートを RAM に写してページロックする（実測 40.56 GiB、
 # 131072・MTP あり）。engine は空きから 4 GiB を残して写す量を決め、足りなければ一部をファイルから読む
-# （遅くなるが動く）。全量を写すには 40.56 + 4 + engine の作業領域 約 1.5 で約 46 GiB の空きが要る。
-MIN_AVAILABLE_RAM_GIB = 46
+# （遅くなるが動く）。全量を写すには 40.56 + 4 + engine の作業領域 約 1.5 で約 46 GiB の空きが要った。
+# 2026-10-18 から 262144 と KV ストリーミング（--kv-resident 65536。KV 3.09 GiB を RAM に置く）で、落とせない分は
+# 実測 46.2 GiB（shmem 44.67 + anon 1.50）。+ engine が残す 4 GiB で約 50 GiB。
+MIN_AVAILABLE_RAM_GIB = 50
 # 起動前に空いていてほしい VRAM。エキスパートのキャッシュは空き VRAM に合わせて決まる（--expert-cache auto）。
 # Qwen（Ollama、約 22 GB）が載っていると、キャッシュがほとんど取れない。
 MIN_FREE_VRAM_MIB = 20000
@@ -174,6 +181,9 @@ class ModelSpec:
     # "reasoning_budget_tokens" として設定 JSON に足す（上流は予算に達すると wrap-up の文と </think> を差し込んで
     # 答えを書かせる。docs/DETAILS.md の "A hard thinking budget"）。env ファイルの STRATA_REASONING_BUDGET_TOKENS で変える。
     default_reasoning_budget_tokens: int = 0
+    # モデル固有に engine へ足す引数（例: ("--adapt-async", "1")）。env の STRATA_EXTRA_ARGS と serve --extra はこの後ろに付く
+    # （後ろのものが同じ引数を上書きできる）。2026-10-17〜18 の実測で採った速さの設定を置く（README の各モデルの節）。
+    engine_extra_args: tuple[str, ...] = ()
 
     @property
     def tokenizer_dir(self) -> Path:
@@ -202,7 +212,11 @@ RVN = ModelSpec(
     server_config=SERVER_CONFIG,
     engine_log=ENGINE_LOG,
     resident_experts=True,
-    kv_resident=None,
+    # KV ストリーミング（KV を RAM に置き、VRAM には直近の 65536 セル）。2026-10-18 の実測（greedy・262144・--adapt-async 1）:
+    # 無しだと 4K 入力・thinking あり 72.9 tok/s・枠 6,549、有りだと 76.0・枠 7,732（短い質問 53.9 → 60.3、4K thinking なし
+    # 59.8 → 62.1）。RAM は +1.0 GiB（落とせない分 45.1 → 46.2 GiB）、起動 88 → 94 秒。公式 IQ3_S では差が 2% で RAM +2.3 GiB
+    # だったので付けていない。README の「速さの設定と文脈長 262144」。
+    kv_resident=65536,
     default_max_context=DEFAULT_MAX_CONTEXT,
     min_available_ram_gib=MIN_AVAILABLE_RAM_GIB,
     recommended_memlock_bytes=RECOMMENDED_MEMLOCK_BYTES,
@@ -215,6 +229,9 @@ RVN = ModelSpec(
     # 2026-10-07 の実測（8082、同じ 3D の問題、52 tok/s で約 10.5 分）: 予算なしでは 130,597 トークンの上限まで
     # thinking のまま答えが 0 トークンだった。16384 では (1) だけ正解、32768 で (1)〜(3) が正解。
     default_reasoning_budget_tokens=32768,
+    # --adapt-async 1（GPU のキャッシュの入れ替えを生成の合間に裏で進める）。2026-10-18 の実測（131072、greedy）: 4K 入力・thinking あり
+    # 64.5 → 73.3 tok/s（+14%）、短い質問 49.8 → 55.4、4K thinking なし 51.4 → 60.3。resident 版では --kv-grow は使えない（engine が無効にする）。
+    engine_extra_args=("--adapt-async", "1"),
 )
 
 # ---------------------------------------------------------------- Coder（コード向け版）
@@ -268,8 +285,10 @@ CODER = ModelSpec(
     # KV ストリーミング）も遅くなる（同 103→96 tok/s。キャッシュ命中率が元から 97〜99% で、枠を増やす利点が小さい）。
     resident_experts=False,
     kv_resident=None,
-    # 262144 も動くが、キャッシュ枠が 8138→7136 に減り、greedy で 9〜21% 遅い。env ファイルで選べる。
-    default_max_context=131072,
+    # 262144（モデルの上限。2026-10-18 に 131072 から広げた。DEFAULT_MAX_CONTEXT の注記）。10-07 の実測では 131072 → 262144 で
+    # キャッシュ枠が 8138→7136 に減り greedy で 9〜21% 遅かったが、通常モードなので --kv-grow で枠を取り戻せる（engine_extra_args）。
+    # env ファイルの STRATA_MAX_CONTEXT で戻せる。
+    default_max_context=DEFAULT_MAX_CONTEXT,
     # 落とせない分 約 26.2 GiB（ページロックしたエキスパート 23.42 GiB を含む）+ 余裕 約 4 GiB
     min_available_ram_gib=30,
     recommended_memlock_bytes=32 * 1024**3,
@@ -287,6 +306,10 @@ CODER = ModelSpec(
     # 思考の予算は付けない。2026-10-07 の汎用版の要望（予算なしで答えが 0 トークン）の対象外で、
     # Coder は上の #728 の回復で足りている実測がある。env ファイルで足したいときは STRATA_REASONING_BUDGET_TOKENS。
     default_reasoning_budget_tokens=0,
+    # 2026-10-17〜18 の実測（greedy）。--kv-grow は KV を使った分だけ VRAM に取り、残りをキャッシュの枠に回す（通常モード限定）:
+    # 262144 でも枠 8,752（131072・kv-grow なしの 8,135 より多い）。--adapt-async 1 と合わせて 4K 入力・thinking あり 81.0 tok/s
+    # （131072 の基準 78.2）、短い質問 78.7（基準 81.6）。Coder は回ごとの揺れが大きく（同じ条件で 78〜101）、差は誤差の範囲。
+    engine_extra_args=("--adapt-async", "1", "--kv-grow"),
 )
 
 # ---------------------------------------------------------------- 公式版（非 abliterated）
@@ -339,13 +362,14 @@ OFFICIAL = ModelSpec(
     env_file=Path.home() / ".config" / "strata" / "strata-official.env",
     server_config=RUN_DIR / "strata-server-official.json",
     engine_log=LOGS_DIR / "strata-official-engine.log",
-    # ここから下の 5 つは実測で決める前の仮置き。出発点は RVN と同じ値（エキスパートは見込み 約 42.9 GB = 39.97 GiB で、
-    # RVN の稼働中の shmem 41.5 GiB（RAM 複製 40.56 GiB を含む）とほぼ同じ大きさ）。なお上流 setup.py はこの RAM なら
-    # --resident-experts の無い通常のモードを選ぶ（setup.py:2725 の low_ram_needed: RAM < arena_gb + 10 のときだけ low-RAM）。
-    # Coder の実測では通常のモードのほうが速かったので、実測で比べて決める。
-    resident_experts=True,
+    # 動かし方は 2026-10-17 の実測で決めた（greedy・同じ問題・3 回の中央値。README の「公式版」の「速さの設定」）。上流 setup.py も
+    # この RAM なら --resident-experts の無い通常のモードを選ぶ（setup.py:2725 の low_ram_needed: RAM < arena_gb + 10 のときだけ low-RAM）。
+    # - 通常のモード（エキスパート 39.97 GiB を全部 RAM に写してページロック。anon 41.45 GiB・shmem 0.49 GiB）: 4K 入力・thinking あり
+    #   98.0 tok/s、短い質問 69.1、prefill 1,400。resident 版（shmem 28.4 GiB）は 89.8〜91.9 / 56.9〜57.9 / 1,254〜1,270 で 8〜20% 遅い。
+    #   起動は 41 秒 vs 45 秒。落とせない分 約 42.3 GiB は MemoryHigh 50G に収まる（残り約 7.7 GiB が page cache）。
+    resident_experts=False,
     kv_resident=None,
-    default_max_context=131072,
+    default_max_context=DEFAULT_MAX_CONTEXT,
     min_available_ram_gib=46,
     recommended_memlock_bytes=48 * 1024**3,
     server_options={
@@ -357,9 +381,143 @@ OFFICIAL = ModelSpec(
     # 超えていた（32768 では収束の前に打ち切る）。65536 は 60 tok/s で約 18 分。README の「公式版」の実測。
     # sampling の既定は入れない（同じ日の実験で、temperature 1.0・presence_penalty 1.0 のどれも RVN を収束させなかった）。
     default_reasoning_budget_tokens=65536,
+    # 2026-10-17〜18 の実測（greedy、通常モード）: 131072 で --adapt-async 1 が 98.0 → 104.3 tok/s（4K 入力・thinking あり）、
+    # 262144 + --adapt-async 1 + --kv-grow で 102.9・枠 10,452（131072・kv-grow なしの 9,728 より多い）。STRATA_IQ3S_MT1=1 は効かず、
+    # --kv-grow 単独も 131072 では速さを変えない（枠だけ 10,593 に増える）。
+    engine_extra_args=("--adapt-async", "1", "--kv-grow"),
 )
 
-MODELS: dict[str, ModelSpec] = {spec.key: spec for spec in (RVN, CODER, OFFICIAL)}
+# ---------------------------------------------------------------- 公式版 IQ3_S（同じ公式モデルの、軽い量子化）
+# 公式版（IQ3_XXS）と同じリポジトリ・同じ固定リビジョンの IQ3_S。Q8_0 との KL は IQ3_XXS 0.202 → IQ3_S 0.144（上流 docs/QUANTS.md）で、
+# 上流 setup.py の RECOMMENDED_SIZES（0.1.44）はこれ。1 トークンあたりは IQ3_XXS より 2〜3 割遅い見込み。
+# 2026-10-16 に足した理由: AI モデル評価（Documents/AIモデル評価_2026-10-08.html）で Strata の弱点が「思考が終わらず予算で打ち切られる」
+# ことで、量子化だけを変えた比較が無かった（Documents/Strata_コーディング性能の調査_2026-10-09.html）。
+OFFICIAL_IQ3S_DIR = MODELS_DIR / "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S"
+OFFICIAL_IQ3S_SHARD1 = "IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
+OFFICIAL_IQ3S_SHARD2 = "IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
+# shard 1 は HF の tree API（?blobs=true、2026-10-16）の LFS oid と大きさ。README と shard 2 は公式版（IQ3_XXS）と同じファイル
+# （shard 2 は Coder・公式版の shard 2 とも同じで、ハードリンクで置ける）。
+OFFICIAL_IQ3S_FILES: tuple[tuple[str, int, str], ...] = (
+    ("README.md", 15693, "71496aac3c9126085519dbe3aa82e46eb9f5749ee122b089a66182a94b0db6a3"),
+    (OFFICIAL_IQ3S_SHARD1, 54817524224, "4c1eb2ceb4915e1192f4f386021897bde56a97f40a0bb78bb86465e0f7d2aca3"),
+    (OFFICIAL_IQ3S_SHARD2, 28800138432, "316b46f3a2dbd68c900f43136ab9449f9dcc3725dfd8c794847c204bc161e113"),
+)
+
+OFFICIAL_IQ3S = ModelSpec(
+    key="official-iq3s",
+    title="Qwen3.8-Flash-Next IQ3_S（公式・非 abliterated、軽い量子化）",
+    model_dir=OFFICIAL_IQ3S_DIR,
+    repo=OFFICIAL_REPO,
+    revision=OFFICIAL_REVISION,
+    files=OFFICIAL_IQ3S_FILES,
+    native_gguf=OFFICIAL_IQ3S_DIR / OFFICIAL_IQ3S_SHARD1,
+    # PLE の n-gram 表は shard 2（公式版と同じファイル）
+    ple_gguf=OFFICIAL_IQ3S_DIR / OFFICIAL_IQ3S_SHARD2,
+    pack_dir=OFFICIAL_IQ3S_DIR / "pack",
+    pack_built_locally=True,
+    expert_profile=EXPERT_PROFILE,
+    # 手元で作った pack/native_experts.txt の見出しの total（48 層 x 512 エキスパート、46.84 GiB。2026-10-16）。上流コミュニティの実測
+    # （bench/results/2026-10-09-community-rtx-3060-0141 の IQ3_S の experts.bin）と同じ値。tests/test_units.py が pack と照合する。
+    expert_bytes=50292326400,
+    # 21 文字（Open WebUI の一覧は約 28 文字で切れる）
+    model_name="strata-official:IQ3_S",
+    port=8085,
+    service_name="strata-official-iq3s",
+    service_example=TOOL_DIR / "systemd" / "strata-official-iq3s.service.example",
+    env_file=Path.home() / ".config" / "strata" / "strata-official-iq3s.env",
+    server_config=RUN_DIR / "strata-server-official-iq3s.json",
+    engine_log=LOGS_DIR / "strata-official-iq3s-engine.log",
+    # エキスパート 46.84 GiB は、全部を RAM に写す通常のモード（エキスパート + 約 10 GB）では MemoryHigh 50G に収まらないので、
+    # RVN（53.3 GiB）と同じ low-RAM の resident 版（GPU が持たない分だけ RAM に写す。見込み 約 31 GiB）。
+    resident_experts=True,
+    kv_resident=None,
+    default_max_context=DEFAULT_MAX_CONTEXT,
+    min_available_ram_gib=46,
+    recommended_memlock_bytes=48 * 1024**3,
+    server_options={
+        # ほかの 4 つと同じ #728 の回復（理由と仕組みは CODER と RVN の server_options の注記）
+        "reasoning_loop_recovery": "recover",
+    },
+    # 公式版（IQ3_XXS）と同じ安全弁。3D の問題で公式版の thinking は 32,768 を超えてから収束した（OFFICIAL の注記）。
+    default_reasoning_budget_tokens=65536,
+    # 2026-10-17〜18 の実測（greedy、resident 版）: 131072 で --adapt-async 1 が 74.9 → 83.8 tok/s（4K 入力・thinking あり）、262144 では 83.1
+    # （枠 7,146）。--kv-resident 65536 を足すと 84.8・枠 8,503 だが RAM が +2.3 GiB（落とせない分 39.5 → 40.5 GiB）で、差 2% は誤差の範囲なので付けない。
+    engine_extra_args=("--adapt-async", "1"),
+)
+
+# ---------------------------------------------------------------- Swift 1.5（思考を短く終える fine-tune）
+# UkisAI が Qwen3.8-Flash-Next を post-training した派生で、同じアーキテクチャ（qwen4exp、512 エキスパート/層）。作者の BF16・xhigh の
+# 計測では思考トークンが中央値で 63% 減り、精度の差は 1% 未満（GPQA 89.8→89.6、AIME 98.7→96.7、LiveCodeBench 88.4→90.4）。
+# 上流 Strata 0.1.44 は family "swift" として正式に対応し、「1 トークンの速さは元と同じ」と報告する（docs/DETAILS.md の
+# "Or: Swift 1.5"）。量子化は ISTA の GSQ-RCO の allocation profile を再利用した UkisAI 自身の配布（同じ IQ3_XXS）。
+# 2026-10-16 に足した理由は OFFICIAL_IQ3S と同じ（思考が終わらない症状にモデルの側から当たる）。
+# ライセンスは Swift Open License v1.0（年商 100 万ドル以上の法人の商用利用は別契約。非商用・研究用途は可）+ 元の Qwen の
+# Qwen Community License 1.0。この機体では個人・非商用の研究用途（2026-10-16 の利用者の判断）。NOTICE.md に書いてある。
+SWIFT_DIR = MODELS_DIR / "Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS"
+SWIFT_REPO = "ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF"
+# 2026-10-16 の HF API（api/models の sha、lastModified 2026-10-07。IQ3_S の tier を足した版）
+SWIFT_REVISION = "99bb8f7f95c7aa7b24a36a7786a4f657b30f5d3d"
+# HF のリポジトリはサブディレクトリを持たず、ルート直下に 4 サイズ分の GGUF を並べている（置き場も同じ並び）
+SWIFT_SHARD1 = "Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf"
+SWIFT_SHARD2 = "Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf"
+# GGUF の 2 つは HF の LFS oid（= sha256。配布元の SHA256SUMS とも一致）と大きさ（tree API、2026-10-16）。
+# README・LICENSE・LICENSE-QWEN・NOTICE は取得後に計算し、HF の git blob sha1 と一致することを確かめた値（2026-10-16）。
+# 元の Qwen と違い shard 2 は別物（層 13〜47 のエキスパートが shard 2、PLE の n-gram 表が shard 1。上流 tools/iq_pack.py の注記）。
+# 画像用の mmproj（0.91 GiB）は取らない（画像入力は使わない）。
+SWIFT_FILES: tuple[tuple[str, int, str], ...] = (
+    ("README.md", 9654, "c4bcb450391cb9cb5cd3ff63117993462bdcbf35b8b2c166c6d396a4c012502e"),
+    ("LICENSE", 13323, "7a3af3e6b43fcb7c486ea8167252a36a9532dcbdf02d1704a749881872ec551c"),
+    ("LICENSE-QWEN", 3235, "a0dc422560841fd68e06d974907f8b4c709bca44a67daad2b528437bdf676c08"),
+    ("NOTICE", 1514, "adfc6658815ecb4ddb26b1e3018c819104866b6c54f15e6b63b73827fa40c884"),
+    (SWIFT_SHARD1, 39785790560, "3bddaa667c750f63baca766df9433e1afd35a139f401c5ca5e7ff560ceff3d23"),
+    (SWIFT_SHARD2, 36180282560, "b0b15f782af71eb471909d2f3313b2927c324962f86c084325c247cd411a0160"),
+)
+
+SWIFT = ModelSpec(
+    key="swift",
+    title="Swift 1.5 Qwen3.8-Flash-Next IQ3_XXS（思考を短く終える fine-tune、非 abliterated）",
+    model_dir=SWIFT_DIR,
+    repo=SWIFT_REPO,
+    revision=SWIFT_REVISION,
+    files=SWIFT_FILES,
+    native_gguf=SWIFT_DIR / SWIFT_SHARD1,
+    # PLE の n-gram 表は shard 1（build-pack が gguf_reader で確かめてから作る）
+    ple_gguf=SWIFT_DIR / SWIFT_SHARD1,
+    pack_dir=SWIFT_DIR / "pack",
+    pack_built_locally=True,
+    # 上流 FAMILIES["swift"] は profile を持たず、既定の expert-profile.bin（汎用・公式版と同じ）を使う
+    expert_profile=EXPERT_PROFILE,
+    # 手元で作った pack/native_experts.txt の見出しの total（48 層 x 512 エキスパート、39.97 GiB。2026-10-16）。ISTA の IQ3_XXS の
+    # allocation profile を再利用しているので公式版（IQ3_XXS）と同じ値。層 12〜47 のエキスパートは shard 2 にある（native_experts.txt の
+    # shard 列）。tests/test_units.py が pack と照合する。
+    expert_bytes=42912972800,
+    # 20 文字（Open WebUI の一覧は約 28 文字で切れる）
+    model_name="strata-swift:IQ3_XXS",
+    port=8086,
+    service_name="strata-swift",
+    service_example=TOOL_DIR / "systemd" / "strata-swift.service.example",
+    env_file=Path.home() / ".config" / "strata" / "strata-swift.env",
+    server_config=RUN_DIR / "strata-server-swift.json",
+    engine_log=LOGS_DIR / "strata-swift-engine.log",
+    # 公式版（IQ3_XXS）と同じ量子化・同じ大きさで、同じ通常モード（エキスパート 39.97 GiB を全部 RAM に写す）。2026-10-18 の実測
+    # （greedy・262144・--adapt-async 1）: 通常モード + --kv-grow 105.9 tok/s（4K 入力・thinking あり、枠 10,452、anon 41.80 GiB）、
+    # resident 版 94.9（枠 8,601、shmem 30.5 GiB）、resident 版 + --kv-resident 65536 97.9（枠 10,178）。RAM は増えるが MemoryHigh 50G に収まる。
+    resident_experts=False,
+    kv_resident=None,
+    default_max_context=DEFAULT_MAX_CONTEXT,
+    min_available_ram_gib=46,
+    recommended_memlock_bytes=48 * 1024**3,
+    server_options={
+        # ほかの 4 つと同じ #728 の回復
+        "reasoning_loop_recovery": "recover",
+    },
+    # 公式版と同じ安全弁。短く考えるモデルなので届かない見込みだが、届いたら答えを書かせる
+    default_reasoning_budget_tokens=65536,
+    # 公式版と同じ（上の resident_experts の注記の実測）
+    engine_extra_args=("--adapt-async", "1", "--kv-grow"),
+)
+
+MODELS: dict[str, ModelSpec] = {spec.key: spec for spec in (RVN, CODER, OFFICIAL, OFFICIAL_IQ3S, SWIFT)}
 DEFAULT_MODEL = "rvn"
 
 

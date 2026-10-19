@@ -323,6 +323,8 @@ def portal_status_body() -> dict[str, object]:
         ("strata", 8082),
         ("strata-coder", 8083),
         ("strata-official", 8084),
+        ("strata-official-iq3s", 8085),
+        ("strata-swift", 8086),
         ("hunyuan3d", 7860),
         ("pixal3d", 7861),
         ("comfyui", 8188),
@@ -351,7 +353,8 @@ def portal_routes(overrides: dict[tuple[str, str], object] | None = None) -> dic
         return respond
 
     routes: dict[tuple[str, str], object] = {("GET", "/api/status"): (200, portal_status_body())}
-    for key in ("open-webui", "strata", "strata-coder", "strata-official", "hunyuan3d", "pixal3d", "comfyui"):
+    for key in ("open-webui", "strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift",
+                "hunyuan3d", "pixal3d", "comfyui"):
         for action in ("start", "stop"):
             routes[("POST", f"/api/service/{key}/{action}")] = service_action(key, action)
     routes.update(overrides or {})
@@ -854,6 +857,10 @@ def test_start_strata_variants_point_to_the_right_install_command(machine: FakeM
     assert "./localai install strata --model coder" in coder.stderr
     official = machine.run("start", "strata-official")
     assert "./localai install strata --model official" in official.stderr
+    official_iq3s = machine.run("start", "strata-official-iq3s")
+    assert "./localai install strata --model official-iq3s" in official_iq3s.stderr
+    swift = machine.run("start", "strata-swift")
+    assert "./localai install strata --model swift" in swift.stderr
 
 
 def test_stop_without_portal_uses_systemctl(machine: FakeMachine) -> None:

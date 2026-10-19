@@ -1,0 +1,6 @@
+# gemma4:31b-it-qat の文脈長の上限（2026-10-18）。A30（VRAM 24 GiB）で KV キャッシュ q8_0 のとき、全部 GPU に載る最大。
+# サーバー既定（OLLAMA_CONTEXT_LENGTH=65536）と同じ値だが、f16 の KV では 65536 は載らない（61 層のうち 55 層しか GPU に載らなかった）ので、
+# このモデルの上限として明示する。当て方: ollama create gemma4:31b-it-qat -f この file。
+# 根拠と実測は tools/qwen-model-bench/README.md の「文脈長の上限」。
+FROM gemma4:31b-it-qat
+PARAMETER num_ctx 65536

@@ -825,7 +825,7 @@ def test_services_to_stop_before_start_ignores_stopped_and_not_installed_in_thre
 
 def test_comfyui_is_in_gpu_exclusive_group_with_unit_and_no_options():
     assert portal.GPU_EXCLUSIVE_KEYS == (
-        "hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official"
+        "hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift"
     )
     comfyui_service = portal.SERVICES_BY_KEY["comfyui"]
     assert comfyui_service["unit"] == "comfyui"
@@ -1486,6 +1486,10 @@ def test_get_api_status_includes_ram_and_service_memory(running_server, monkeypa
     # Strata 公式版は汎用の Strata と同じ値（50 / 54）。2026-10-07 の実測（memory.peak 50.00 GiB）で、この値のままでよいと確かめた。
     assert service_by_key["strata-official"]["memory"]["default_high_gib"] == 50
     assert service_by_key["strata-official"]["memory"]["default_max_gib"] == 54
+    # 2026-10-16 に足した公式版 IQ3_S・Swift 1.5 は、実測前の仮置きとして汎用版・公式版と同じ値。
+    for key in ("strata-official-iq3s", "strata-swift"):
+        assert service_by_key[key]["memory"]["default_high_gib"] == 50, key
+        assert service_by_key[key]["memory"]["default_max_gib"] == 54, key
 
 
 def test_index_html_calls_memory_endpoint():
@@ -1967,8 +1971,10 @@ def test_post_strata_stop_does_not_unload_ollama(running_server, monkeypatch):
 
 
 def test_post_other_exclusive_services_do_not_unload_ollama(running_server, monkeypatch):
-    # 対象は Strata の 3 つ（汎用版・Coder 版・公式版）だけ。ComfyUI などの起動では、これまでどおり Ollama に触らない。
-    assert portal.OLLAMA_UNLOAD_BEFORE_START_KEYS == ("strata", "strata-coder", "strata-official")
+    # 対象は Strata の 5 つ（汎用版・Coder 版・公式版・公式版 IQ3_S・Swift 1.5）だけ。ComfyUI などの起動では、これまでどおり Ollama に触らない。
+    assert portal.OLLAMA_UNLOAD_BEFORE_START_KEYS == (
+        "strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift"
+    )
     events = _record_start_events(monkeypatch, {})
     for key in ("comfyui", "hunyuan3d", "pixal3d", "open-webui"):
         response, body = _request(running_server, "POST", f"/api/service/{key}/start")
@@ -2200,8 +2206,10 @@ def test_build_service_status_strata_coder_starting():
 
 
 def test_services_to_stop_before_start_six_services_are_mutually_exclusive():
-    # 6 つ（hunyuan3d・pixal3d・comfyui・strata・strata-coder・strata-official）のうち同時に動くのは 1 つだけ。
-    exclusive_keys = ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official")
+    # 8 つ（hunyuan3d・pixal3d・comfyui・strata・strata-coder・strata-official・strata-official-iq3s・strata-swift）のうち
+    # 同時に動くのは 1 つだけ。
+    exclusive_keys = ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official",
+                      "strata-official-iq3s", "strata-swift")
     assert set(portal.GPU_EXCLUSIVE_KEYS) == set(exclusive_keys)
     for running_key in exclusive_keys:
         states = {key: ("running" if key == running_key else "stopped") for key in exclusive_keys}
@@ -2241,8 +2249,10 @@ def test_services_to_stop_before_start_ignores_not_installed_strata_coder():
 
 
 def test_ollama_unload_targets_are_all_strata():
-    # 起動前に Ollama のモデルを降ろす対象は Strata の 3 つ（汎用版・Coder 版・公式版）だけ。
-    assert set(portal.OLLAMA_UNLOAD_BEFORE_START_KEYS) == {"strata", "strata-coder", "strata-official"}
+    # 起動前に Ollama のモデルを降ろす対象は Strata の 5 つ（汎用版・Coder 版・公式版・公式版 IQ3_S・Swift 1.5）だけ。
+    assert set(portal.OLLAMA_UNLOAD_BEFORE_START_KEYS) == {
+        "strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift",
+    }
     for key in portal.OLLAMA_UNLOAD_BEFORE_START_KEYS:
         assert key in portal.GPU_EXCLUSIVE_KEYS
 
@@ -2437,23 +2447,24 @@ def test_index_html_glossary_has_strata_coder_and_mentions_both_strata():
     # ポートの説明に 8083 が入っている。
     port_start = glossary_block.index('"ポート":')
     assert "8083" in glossary_block[port_start:port_start + 600]
-    # 排他の説明は 6 つを挙げる。
+    # 排他の説明は 8 つを挙げる。
     exclusive_start = glossary_block.index('"GPU の排他":')
-    exclusive_text = glossary_block[exclusive_start:exclusive_start + 600]
-    assert "Strata Flash-Next Coder" in exclusive_text and "Strata 公式版" in exclusive_text and "6 つ" in exclusive_text
+    exclusive_text = glossary_block[exclusive_start:exclusive_start + 700]
+    assert "Strata Flash-Next Coder" in exclusive_text and "Strata 公式版" in exclusive_text and "8 つ" in exclusive_text
+    assert "Strata 公式版 IQ3_S" in exclusive_text and "Strata Swift 1.5" in exclusive_text
 
 
 def test_index_html_qwen_warning_mentions_all_strata():
-    # Ollama にモデルが載っているときの警告文。Strata は 3 つとも起動時に自動で降ろす。
-    assert "Strata（汎用版・Coder 版・公式版）は起動時に自動で降ろします" in _html_text()
+    # Ollama にモデルが載っているときの警告文。Strata は 5 つとも起動時に自動で降ろす。
+    assert "Strata（汎用版・Coder 版・公式版・公式版 IQ3_S・Swift 1.5）は起動時に自動で降ろします" in _html_text()
 
 
 def test_index_html_other_gpu_cards_mention_strata_variants_in_exclusive_notes():
-    # Pixal3D・ComfyUI のカードの「同時に使えない」説明に、Coder 版・公式版も含まれる。
+    # Pixal3D・ComfyUI のカードの「同時に使えない」説明に、Coder 版・公式版・公式版 IQ3_S・Swift 1.5 も含まれる。
     for service_key in ("pixal3d", "comfyui"):
         block = _strata_meta_block(service_key)
-        assert "Strata（Coder 版・公式版を含む）" in block, (
-            f"SERVICE_META.{service_key} の排他の説明に Coder 版・公式版が無い"
+        assert "Strata（Coder 版・公式版・公式版 IQ3_S・Swift 1.5 を含む）" in block, (
+            f"SERVICE_META.{service_key} の排他の説明に Coder 版・公式版・公式版 IQ3_S・Swift 1.5 が無い"
         )
 
 
@@ -2471,8 +2482,8 @@ def test_strata_official_service_definition_and_order():
     # 汎用の Strata・Coder 版の次に並べる（画面のカードの並びはこの順）。
     service_keys = [service["key"] for service in portal.SERVICES]
     assert service_keys.index("strata-official") == service_keys.index("strata-coder") + 1
-    # サービスは 7 つ（open-webui・strata 3 つ・hunyuan3d・pixal3d・comfyui）。
-    assert len(service_keys) == 7
+    # サービスは 9 つ（open-webui・strata 5 つ・hunyuan3d・pixal3d・comfyui）。
+    assert len(service_keys) == 9
     # ポートと unit は他のサービスと重ならない（portal 自身の 8080 も含む）。
     ports = [service["port"] for service in portal.SERVICES]
     assert len(ports) == len(set(ports)) and 8080 not in ports
@@ -2653,7 +2664,7 @@ def test_get_api_status_strata_official_not_installed_has_no_controls(running_se
     _, body = _request(running_server, "GET", "/api/status")
     payload = json.loads(body)
     service_by_key = {service["key"]: service for service in payload["services"]}
-    assert len(payload["services"]) == 7
+    assert len(payload["services"]) == 9
     assert service_by_key["strata-official"]["state"] == "not_installed"
     assert service_by_key["strata-official"]["controllable"] is False
     assert service_by_key["strata-official"]["port"] == 8084
@@ -2698,3 +2709,56 @@ def test_index_html_glossary_has_strata_official_and_port_8084():
     assert "23,899 MiB" in glossary_block[official_start:official_start + 800]
     assert "未計測" not in glossary_block and "見込み" not in glossary_block
 
+
+
+# ---------------------------------------------------------------------------
+# 公式版 IQ3_S（8085）と Swift 1.5（8086）。2026-10-16 に足した 4 つ目・5 つ目の Strata（GPU 排他グループの 7・8 つ目）
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("key, name, port, previous", [
+    ("strata-official-iq3s", "Strata 公式版 IQ3_S（軽い量子化）", 8085, "strata-official"),
+    ("strata-swift", "Strata Swift 1.5（IQ3_XXS）", 8086, "strata-official-iq3s"),
+])
+def test_new_strata_services_definition_order_and_memory(key, name, port, previous):
+    service = portal.SERVICES_BY_KEY[key]
+    assert (service["name"], service["port"], service["unit"]) == (name, port, key)
+    # 低 VRAM のスイッチは持たない
+    assert portal.find_service_option(service, "low_vram") is None
+    # 並びは strata → strata-coder → strata-official → strata-official-iq3s → strata-swift
+    service_keys = [entry["key"] for entry in portal.SERVICES]
+    assert service_keys.index(key) == service_keys.index(previous) + 1
+    assert key in portal.GPU_EXCLUSIVE_KEYS and key in portal.OLLAMA_UNLOAD_BEFORE_START_KEYS
+    # メモリ上限の既定値は実測前の仮置きで、汎用版・公式版と同じ 50 / 54 GiB。許容上限以下で、画面の検証も通る
+    entry = portal.build_memory_entry(service, {"high_gib": 10.0, "max_gib": 12.0, "current_gib": 1.0})
+    assert (entry["default_high_gib"], entry["default_max_gib"]) == (50, 54)
+    bounds = portal.memory_bounds(62.5)
+    assert entry["default_max_gib"] <= bounds["allowed_max_gib"]
+    assert portal.validate_memory_limits(entry["default_high_gib"], entry["default_max_gib"], bounds) is None
+    # 未導入 → 起動中 → 稼働中の判定はほかの Strata と同じ
+    not_installed = portal.build_service_status(service, port_open=False, active_state="unknown", load_state="not-found")
+    assert (not_installed["state"], not_installed["controllable"], not_installed["port"]) == ("not_installed", False, port)
+    assert portal.build_service_status(service, port_open=False, active_state="active", load_state="loaded")["state"] == "starting"
+    assert portal.build_service_status(service, port_open=True, active_state="active", load_state="loaded")["state"] == "running"
+    # 用語集にカード名（括弧の前）があり、ポートの説明に番号が入っている
+    glossary_block = _extract_js_object_block(_html_text(), "GLOSSARY")
+    glossary_keys = set(re.findall(r'"([^"]+)":\s*\n?\s*"', glossary_block))
+    assert name.split("（")[0] in glossary_keys
+    port_start = glossary_block.index('"ポート":')
+    assert str(port) in glossary_block[port_start:port_start + 700]
+
+
+@pytest.mark.parametrize("key, model_name, words", [
+    ("strata-official-iq3s", "strata-official:IQ3_S", ("IQ3_S", "ISTA-DASLab", "GSQ-RCO", "abliterated ではない", "公式版と比べる")),
+    ("strata-swift", "strata-swift:IQ3_XXS", ("Swift 1.5", "UkisAI", "思考", "Swift Open License", "非商用")),
+])
+def test_index_html_new_strata_cards_have_required_texts(key, model_name, words):
+    block = _strata_meta_block(key)
+    for field in ("description:", "stoppedReason:", "startingReason:", "note:"):
+        assert field in block, f"SERVICE_META.{key} に {field} が無い"
+    for word in words:
+        assert word in block, (key, word)
+    # note: チャットの入口・API のモデル名・Ollama のモデルが降ろされること・他と同時に使えないこと
+    assert "Open WebUI（8081）" in block and model_name in block
+    assert "Ollama のモデルは" in block and "降ろされます" in block
+    assert "汎用の Strata" in block and "ComfyUI" in block and "同時に使えません" in block
+    assert "alsoOpen: STRATA_OPEN_LINKS.alsoOpen" in block

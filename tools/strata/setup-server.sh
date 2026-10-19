@@ -13,6 +13,8 @@
 # MTP の draft 層は汎用版と共有し、できていれば作り直さない。Coder の pack は HF に無いので手元で作る。
 # --model official で公式版（非 abliterated の Qwen3.8-Flash-Next IQ3_XXS、約 70.6 GiB。shard 2 は Coder と同じファイルで、
 # ハードリンクで置いてあれば取らない）を足す。pack は Coder と同じく手元で作る。
+# --model official-iq3s で公式版の軽い量子化 IQ3_S（shard 1 約 51.1 GiB。shard 2 は公式版・Coder と同じファイル）を足す。
+# --model swift で Swift 1.5（UkisAI の fine-tune、IQ3_XXS、2 shard 約 70.7 GiB。shard 2 は元とは別物）を足す。どちらも pack は手元で作る。
 set -euo pipefail
 
 TOOL_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -55,7 +57,9 @@ usage() {
   --rebuild       engine を作り直す（build/ は残すので、変わったところだけコンパイルされる）
   --model NAME    対象のモデル。rvn（既定、汎用版、ポート 8082、unit strata）・
                   coder（コード向け版、ポート 8083、unit strata-coder）・
-                  official（公式版・非 abliterated、ポート 8084、unit strata-official）のどれか。engine などは共有する
+                  official（公式版・非 abliterated、ポート 8084、unit strata-official）・
+                  official-iq3s（公式版の軽い量子化 IQ3_S、ポート 8085、unit strata-official-iq3s）・
+                  swift（Swift 1.5 IQ3_XXS、ポート 8086、unit strata-swift）のどれか。engine などは共有する
   -h, --help      この説明を表示して終了
 
 systemd ユニットは配置と daemon-reload だけを行い、enable（自動起動）はしない。
@@ -71,7 +75,7 @@ do
   case "$1" in
     --model)
       if [ $# -lt 2 ]; then
-        echo "--model には rvn・coder・official のどれかを続けてください" >&2
+        echo "--model には rvn・coder・official・official-iq3s・swift のどれかを続けてください" >&2
         exit 2
       fi
       MODEL_KEY="$2"
@@ -126,8 +130,20 @@ case "$MODEL_KEY" in
     ENV_NAME="strata-official.env"
     PACK_BUILT_LOCALLY=true
     ;;
+  official-iq3s)
+    SERVICE_NAME="strata-official-iq3s"
+    MODEL_PORT="8085"
+    ENV_NAME="strata-official-iq3s.env"
+    PACK_BUILT_LOCALLY=true
+    ;;
+  swift)
+    SERVICE_NAME="strata-swift"
+    MODEL_PORT="8086"
+    ENV_NAME="strata-swift.env"
+    PACK_BUILT_LOCALLY=true
+    ;;
   *)
-    echo "知らないモデルです: $MODEL_KEY（rvn・coder・official のどれか）" >&2
+    echo "知らないモデルです: $MODEL_KEY（rvn・coder・official・official-iq3s・swift のどれか）" >&2
     exit 2
     ;;
 esac
@@ -372,7 +388,7 @@ else
 # $SERVICE_NAME.service が読む環境変数（run-strata serve --model $MODEL_KEY に渡る）。書式は KEY=値（シェルの展開はされない）。
 # コンテキスト長（既定 131072。2026-10-07 の実測で決めた。README の「実機試験の結果」）。
 # STRATA_MAX_CONTEXT=131072
-# 思考の予算（トークン。既定は rvn が 32768、official が 65536、coder が 0。0 で無効。README の「汎用版で thinking が終わらないとき」）。
+# 思考の予算（トークン。既定は rvn が 32768、official・official-iq3s・swift が 65536、coder が 0。0 で無効。README の「汎用版で thinking が終わらないとき」）。
 # STRATA_REASONING_BUDGET_TOKENS=32768
 # engine に足す引数（シェルと同じ規則で分ける）。例: 統計を engine のログに出す
 # STRATA_EXTRA_ARGS=--stats
@@ -386,7 +402,7 @@ fi
 systemctl --user daemon-reload
 echo "自動起動: 設定していません（enable しない方針）"
 echo "手で起動する: systemctl --user start $SERVICE_NAME ／ 止める: systemctl --user stop $SERVICE_NAME"
-echo "（strata・strata-coder・strata-official は Conflicts= で互いを止める。同時には載らない）"
+echo "（strata・strata-coder・strata-official・strata-official-iq3s・strata-swift は Conflicts= で互いを止める。同時には載らない）"
 
 # ---------------------------------------------------------------- [8/8]
 echo

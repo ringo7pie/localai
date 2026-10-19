@@ -1,13 +1,14 @@
 [Unit]
 Description=Strata (Qwen3.8-Flash-Next IQ3_XXS official, not abliterated, OpenAI-compatible API, port 8084)
 # 汎用版（strata.service）・コード向け版（strata-coder.service）と同じ engine で動く公式版（非 abliterated）。
-# RAM と VRAM を取り合うので同時には載せない。Conflicts= により、こちらを start すると systemd が strata.service と
-# strata-coder.service を止める（逆も同じ）。
-Conflicts=strata.service strata-coder.service
+# RAM と VRAM を取り合うので同時には載せない。Conflicts= により、こちらを start すると systemd が strata.service・
+# strata-coder.service・strata-official-iq3s.service・strata-swift.service を止める（逆も同じ）。
+Conflicts=strata.service strata-coder.service strata-official-iq3s.service strata-swift.service
 # Conflicts= だけでは止める順番が決まらない。2 つの間に順序の関係（After= か Before= のどちらか一方）があれば、
-# systemd は停止の job を起動の job より先に行う（systemd.unit の Conflicts=）。ほかの 2 つとの順序はこちらの側にだけ
-# 書く（strata-coder.service は After=strata.service を持つので、strata → strata-coder → strata-official の一方向になり、
-# 輪にならない）。これで、どれを start しても、ほかが RAM を返してから読み込む。
+# systemd は停止の job を起動の job より先に行う（systemd.unit の Conflicts=）。順序は一方向の鎖
+# strata → strata-coder → strata-official → strata-official-iq3s → strata-swift で、自分より前の 2 つだけをこちらに書く
+# （後ろの 2 つとの順序は、それぞれの側の After=strata-official.service で決まる）。輪にならない。
+# これで、どれを start しても、ほかが RAM を返してから読み込む。
 # Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。起動前に Ollama のモデルを降ろすこと
 # （エキスパートのキャッシュは起動時の空き VRAM で決まる）。ComfyUI / Hunyuan3D / Pixal3D とも RAM と VRAM を取り合う。
 After=network.target strata.service strata-coder.service
@@ -36,10 +37,11 @@ TimeoutStopSec=120
 # user ユニットでは systemd --user 自身の上限（この機体では 7.8 GiB）より上げられない。README の「memlock の扱い」。
 LimitMEMLOCK=infinity
 # RAM の安全弁。上限に当たったサービスだけがカーネルに落とされ、デスクトップは巻き込まれない。
-# TODO: 実測で決める前の仮置き。汎用版（strata.service.example）と同じ値にしてある。エキスパートは見込み 39.97 GiB
-# （stra/config.py の OFFICIAL.expert_bytes）で、全部を RAM に写す通常のモードでも汎用版の落とせない分 約 43.5 GiB を
-# 大きくは超えないと見ているが、未計測。起動して cgroup の中身（anon・shmem・kernel）と起動時間を見てから直す
-# （README の「公式版（非 abliterated）IQ3_XXS」）。
+# 値は汎用版（strata.service.example）と同じ 50G / 58G。2026-10-17 の実測で確かめた（README の「公式版」の「速さの設定」）:
+# - 2026-10-17 から、エキスパート 39.97 GiB（stra/config.py の OFFICIAL.expert_bytes）を全部 RAM に写してページロックする通常のモード
+#   （resident 版より 8〜20% 速い）。落とせない分は約 42.3 GiB: anon 41.45 + shmem 0.49 + kernel 約 0.35。残りは GGUF を読んだときの
+#   page cache で、上限まで溜まるが捨てられる（memory.peak 50.00 GiB = MemoryHigh）。起動 41 秒。
+# - resident 版（2026-10-07〜16）のときは落とせない分 約 30.2 GiB（shmem 28.4 + anon 1.6）だった。
 # MemoryMax=58G は 2026-10-09 の利用者の指示で 54G から上げた（汎用版 strata.service.example と同じ理由・同じ値）。
 MemoryHigh=50G
 MemoryMax=58G

@@ -70,7 +70,8 @@ def _service_property(service_name: str, name: str) -> str | None:
 
 
 def _service_is_active(service_name: str) -> bool:
-    """モデルの systemd user ユニット（strata / strata-coder / strata-official）が動いているか。表示するだけで操作はしない。"""
+    """モデルの systemd user ユニット（strata / strata-coder / strata-official / strata-official-iq3s / strata-swift）が
+    動いているか。表示するだけで操作はしない。"""
 
     output = _run_text(["systemctl", "--user", "is-active", service_name], timeout=10)
     return bool(output) and output.strip() in ("active", "activating", "reloading")
@@ -271,7 +272,8 @@ def _server_config(
         expert_profile=str(spec.expert_profile),
         max_context=max_context,
         mtp_dir=str(config.MTP_RT_DIR) if use_mtp else None,
-        extra_args=extra_args,
+        # モデル固有の速さの設定（spec）→ env の STRATA_EXTRA_ARGS と --extra の順。後ろが同じ引数を上書きできる
+        extra_args=[*spec.engine_extra_args, *extra_args],
         resident_experts=spec.resident_experts,
         kv_resident=spec.kv_resident,
     )
@@ -427,7 +429,8 @@ def cmd_fetch_models(args: argparse.Namespace) -> int:
 
 
 class _Parser(argparse.ArgumentParser):
-    """--port を省いたとき、--model で選んだモデルのポート（rvn 8082 / coder 8083 / official 8084）を入れる。"""
+    """--port を省いたとき、--model で選んだモデルのポート（rvn 8082 / coder 8083 / official 8084 / official-iq3s 8085 /
+    swift 8086）を入れる。"""
 
     def parse_known_args(self, args=None, namespace=None):  # type: ignore[override]
         parsed, rest = super().parse_known_args(args, namespace)
@@ -439,7 +442,8 @@ class _Parser(argparse.ArgumentParser):
 def _add_model_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--model", choices=list(config.MODELS), default=config.DEFAULT_MODEL,
-        help="対象のモデル（rvn: 汎用版 8082 / coder: コード向け版 8083 / official: 公式版（非 abliterated）8084。既定 rvn）",
+        help="対象のモデル（rvn: 汎用版 8082 / coder: コード向け版 8083 / official: 公式版（非 abliterated）8084 / "
+             "official-iq3s: 公式版の IQ3_S 8085 / swift: Swift 1.5 IQ3_XXS 8086。既定 rvn）",
     )
 
 
@@ -515,7 +519,8 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser = subparsers.add_parser("serve", help="Strata の OpenAI 互換サーバー（serve/server.py）を起動する")
     _add_model_argument(serve_parser)
     serve_parser.add_argument("--host", default=config.HOST)
-    serve_parser.add_argument("--port", type=int, default=None, help="待受ポート（既定はモデルごと。rvn 8082 / coder 8083 / official 8084）")
+    serve_parser.add_argument("--port", type=int, default=None,
+                              help="待受ポート（既定はモデルごと。rvn 8082 / coder 8083 / official 8084 / official-iq3s 8085 / swift 8086）")
     serve_parser.add_argument(
         "--max-context", type=int, default=None, help=f"コンテキスト長（既定 {config.DEFAULT_MAX_CONTEXT}、env ファイルより優先）"
     )

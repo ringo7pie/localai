@@ -194,6 +194,8 @@ def test_unit_templates_exist() -> None:
         "strata.service.example",
         "strata-coder.service.example",
         "strata-official.service.example",
+        "strata-official-iq3s.service.example",
+        "strata-swift.service.example",
     } <= names
 
 

@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import itertools
 import json
 import re
@@ -213,8 +214,9 @@ def test_server_config_uses_tool_paths() -> None:
 
 
 def test_default_context_was_widened() -> None:
-    # 65536 から始め、実測で 131072 に広げた（README の「実機試験の結果」）
-    assert config.DEFAULT_MAX_CONTEXT == 131072
+    # 65536 から始め、実測で 131072（2026-10-07）→ モデルの上限 262144（2026-10-18）に広げた（config.DEFAULT_MAX_CONTEXT の注記）
+    assert config.DEFAULT_MAX_CONTEXT == 262144
+    assert all(spec.default_max_context == 262144 for spec in config.MODELS.values())
 
 
 def test_classify_health() -> None:
@@ -355,7 +357,7 @@ def test_bench_long_prompt_varies_by_nonce() -> None:
 
 
 def test_model_specs_table() -> None:
-    assert set(config.MODELS) == {"rvn", "coder", "official"} and config.DEFAULT_MODEL == "rvn"
+    assert set(config.MODELS) == {"rvn", "coder", "official", "official-iq3s", "swift"} and config.DEFAULT_MODEL == "rvn"
     rvn, coder = config.MODELS["rvn"], config.MODELS["coder"]
     # rvn は以前からのモジュール直下の定数と同じ値（既存の呼び出し元の互換）
     assert (rvn.model_dir, rvn.native_gguf, rvn.ple_gguf, rvn.pack_dir) == (
@@ -365,7 +367,8 @@ def test_model_specs_table() -> None:
     assert (rvn.model_name, rvn.port, rvn.service_name) == (config.MODEL_NAME, 8082, "strata")
     assert (rvn.server_config, rvn.engine_log, rvn.env_file) == (config.SERVER_CONFIG, config.ENGINE_LOG, config.ENV_FILE)
     assert rvn.tokenizer_dir == config.TOKENIZER_DIR and rvn.expert_profile == config.EXPERT_PROFILE
-    assert rvn.resident_experts is True and rvn.kv_resident is None and rvn.pack_built_locally is False
+    # 2026-10-18 から KV ストリーミング（--kv-resident 65536。262144 で枠が増えて 4% 速い。config の RVN の注記）
+    assert rvn.resident_experts is True and rvn.kv_resident == 65536 and rvn.pack_built_locally is False
     # coder（依頼で決めた名前・ポート・置き場）
     assert coder.model_dir == config.MODELS_DIR / "Qwen3.8-Flash-Next-Coder-IQ1_M"
     assert (coder.model_name, coder.port, coder.service_name) == ("strata-flash-coder:IQ1_M", 8083, "strata-coder")
@@ -374,7 +377,7 @@ def test_model_specs_table() -> None:
     assert coder.server_config == config.RUN_DIR / "strata-server-coder.json"
     assert coder.service_example == TOOL_DIR / "systemd" / "strata-coder.service.example"
     assert coder.pack_built_locally is True and coder.pack_dir == coder.model_dir / "pack"
-    # 3 つのモデルは別の名前・ポート・ユニット・設定ファイル・ログ・置き場を使う（同じ engine を共有する）
+    # 5 つのモデルは別の名前・ポート・ユニット・設定ファイル・ログ・置き場を使う（同じ engine を共有する）
     for attribute in ("model_name", "port", "service_name", "server_config", "engine_log", "env_file", "model_dir",
                       "pack_dir", "service_example"):
         values = [getattr(spec, attribute) for spec in config.MODELS.values()]
@@ -383,8 +386,8 @@ def test_model_specs_table() -> None:
         assert len(spec.model_name) <= 28, spec.key
         assert spec.min_available_ram_gib > 0 and spec.recommended_memlock_bytes > 0
         assert spec.min_free_vram_mib == config.MIN_FREE_VRAM_MIB
-    # 実測で決めた Coder の起動の形: 通常のモード（全部 RAM）、KV は VRAM、131072
-    assert (coder.resident_experts, coder.kv_resident, coder.default_max_context) == (False, None, 131072)
+    # 実測で決めた Coder の起動の形: 通常のモード（全部 RAM）、KV は VRAM、文脈長はモデルの上限 262144
+    assert (coder.resident_experts, coder.kv_resident, coder.default_max_context) == (False, None, 262144)
     assert coder.min_available_ram_gib == 30
 
 
@@ -414,6 +417,7 @@ def test_coder_files_are_the_pinned_shards() -> None:
 def test_model_spec_lookup() -> None:
     assert config.model_spec("coder") is config.CODER and config.model_spec("rvn") is config.RVN
     assert config.model_spec("official") is config.OFFICIAL
+    assert config.model_spec("official-iq3s") is config.OFFICIAL_IQ3S and config.model_spec("swift") is config.SWIFT
     with pytest.raises(ValueError):
         config.model_spec("qwen")
 
@@ -434,15 +438,15 @@ def test_build_engine_args_for_split_gguf_without_resident() -> None:
     assert "--kv-resident" not in no_stream and "--resident-experts" not in no_stream
 
 
-def test_rvn_server_config_is_unchanged() -> None:
-    # 汎用版の engine の引数は Coder を足す前と同じ（README の「最終の起動引数」）
-    server_config = _server_config(131072, [], use_mtp=True)
-    assert server_config == _server_config(131072, [], True, config.RVN)
+def test_rvn_server_config_final_args() -> None:
+    # 汎用版の engine の引数（README の「最終の起動引数」）。2026-10-18 に --kv-resident 65536 と --adapt-async 1 を足した
+    server_config = _server_config(262144, [], use_mtp=True)
+    assert server_config == _server_config(262144, [], True, config.RVN)
     assert server_config["args"] == [
         "--pack", str(config.PACK_DIR), "--native", str(config.GGUF_PATH), "--ple-gguf", str(config.GGUF_PATH),
         "--expert-profile", str(config.EXPERT_PROFILE), "--expert-cache", "auto", "--prefill", "auto",
-        "--spec", "4", "--spec-min-p", "0.5", "--mtp", str(config.MTP_RT_DIR), "--max-context", "131072",
-        "--kv", "int8", "--resident-experts",
+        "--spec", "4", "--spec-min-p", "0.5", "--mtp", str(config.MTP_RT_DIR), "--max-context", "262144",
+        "--kv", "int8", "--kv-resident", "65536", "--resident-experts", "--adapt-async", "1",
     ]
     assert (server_config["model_name"], server_config["port"]) == ("strata-flash-next:IQ3_S", 8082)
     assert server_config["log"] == str(config.ENGINE_LOG) and server_config["tokenizer"] == str(config.TOKENIZER_DIR)
@@ -466,6 +470,40 @@ def test_coder_server_config() -> None:
     assert server_config["exe"] == str(config.ENGINE_EXE) and server_config["cwd"] == str(config.STRATA_DIR)
 
 
+def test_server_config_puts_model_engine_extra_args_before_env_extras() -> None:
+    # ModelSpec.engine_extra_args（モデル固有の速さの設定）は、env の STRATA_EXTRA_ARGS / serve --extra より前に置く
+    # （後ろのものが同じ引数を上書きできる）。無いモデルでは何も足さない
+    spec = dataclasses.replace(config.CODER, engine_extra_args=("--adapt-async", "1", "--kv-grow"))
+    args = _server_config(262144, ["--stats"], True, spec)["args"]
+    assert args[-4:] == ["--adapt-async", "1", "--kv-grow", "--stats"]
+    assert args[args.index("--max-context") + 1] == "262144"
+    plain = _server_config(262144, [], True, dataclasses.replace(config.CODER, engine_extra_args=()))["args"]
+    assert plain[-2:] == ["--kv", "int8"]
+    for model in config.MODELS.values():
+        assert isinstance(model.engine_extra_args, tuple), model.key
+
+
+def test_speed_settings_adopted_20261018() -> None:
+    # 2026-10-17〜18 の計測で採った速さの設定（README の「速さの設定と文脈長 262144」）
+    adopted = {
+        "rvn": (True, 65536, ("--adapt-async", "1")),
+        "coder": (False, None, ("--adapt-async", "1", "--kv-grow")),
+        "official": (False, None, ("--adapt-async", "1", "--kv-grow")),
+        "official-iq3s": (True, None, ("--adapt-async", "1")),
+        "swift": (False, None, ("--adapt-async", "1", "--kv-grow")),
+    }
+    assert set(adopted) == set(config.MODELS)
+    for key, (resident, kv_resident, extra) in adopted.items():
+        spec = config.MODELS[key]
+        assert (spec.resident_experts, spec.kv_resident, spec.engine_extra_args) == (resident, kv_resident, extra), key
+        # --kv-grow は通常モード（全エキスパートが RAM）で KV ストリーミングが無いときだけ効く（上流 docs/DETAILS.md）
+        if "--kv-grow" in extra:
+            assert spec.resident_experts is False and spec.kv_resident is None, key
+        args = _server_config(262144, [], True, spec)["args"]
+        assert args[args.index("--max-context") + 1] == "262144"
+        assert args[-len(extra):] == list(extra), key
+
+
 def test_parser_model_option() -> None:
     parser = build_parser()
     assert parser.parse_args(["serve"]).model == "rvn"
@@ -482,6 +520,12 @@ def test_parser_model_option() -> None:
     assert (official_serve.model, official_serve.port) == ("official", 8084)
     assert parser.parse_args(["wait-ready", "--model", "official"]).port == 8084
     assert parser.parse_args(["build-pack", "--model", "official"]).model == "official"
+    # 2026-10-16 に足した 2 つ（公式版 IQ3_S 8085・Swift 1.5 8086）
+    assert parser.parse_args(["serve", "--model", "official-iq3s"]).port == 8085
+    assert parser.parse_args(["wait-ready", "--model", "official-iq3s"]).port == 8085
+    assert parser.parse_args(["serve", "--model", "swift"]).port == 8086
+    assert parser.parse_args(["wait-ready", "--model", "swift"]).port == 8086
+    assert parser.parse_args(["build-pack", "--model", "swift"]).model == "swift"
     with pytest.raises(SystemExit):
         parser.parse_args(["serve", "--model", "qwen"])
 
@@ -544,7 +588,7 @@ def test_coder_service_example() -> None:
     text = config.CODER.service_example.read_text(encoding="utf-8")
     lines = text.splitlines()
     for line in (
-        "Conflicts=strata.service strata-official.service",
+        "Conflicts=strata.service strata-official.service strata-official-iq3s.service strata-swift.service",
         # 停止を起動より先にするための順序（片側だけ。汎用版の側に After=strata-coder.service は書かない）
         "After=network.target strata.service",
         "EnvironmentFile=-%h/.config/strata/strata-coder.env",
@@ -566,9 +610,9 @@ def test_coder_service_example() -> None:
     # 実測で決めた値（落とせない分 約 26.2 GiB より上。32/36 と 40/44 で差が無く、間を取った）
     assert (limits["MemoryHigh"], limits["MemoryMax"]) == (36, 40)
     assert limits["MemoryHigh"] > config.CODER.expert_bytes / GIB + 2
-    # 汎用版のユニットからも Coder と公式版を止める（systemd の側で同時に載せない）
+    # 汎用版のユニットからも Coder・公式版・公式版 IQ3_S・Swift を止める（systemd の側で同時に載せない）
     rvn_lines = config.SERVICE_EXAMPLE.read_text(encoding="utf-8").splitlines()
-    assert "Conflicts=strata-coder.service strata-official.service" in rvn_lines
+    assert "Conflicts=strata-coder.service strata-official.service strata-official-iq3s.service strata-swift.service" in rvn_lines
     assert not any(line.startswith("After=") and "strata-coder" in line for line in rvn_lines)
 
 
@@ -576,7 +620,7 @@ def _setup_model_cases(text: str) -> dict[str, list[str]]:
     """setup-server.sh のモデルごとの case（2 字下げの `rvn)` から `;;` まで）の行。引数の case（`--model)` など）は拾わない。"""
 
     blocks: dict[str, list[str]] = {}
-    for match in re.finditer(r"^  ([a-z]+)\)\n(.*?)^    ;;", text, flags=re.MULTILINE | re.DOTALL):
+    for match in re.finditer(r"^  ([a-z][a-z0-9-]*)\)\n(.*?)^    ;;", text, flags=re.MULTILINE | re.DOTALL):
         blocks[match.group(1)] = [line.strip() for line in match.group(2).splitlines()]
     return blocks
 
@@ -712,10 +756,12 @@ def test_official_spec_values() -> None:
     assert official.engine_log == config.LOGS_DIR / "strata-official-engine.log"
     assert official.service_example == TOOL_DIR / "systemd" / "strata-official.service.example"
     assert "公式" in official.title and "IQ3_XXS" in official.title
-    # 実測で決める前の仮置きは RVN と同じ値（実測で直したら、この試験も直す）
+    # 2026-10-17 の実測で通常のモードにした（resident 版より 8〜20% 速い。config の OFFICIAL の注記）。KV は VRAM（RVN は
+    # KV ストリーミング）。doctor の RAM の目安は落とせない分 約 42.3 GiB + 4 GiB の 46（RVN は 50）
     rvn = config.RVN
-    for attribute in ("resident_experts", "kv_resident", "default_max_context", "min_available_ram_gib",
-                      "recommended_memlock_bytes", "min_free_vram_mib"):
+    assert official.resident_experts is False and rvn.resident_experts is True
+    assert official.kv_resident is None and official.min_available_ram_gib == 46
+    for attribute in ("default_max_context", "recommended_memlock_bytes", "min_free_vram_mib"):
         assert getattr(official, attribute) == getattr(rvn, attribute), attribute
     # #728 の回復は RVN と同じ。思考の予算は RVN より大きい 65536（収束に 32,768 を超える thinking が要った実測）。
     # sampling の既定は入れない
@@ -765,13 +811,13 @@ def _unit_names(text: str, key: str) -> set[str]:
 
 def test_service_examples_conflict_with_each_other() -> None:
     units = {spec.service_name: spec.service_example.read_text(encoding="utf-8") for spec in config.MODELS.values()}
-    assert set(units) == {"strata", "strata-coder", "strata-official"}
+    assert set(units) == {"strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift"}
     model_units = {f"{name}.service" for name in units}
-    # どのユニットの Conflicts= も、ほかの 2 つをちょうど指す（同時に載せない）
+    # どのユニットの Conflicts= も、ほかの 4 つをちょうど指す（同時に載せない）
     for name, text in units.items():
         assert _unit_names(text, "Conflicts") == model_units - {f"{name}.service"}, name
     # 停止を起動より先にする順序: どの 2 つの間にも After= がちょうど片側だけにあり、輪にならない一方向
-    # （strata → strata-coder → strata-official）
+    # （strata → strata-coder → strata-official → strata-official-iq3s → strata-swift）
     after = {name: _unit_names(text, "After") & model_units for name, text in units.items()}
     for first, second in itertools.combinations(units, 2):
         assert (f"{second}.service" in after[first]) != (f"{first}.service" in after[second]), (first, second)
@@ -779,6 +825,8 @@ def test_service_examples_conflict_with_each_other() -> None:
         "strata": set(),
         "strata-coder": {"strata.service"},
         "strata-official": {"strata.service", "strata-coder.service"},
+        "strata-official-iq3s": {"strata.service", "strata-coder.service", "strata-official.service"},
+        "strata-swift": {"strata.service", "strata-coder.service", "strata-official.service", "strata-official-iq3s.service"},
     }
     # どれも自動起動の依存で互いを引き込まない
     for name, text in units.items():
@@ -789,7 +837,7 @@ def test_official_service_example() -> None:
     text = config.OFFICIAL.service_example.read_text(encoding="utf-8")
     lines = text.splitlines()
     for line in (
-        "Conflicts=strata.service strata-coder.service",
+        "Conflicts=strata.service strata-coder.service strata-official-iq3s.service strata-swift.service",
         "After=network.target strata.service strata-coder.service",
         "EnvironmentFile=-%h/.config/strata/strata-official.env",
         "ExecStart=@REPO_ROOT@/tools/strata/run-strata serve --model official",
@@ -810,6 +858,143 @@ def test_official_service_example() -> None:
     assert (limits["MemoryHigh"], limits["MemoryMax"]) == (50, 58)
     assert config.OFFICIAL.expert_bytes / GIB + 2 < limits["MemoryHigh"] < limits["MemoryMax"] <= 58
     match = re.search(r"wait-ready --model official --timeout (\d+)", text)
+    assert match and int(match.group(1)) < 900
+
+
+# ---------------------------------------------------------------- 公式版 IQ3_S と Swift 1.5（2026-10-16 に追加）
+
+
+def _unit_limits(text: str) -> dict[str, int]:
+    limits = {}
+    for line in text.splitlines():
+        match = re.fullmatch(r"(MemoryHigh|MemoryMax)=(\d+)G", line)
+        if match:
+            limits[match.group(1)] = int(match.group(2))
+    return limits
+
+
+def test_official_iq3s_files_are_the_pinned_shards() -> None:
+    spec = config.OFFICIAL_IQ3S
+    # 公式版（IQ3_XXS）と同じリポジトリ・同じ固定リビジョン
+    assert (spec.repo, spec.revision) == (config.OFFICIAL.repo, config.OFFICIAL.revision)
+    assert spec.model_dir == config.MODELS_DIR / "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S"
+    names = [path for path, _size, _sha in spec.files]
+    assert names == ["README.md", "IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
+                     "IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"]
+    for path, size, sha256 in spec.files:
+        assert size > 0 and re.fullmatch(r"[0-9a-f]{64}", sha256), path
+    by_name = {path: (size, sha256) for path, size, sha256 in spec.files}
+    # README と shard 2 は公式版と同じファイル（shard 2 はハードリンクで置く）。shard 1 だけが IQ3_S のもの
+    official_by_name = {path: (size, sha256) for path, size, sha256 in config.OFFICIAL.files}
+    assert by_name["README.md"] == official_by_name["README.md"]
+    assert by_name[names[2]] == official_by_name[config.OFFICIAL_SHARD2]
+    assert by_name[names[1]] == (54817524224, "4c1eb2ceb4915e1192f4f386021897bde56a97f40a0bb78bb86465e0f7d2aca3")
+    assert spec.native_gguf == spec.model_dir / names[1] and spec.ple_gguf == spec.model_dir / names[2]
+    assert spec.pack_built_locally is True and spec.pack_dir == spec.model_dir / "pack"
+    assert spec.expert_profile == config.EXPERT_PROFILE
+    # 仮置き（上流コミュニティの実測の experts.bin の大きさ）。pack を作ったら native_experts.txt の total と照合する
+    assert spec.expert_bytes == 50292326400
+    if (spec.pack_dir / "native_experts.txt").is_file():
+        header = checks.parse_native_experts_header((spec.pack_dir / "native_experts.txt").read_text(encoding="utf-8"))
+        assert header == (512, spec.expert_bytes)
+
+
+def test_official_iq3s_spec_values_and_server_config() -> None:
+    spec = config.OFFICIAL_IQ3S
+    assert (spec.key, spec.model_name, spec.port, spec.service_name) == (
+        "official-iq3s", "strata-official:IQ3_S", 8085, "strata-official-iq3s",
+    )
+    assert spec.env_file == Path.home() / ".config" / "strata" / "strata-official-iq3s.env"
+    assert spec.server_config == config.RUN_DIR / "strata-server-official-iq3s.json"
+    assert spec.engine_log == config.LOGS_DIR / "strata-official-iq3s-engine.log"
+    assert spec.service_example == TOOL_DIR / "systemd" / "strata-official-iq3s.service.example"
+    assert "IQ3_S" in spec.title and "公式" in spec.title
+    # エキスパート 46.84 GiB は通常のモード（+10 GB）では収まらないので、RVN と同じ resident 版。ほかは公式版と同じ
+    assert spec.resident_experts is True and spec.kv_resident is None
+    for attribute in ("default_max_context", "min_available_ram_gib", "recommended_memlock_bytes", "min_free_vram_mib",
+                      "default_reasoning_budget_tokens"):
+        assert getattr(spec, attribute) == getattr(config.OFFICIAL, attribute), attribute
+    assert dict(spec.server_options) == {"reasoning_loop_recovery": "recover"}
+    server_config = _server_config(131072, [], True, spec)
+    pairs = dict(zip(server_config["args"][::2], server_config["args"][1::2]))
+    assert pairs["--native"] == str(spec.native_gguf) and pairs["--ple-gguf"] == str(spec.ple_gguf)
+    assert "--resident-experts" in server_config["args"] and "--kv-resident" not in server_config["args"]
+    assert (server_config["model_name"], server_config["port"]) == ("strata-official:IQ3_S", 8085)
+    assert server_config["reasoning_budget_tokens"] == 65536 and server_config["reasoning_loop_recovery"] == "recover"
+
+
+def test_swift_files_are_the_pinned_shards() -> None:
+    spec = config.SWIFT
+    assert spec.repo == "ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF"
+    assert spec.revision == "99bb8f7f95c7aa7b24a36a7786a4f657b30f5d3d"
+    assert spec.model_dir == config.MODELS_DIR / "Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS"
+    names = [path for path, _size, _sha in spec.files]
+    # HF のリポジトリはルート直下に GGUF を置く。ライセンスの 3 ファイルも取る（Swift Open License v1.0 と元の Qwen のもの）
+    assert names == ["README.md", "LICENSE", "LICENSE-QWEN", "NOTICE",
+                     "Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+                     "Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf"]
+    for path, size, sha256 in spec.files:
+        assert size > 0 and re.fullmatch(r"[0-9a-f]{64}", sha256), path
+    assert not any("mmproj" in name or "IQ3_S" in name or "IQ2_XS" in name or "Q2_0" in name for name in names)
+    by_name = {path: (size, sha256) for path, size, sha256 in spec.files}
+    assert by_name[names[4]] == (39785790560, "3bddaa667c750f63baca766df9433e1afd35a139f401c5ca5e7ff560ceff3d23")
+    assert by_name[names[5]] == (36180282560, "b0b15f782af71eb471909d2f3313b2927c324962f86c084325c247cd411a0160")
+    # shard 2 は元の Qwen の shard 2（PLE の表）とは別物。--native と --ple-gguf はどちらも shard 1（表は shard 1 にある）
+    assert by_name[names[5]] != (config.OFFICIAL.files[2][1], config.OFFICIAL.files[2][2])
+    assert spec.native_gguf == spec.model_dir / names[4] and spec.ple_gguf == spec.native_gguf
+    assert spec.pack_built_locally is True and spec.pack_dir == spec.model_dir / "pack"
+    assert spec.expert_profile == config.EXPERT_PROFILE
+    # 仮置き（公式版 IQ3_XXS と同じ allocation profile）。pack を作ったら native_experts.txt の total と照合する
+    assert spec.expert_bytes == config.OFFICIAL.expert_bytes
+    if (spec.pack_dir / "native_experts.txt").is_file():
+        header = checks.parse_native_experts_header((spec.pack_dir / "native_experts.txt").read_text(encoding="utf-8"))
+        assert header == (512, spec.expert_bytes)
+
+
+def test_swift_spec_values_and_server_config() -> None:
+    spec = config.SWIFT
+    assert (spec.key, spec.model_name, spec.port, spec.service_name) == ("swift", "strata-swift:IQ3_XXS", 8086, "strata-swift")
+    assert spec.env_file == Path.home() / ".config" / "strata" / "strata-swift.env"
+    assert spec.server_config == config.RUN_DIR / "strata-server-swift.json"
+    assert spec.engine_log == config.LOGS_DIR / "strata-swift-engine.log"
+    assert spec.service_example == TOOL_DIR / "systemd" / "strata-swift.service.example"
+    assert "Swift 1.5" in spec.title and "IQ3_XXS" in spec.title
+    # 公式版（IQ3_XXS）と同じ量子化・同じ大きさ・同じ通常モード（2026-10-18 の実測で resident 版より 8〜12% 速い。config の SWIFT の注記）
+    assert spec.resident_experts is False
+    for attribute in ("kv_resident", "default_max_context", "min_available_ram_gib",
+                      "recommended_memlock_bytes", "min_free_vram_mib", "default_reasoning_budget_tokens"):
+        assert getattr(spec, attribute) == getattr(config.OFFICIAL, attribute), attribute
+    assert dict(spec.server_options) == {"reasoning_loop_recovery": "recover"}
+    server_config = _server_config(131072, [], True, spec)
+    pairs = dict(zip(server_config["args"][::2], server_config["args"][1::2]))
+    assert pairs["--native"] == pairs["--ple-gguf"] == str(spec.native_gguf)
+    assert pairs["--expert-profile"] == str(config.EXPERT_PROFILE) and pairs["--mtp"] == str(config.MTP_RT_DIR)
+    assert (server_config["model_name"], server_config["port"]) == ("strata-swift:IQ3_XXS", 8086)
+    assert server_config["reasoning_budget_tokens"] == 65536 and server_config["reasoning_loop_recovery"] == "recover"
+    assert json.loads(json.dumps(server_config, ensure_ascii=False)) == server_config
+
+
+@pytest.mark.parametrize("key", ["official-iq3s", "swift"])
+def test_new_service_examples(key: str) -> None:
+    spec = config.MODELS[key]
+    text = spec.service_example.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    for line in (
+        f"EnvironmentFile=-%h/.config/strata/{spec.env_file.name}",
+        f"ExecStart=@REPO_ROOT@/tools/strata/run-strata serve --model {key}",
+        f"ExecStartPost=@REPO_ROOT@/tools/strata/run-strata wait-ready --model {key} --timeout 880",
+        "Restart=on-failure",
+        "TimeoutStartSec=900",
+        "LimitMEMLOCK=infinity",
+        "WantedBy=default.target",
+    ):
+        assert line in lines, line
+    assert f"port {spec.port}" in lines[1]
+    # 実測で決める前の仮置き（汎用版・公式版と同じ 50 / 58）。見込みのエキスパートより上
+    limits = _unit_limits(text)
+    assert (limits["MemoryHigh"], limits["MemoryMax"]) == (50, 58)
+    assert spec.expert_bytes / GIB + 2 < limits["MemoryHigh"] < limits["MemoryMax"] <= 58
+    match = re.search(rf"wait-ready --model {key} --timeout (\d+)", text)
     assert match and int(match.group(1)) < 900
 
 

@@ -1,12 +1,14 @@
 [Unit]
 Description=Strata (Qwen3.8-Flash-Next Coder IQ1_M, OpenAI-compatible API, port 8083)
 # 汎用版（strata.service）と同じ engine で動くコード向け版。RAM と VRAM を取り合うので同時には載せない。
-# Conflicts= により、こちらを start すると systemd が strata.service と strata-official.service を止める（逆も同じ）。
-Conflicts=strata.service strata-official.service
+# Conflicts= により、こちらを start すると systemd が strata.service・strata-official.service・strata-official-iq3s.service・
+# strata-swift.service を止める（逆も同じ）。
+Conflicts=strata.service strata-official.service strata-official-iq3s.service strata-swift.service
 # Conflicts= だけでは止める順番が決まらない。2 つの間に順序の関係（After= か Before= のどちらか一方）があれば、
 # systemd は停止の job を起動の job より先に行う（systemd.unit の Conflicts=）。汎用版の側には書かない
 # （両方に After= を書くと順序が輪になる）。これで、どちらを start しても、もう一方が RAM を返してから読み込む。
-# 公式版（strata-official.service）との順序は、公式版の側の After=strata-coder.service で決まる（こちらには書かない）。
+# 公式版（strata-official.service）・公式版 IQ3_S・Swift 1.5 との順序は、それぞれの側の After=strata-coder.service で決まる
+# （こちらには書かない。鎖は strata → strata-coder → strata-official → strata-official-iq3s → strata-swift）。
 # Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。起動前に Ollama のモデルを降ろすこと
 # （エキスパートのキャッシュは起動時の空き VRAM で決まる）。ComfyUI / Hunyuan3D / Pixal3D とも RAM と VRAM を取り合う。
 After=network.target strata.service

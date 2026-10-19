@@ -1,0 +1,5 @@
+# qwen3.8-flash-next:IQ4_XS の文脈長の上限（2026-10-18）。重み（エキスパート 92 GB）は A30 に載らず CPU に置かれる。
+# GPU に載る dense の部分と KV キャッシュ（q8_0）が収まる最大。当て方: ollama create qwen3.8-flash-next:IQ4_XS -f この file。
+# 根拠と実測は tools/qwen-model-bench/README.md の「文脈長の上限」。
+FROM qwen3.8-flash-next:IQ4_XS
+PARAMETER num_ctx 131072

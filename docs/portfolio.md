@@ -25,7 +25,7 @@
 
 | 判断 | 何を比べたか・何が分かったか | 根拠 |
 |---|---|---|
-| GPU の排他を **入口ページと systemd の 2 層**に置く | 画面からの起動と `systemctl` を直に叩く操作の両方で取り合いを防ぐ。Strata 3 種は `Conflicts=`（`After=` は一方向のみ。両側に書くと順序が輪になる） | [architecture.md](architecture.md)・`tools/portal/portal.py` |
+| GPU の排他を **入口ページと systemd の 2 層**に置く | 画面からの起動と `systemctl` を直に叩く操作の両方で取り合いを防ぐ。Strata 5 種は `Conflicts=`（`After=` は一方向の鎖のみ。両側に書くと順序が輪になる） | [architecture.md](architecture.md)・`tools/portal/portal.py` |
 | 重いサービスは `enable` しない | PC の自動起動は入口ページだけ。RAM の枯渇でデスクトップがハングした実例から | `knowledge/10-silver/areas/web-services.md` |
 | メモリ上限は「**物理の残りより小さく**」 | `MemoryMax` を物理的な残りより大きくしても歯止めにならず、`systemd-oomd` が GNOME Shell ごと落とす。上限の意味は「そのサービスだけを殺してデスクトップを守る」こと | `knowledge/10-silver/resources/service-memory-limits.md` |
 | 起動の完了を「**ポートが開いたか**」で判定 | systemd が `active` でも、モデルの読み込み中はポートが閉じている。冷えた状態の Pixal3D の起動は 250 秒（温まった状態は約 80 秒） | `knowledge/10-silver/resources/gpu-exclusive-switching.md` |

@@ -10,15 +10,15 @@
     POST /api/service/<key>/<action>          Open WebUI・Strata（汎用版・Coder 版・公式版）・Hunyuan3D・Pixal3D・ComfyUI の
                                                起動 (start) / 停止 (stop)。
                                                GET では 405。未導入の key・action 以外は 404/400。
-                                               Hunyuan3D・Pixal3D・ComfyUI・Strata（3 つとも）は GPU を同時に使えない
+                                               Hunyuan3D・Pixal3D・ComfyUI・Strata（5 つとも）は GPU を同時に使えない
                                                ため、どれかの起動時に他が動いていれば自動で止めてから起動する。
-                                               Strata（3 つとも）の起動前には Ollama に載っているモデルも降ろし、
+                                               Strata（5 つとも）の起動前には Ollama に載っているモデルも降ろし、
                                                応答の JSON に "unloaded_models" として入れる。
     POST /api/option/<key>/low-vram/<on|off>  低 VRAM モードの切り替え（Hunyuan3D・Pixal3D のみ）。
                                                稼働中・起動中は 409（systemd の EnvironmentFile は
                                                起動時にしか読まれないため）。GET では 405。
     POST /api/memory/<key>/<high_gib>/<max_gib>  systemd のメモリ上限（MemoryHigh / MemoryMax）を
-                                               GiB 単位の整数で設定する（Open WebUI・Strata（3 つ）・
+                                               GiB 単位の整数で設定する（Open WebUI・Strata（5 つ）・
                                                Hunyuan3D・Pixal3D・ComfyUI のみ。portal は 404）。稼働中でも再起動なしで
                                                即座に効く。GET では 405。
 
@@ -82,8 +82,8 @@ MEMORY_RECOMMENDED_MARGIN_GIB = 14
 SERVICES = [
     {"key": "open-webui", "name": "Open WebUI", "port": 8081, "unit": "open-webui"},
     # Strata は推論エンジン（OpenAI 互換 API）。チャット系なので Open WebUI の次に並べる。
-    # 同じエンジンで動くモデルが 3 つあり、汎用版（strata）・コード向け（strata-coder）・公式量子化版（strata-official）を
-    # 別のサービスとして持つ。
+    # 同じエンジンで動くモデルが 5 つあり、汎用版（strata）・コード向け（strata-coder）・公式量子化版（strata-official）・
+    # 公式版の軽い量子化（strata-official-iq3s）・Swift 1.5（strata-swift）を別のサービスとして持つ。
     # どちらも低 VRAM のスイッチは持たない（options 無し）。GPU の排他グループに入り、起動前に
     # Ollama のモデルを降ろす（GPU_EXCLUSIVE_KEYS・OLLAMA_UNLOAD_BEFORE_START_KEYS）。
     # 汎用版は 125B の MoE のエキスパートを RAM に置く（約 50 GiB 以上）。既定の 44 / 48 GiB では足りず
@@ -107,13 +107,34 @@ SERVICES = [
     },
     # 公式版は汎用版と同じ Qwen3.8-Flash-Next（512 エキスパートのまま）の ISTA-DASLab 公式量子化（GSQ-RCO）IQ3_XXS で、
     # abliterated ではない（汎用版は abliterated の RVN 版 IQ3_S）。数学などで汎用版と答えを比べる用。
-    # memory_default は汎用版 strata と同じ 50 / 54 GiB。2026-10-07 に MemoryHigh 50G / MemoryMax 54G のまま動かして実測した
-    # （cgroup の memory.peak 50.00 GiB = MemoryHigh、落とせない分 約 30.2 GiB）ので、値は変えていない。根拠は tools/strata/README.md。
+    # memory_default は汎用版 strata と同じ 50 / 54 GiB。2026-10-17 の実測で、エキスパートを全部 RAM に写す通常のモード
+    # （resident 版より 8〜20% 速い）に変えた。落とせない分は約 42.3 GiB（anon 41.45 + shmem 0.49 + kernel）で 50 GiB に収まる
+    # （memory.peak 50.00 GiB = MemoryHigh。resident 版のときは約 30.2 GiB）ので、値は変えていない。根拠は tools/strata/README.md。
     {
         "key": "strata-official",
         "name": "Strata 公式版（IQ3_XXS）",
         "port": 8084,
         "unit": "strata-official",
+        "memory_default": {"high_gib": 50, "max_gib": 54},
+    },
+    # 公式版の軽い量子化 IQ3_S（同じ公式モデル・同じ配布元。Q8_0 との KL が 0.202 → 0.144）。2026-10-16 に、AI モデル評価で Strata の
+    # 思考が終わらない症状に量子化の側から当たるために足した。エキスパート 46.84 GiB は RVN と同じ resident 版で動かすので、
+    # memory_default は汎用版と同じ 50 / 54 GiB（2026-10-17 の実測で、落とせない分 約 38.2 GiB に余裕があり、このまま。根拠は tools/strata/README.md）。
+    {
+        "key": "strata-official-iq3s",
+        "name": "Strata 公式版 IQ3_S（軽い量子化）",
+        "port": 8085,
+        "unit": "strata-official-iq3s",
+        "memory_default": {"high_gib": 50, "max_gib": 54},
+    },
+    # Swift 1.5（UkisAI が Qwen3.8-Flash-Next を思考が短く終わるように post-training した派生、IQ3_XXS。非 abliterated）。
+    # 同じ IQ3_XXS の割り当てなので memory_default は公式版と同じ 50 / 54 GiB。2026-10-18 から公式版と同じ通常のモード（落とせない分 約 42.3 GiB。
+    # resident 版だった 10-16〜17 は約 30.7 GiB）で、50 GiB に収まる。根拠は tools/strata/README.md の「速さの設定と文脈長 262144」。
+    {
+        "key": "strata-swift",
+        "name": "Strata Swift 1.5（IQ3_XXS）",
+        "port": 8086,
+        "unit": "strata-swift",
         "memory_default": {"high_gib": 50, "max_gib": 54},
     },
     {
@@ -152,14 +173,16 @@ SERVICES_BY_KEY = {service["key"]: service for service in SERVICES}
 # 3D 生成で GPU を大きく使うので、Hunyuan3D・Pixal3D と同じグループに入れる。Strata の汎用版は VRAM を約 20GB 以上、
 # RAM を約 50GB 以上、Coder 版は VRAM を大きく・RAM を約 32GB 級、公式版は汎用版と同じ程度（2026-10-07 の実測で、
 # RAM は memory.peak 50 GiB、VRAM は生成中 23,899 MiB）使うので、
-# これらとは同時に動かせない（Strata の 3 つどうしも同時には動かせない。6 つのうち同時に動くのは 1 つだけ）。
-GPU_EXCLUSIVE_KEYS = ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official")
+# これらとは同時に動かせない（Strata の 5 つどうしも同時には動かせない。8 つのうち同時に動くのは 1 つだけ）。
+# 公式版 IQ3_S（strata-official-iq3s）・Swift 1.5（strata-swift）は 2026-10-16 に足した（RAM・VRAM の使い方は汎用版・公式版と同じ程度）。
+GPU_EXCLUSIVE_KEYS = ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official",
+                      "strata-official-iq3s", "strata-swift")
 
-# 起動する前に、Ollama に載っているモデルを VRAM から降ろすサービス。Strata（汎用版・Coder 版・公式版とも）は
+# 起動する前に、Ollama に載っているモデルを VRAM から降ろすサービス。Strata（汎用版・Coder 版・公式版・公式版 IQ3_S・Swift 1.5 とも）は
 # VRAM を大きく使い、Qwen（実測 22 GiB）と同居できない。Hunyuan3D は、当て物 0001 を当てた環境では生成の直前に
 # 自分で降ろす（当て物は公開版に含まない。knowledge の hunyuan3d.md）。
 # Pixal3D・ComfyUI は、これまでの動作（画面の警告で利用者が降ろす）を変えないため対象にしない。
-OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official")
+OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift")
 
 # POST /api/service/<key>/<action> で許可する action と、それぞれの操作の性質。
 ALLOWED_ACTIONS = ("start", "stop")
@@ -1118,7 +1141,7 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
 
         stopped_keys: list[str] = []
         if action == "start" and key in GPU_EXCLUSIVE_KEYS:
-            # Hunyuan3D・Pixal3D・ComfyUI・Strata（3 つ）は GPU を排他的に使う。起動する前に、同じグループで
+            # Hunyuan3D・Pixal3D・ComfyUI・Strata（5 つ）は GPU を排他的に使う。起動する前に、同じグループで
             # 動いている（running / starting）他サービスを止める。
             states = {
                 exclusive_key: self._current_service_state(SERVICES_BY_KEY[exclusive_key])
@@ -1255,7 +1278,7 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"ok": False, "message": "そのサービスは存在しません。"})
             return
 
-        # ユニットがまだ無い間（Strata の 3 つ・ComfyUI を導入する前など）は set-property の宛先が無い。
+        # ユニットがまだ無い間（Strata の 5 つ・ComfyUI を導入する前など）は set-property の宛先が無い。
         if self._current_service_state(service) == "not_installed":
             self._send_json(
                 409,

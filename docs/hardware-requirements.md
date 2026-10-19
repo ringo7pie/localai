@@ -19,7 +19,7 @@
 |---|---|---|---|---|---|
 | portal・status・model-eval・gpu-watch-gui | 不要 | — | わずか | 小 | — |
 | Ollama + Qwen3.8-27B（Q4_K_M） | 要 | 22 GiB（コンテキスト 65,536） | 通常 | 17 GB | 同梱（cuda_v13） |
-| Strata（3 種のどれか 1 つ） | 要 | 空きをエキスパートのキャッシュに使う | **64 GB 級**（エキスパート 53.3 GiB。resident モードで 40.56 GiB を RAM に固定） | 約 100 GB（モデル 約 89 GB + MTP 約 5 GB） | 13.2（engine を sm_80 でビルド） |
+| Strata（5 種のどれか 1 つ） | 要 | 空きをエキスパートのキャッシュに使う | **64 GB 級**（汎用版はエキスパート 53.3 GiB。resident モードで 40.56 GiB を RAM に固定） | 約 100 GB（汎用版のモデル 約 89 GB + MTP 約 5 GB。公式版 IQ3_XXS +47 GB、公式版 IQ3_S +55 GB、Swift 1.5 +76 GB、Coder +58 GB） | 13.2（engine を sm_80 でビルド） |
 | Pixal3D | 要 | 低 VRAM モードあり | 大（低 VRAM モードは重みを CPU 側に置く） | 約 30 GB | 12.6 |
 | Hunyuan3D | 要 | 低 VRAM モードあり | 大 | 約 23 GB（形状のみなら約 5 GB） | 13.2 |
 | ComfyUI + 防水メッシュ | 要 | — | WTiVo の処理で最大約 40 GiB | 重み 約 16 GB + torch | 12.6（WTiVo のビルド） |

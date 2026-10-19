@@ -39,9 +39,9 @@ else
 fi
 
 # サービスの一覧。key はそのまま systemd の user unit 名と portal の API の key になる。
-SERVICE_KEYS=(portal open-webui strata strata-coder strata-official pixal3d hunyuan3d comfyui)
+SERVICE_KEYS=(portal open-webui strata strata-coder strata-official strata-official-iq3s strata-swift pixal3d hunyuan3d comfyui)
 # 起動前に ollama のモデルと他の GPU サービスを降ろす必要があるもの（tools/portal/portal.py の GPU_EXCLUSIVE_KEYS）。
-GPU_SERVICE_KEYS=(strata strata-coder strata-official pixal3d hunyuan3d comfyui)
+GPU_SERVICE_KEYS=(strata strata-coder strata-official strata-official-iq3s strata-swift pixal3d hunyuan3d comfyui)
 
 usage() {
   cat <<EOF
@@ -153,6 +153,8 @@ service_port() {
     strata) echo 8082 ;;
     strata-coder) echo 8083 ;;
     strata-official) echo 8084 ;;
+    strata-official-iq3s) echo 8085 ;;
+    strata-swift) echo 8086 ;;
     hunyuan3d) echo 7860 ;;
     pixal3d) echo 7861 ;;
     comfyui) echo 8188 ;;
@@ -167,6 +169,8 @@ install_hint() {
     strata) echo "./localai install strata" ;;
     strata-coder) echo "./localai install strata --model coder" ;;
     strata-official) echo "./localai install strata --model official" ;;
+    strata-official-iq3s) echo "./localai install strata --model official-iq3s" ;;
+    strata-swift) echo "./localai install strata --model swift" ;;
     pixal3d | comfyui | hunyuan3d) echo "./localai install $1" ;;
     open-webui) echo "Open WebUI はこのリポジトリの外にある。systemd の user unit open-webui.service を用意する（tools/portal/README.md）" ;;
     *) echo "./localai install" ;;
@@ -495,7 +499,7 @@ port_belongs_to_unit() {
 check_ports() {
   local entry port unit owner
   for entry in 8080:portal 8081:open-webui 8082:strata 8083:strata-coder 8084:strata-official \
-    7860:hunyuan3d 7861:pixal3d 8188:comfyui 11434:ollama
+    8085:strata-official-iq3s 8086:strata-swift 7860:hunyuan3d 7861:pixal3d 8188:comfyui 11434:ollama
   do
     port="${entry%%:*}"
     unit="${entry#*:}"
@@ -555,8 +559,8 @@ print_install_list() {
   portal       入口ページ（既定 8080）。Open WebUI などの起動・停止と GPU の排他を 1 画面で行う
                8080 を別のものが使っていれば --port N で別ポートに置く（Open WebUI を 8081 へ
                移したいときだけ --move-open-webui。Open WebUI の user unit が先に要る）
-  strata       MoE の CPU-GPU 分担推論（8082〜8084）。約 100 GB を取得する
-               --model rvn（既定）| coder | official で版を選ぶ
+  strata       MoE の CPU-GPU 分担推論（8082〜8086）。約 100 GB を取得する
+               --model rvn（既定）| coder | official | official-iq3s | swift で版を選ぶ
   pixal3d      複数画像 → 3D メッシュ（7861）。約 30 GB。CUDA 12.6
   comfyui      ComfyUI と防水メッシュのワークフロー（8188）。約 16 GB。CUDA 12.6
   hunyuan3d    4 画像 → 3D メッシュ（7860）。約 23 GB。CUDA 13.2
@@ -584,12 +588,16 @@ Ollama の導入（公式の手順。このコマンドは何も実行しない�
   2. 主モデルを取得する（約 17 GB）:
        ollama pull ${OLLAMA_MODEL}
 
-  3. A30（VRAM 24 GiB）ではコンテキスト長 65536 が上限（81920 で KV キャッシュが CPU に溢れる）。
+  3. KV キャッシュを q8_0 にし、サーバー既定のコンテキスト長を 65536 にする。
      /etc/systemd/system/ollama.service.d/override.conf に
        [Service]
        Environment="OLLAMA_CONTEXT_LENGTH=65536"
-     を書き、sudo systemctl daemon-reload && sudo systemctl restart ollama を実行する
-     （根拠: knowledge/10-silver/areas/env.md）。
+       Environment="OLLAMA_FLASH_ATTENTION=1"
+       Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
+     を書き、sudo systemctl daemon-reload && sudo systemctl restart ollama を実行する。
+     モデルごとの上限（A30 に全部載る最大。27b 114688、gemma4:31b-it-qat 65536、gemma4:e4b と IQ4_XS 131072）は
+     tools/qwen-model-bench/modelfiles/*.Modelfile を ollama create で当てる
+     （根拠: knowledge/10-silver/areas/env.md、tools/qwen-model-bench/README.md の「文脈長の上限」）。
 
   4. 確認:
        ./localai doctor

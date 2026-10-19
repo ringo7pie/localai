@@ -1,0 +1,4 @@
+# gemma4:e4b の文脈長の上限（2026-10-18）。モデルの上限 131072 がそのまま A30 に載る。
+# 当て方: ollama create gemma4:e4b -f この file。根拠と実測は tools/qwen-model-bench/README.md の「文脈長の上限」。
+FROM gemma4:e4b
+PARAMETER num_ctx 131072

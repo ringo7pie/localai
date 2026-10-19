@@ -1,9 +1,10 @@
 [Unit]
 Description=Strata (RVN-Qwen3.8-Flash-Next IQ3_S, OpenAI-compatible API, port 8082)
-# コード向け版（strata-coder.service）・公式版（strata-official.service）と同じ engine で動き、RAM と VRAM を
-# 取り合うので同時には載せない。Conflicts= により、こちらを start すると systemd がほかの 2 つを止める（逆も同じ）。
-# 止める順番を決める After= は、ほかの 2 つの側にだけ書く（こちらにも書くと順序が輪になる）。
-Conflicts=strata-coder.service strata-official.service
+# コード向け版（strata-coder.service）・公式版（strata-official.service）・公式版 IQ3_S（strata-official-iq3s.service）・
+# Swift 1.5（strata-swift.service）と同じ engine で動き、RAM と VRAM を取り合うので同時には載せない。Conflicts= により、
+# こちらを start すると systemd がほかの 4 つを止める（逆も同じ）。
+# 止める順番を決める After= は、ほかの 4 つの側にだけ書く（こちらにも書くと順序が輪になる）。
+Conflicts=strata-coder.service strata-official.service strata-official-iq3s.service strata-swift.service
 # Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。起動前に Ollama のモデルを降ろすこと
 # （エキスパートのキャッシュは起動時の空き VRAM で決まる）。ComfyUI / Hunyuan3D / Pixal3D とも RAM と VRAM を取り合う。
 After=network.target

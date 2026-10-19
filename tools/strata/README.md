@@ -7,7 +7,10 @@
 同じ engine で、コード向け版の [Qwen3.8-Flash-Next Coder IQ1_M](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF)
 も動かせる（ポート 8083、unit `strata-coder`。下の「コード向け版（Coder）」）。
 abliteration をしていない公式の [Qwen3.8-Flash-Next IQ3_XXS](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF)
-も足した（ポート 8084、unit `strata-official`。下の「公式版（非 abliterated）IQ3_XXS」）。3 つは同時には載せない。
+も足した（ポート 8084、unit `strata-official`。下の「公式版（非 abliterated）IQ3_XXS」）。
+2026-10-16 に、同じ公式モデルの軽い量子化 IQ3_S（ポート 8085、unit `strata-official-iq3s`。下の「公式版 IQ3_S」）と、思考を短く終える
+fine-tune の [Swift 1.5](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF) IQ3_XXS（ポート 8086、unit `strata-swift`。
+下の「Swift 1.5」）を足した。5 つは同時には載せない。
 
 上流の `./setup.sh` → `setup.py` は対話式で、足りないものを `sudo apt` / `pip` で入れ、Linux では engine を
 その場でコンパイルする（Linux 用のビルド済み engine は無い。v0.1.44.1 のリリース資産も Windows 用の 3 つだけ。2026-10-16 確認）。
@@ -18,11 +21,15 @@ abliteration をしていない公式の [Qwen3.8-Flash-Next IQ3_XXS](https://hu
 - **8082**: Strata の汎用版（このツール。`--host 0.0.0.0`。API は `/v1`、Web の簡易チャットは `/`）
 - **8083**: Strata のコード向け版（Coder。`run-strata serve --model coder`、unit `strata-coder`）
 - **8084**: Strata の公式版（非 abliterated の IQ3_XXS。`run-strata serve --model official`、unit `strata-official`）
+- **8085**: Strata の公式版の軽い量子化 IQ3_S（`run-strata serve --model official-iq3s`、unit `strata-official-iq3s`）
+- **8086**: Strata の Swift 1.5（思考を短く終える fine-tune の IQ3_XXS。`run-strata serve --model swift`、unit `strata-swift`）
 - 8080 / 8081 / 8000 / 8188: 入口ページ / Open WebUI / （使用中）/ ComfyUI。上流の既定 8095 は使わない
 
 サーバー IP は `<server-ip>`（例: 192.168.1.10）。API は `http://<server-ip>:8082/v1`、モデル名は **`strata-flash-next:IQ3_S`**。
 Coder は `http://<server-ip>:8083/v1`、モデル名は **`strata-flash-coder:IQ1_M`**。
 公式版は `http://<server-ip>:8084/v1`、モデル名は **`strata-official:IQ3_XXS`**。
+公式版 IQ3_S は `http://<server-ip>:8085/v1`、モデル名は **`strata-official:IQ3_S`**。
+Swift 1.5 は `http://<server-ip>:8086/v1`、モデル名は **`strata-swift:IQ3_XXS`**。
 
 ## 固定している版
 
@@ -32,7 +39,8 @@ Coder は `http://<server-ip>:8083/v1`、モデル名は **`strata-flash-coder:I
 | ggml-org/llama.cpp（ggml を静的に組み込む、gguf-py） | `3cf03257f219afbe7334045ff7c6a06ac68c627d`（上流 setup.py の `LLAMA_CPP_COMMIT`） |
 | モデル（HF） | `jimmy31chen/RVN-Qwen3.8-Flash-Next-Abliterated-Uncensored-IQ3_S-Strata` の `17876139539724fc6f0b0fbfdcf7b1daa494d045`（2026-10-01） |
 | Coder（HF） | `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF` の `5348543e0147355ac9cbcb031184a3546350988e`（2026-09-29、Apache-2.0） |
-| 公式版（HF） | `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF` の `ed59f92082b1e93c0e96d60a8b11aab089b52f09`（2026-09-29、Apache-2.0。上流 setup.py:66 と同じ） |
+| 公式版（HF） | `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF` の `ed59f92082b1e93c0e96d60a8b11aab089b52f09`（2026-09-29、Apache-2.0。上流 setup.py:66 と同じ）。公式版 IQ3_S も同じリポジトリ・同じリビジョンの `IQ3_S/` |
+| Swift 1.5（HF） | `ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF` の `99bb8f7f95c7aa7b24a36a7786a4f657b30f5d3d`（2026-10-07。Swift Open License v1.0 + Qwen Community License 1.0。下の「Swift 1.5」） |
 | MTP の材料（HF） | `Qwen/Qwen3.8-Flash-Next` の `de4b8e4d43b917e7706784d8bb445c9af86a3540`（上流 `tools/mtp_fetch.py` の固定） |
 | Python | uv 管理の 3.12.14。依存は上流の `requirements.txt`（版固定）そのまま |
 | CUDA（engine のビルド） | `/usr/local/cuda-13.2`、`CMAKE_CUDA_ARCHITECTURES=80`、g++ 13.3 |
@@ -40,10 +48,12 @@ Coder は `http://<server-ip>:8083/v1`、モデル名は **`strata-flash-coder:I
 モデルの 11 ファイルは大きさと sha256 を `stra/config.py` の `MODEL_FILES` に持つ（LFS の 2 つは HF の oid、
 残りは取得後に計算し、HF の git blob sha1 と一致することを確かめた値）。Coder の 3 ファイルは `CODER_FILES`
 （GGUF の 2 つは HF の LFS oid、README は同じく git blob sha1 で照合した値）。公式版の 3 ファイルは
-`OFFICIAL_FILES`（同じ決め方。shard 2 は Coder の shard 2 と大きさ・sha256 が同じ）。
+`OFFICIAL_FILES`（同じ決め方。shard 2 は Coder の shard 2 と大きさ・sha256 が同じ）。公式版 IQ3_S の 3 ファイルは `OFFICIAL_IQ3S_FILES`
+（shard 1 だけが IQ3_S のもの。README と shard 2 は公式版と同じ）、Swift 1.5 の 6 ファイルは `SWIFT_FILES`（GGUF 2 つは HF の LFS oid、
+README・LICENSE・LICENSE-QWEN・NOTICE は取得後に計算して git blob sha1 と照合した値）。
 
 モデルごとの値（置き場・ポート・unit・env ファイル・サーバー設定・engine のログ・profile・RAM の目安など）は
-`stra/config.py` の `ModelSpec`（`RVN`・`CODER`・`OFFICIAL`、`MODELS` で `--model` の名前から引く）にまとめてある。
+`stra/config.py` の `ModelSpec`（`RVN`・`CODER`・`OFFICIAL`・`OFFICIAL_IQ3S`・`SWIFT`、`MODELS` で `--model` の名前から引く）にまとめてある。
 
 ## 導入
 
@@ -61,6 +71,8 @@ tools/strata/setup-server.sh
 - `--rebuild`: engine を作り直す（`build/` は残すので、変わったところだけコンパイルされる）
 - `--model coder`: コード向け版を足す（既定は `--model rvn`）。下の「コード向け版（Coder）」
 - `--model official`: 公式版（非 abliterated）を足す。下の「公式版（非 abliterated）IQ3_XXS」
+- `--model official-iq3s`: 公式版の軽い量子化 IQ3_S を足す。下の「公式版 IQ3_S」
+- `--model swift`: Swift 1.5（IQ3_XXS）を足す。下の「Swift 1.5」
 
 工程（括弧は上流 setup.py の対応する処理）:
 
@@ -96,13 +108,14 @@ tools/strata/run-strata serve --no-mtp --max-context 65536   # 比較用
 - `serve` は毎回 `run/strata-server.json`（上流サーバーの `--config`、docs/ORCA.md:53-76 の形）を書き直し、
   `vendor/Strata` に移って `python -m serve.server --engine strata --config ... --host 0.0.0.0 --port 8082` を exec する。
   engine のログは `logs/strata-engine.log`、サーバーの出力は journal（`journalctl --user -u strata`）。
-- `~/.config/strata/strata.env`: `STRATA_MAX_CONTEXT`（既定 131072）、`STRATA_REASONING_BUDGET_TOKENS`
-  （思考の予算。既定は汎用版 32768、公式版 65536、Coder は 0。0 で無効）、`STRATA_EXTRA_ARGS`（engine に足す引数）、
+- `~/.config/strata/strata.env`: `STRATA_MAX_CONTEXT`（既定はモデルの上限 262144。2026-10-18 に 131072 から広げた）、`STRATA_REASONING_BUDGET_TOKENS`
+  （思考の予算。既定は汎用版 32768、公式版・公式版 IQ3_S・Swift 65536、Coder は 0。0 で無効）、`STRATA_EXTRA_ARGS`（engine に足す引数）、
   `STRATA_API_KEY`（付けると `/v1/*` に鍵が要る。空の値にすると上流サーバーが起動しない）。
 - 待機中は CPU をほぼ使わない（engine は回り続けない）。止めると 5 秒で RAM と VRAM を返す。
-- `strata.service`・`strata-coder.service`・`strata-official.service` は互いに `Conflicts=` を持つ。1 つを
-  `systemctl --user start` すると、systemd がほかを止めてから起動する（同時には載らない）。`run-strata serve` を手で
-  起動したときは効かない。
+- `strata.service`・`strata-coder.service`・`strata-official.service`・`strata-official-iq3s.service`・`strata-swift.service` は互いに
+  `Conflicts=` を持つ。1 つを `systemctl --user start` すると、systemd がほかを止めてから起動する（同時には載らない）。
+  `run-strata serve` を手で起動したときは効かない。別のモデルを動かした直後に起動するときは、先に page cache を捨てる
+  （下の「他のモデルを動かした直後の RVN の起動」。RVN 以外でも同じ）。
 
 ## 最終の起動引数
 
@@ -112,7 +125,7 @@ strata --serve --pack models/RVN-Qwen3.8-Flash-Next-IQ3_S/pack
   --ple-gguf models/RVN-Qwen3.8-Flash-Next-IQ3_S/RVN-Qwen3.8-Flash-Next-IQ3_S-merged.gguf
   --expert-profile vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto
   --spec 4 --spec-min-p 0.5 --mtp models/mtp/rt
-  --max-context 131072 --kv int8 --resident-experts
+  --max-context 262144 --kv int8 --kv-resident 65536 --resident-experts --adapt-async 1
 ```
 
 モデルカード（README.md:56-62）の例との違いと理由:
@@ -121,10 +134,14 @@ strata --serve --pack models/RVN-Qwen3.8-Flash-Next-IQ3_S/pack
   `native_experts.txt` の total、48 層 × 512）で、全部を RAM に置く通常のモードは「エキスパート + 約 10 GB」を要する
   （setup.py の `LOW_RAM_HEADROOM_GB`）。RAM 62.5 GiB では足りない。resident 版は GPU のキャッシュが持たない分
   （実測 40.56 GiB）だけを RAM に写してページロックし、応答中はファイルを読まない（ログの `0 blob reads from the file`）。
-- **`--kv-resident 32768` は外した**。low-RAM モードでは KV は VRAM に置く（上流 setup.py も同じ判断）。
-- **`--max-context` は 262144 ではなく 131072**。65536 から始め、131072 で生成が 5〜7% 遅くなるだけ（KV が VRAM を
-  約 0.9 GiB 多く使い、キャッシュが 8369→7962 枠に減る）と確かめて広げた。約 7.8 万トークンの入力が通ることも確かめた。
-  262144 は未計測。
+- **`--kv-resident 65536`（KV ストリーミング）を 2026-10-18 に足した。** 2026-10-07〜17 は外していた（low-RAM モードでは KV は VRAM に置く、
+  という上流 setup.py と同じ判断）。262144 にすると KV が VRAM を約 3.5 GiB 取ってキャッシュの枠が 7,430 → 6,549 に減るので、KV を RAM に置き
+  VRAM には直近の 65536 セルだけを残す形にした。枠 7,732、4K 入力・thinking あり 72.9 → 76.0 tok/s、短い質問 53.9 → 60.3、RAM +1.0 GiB
+  （下の「速さの設定と文脈長 262144」）。
+- **`--max-context` はモデルの上限 262144（2026-10-18）。** 65536 から始め、131072 で生成が 5〜7% 遅くなるだけ（KV が VRAM を
+  約 0.9 GiB 多く使い、キャッシュが 8369→7962 枠に減る）と確かめて広げ（2026-10-07）、約 7.8 万トークンの入力が通ることも確かめた。
+  262144 は上の KV ストリーミングと `--adapt-async 1` で、131072 のときより速い（64.5 → 76.0 tok/s）。
+- **`--adapt-async 1`（キャッシュの入れ替えを生成の合間に裏で進める）を 2026-10-18 に足した。** 131072 で 64.5 → 73.3 tok/s（+14%）。
 - **`--mtp` と `--spec-min-p 0.5` を足した**（カードでは任意）。MTP の draft 層は RVN の pack に無いので、
   元の Qwen チェックポイントから作る（`scripts/build-mtp.sh`）。VRAM を 約 1.2 GiB（層 950 MiB + head 213 MiB）使い
   キャッシュが 7433 枠に減るが、thinking ありの 4K 入力で 42.2→71.9 tok/s になった（下の表）。RVN は元のモデルの
@@ -208,10 +225,11 @@ tools/strata/run-strata doctor
 
 ## API
 
-- `GET /v1/models` → `{"id": "strata-flash-next:IQ3_S", "meta": {"n_ctx": 131072}, ...}`
-  （名前はサーバー設定の `model_name`。Open WebUI の一覧は約 28 文字で切れるので短くした。23 文字）。
-  Coder（8083）は `{"id": "strata-flash-coder:IQ1_M", "meta": {"n_ctx": 131072}, ...}`。公式版（8084）は
-  `strata-official:IQ3_XXS`（設定どおりの名前。実機の応答はまだ見ていない）
+- `GET /v1/models` → `{"id": "strata-flash-next:IQ3_S", "meta": {"n_ctx": 262144}, ...}`
+  （名前はサーバー設定の `model_name`。Open WebUI の一覧は約 28 文字で切れるので短くした。23 文字。`n_ctx` は
+  `--max-context`。2026-10-18 からモデルの上限 262144）。
+  Coder（8083）は `{"id": "strata-flash-coder:IQ1_M", "meta": {"n_ctx": 262144}, ...}`。公式版（8084）は
+  `strata-official:IQ3_XXS`、公式版 IQ3_S（8085）は `strata-official:IQ3_S`、Swift 1.5（8086）は `strata-swift:IQ3_XXS`
 - `POST /v1/chat/completions`（ストリーミング・tools 対応）。thinking は `"reasoning_effort": "none" | "low" | "medium" | "high"`
   か `"chat_template_kwargs": {"enable_thinking": false}`。思考は `reasoning_content` で返る。指定しないと high。
 - ストリーミングの最後のチャンクに `usage` と `timings`（llama.cpp と同じ名前。`prompt_per_second`・
@@ -389,7 +407,8 @@ tools/strata/run-strata doctor --model coder
   に `After=strata.service` を書いた（片側だけ。順序の関係があると systemd は停止の job を起動の job より先に行う）。
   実機で両向きとも、もう一方の `Stopped` の直後に `Starting` が来ることを journal で確かめた（汎用版 → Coder:
   停止 4.7 秒のあと起動、Coder → 汎用版: 停止 0.7 秒のあと起動）。手で起動した `run-strata serve` は対象外。
-  公式版（`strata-official`）を足したあとの 3 つの関係は、下の「公式版（非 abliterated）IQ3_XXS」。
+  公式版（`strata-official`）を足したあとの 3 つの関係は、下の「公式版（非 abliterated）IQ3_XXS」。2026-10-16 に 5 つになってからの
+  関係は、下の「5 つのモデルの切り替え」。
 - 起動前に Ollama のモデルを降ろすこと（汎用版と同じ）。
 
 ### 最終の起動引数
@@ -399,7 +418,7 @@ strata --serve --pack models/Qwen3.8-Flash-Next-Coder-IQ1_M/pack
   --native   models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf
   --ple-gguf models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf
   --expert-profile vendor/Strata/data/expert-profile-coder.bin --expert-cache auto --prefill auto
-  --spec 4 --spec-min-p 0.5 --mtp models/mtp/rt --max-context 131072 --kv int8
+  --spec 4 --spec-min-p 0.5 --mtp models/mtp/rt --max-context 262144 --kv int8 --adapt-async 1 --kv-grow
 ```
 
 サーバー設定（`run/strata-server-coder.json`）には `"reasoning_loop_recovery": "recover"` を足す（下の「既知の制約」）。
@@ -411,10 +430,12 @@ strata --serve --pack models/Qwen3.8-Flash-Next-Coder-IQ1_M/pack
 - **`--kv-resident 32768` は付けない**（上流 setup.py は RAM に余裕があれば 65536 以上で足す）。付けると 4K 入力・
   thinking ありが 103.3 → 95.6 tok/s。通常のモードでもキャッシュの命中率が 96.5〜99% と元から高く、KV を RAM に出して
   枠を増やす利点が小さい。
-- **`--max-context` は 131072。** 262144 も動き、RAM は増えない（KV は VRAM）が、キャッシュ枠が 8,138 → 7,136 に減り、
-  greedy でそろえて 9〜21% 遅い（4K・thinking あり 90.1 → 77.2 tok/s）。要るときは env ファイルの
-  `STRATA_MAX_CONTEXT=262144`。
-- GPU は 12,288 エキスパートのうち 8,138 枠（66%、15.49 GiB）を持つ。読み込み後の VRAM の空きは 458 MiB。
+- **`--max-context` はモデルの上限 262144（2026-10-18）。** 2026-10-07 の実測では 131072 → 262144 でキャッシュ枠が 8,138 → 7,136 に減り
+  greedy で 9〜21% 遅かった（4K・thinking あり 90.1 → 77.2 tok/s）ので 131072 にしていた。2026-10-18 に `--kv-grow`（KV は使った分だけ
+  VRAM に取り、残りを枠に回す。通常モード限定）を足して 262144 にした: 枠 8,752、4K・thinking あり 81.0 tok/s（131072・kv-grow なしの
+  基準 78.2）。`--adapt-async 1` も足した（下の「速さの設定と文脈長 262144」）。
+- GPU は 12,288 エキスパートのうち、131072・kv-grow なしで 8,138 枠（66%、15.49 GiB。読み込み後の VRAM の空き 458 MiB）、
+  262144・kv-grow ありで 8,752 枠（文脈を使うにつれて KV に返す）。
 
 ### メモリ上限（MemoryHigh / MemoryMax）
 
@@ -549,9 +570,10 @@ tools/strata/run-strata serve --model official   # フォアグラウンド（en
 tools/strata/run-strata doctor --model official
 ```
 
-- 3 つのユニットは `Conflicts=` で互いを止める。止める順番を決める `After=` は、どの 2 つの間にも片側だけに書いた
+- 3 つのユニット（当時）は `Conflicts=` で互いを止める。止める順番を決める `After=` は、どの 2 つの間にも片側だけに書いた
   （`strata-coder` に `After=strata.service`、`strata-official` に `After=strata.service strata-coder.service`。
-  strata → strata-coder → strata-official の一方向で、輪にならない）。2026-10-07 に journal で確かめた: 汎用版 → 公式版で
+  strata → strata-coder → strata-official の一方向で、輪にならない。2026-10-16 に公式版 IQ3_S と Swift 1.5 が鎖の後ろに足された）。
+  2026-10-07 に journal で確かめた: 汎用版 → 公式版で
   `Stopped strata.service` の後に `Starting strata-official.service`（停止 6 秒）、公式版 → 汎用版で
   `Stopped strata-official.service` の後に `Starting strata.service`（停止 3 秒）。
 - 既に置いてある `~/.config/systemd/user/strata.service`・`strata-coder.service` は、雛形の `Conflicts=` に
@@ -559,24 +581,27 @@ tools/strata/run-strata doctor --model official
   2026-10-07 は、違いが `Conflicts=` とコメントだけだったので雛形で置き換えて daemon-reload した。
 - 起動前に Ollama のモデルを降ろすこと（汎用版と同じ）。
 
-### 起動引数（仮）
+### 起動引数（2026-10-18 から。通常モード・262144・adapt-async・kv-grow）
 
 ```text
 strata --serve --pack models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/pack
   --native   models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf
   --ple-gguf models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf
   --expert-profile vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto
-  --spec 4 --spec-min-p 0.5 --mtp models/mtp/rt --max-context 131072 --kv int8 --resident-experts
+  --spec 4 --spec-min-p 0.5 --mtp models/mtp/rt --max-context 262144 --kv int8 --adapt-async 1 --kv-grow
 ```
 
-### 仮置きの値（RVN と同じ値のまま動かした）
+2026-10-07〜16 は `--max-context 131072 --kv int8 --resident-experts`（RVN と同じ resident 版）だった。変えた理由と数値は
+「速さの設定と文脈長 262144」。
+
+### 値と決め方（2026-10-07 は RVN と同じ値のまま動かし、10-17〜18 の実測で見直した）
 
 | 値（`stra/config.py` の `OFFICIAL` と雛形） | 仮置き | 根拠 / 直し方 |
 |---|---|---|
 | `expert_bytes` | 42,912,972,800（確定） | pack の `native_experts.txt` の total と一致した（試験が照合する） |
-| `resident_experts` | True（RVN と同じ） | 上流 setup.py はこの RAM なら `--resident-experts` の無い通常のモードを選ぶ（setup.py:2725 の `low_ram_needed`: 62.5 GiB は 42.9 + 10 より大きい）。Coder の実測では通常のモードのほうが速かった。**通常のモードとはまだ比べていない**（この値のままで汎用版より速い。下の「実測」） |
+| `resident_experts` | **False（通常のモード。2026-10-17 に変更）** | 上流 setup.py はこの RAM なら `--resident-experts` の無い通常のモードを選ぶ（setup.py:2725 の `low_ram_needed`: 62.5 GiB は 42.9 + 10 より大きい）。2026-10-17 に greedy でそろえて比べ、通常のモードが 8〜20% 速かった（下の「速さの設定（2026-10-17〜18）」）。2026-10-07〜16 は True（RVN と同じ resident 版）だった |
 | `kv_resident` | なし（RVN と同じ） | 上流はこの RAM・131072 では KV ストリーミングを選ばない（setup.py:2776 の `kv_streaming_wanted`: 62.5 < 60 + 1.8 + 1） |
-| `default_max_context` | 131072（RVN と同じ） | 生成の速さと VRAM の空き（キャッシュの枠）を見て決める |
+| `default_max_context` | 262144（モデルの上限。2026-10-18 に 131072 から広げた） | 通常のモードは `--kv-grow` で KV の未使用分をキャッシュの枠に回せるので、131072 → 262144 の損が小さい（下の「速さの設定」） |
 | `min_available_ram_gib` | 46（RVN と同じ） | RVN と同じ決め方（RAM に写す量 + engine が残す 4 GiB + 作業領域 約 1.5 GiB） |
 | `recommended_memlock_bytes` | 48 GiB（RVN と同じ） | doctor の表示のみ |
 | `MemoryHigh` / `MemoryMax` | 50G / 58G（RVN と同じ。MemoryMax は 2026-10-09 に 54G から変更） | 稼働中の cgroup: `memory.peak` 50.00 GiB（= MemoryHigh。汎用版と同じ）、生成中の current 42.4 GiB。落とせない分は shmem 28.62 GiB（GPU 用に page-locked した 27.71 GiB）+ anon 1.57 GiB ≈ 30.2 GiB で、残りは GGUF を写したページキャッシュ（読み直せる）。この値のままで起動 44 秒・生成も速い |
@@ -621,6 +646,271 @@ CPU 側の読み出しも少ない。
 - 画像入力は使わない（mmproj を取っていない）。
 - Open WebUI の接続先（`http://127.0.0.1:8084/v1`）と入口ページのカードには 2026-10-07 に足した（下の「Open WebUI（8081）からつなぐ」、
   `tools/portal`）。停止中は Open WebUI の一覧に出ないか、選んでもエラーになる（汎用版と同じ）。
+
+## 公式版 IQ3_S（軽い量子化、2026-10-16 に追加）
+
+公式版（IQ3_XXS）と同じ [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF)
+（同じ固定リビジョン `ed59f920…`）の IQ3_S。上流 `setup.py` の `RECOMMENDED_SIZES`（0.1.44）がこのサイズで、Q8_0 との KL は IQ3_XXS の 0.202 に対して
+0.144（上流 `docs/QUANTS.md`）。1 トークンあたりは IQ3_XXS より遅い（同じ i7-12700 の上流コミュニティ計測で IQ3_S 19〜20 / IQ3_XXS 26 tok/s）。
+
+**足した理由。** `Documents/AIモデル評価_2026-10-08.html` で Strata の弱点は「思考が終わらず予算で打ち切られる」ことで、
+`Documents/Strata_コーディング性能の調査_2026-10-09.html` は設定では直らないと結論し、量子化だけを変えた比較が無かった。同じモデル・同じ engine で
+量子化だけが違うものを並べて、その仮説を確かめる。
+
+| 項目 | 値 |
+|---|---|
+| ポート / unit / モデル名 | 8085 / `strata-official-iq3s` / **`strata-official:IQ3_S`**（21 文字） |
+| `--model` の名前 | `official-iq3s` |
+| 置き場 | `models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S/`（HF と同じ並びで `IQ3_S/` に 2 分割の GGUF、`pack/` は手元で作る） |
+| GGUF | shard 1 = 54,817,524,224 バイト（51.05 GiB）、sha256 `4c1eb2ce…`。shard 2 は公式版・Coder の shard 2 と同じファイル（ハードリンク） |
+| エキスパート | 512 個/層 × 48 層、合計 50,292,326,400 バイト（46.84 GiB。pack の `native_experts.txt` の total。上流コミュニティの実測の experts.bin と同じ値） |
+| profile / MTP | `vendor/Strata/data/expert-profile.bin`（汎用・公式版と同じ）/ `models/mtp/rt`（共有） |
+| env ファイル / サーバー設定 / engine のログ | `~/.config/strata/strata-official-iq3s.env` / `run/strata-server-official-iq3s.json` / `logs/strata-official-iq3s-engine.log` |
+| サーバー設定に足す鍵 | `"reasoning_loop_recovery": "recover"` と `"reasoning_budget_tokens": 65536`（公式版と同じ） |
+| 起動の形 | `--resident-experts`（RVN と同じ low-RAM の resident 版。エキスパート 46.84 GiB + 約 10 GB の通常のモードは MemoryHigh 50G に収まらない） |
+| `MemoryHigh` / `MemoryMax` | 50G / 58G（汎用版と同じ。2026-10-17 の実測で、落とせない分 約 38.2 GiB に 11.8 GiB の余裕があり、このまま） |
+
+### 導入
+
+```bash
+# shard 2 は Coder・公式版と同じファイル。取り直さずにハードリンクで置く（同じファイルシステム内）
+mkdir -p tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S/IQ3_S
+ln tools/strata/models/Qwen3.8-Flash-Next-Coder-IQ1_M/IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf \
+   tools/strata/models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+tools/strata/setup-server.sh --model official-iq3s
+```
+
+工程は公式版と同じ（[6/8] で `fetch-models --model official-iq3s`（README と shard 1）→ `build-pack --model official-iq3s` → MTP の確認、
+[7/8] で unit と env、[8/8] で doctor）。
+
+2026-10-16 の実測: shard 1 の取得 16 分 49 秒（51.1 GiB、平均 約 54 MB/s。別の作業と並行）、sha256 の確認を含めて `fetch-models` が終わるまで
+約 17 分、pack の作成 2 秒（`index.txt` 1079 テンソル、arena 1.43 GiB。変換したテンソルは 0）。shard 2 はハードリンクで取得 0。
+doctor は RAM の空き以外すべて OK（そのとき別プロジェクトの学習が RAM 8.4 GiB・VRAM 5.6 GiB を使っていたため、空き 39.0 GiB で NG。設定の問題ではない）。
+
+### 起動引数
+
+```text
+strata --serve --pack models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S/pack
+  --native   models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf
+  --ple-gguf models/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+  --expert-profile vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto
+  --spec 4 --spec-min-p 0.5 --mtp models/mtp/rt --max-context 262144 --kv int8 --resident-experts --adapt-async 1
+```
+
+2026-10-16〜17 は `--max-context 131072 --kv int8 --resident-experts` だった。2026-10-18 に 262144 と `--adapt-async 1` を足した
+（resident 版のまま。「速さの設定と文脈長 262144」）。
+
+### 実測（2026-10-17）
+
+`scripts/bench_api.py`（ストリーミング、temperature 0.7、max_tokens 256、3 回の中央値、thinking ありは effort low、131072・MTP あり）と
+`scripts/monitor.py`（1 秒ごと）。ほかの Strata は止めて、別プロジェクトの GPU 利用が無いことを確かめてから、モデルの page cache を捨てて起動した。
+公式版（IQ3_XXS）の列は 10-16（engine 0.1.44.1）の測り直しの値（thinking あり・4K は未測定なので 10-07 の値）。
+
+| 条件 | **公式版 IQ3_S** | 公式版 IQ3_XXS |
+|---|---:|---:|
+| 短い質問（38 トークン）thinking なし: 生成 tok/s | 44.1 | 53.2 |
+| 短い質問 thinking あり: 生成 tok/s | 60.4 | 58.0（10-07） |
+| 4K 入力（3,996 トークン）thinking なし: 生成 tok/s | 48.0 | 53.3 |
+| 4K 入力 thinking あり: 生成 tok/s（draft の採用 142 / 174） | 72.9 | 89.0（10-07） |
+| 4K 入力の prefill tok/s / 最初の文字まで | 1,073 / 3.8 秒 | 1,265 / 3.2 秒 |
+| 7.8 万トークンの入力（76,813）: prefill tok/s / 最初の文字まで / 生成 tok/s | 1,596 / 48.2 秒 / 57.5 | 未測定 |
+| 起動（`systemctl --user start` が戻るまで。page cache を捨てた冷えた状態） | 49 秒（RAM 複製 34 秒） | 50 秒（10-07） |
+| GPU のエキスパートのキャッシュ / RAM の複製 | 8,159 枠・約 15.5 GiB / 34.77 GiB（ページロック） | 9,638 枠 / 27.71 GiB |
+| デコード中のキャッシュ命中率 | 83〜98%（多くは 93〜96%） | 未測定 |
+| cgroup の `memory.peak` / 落とせない分（shmem 35.8 + anon 2.0 + kernel 0.35） | 50.00 GiB（= MemoryHigh）/ 約 38.2 GiB | 50.00 GiB / 約 30.2 GiB |
+| VRAM の山 / swap の山（cgroup）| 23,902 MiB / 1.12 GiB | 23,899 MiB / — |
+| 機体の PSI（計測の間）memory / io / cpu | 0.15 / 0.16 / 49.2 秒（99 秒中） | — |
+
+- 上流のコミュニティ計測（RTX 3060、IQ3_S 19〜20 / IQ3_XXS 26 tok/s、約 3 割遅い）から見込んだほどは遅くない。この機体では、thinking なしで
+  10〜17%、thinking あり・4K で 18% 遅い（公式版 IQ3_XXS の 10-07 の値との比）。短い質問の thinking ありは IQ3_S のほうが速く出ているが、
+  生成の速さは draft の採用率で回ごとに ±10% ほど揺れるので差とは言えない。
+- 落とせない分は約 38.2 GiB で MemoryHigh=50G に 11.8 GiB の余裕がある。残りは GGUF を読んだときの page cache（読み直せる）。
+  機体の RAM の空きの最小は 19.0 GiB、デスクトップ（GNOME Shell の cgroup）の待ちは memory / io とも 0.00 秒。
+- CPU の待ち（psi cpu some）が 49% あり、engine の CPU プールが律速に近い（IQ3_XXS と同じ傾向。RAM に置いたエキスパートを CPU で計算する）。
+
+## Swift 1.5（思考を短く終える fine-tune、2026-10-16 に追加）
+
+[ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF)
+（固定リビジョン `99bb8f7f95c7aa7b24a36a7786a4f657b30f5d3d`、2026-10-07）の IQ3_XXS。UkisAI が Qwen3.8-Flash-Next を post-training した派生で、
+アーキテクチャ（`qwen4exp`、512 エキスパート/層）は同じ。作者の BF16・xhigh の計測では思考トークンが中央値で 63% 減り、精度の差は 1% 未満
+（GPQA-Diamond 89.8→89.6、AIME 2026 98.7→96.7、LiveCodeBench v6 88.4→90.4。モデルカード）。上流 Strata 0.1.44 は family `swift` として
+正式に対応し、「1 トークンの速さは元と同じ」（4K・IQ2_XS で 78.7 対 78.3 tok/s）と報告する（`docs/DETAILS.md` の "Or: Swift 1.5"）。
+量子化は ISTA の GSQ-RCO の allocation profile を再利用した UkisAI 自身の配布。
+
+**足した理由。** 公式版 IQ3_S と同じ（思考が終わらない症状に、今度はモデルの側から当たる）。公式版と同じ IQ3_XXS なので、差は fine-tune の分だけ。
+
+**ライセンス。** UkisAI の追加学習の部分は Swift Open License v1.0（年商 100 万ドル以上の法人による商用利用は別契約の Swift Enterprise License が要る。
+非商用・研究用途は可。個人は対象外）、元の Qwen の部分は Qwen Community License 1.0。この機体では個人の非商用・研究用途として使う
+（2026-10-16 の利用者の判断）。配布元の `LICENSE`・`LICENSE-QWEN`・`NOTICE` もモデルと一緒に取る。`NOTICE.md` に書いてある。
+
+| 項目 | 値 |
+|---|---|
+| ポート / unit / モデル名 | 8086 / `strata-swift` / **`strata-swift:IQ3_XXS`**（20 文字） |
+| `--model` の名前 | `swift` |
+| 置き場 | `models/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/`（HF はサブディレクトリを持たないので、ルート直下に 2 分割の GGUF とライセンス。`pack/` は手元で作る） |
+| GGUF | shard 1 = 39,785,790,560 バイト（37.05 GiB）、sha256 `3bddaa66…`。shard 2 = 36,180,282,560 バイト（33.70 GiB）、`b0b15f78…`。**shard 2 は元の Qwen とは別物**（PLE の n-gram 表が shard 1、層 12〜47 のエキスパートが shard 2。手元の pack の `native_experts.txt` の shard 列で確認。上流 `tools/iq_pack.py` の注記は「層 13〜47」） |
+| `--native` / `--ple-gguf` | どちらも shard 1（`build-pack` が `per_layer_token_embd.weight` が shard 1 にあることを確かめてから作った） |
+| エキスパート | 512 個/層 × 48 層、合計 42,912,972,800 バイト（39.97 GiB。pack の `native_experts.txt` の total。公式版 IQ3_XXS と同じ値） |
+| profile / MTP | `vendor/Strata/data/expert-profile.bin`（上流 `FAMILIES["swift"]` は profile を持たず既定を使う）/ `models/mtp/rt`（共有。元の Qwen の MTP 層） |
+| env ファイル / サーバー設定 / engine のログ | `~/.config/strata/strata-swift.env` / `run/strata-server-swift.json` / `logs/strata-swift-engine.log` |
+| サーバー設定に足す鍵 | `"reasoning_loop_recovery": "recover"` と `"reasoning_budget_tokens": 65536`（公式版と同じ） |
+| 起動の形 | 公式版と同じ。2026-10-18 から通常モード（`--resident-experts` なし）・262144・KV int8・MTP あり・`--adapt-async 1 --kv-grow`（2026-10-16〜17 は `--resident-experts`・131072） |
+| `MemoryHigh` / `MemoryMax` | 50G / 58G（公式版と同じ。通常モードの落とせない分は約 42.3 GiB（anon 41.80 + shmem 0.49 + kernel）で収まる。resident 版のときは約 30.7 GiB だった） |
+
+画像用の mmproj（`mmproj-Swift-Qwen3.8-Flash-Next-BF16.gguf`、0.91 GiB）は取らない（画像入力は使わない）。
+
+### 導入
+
+```bash
+tools/strata/setup-server.sh --model swift
+```
+
+[6/8] で `fetch-models --model swift`（README・LICENSE・LICENSE-QWEN・NOTICE・shard 1・shard 2 を `resolve/99bb8f7f…/` から取り、sha256 を確かめる）→
+`build-pack --model swift`（shard 1 に PLE の表があることを確かめてから `iq_pack.py --gguf <shard 1>`。隣の shard 2 も読む）→ MTP の確認、
+[7/8] で unit と env、[8/8] で doctor。
+
+2026-10-16 の実測: 6 ファイルの取得と sha256 の確認 22 分 47 秒（70.7 GiB、平均 約 55 MB/s）、pack の作成 4 秒（`index.txt` 1079 テンソル、
+arena 1.43 GiB。96 テンソルを F32 → BF16 に変換、すべて誤差 0: Swift の GGUF は BF16 の値を F32 で持つため）。`native_experts.txt` は v3 の shard 列つきで、
+層 0〜11 が shard 1、12〜47 が shard 2。doctor は RAM の空き以外すべて OK（別プロジェクトの学習が動いていたため空き 43.7 GiB で NG。設定の問題ではない）。
+
+### 起動引数
+
+```text
+strata --serve --pack models/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/pack
+  --native   models/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf
+  --ple-gguf models/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf
+  --expert-profile vendor/Strata/data/expert-profile.bin --expert-cache auto --prefill auto
+  --spec 4 --spec-min-p 0.5 --mtp models/mtp/rt --max-context 262144 --kv int8 --adapt-async 1 --kv-grow
+```
+
+2026-10-16〜17 は `--max-context 131072 --kv int8 --resident-experts`（公式版の当時の形）だった。2026-10-18 に公式版と同じ通常モード・
+262144・`--adapt-async 1 --kv-grow` にした（「速さの設定と文脈長 262144」）。
+
+### 実測（2026-10-17）
+
+公式版 IQ3_S と同じ測り方（`scripts/bench_api.py`、temperature 0.7、max_tokens 256、3 回の中央値、thinking ありは effort low、131072・MTP あり、
+page cache を捨てた冷えた状態から起動）。公式版（IQ3_XXS）の列は公式版 IQ3_S の表と同じ値。
+
+| 条件 | **Swift 1.5 IQ3_XXS** | 公式版 IQ3_XXS | 公式版 IQ3_S |
+|---|---:|---:|---:|
+| 短い質問（38 トークン）thinking なし: 生成 tok/s | 45.1 | 53.2 | 44.1 |
+| 短い質問 thinking あり: 生成 tok/s | 67.2 | 58.0（10-07） | 60.4 |
+| 4K 入力（3,996 トークン）thinking なし: 生成 tok/s | 53.4 | 53.3 | 48.0 |
+| 4K 入力 thinking あり: 生成 tok/s（draft の採用 159 / 196） | 79.7 | 89.0（10-07） | 72.9 |
+| 4K 入力の prefill tok/s / 最初の文字まで | 1,248 / 3.2 秒 | 1,265 / 3.2 秒 | 1,073 / 3.8 秒 |
+| 7.8 万トークンの入力（76,813）: prefill tok/s / 最初の文字まで / 生成 tok/s | 1,729 / 44.5 秒 / 65.1 | 未測定 | 1,596 / 48.2 秒 / 57.5 |
+| 起動（`systemctl --user start` が戻るまで） | 42 秒（RAM 複製 30 秒） | 50 秒（10-07） | 49 秒 |
+| GPU のエキスパートのキャッシュ / RAM の複製 | 9,773 枠・15.84 GiB / 27.49 GiB（ページロック） | 9,638 枠 / 27.71 GiB | 8,159 枠 / 34.77 GiB |
+| デコード中のキャッシュ命中率 | 73〜98%（多くは 92〜97%） | 未測定 | 83〜98% |
+| cgroup の `memory.peak` / 落とせない分（shmem 28.4 + anon 2.0 + kernel 0.31） | 50.00 GiB（= MemoryHigh）/ 約 30.7 GiB | 50.00 GiB / 約 30.2 GiB | 50.00 GiB / 約 38.2 GiB |
+| VRAM の山 / swap の山（cgroup） | 23,900 MiB / 1.05 GiB | 23,899 MiB / — | 23,902 MiB / 1.12 GiB |
+| 機体の RAM の空きの最小 / PSI memory | 26.5 GiB / 0.00 秒 | — | 19.0 GiB / 0.15 秒 |
+
+- 1 トークンの速さは公式版 IQ3_XXS と同じ範囲（上流の「元と同じ速さ」のとおり）。元の Qwen から作った MTP の draft 層の採用率も、
+  4K・thinking ありで 74〜81%（公式版 IQ3_S は 77〜82%）で、fine-tune で下がった様子は無い。
+- RAM・VRAM の使い方も公式版 IQ3_XXS とほぼ同じ（同じ割り当ての量子化なので、エキスパートの大きさも同じ）。`MemoryHigh=50G` に約 19 GiB の余裕がある。
+- **日本語の短い質問 3 本（effort high、temperature 0.6、`--prompt ja`）は 3 本とも自然で正しい答えだった**（ことわざの意味と誤解・
+  リストとタプルの違い・部屋干しのコツ。中国語や英語の混入なし、同じ文の繰り返しなし、61.7 tok/s）。思考は英語で 202〜707 字と短く、
+  答えまで 3〜6 秒。全文は `logs/swift-ja-20261017/`。
+
+**3D の問題（2026-10-17、1 回）。** 公式版の 10-07 と同じ条件（`TestData/数学難問-三次元空間-TEST.md`、effort high、予算なし = 要求で 0、
+`max_tokens` 65536、temperature 1.0 / top_p 0.95 / top_k 20）。正解は公式版の節と同じ。
+
+| | Swift 1.5 IQ3_XXS | 公式版 IQ3_XXS（10-07、2 回） |
+|---|---|---|
+| 終わり方 | 42,744 トークン・664 秒で `stop`（思考は推定 約 39,800 トークン） | 53,975 トークン・904 秒 / 49,161 トークン・774 秒で `stop` |
+| 正誤 | **4 問とも正解**（(1) 1−r ≤ t ≤ r と 2 つのスタジアム形、(2) 1/2 < r ≤ √2/2 と反例つきの必要性、(3) πr²+(4/3)πr³、(4) 3πr²+(2π−8/3)r³） | 2 回とも 4 問正解 |
+| 小さな誤り | (1) の注記「t = 1−r のとき b = r」（正しくは b = 0） | (1) の退化の説明に小さな誤り（1 回目） |
+| 思考の中の「Wait / Hmm / 再確認」の語 | 10 回（思考 約 9.7 万字） | 59〜71 回（上の「汎用版で thinking が終わらないとき」の記録。数え方は同じ） |
+| 生成 | 64.9 tok/s（draft の採用 22,749 / 34,289） | 59.8 / 63.7 tok/s |
+
+- **この 1 本は条件どおりではない。** 5,120 トークンで #728 の回復が 1 回発動し（journal の `repeated reasoning detected at 5120 tokens
+  (coverage=0.269)`）、そこから先は effort low・temperature 1.0 以上・presence_penalty 1.5 以上に切り替わっていた（`serve/server.py:3026-3033`）。
+- 思考の長さは公式版の 2 回より 13〜21% 短く、時間は 14〜27% 短かった。作者の BF16・xhigh の計測（中央値で 63% 減）ほどは縮んでいない。
+  1 回だけなので、回ごとの揺れと区別できない。全文は `logs/swift-3d-20261017/`。
+
+### 既知の制約
+
+- MTP の draft 層は元の Qwen3.8-Flash-Next の `mtp.*` から作ったもの（上流も共有する）。2026-10-17 の実測で採用率は公式版と同じ範囲だった。
+- abliterated ではない。
+
+## 5 つのモデルの切り替え
+
+`Conflicts=` は 5 つのユニットが互いに持ち、止める順番を決める `After=` は一方向の鎖
+strata → strata-coder → strata-official → strata-official-iq3s → strata-swift で、自分より前のものだけを書く（輪にならない）。
+どれを `systemctl --user start` しても、ほかが RAM を返してから読み込む。既に置いてあるユニット（`~/.config/systemd/user/*.service`）は
+`setup-server.sh` が上書きしないので、雛形の `Conflicts=` を変えたときは手で置き直して `daemon-reload` する（2026-10-16 に 3 つを置き直した）。
+
+## 速さの設定と文脈長 262144（2026-10-17〜18）
+
+利用者の指示「A30 に収まるように、文脈長と KV キャッシュを最大に」で、5 つとも `--max-context` をモデルの上限 **262144** にした
+（GGUF の `context_length`。KV は int8 で VRAM、約 13.7 KB/トークン、262144 で約 3.5 GiB）。あわせて、上流 0.1.40〜0.1.44 の速さの
+設定をこの機体で測って採った。測り方は `logs/phase2-20261017/run-arms.sh`・`logs/ctx262k-20261018/run-arms.sh`（追跡しない）:
+unit を止める → page cache を捨てる → env（`STRATA_EXTRA_ARGS`・`STRATA_MAX_CONTEXT`）→ 起動 → 暖機 1 本 → `scripts/bench_api.py` を
+**greedy（`--temperature none`）・同じ問題番号**で、短い質問 / 4K 入力 thinking なし（各 256 トークン）/ 4K 入力 thinking あり（effort low、
+512 トークン）を 3 回ずつ流して中央値。採る基準: 4K 入力・thinking ありで 3% 以上速く、短い質問が大きく遅くならない。
+差が 3% 未満なら RAM の少ない方。同じ条件の測り直しで 1〜2% 揺れる（Coder はもっと大きい）。
+
+| モデル | モード | 131072 の基準 | 131072 + `--adapt-async 1` | 262144 の腕（採ったものは太字） | 落とせない RAM | 枠 |
+|---|---|---:|---:|---|---:|---:|
+| 公式 IQ3_XXS | 常駐（10-07〜16） | 89.8 / 63.1 / 56.9 | 98.0 / 69.4 / 63.3 | — | 30.0 GiB | 9,773 |
+| 公式 IQ3_XXS | **通常（10-17〜）** | 98.0 / 70.1 / 69.1 | 104.3 / 75.2 / 76.0 | **adapt-async + kv-grow: 102.9 / 79.3 / 76.8** | 42.3 GiB | 10,452 |
+| Coder | 通常 | 78.2 / 67.2 / 81.6 | 84.2 / 65.7 / 74.3 | kv-grow: 80.4 / 65.1 / 69.6。**adapt-async + kv-grow: 81.0 / 63.3 / 78.7** | 25.8 GiB | 8,752 |
+| Swift 1.5 | 常駐（10-16〜17） | 87.4 / 60.7 / 55.2 | 97.7 / 68.3 / 66.1 | adapt-async: 94.9 / 64.5 / 64.5（枠 8,601）。+ kv-resident 65536: 97.9 / 69.2 / 63.2（枠 10,178、RAM 33.0 GiB） | 30.5 GiB | 8,601 |
+| Swift 1.5 | **通常（10-18〜）** | — | — | **adapt-async + kv-grow: 105.9 / 75.6 / 73.2** | 42.3 GiB | 10,452 |
+| 公式 IQ3_S | 常駐 | 74.9 / 56.2 / 53.0 | 83.8 / 64.8 / 63.3 | **adapt-async: 83.1 / 61.1 / 61.7**（枠 7,146）。+ kv-resident 65536: 84.8 / 61.1 / 60.0（枠 8,503、RAM 40.5 GiB） | 39.5 GiB | 7,146 |
+| 汎用版 RVN | 常駐 | 64.5 / 51.4 / 49.8 | 73.3 / 60.3 / 55.4 | adapt-async: 72.9 / 59.8 / 53.9（枠 6,549）。**+ kv-resident 65536: 76.0 / 62.1 / 60.3**（枠 7,732） | 46.2 GiB | 7,732 |
+
+値は 4K 入力 thinking あり / 4K 入力 thinking なし / 短い質問 の tok/s。「落とせない RAM」は cgroup の shmem + anon（採った形）。
+`memory.peak` はどれも 50.00 GiB = MemoryHigh（page cache が上限まで溜まる）。
+
+- **`--adapt-async 1`**（GPU のキャッシュの入れ替えを生成の合間に裏で進める。上流 0.1.44 の実測 +7〜11%）は 5 つとも +6〜14% で採った。
+- **通常モード**（エキスパートを全部 RAM に写してページロック）は、収まる 3 つ（Coder・公式 IQ3_XXS・Swift）で resident 版より 8〜20% 速い。
+  公式 IQ3_S（46.84 GiB）と RVN（53.3 GiB）は MemoryHigh 50G に収まらないので resident 版のまま。
+- **`--kv-grow`**（KV は使った分だけ VRAM に取り、残りをエキスパートの枠に回す。通常モード限定）で、262144 にしても枠が 131072・kv-grow なしより
+  多い（公式 9,728 → 10,452、Coder 8,135 → 8,752）。速さは 131072 と同じ範囲（公式 104.3 → 102.9）。131072 で kv-grow だけ足しても速さは変わらない
+  （公式 98.0 → 97.8、枠 10,593）。
+- **`--kv-resident 65536`**（KV ストリーミング。KV を RAM に置き、VRAM には直近 65536 セル）は resident 版で 262144 の枠の減りを戻す。RVN では
+  4%（短い質問 12%）速く RAM +1.0 GiB で採った。公式 IQ3_S では 2% で RAM +2.3 GiB なので採らない。engine のログ: `KV streaming: 65536 of
+  262144 cells per QSA layer in VRAM, the K/V in 3.09 GiB of pinned RAM`。
+- **採らなかったもの**: `STRATA_IQ3S_MT1=1`（IQ3_S 型のエキスパートの複数トークン用カーネル。公式 IQ3_XXS で 89.8 → 90.7、短い質問 −6.5%）。
+  上流の自動調整 `tools/calibrate.py`（`--pcie-frac`・`--spec-min-p`・`--pool-workers`）は未実施。
+- 262144 にすると、KV が VRAM にあっても RAM の落とせない分が約 1.9 GiB 増えた（RVN 43.2 → 45.1 GiB。上流 DETAILS.md の「low-RAM モードでは
+  文脈長は RAM に数えない」とは合わない。プロンプト用のバッファと見られるが未確認）。
+- 起動時間: 公式 39 秒・Coder 20 秒・Swift 33 秒・公式 IQ3_S 67 秒・RVN 94 秒（kv-resident で 88 → 94 秒）。
+
+### KV の型 k8v4 の比較（2026-10-18、採らなかった）
+
+`--kv k8v4`（K を int8、V を Hadamard 回転つきの 4 ビットで持つ。上流 0.1.25 の PR #120。int8 より 23% 小さい）を、採用した設定（`--kv int8`）と
+比べた。測り方は上の表と同じ（greedy・3 回の中央値）に、約 19 万トークンの入力 1 本（`bench_api.py --long-chars 270000`、答えは資料の中の最大の節と
+冊数で照合）と、公式版だけ上流の `vendor/Strata/tools/needle_bench.py`（128K の文章の 10 / 50 / 90% の位置に隠した合言葉を、思考なし・greedy で答えさせる）を足した。
+`STRATA_EXTRA_ARGS="--kv k8v4"` で切り替え（engine は後ろの `--kv` を使う）。記録は `logs/k8v4-20261018/`（追跡しない）。
+
+| モデル（KV の置き方） | 型 | KV の大きさ | 枠 | 4K 思考あり / 4K 思考なし / 短い質問 | 4K の prefill | 19 万トークン: prefill / 生成 / 答え |
+|---|---|---:|---:|---|---:|---|
+| 公式 IQ3_XXS（kv-grow） | int8 | 3.35 GiB | 10,452 | 107.4 / 77.0 / 77.4 | 1,406 | 1,746 / 69.4 / 正 |
+| | k8v4 | 2.65 GiB | 10,480 | 103.8 / 70.4 / 75.0 | 1,395 | 1,608 / 68.1 / 正 |
+| Swift 1.5（kv-grow） | int8 | 3.35 GiB | 10,452 | 103.7 / 75.3 / 77.1 | 1,424 | — |
+| | k8v4 | 2.65 GiB | 10,480 | 103.2 / 75.8 / 81.9 | 1,378 | — |
+| Coder（kv-grow） | int8 | 3.35 GiB | 8,753 | 83.1 / 64.3 / 81.4 | 1,677 | — |
+| | k8v4 | 2.65 GiB | 8,775 | 103.3 / 73.1 / 73.6 | 1,584 | — |
+| 公式 IQ3_S（全部 VRAM） | int8 | 3.35 GiB | 7,146 | 81.4 / 59.8 / 61.3 | 1,028 | 1,510 / 57.2 / 正 |
+| | k8v4 | 2.65 GiB | 7,519 | 84.0 / 60.8 / 61.1 | 1,015 | 1,428 / 60.3 / 正 |
+| RVN（KV を RAM に） | int8 | 3.09 GiB（RAM） | 7,732 | 74.7 / 61.1 / 60.6 | 1,000 | 1,388 / 51.6 / 正 |
+| | k8v4 | 2.39 GiB（RAM） | 7,813 | 72.9 / 60.7 / 54.8 | 964 | 1,343 / 47.8 / 正 |
+
+needle（公式 IQ3_XXS、128K = 125,045 トークン）: int8・k8v4 とも 3 か所すべて正解。1 本の時間は int8 63〜72 秒、k8v4 68〜78 秒。
+
+- **使った分だけ取る 3 つ（kv-grow）では効かない。** 起動時の KV は 0.25 → 0.21 GiB しか違わず、枠は 28 しか増えない。19 万トークンでも生成は同じ
+  （69.4 → 68.1）で、プロンプトを読む速さは 8% 落ちた（1,746 → 1,608 tok/s）。Coder の 4K 思考ありの差（83.1 → 103.3）は、同じ条件で 78〜101 と
+  揺れる範囲（10-17〜18 の記録）で、k8v4 の効果とは言えない。
+- **KV を全部 VRAM に置く公式 IQ3_S では少し効く。** 枠が 373 増え、4K 思考あり +3%、19 万トークンの生成 +5%。ただしプロンプトを読む速さは −5%。
+  差は測り直しの揺れ（1〜2%）より少し大きいだけで、V を 4 ビットにする精度の代わりに取るほどではないと判断した。
+- **KV を RAM に置く RVN では遅くなる**（4K 思考あり −2%、短い質問 −10%、19 万トークンの生成 −7%）。RAM は 0.7 GiB 減る。
+- 答え（19 万トークンの照合・needle）はどれも int8 と同じく正しかった。上流の精度の記録（「4 ビットより長い文書で良い」）以上のことは測っていない。
+- 計測の途中で、公式 IQ3_S の 19 万トークンの計測の直後に起動した RVN（int8）が、エキスパートを RAM に写している最中（24/48 層）に systemd-oomd に
+  落とされた（14:24、`Failed with result 'oom-kill'`）。engine は「本当の空き 22.38 GiB、モデルの page cache を捨てて 41.38 GiB」と出し、残りを
+  ほかのファイルの cache を空けながら固定していた。GGUF の page cache は捨ててあった。10 分後に同じ設定で測り直すと 88 秒で起動した。原因は切り分けていない。
 
 ## v0.1.44.1 への更新（2026-10-16）
 
@@ -682,14 +972,15 @@ uvx --with pytest pytest tools/strata/tests -q
 
 GPU もネットワークも使わない（doctor の判定関数、engine の引数とサーバー設定の組み立て、setup-server.sh と config.py の
 直値の一致、ユニットの値、記録・計測スクリプトの集計）。`.venv` には pytest を入れない。
-モデル別の設定（rvn / coder / official の値が重ならないこと、`--model` の解釈とポートの既定、Coder と公式版の engine の
-引数とサーバー設定、汎用版の引数が変わっていないこと、手元で作る pack の判定、3 つのユニットの `Conflicts=` が互いを指し
-`After=` が一方向であること、反復の指標）も確かめる（49 件）。
+モデル別の設定（rvn / coder / official / official-iq3s / swift の値が重ならないこと、`--model` の解釈とポートの既定、各モデルの engine の
+引数とサーバー設定、汎用版の引数が変わっていないこと、手元で作る pack の判定、5 つのユニットの `Conflicts=` が互いを指し
+`After=` が一方向の鎖であること、反復の指標）も確かめる。
 
 ## ライセンス
 
 Strata は MIT、llama.cpp（ggml）は MIT。モデルはカードの表示で Apache-2.0（元の Qwen3.8-Flash-Next に従う）。
-Coder と公式版は HF の表示で Apache-2.0。
+Coder と公式版（IQ3_XXS・IQ3_S）は HF の表示で Apache-2.0。Swift 1.5 は Swift Open License v1.0（UkisAI の部分）+ Qwen Community License 1.0
+（元の部分）で、年商 100 万ドル以上の法人の商用利用は別契約（上の「Swift 1.5」）。
 MTP の draft 層は元の Qwen/Qwen3.8-Flash-Next のテンソルから作るので、その配布元の条件に従う。
 汎用版（RVN）は abliterated（拒否の方向を取り除いたもの）で、有害な依頼にも応じる（公式版は abliterated ではない）。LAN に開いているので、
 必要なら `STRATA_API_KEY` を付けること。
@@ -710,8 +1001,10 @@ MTP の draft 層は元の Qwen/Qwen3.8-Flash-Next のテンソルから作る�
 - 画面からは「管理者パネル → 設定 → 接続」で同じ設定を見られる。
 - 起動の API は `systemctl --user start --no-block` で呼ばれる（入口ページ。Strata の unit は API の
   応答まで `systemctl start` が戻らないため。`tools/portal/README.md` を参照）。
-- 接続先は今 3 つ（DB と env の両方）: `http://127.0.0.1:8082/v1`（汎用版）、`:8083/v1`（Coder、
+- 接続先は今 5 つ（DB と env の両方）: `http://127.0.0.1:8082/v1`（汎用版）、`:8083/v1`（Coder、
   `webui.db.bak-before-strata-coder-20261007` が足す前）、`:8084/v1`（公式版 `strata-official:IQ3_XXS`、2026-10-07 に
   同じ手順で足した。足す前は `webui.db.bak-before-strata-official-20261007` と
-  `open-webui.env.bak-before-strata-official-20261007`）。API キーはどれも空。同時に動くのは 1 つだけなので、
+  `open-webui.env.bak-before-strata-official-20261007`）、`:8085/v1`（公式版 IQ3_S `strata-official:IQ3_S`）と `:8086/v1`
+  （Swift 1.5 `strata-swift:IQ3_XXS`。2 つとも 2026-10-16 に同じ手順で足した。足す前は `webui.db.bak-before-strata-5models-20261016` と
+  `open-webui.env.bak-before-strata-5models-20261016`）。API キーはどれも空。同時に動くのは 1 つだけなので、
   一覧に出るのは動いているものだけ。

@@ -18,7 +18,7 @@ flowchart LR
     portal["portal :8080<br/>入口ページ・起動と停止"]
     webui["Open WebUI :8081"]
     ollama["Ollama :11434<br/>qwen3.8:27b ほか"]
-    strata["Strata :8082 / 8083 / 8084<br/>MoE の CPU-GPU 分担推論"]
+    strata["Strata :8082〜8086<br/>MoE の CPU-GPU 分担推論"]
     h3d["Hunyuan3D :7860"]
     p3d["Pixal3D :7861"]
     comfy["ComfyUI :8188"]
@@ -49,7 +49,7 @@ flowchart LR
 | 層 | 仕組み | 効くところ |
 |---|---|---|
 | 入口ページ（`tools/portal/portal.py`） | 起動の前に、排他の対象を停止し（`GPU_EXCLUSIVE_KEYS`）、Ollama のモデルを降ろす（`OLLAMA_UNLOAD_BEFORE_START_KEYS`）。停止に失敗したら起動しない | 画面・API からの起動 |
-| systemd の unit | Strata 3 種は `Conflicts=` で互いを止める。`After=` は片側だけに書く（両側に書くと順序が輪になる） | `systemctl --user start` を直に叩いた場合 |
+| systemd の unit | Strata 5 種は `Conflicts=` で互いを止める。`After=` は一方向の鎖で片側だけに書く（両側に書くと順序が輪になる） | `systemctl --user start` を直に叩いた場合 |
 
 起動・停止の API は `POST /api/service/<key>/<start|stop>`。**`X-Portal-Request: 1` が必須**で、ブラウザの preflight を
 強制して、ほかのサイトの JavaScript からの操作を防ぐ。認証は無い（LAN 内の信頼を前提にする。公開するなら `ufw` か
@@ -64,7 +64,7 @@ flowchart LR
 | サーバー | 役割 | 状況 |
 |---|---|---|
 | Ollama | 既定の LLM（Qwen3.8-27B Q4_K_M・コンテキスト 65,536 で VRAM 22,201 MiB、生成 23〜26 tok/s） | 常駐。無操作 5 分でモデルを降ろす |
-| Strata | MoE の専門家を CPU と GPU に分担させる推論エンジン（OpenAI 互換 API）。VRAM に収まらない大きな MoE を動かす | 汎用版・Coder 版・公式版の 3 種（ポートが別、同時には載せない） |
+| Strata | MoE の専門家を CPU と GPU に分担させる推論エンジン（OpenAI 互換 API）。VRAM に収まらない大きな MoE を動かす | 汎用版・Coder 版・公式版・公式版 IQ3_S・Swift 1.5 の 5 種（ポートが別、同時には載せない） |
 | Hunyuan3D / Pixal3D | 4 枚の画像から 3D メッシュ | 重みと VRAM を食い合うため排他 |
 | ComfyUI | 水密なメッシュ（ゲーム用アセット）への変換 | ネイティブ部分（CGAL・CUDA 12.6）を自前でビルド |
 

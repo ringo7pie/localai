@@ -1,0 +1,48 @@
+[Unit]
+Description=Strata (Swift 1.5 Qwen3.8-Flash-Next IQ3_XXS, shorter thinking, OpenAI-compatible API, port 8086)
+# Qwen3.8-Flash-Next を思考が短く終わるように post-training した派生（UkisAI の Swift 1.5）。汎用版・Coder・公式版・公式版 IQ3_S と
+# 同じ engine で動き、RAM と VRAM を取り合うので同時には載せない。Conflicts= により、こちらを start すると systemd がほかの 4 つを止める（逆も同じ）。
+Conflicts=strata.service strata-coder.service strata-official.service strata-official-iq3s.service
+# Conflicts= だけでは止める順番が決まらない。2 つの間に順序の関係（After= か Before= のどちらか一方）があれば、
+# systemd は停止の job を起動の job より先に行う（systemd.unit の Conflicts=）。順序は一方向の鎖
+# strata → strata-coder → strata-official → strata-official-iq3s → strata-swift で、こちらは鎖の最後なので、ほかの 4 つ全部をこちらに書く。輪にならない。
+# Ollama と VRAM を食い合うので、Ollama のユニットには依存させない。起動前に Ollama のモデルを降ろすこと
+# （エキスパートのキャッシュは起動時の空き VRAM で決まる）。ComfyUI / Hunyuan3D / Pixal3D とも RAM と VRAM を取り合う。
+After=network.target strata.service strata-coder.service strata-official.service strata-official-iq3s.service
+# 読み込みに数分かかるので、失敗の繰り返しは 30 分に 3 回までにする（既定の 10 秒に 5 回では止まらない）。
+StartLimitIntervalSec=1800
+StartLimitBurst=3
+
+[Service]
+Type=simple
+# リポジトリのパスは、setup-server.sh が雛形の印をこの機体の絶対パスに置き換えて書く（scripts/lib/render-unit.sh）。手で写すときは自分で置き換える。
+WorkingDirectory=@REPO_ROOT@/tools/strata
+# STRATA_MAX_CONTEXT・STRATA_REASONING_BUDGET_TOKENS・STRATA_EXTRA_ARGS・STRATA_API_KEY などを読む（ほかの 4 つの env とは
+# 別のファイル）。先頭の "-" はファイルが無くてもエラーにしない意味。
+EnvironmentFile=-%h/.config/strata/strata-swift.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@REPO_ROOT@/tools/strata/run-strata serve --model swift
+# 上流のサーバーは engine の読み込みが終わってから待受を始める。API が応答するまで start を終えない
+# （systemctl --user start strata-swift が戻った時点で使える）。TimeoutStartSec より少し短くする。
+ExecStartPost=@REPO_ROOT@/tools/strata/run-strata wait-ready --model swift --timeout 880
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+# SIGTERM で上流のサーバーが engine に QUIT を送り、固定した RAM を返してから終わる。
+TimeoutStopSec=120
+# engine はエキスパートの RAM 複製を cudaHostRegister で固定し、残りを mlock で留める（docs/INSTALL.md:101）。
+# user ユニットでは systemd --user 自身の上限（この機体では 7.8 GiB）より上げられない。README の「memlock の扱い」。
+LimitMEMLOCK=infinity
+# RAM の安全弁。上限に当たったサービスだけがカーネルに落とされ、デスクトップは巻き込まれない。
+# 値は公式版（strata-official.service.example）と同じ 50G / 58G のまま。実測（README の「Swift 1.5」と「速さの設定と文脈長 262144」）:
+# - 2026-10-18 から、公式版と同じ通常のモード（エキスパート 39.97 GiB を全部 RAM に写してページロック。resident 版より 8〜12% 速い）。
+#   落とせない分は約 42.3 GiB: anon 41.80 + shmem 0.49 + kernel 約 0.35。残りは GGUF を読んだときの page cache で、上限まで溜まるが
+#   捨てられる（memory.peak 50.00 GiB = MemoryHigh）。起動 33 秒。
+# - resident 版（2026-10-16〜17）のときは約 30.7 GiB: ページロックした RAM 複製 27.49 GiB を含む shmem 28.4 + anon 2.0 + kernel 0.31
+#   （機体の RAM の空きの最小は 26.5 GiB）。
+# - MemoryMax=58G は汎用版と同じ理由・同じ値。
+MemoryHigh=50G
+MemoryMax=58G
+
+[Install]
+WantedBy=default.target

@@ -12,7 +12,9 @@
 | 8081 | Open WebUI | 8080 から移動する |
 | 8082 | Strata（Qwen3.8 Flash Next 125B の abliterated 版 IQ3_S。OpenAI 互換 API の推論エンジン） | 別途導入。systemd --user のユニット名は `strata`。自動起動しない |
 | 8083 | Strata Flash-Next Coder（同じ Strata で動く、コード向けのモデル。Qwen3.8-Flash-Next の 512 エキスパートを半分に削った版） | 別途導入。systemd --user のユニット名は `strata-coder`。自動起動しない。汎用の Strata とは同時に動かせない |
-| 8084 | Strata 公式版（Qwen3.8-Flash-Next の ISTA-DASLab 公式量子化 GSQ-RCO の IQ3_XXS。512 エキスパートのまま・abliterated ではない。汎用版と答えを比べる用） | 別途導入。systemd --user のユニット名は `strata-official`。自動起動しない。汎用の Strata・Coder 版とは同時に動かせない |
+| 8084 | Strata 公式版（Qwen3.8-Flash-Next の ISTA-DASLab 公式量子化 GSQ-RCO の IQ3_XXS。512 エキスパートのまま・abliterated ではない。汎用版と答えを比べる用） | 別途導入。systemd --user のユニット名は `strata-official`。自動起動しない。ほかの Strata とは同時に動かせない |
+| 8085 | Strata 公式版 IQ3_S（公式版と同じ公式モデルの軽い量子化 IQ3_S。2026-10-16 に追加） | 別途導入。systemd --user のユニット名は `strata-official-iq3s`。自動起動しない。ほかの Strata とは同時に動かせない |
+| 8086 | Strata Swift 1.5（UkisAI が Qwen3.8-Flash-Next を思考が短く終わるように追加学習した派生の IQ3_XXS。2026-10-16 に追加） | 別途導入。systemd --user のユニット名は `strata-swift`。自動起動しない。ほかの Strata とは同時に動かせない |
 | 7860 | Hunyuan3D（4 枚の画像 → 3D メッシュ） | 別途導入 |
 | 7861 | Pixal3D（1〜4 枚の画像 → 3D メッシュ、別方式） | 別途導入 |
 | 8188 | ComfyUI（1 枚の画像 → 水密メッシュ・低ポリのゲーム用アセット。PixelArtistry のワークフロー） | 別途導入。systemd --user のユニット名は `comfyui` |
@@ -21,16 +23,17 @@
 ## 入口ページで何が分かるか
 
 - 上部の GPU 帯: VRAM の使用量 / 総量（数値とバー）、Ollama に読み込まれているモデル名。
-  A30 は Qwen と Strata（3 つとも）・Hunyuan3D・Pixal3D・ComfyUI を同時には載せられないため、モデルが読み込まれているときは
+  A30 は Qwen と Strata（5 つとも）・Hunyuan3D・Pixal3D・ComfyUI を同時には載せられないため、モデルが読み込まれているときは
   「Strata（汎用版・Coder 版・公式版）は起動時に自動で降ろす。Hunyuan3D・Pixal3D・ComfyUI を起動する前には Qwen を降ろす必要がある」旨を表示する。
 - Open WebUI / Strata / Strata Flash-Next Coder / Strata 公式版 / Hunyuan3D / Pixal3D / ComfyUI の 7 枚のカード: 名前・説明・ポート・状態バッジ
   （稼働中 / 起動中… / 停止中 / 未導入）。稼働中のものだけリンクが押せる。
   「未導入」は systemd のユニットがまだ無いときに出る（Strata・Strata Flash-Next Coder・Strata 公式版・ComfyUI のユニットを作る前など）。
-- Strata の 3 枚のカード（汎用版 `strata`・Coder 版 `strata-coder`・公式版 `strata-official`）は、稼働中に 2 つのリンクを出す。1 つ目は
-  Strata 自身の画面（そのカードのポート。汎用版は 8082、Coder 版は 8083、公式版は 8084。上流のサーバーはルートでチャットと
+- Strata の 5 枚のカード（汎用版 `strata`・Coder 版 `strata-coder`・公式版 `strata-official`・公式版 IQ3_S `strata-official-iq3s`・
+  Swift 1.5 `strata-swift`）は、稼働中に 2 つのリンクを出す。1 つ目は
+  Strata 自身の画面（そのカードのポート。汎用版は 8082、Coder 版は 8083、公式版は 8084、公式版 IQ3_S は 8085、Swift 1.5 は 8086。上流のサーバーはルートでチャットと
   Monitor の画面を返す）、2 つ目は Open WebUI（8081）。ふだんのチャットは Open WebUI のモデル一覧から
   Strata のモデルを選んで使う。Open WebUI が動いていなければ、2 つ目は押せない案内文になる。
-  リンクの定義は 3 枚のカードで共有している（`index.html` の `STRATA_OPEN_LINKS`。1 つ目のリンク先のポートは
+  リンクの定義は 5 枚のカードで共有している（`index.html` の `STRATA_OPEN_LINKS`。1 つ目のリンク先のポートは
   `SERVICES` の `port` から取る）。
 - 7 枚のカードすべてに「起動」「停止」ボタンがあり、入口ページから systemd --user のユニットを
   起動・停止できる（下記「起動・停止」を参照）。ユニットがまだ無いサービスはボタンが出ない。
@@ -44,12 +47,13 @@
 ## 起動・停止（Open WebUI / Strata / Strata Flash-Next Coder / Strata 公式版 / Hunyuan3D / Pixal3D / ComfyUI）
 
 **PC 起動時に自動起動するのは入口ページ（`portal`）だけ。** Open WebUI（`open-webui`）・
-Strata（`strata`）・Strata Flash-Next Coder（`strata-coder`）・Strata 公式版（`strata-official`）・Hunyuan3D（`hunyuan3d`）・Pixal3D（`pixal3d`）・ComfyUI（`comfyui`）は自動起動しない。A30 の VRAM は 24576 MiB しかなく、
+Strata（`strata`）・Strata Flash-Next Coder（`strata-coder`）・Strata 公式版（`strata-official`）・Strata 公式版 IQ3_S（`strata-official-iq3s`）・
+Strata Swift 1.5（`strata-swift`）・Hunyuan3D（`hunyuan3d`）・Pixal3D（`pixal3d`）・ComfyUI（`comfyui`）は自動起動しない。A30 の VRAM は 24576 MiB しかなく、
 常時起動しておくと待機中でも VRAM・RAM を占有する。RAM が 31 GiB だった頃に、これで PC が
 ハングしたため自動起動をやめた（RAM はその後 62.5 GiB に増設したが、VRAM の排他は変わらない）。
 使うときだけ入口ページから起動する。
 
-- Hunyuan3D・Pixal3D・Strata（3 つとも）は起動に数十秒〜数分かかる（モデルの読み込み。汎用の Strata は約 83GB）。
+- Hunyuan3D・Pixal3D・Strata（5 つとも）は起動に数十秒〜数分かかる（モデルの読み込み。汎用の Strata は約 83GB）。
   ボタンを押した直後は「起動中…」のまま。ポートが実際に開くまで待つ必要がある。
 - Hunyuan3D は起動すると VRAM を**約 5.4GB** 使用する。Qwen（Open WebUI のチャット）と
   同時に使うと応答が遅くなる。
@@ -59,18 +63,18 @@ Strata（`strata`）・Strata Flash-Next Coder（`strata-coder`）・Strata 公�
 | 項目 | 内容 |
 |---|---|
 | 必須ヘッダ | `X-Portal-Request: 1`（無ければ 403。理由は下記） |
-| 対象 `key` | `open-webui`、`strata`、`strata-coder`、`strata-official`、`hunyuan3d`、`pixal3d`、`comfyui` のみ（それ以外の key は 404） |
+| 対象 `key` | `open-webui`、`strata`、`strata-coder`、`strata-official`、`strata-official-iq3s`、`strata-swift`、`hunyuan3d`、`pixal3d`、`comfyui` のみ（それ以外の key は 404） |
 | `action` | `start` か `stop` のみ（それ以外は 400） |
 | GET でこのパスを叩いた場合 | 405（誤操作防止。起動・停止は POST のみ） |
 | ユニットがまだ無い（未導入の）サービスを操作しようとした場合 | 409 |
-| 成功・失敗にかかわらず | 500 を返さず、常に `{"ok": bool, "message": str, "state": str}` を JSON で返す。他のサービスを止めたときは `stopped`、Strata（`strata`・`strata-coder`・`strata-official`）の起動で Ollama のモデルを降ろす処理をしたときは `unloaded_models` も入る（下記） |
+| 成功・失敗にかかわらず | 500 を返さず、常に `{"ok": bool, "message": str, "state": str}` を JSON で返す。他のサービスを止めたときは `stopped`、Strata（`strata`・`strata-coder`・`strata-official`・`strata-official-iq3s`・`strata-swift`）の起動で Ollama のモデルを降ろす処理をしたときは `unloaded_models` も入る（下記） |
 | `start` のタイムアウト | 30 秒（`systemctl start --no-block` で待たずに返る。Strata のように「API が応答するまで戻らない」ユニットでも、起動中の表示のまま成功で返る） |
 | `stop` のタイムアウト | 90 秒（Hunyuan3D・Pixal3D は終了に時間がかかることがある） |
 
 **認証は無い。LAN 内から誰でも起動・停止を呼べる。** LAN の外には公開していない前提での割り切り。
 そのうえで、次の 2 つで被害の範囲を絞っている。
 
-1. 操作できるユニットは `open-webui`・`strata`・`strata-coder`・`strata-official`・`hunyuan3d`・`pixal3d`・`comfyui` の 7 つに固定。利用者が渡した文字列を
+1. 操作できるユニットは `open-webui`・`strata`・`strata-coder`・`strata-official`・`strata-official-iq3s`・`strata-swift`・`hunyuan3d`・`pixal3d`・`comfyui` の 9 つに固定。利用者が渡した文字列を
    そのまま `systemctl` へ渡すことはない（`key` で `SERVICES` を引き、こちら側が持つユニット名だけを使う）。
    入口ページ自身（`portal`）は一覧に無いので、自分を止められない。
 2. `X-Portal-Request: 1` ヘッダを必須にしている。ヘッダの無い単純な POST は他サイトの JavaScript からでも
@@ -89,13 +93,15 @@ curl -X POST -H "X-Portal-Request: 1" http://<server-ip>:8080/api/service/hunyua
 Hunyuan3D・Pixal3D はどちらも GPU（VRAM）を使う 3D メッシュ生成器で、ComfyUI も Pixal3D / TRELLIS.2 の
 3D 生成で GPU を大きく使う。Strata の汎用版は VRAM を約 20GB 以上、RAM を約 50GB 以上使う推論エンジンで、
 Coder 版（`strata-coder`）は VRAM を大きく、RAM を約 32GB 級使う。公式版（`strata-official`）は汎用版と同程度
-（2026-10-07 の実測で、cgroup の `memory.peak` 50.00 GiB、VRAM は生成中 23,899 MiB）。A30 1 枚・RAM 62.5 GiB では 6 つを
-同時に載せられず、**同時に動かせるのは 6 つのうち 1 つだけ**（Strata の 3 つどうしも同時には動かせない）。
+（2026-10-07 の実測で、cgroup の `memory.peak` 50.00 GiB、VRAM は生成中 23,899 MiB）。公式版 IQ3_S（`strata-official-iq3s`）と
+Swift 1.5（`strata-swift`、2026-10-16 に追加）も汎用版・公式版と同じ程度。A30 1 枚・RAM 62.5 GiB では 8 つを
+同時に載せられず、**同時に動かせるのは 8 つのうち 1 つだけ**（Strata の 5 つどうしも同時には動かせない）。
 **どれかを起動すると、
 他のサービスが動いていれば（稼働中・起動中）自動で先に止めてから起動する。**
 
 - 純粋関数 `services_to_stop_before_start(key, states)`（`portal.py`）が、`GPU_EXCLUSIVE_KEYS =
-  ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official")` のうち起動対象以外で running / starting のものの key 一覧を返す。
+  ("hunyuan3d", "pixal3d", "comfyui", "strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift")` のうち
+  起動対象以外で running / starting のものの key 一覧を返す。
   例: ComfyUI を起動するとき Pixal3D が running なら `["pixal3d"]`。Open WebUI はグループ外なので
   常に空リスト。
 - `POST /api/service/<key>/start` はこのリストのユニットを先に `systemctl --user stop` してから
@@ -109,8 +115,9 @@ Coder 版（`strata-coder`）は VRAM を大きく、RAM を約 32GB 級使う�
 
 ### Strata の起動前に Ollama のモデルを降ろす
 
-Strata（汎用版・Coder 版・公式版とも）は Qwen（Ollama。`qwen3.8:27b` で実測 22 GiB）と VRAM を同居できない。そのため
-`POST /api/service/strata/start`・`POST /api/service/strata-coder/start`・`POST /api/service/strata-official/start` は、同じ GPU を使うサービスを止めたあと、
+Strata（汎用版・Coder 版・公式版・公式版 IQ3_S・Swift 1.5 とも）は Qwen（Ollama。`qwen3.8:27b` で実測 22 GiB）と VRAM を同居できない。そのため
+`POST /api/service/strata/start`・`POST /api/service/strata-coder/start`・`POST /api/service/strata-official/start`・
+`POST /api/service/strata-official-iq3s/start`・`POST /api/service/strata-swift/start` は、同じ GPU を使うサービスを止めたあと、
 **Ollama に載っているモデルをすべて VRAM から降ろしてから** Strata を起動する。
 
 - 載っているモデルは `http://127.0.0.1:11434/api/ps` で取り、1 つずつ
@@ -123,7 +130,7 @@ Strata（汎用版・Coder 版・公式版とも）は Qwen（Ollama。`qwen3.8:
   `/api/ps` に到達できず確認できなかったこと）。VRAM が足りなければ Strata の起動が失敗するおそれがある。
 - Strata が停止中（`stopped`）のときだけ降ろす。すでに稼働中・起動中の Strata への start は何も起こらないので、
   無関係な Qwen の応答を途中で切らない。未導入（409）・他のサービスの停止に失敗した（起動中止）ときも降ろさない。
-- 対象は Strata の 3 つだけにしている（`OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official")`）。Hunyuan3D は、上流への当て物 0001 を
+- 対象は Strata の 5 つだけにしている（`OLLAMA_UNLOAD_BEFORE_START_KEYS = ("strata", "strata-coder", "strata-official", "strata-official-iq3s", "strata-swift")`）。Hunyuan3D は、上流への当て物 0001 を
   当てた環境では生成の直前に自分で降ろす（当て物は公開版に含まない。公開版では `serve` の起動時と、手で実行する
   `run-hunyuan3d free-vram` だけ。`knowledge/10-silver/areas/hunyuan3d.md`）。Pixal3D・ComfyUI は、これまでの動作（画面の警告を見て
   利用者が降ろす）を変えないため含めていない。増やすときはこのタプルと、`index.html` の同名の配列に足す
@@ -148,7 +155,7 @@ systemd ユニットが `EnvironmentFile` として読む env ファイルに書
 | 必須ヘッダ | `X-Portal-Request: 1`（起動・停止と同じ。無ければ 403） |
 | 対象 `key` | `hunyuan3d`、`pixal3d` のみ。それ以外の key は 404 |
 | `low-vram` 以外の設定名・`on`/`off` 以外の値 | 400 |
-| その設定を持たないサービス（`open-webui`、`strata`、`strata-coder`、`strata-official`、`comfyui`。Strata の 3 つ・ComfyUI には低 VRAM のスイッチを付けていない） | 400 |
+| その設定を持たないサービス（`open-webui`、`strata`、`strata-coder`、`strata-official`、`strata-official-iq3s`、`strata-swift`、`comfyui`。Strata の 5 つ・ComfyUI には低 VRAM のスイッチを付けていない） | 400 |
 | **稼働中・起動中（running / starting）のサービス** | **409**。`{"ok": false, "message": "変更するには先に停止してください。"}` |
 | GET でこのパスを叩いた場合 | 405 |
 | 成功時 | `{"ok": true, "message": str, "value": bool}` |
@@ -211,6 +218,9 @@ Coder 版（`strata-coder`）は RAM を約 36 GiB 使う（2026-10-07 の実測
 落とせない分は約 30.2 GiB で、残りは GGUF を写したページキャッシュ）。根拠は `tools/strata/README.md` の「公式版」の節。
 値を変えるときは `portal.py` の `SERVICES` の `strata-official` の `memory_default` を書き換え、試験の値も合わせる。
 
+公式版 IQ3_S（`strata-official-iq3s`）と Swift 1.5（`strata-swift`、2026-10-16 に追加）も、実測前の仮置きとして同じ 50 / 54 GiB。
+実測したら `tools/strata/README.md` の値に合わせて見直す。
+
 ### systemctl への反映（恒久設定と `--runtime` の両方に書く理由）
 
 変更は `systemctl --user set-property <unit> MemoryHigh=<N>G MemoryMax=<M>G` を**続けて 2 回**
@@ -235,7 +245,7 @@ Coder 版（`strata-coder`）は RAM を約 36 GiB 使う（2026-10-07 の実測
 | 項目 | 内容 |
 |---|---|
 | 必須ヘッダ | `X-Portal-Request: 1`（起動・停止と同じ。無ければ 403） |
-| 対象 `key` | `open-webui`、`strata`、`strata-coder`、`strata-official`、`hunyuan3d`、`pixal3d`、`comfyui` のみ。存在しない key（`portal` を含む）・`unit` が `None` のサービスは 404 |
+| 対象 `key` | `open-webui`、`strata`、`strata-coder`、`strata-official`、`strata-official-iq3s`、`strata-swift`、`hunyuan3d`、`pixal3d`、`comfyui` のみ。存在しない key（`portal` を含む）・`unit` が `None` のサービスは 404 |
 | ユニットがまだ無い（未導入の）サービス | 409 |
 | `high_gib`/`max_gib` が整数でない | 400 |
 | `min_gib ≤ high ≤ max ≤ allowed_max_gib` を満たさない | 400（理由を `message` に） |
@@ -364,6 +374,20 @@ SWE-bench Verified 75.6 などの数字は作者の報告。日本語は実用�
    ツールチップ・Qwen の警告文・ポートの説明を足した。「Strata の画面」リンクは `STRATA_OPEN_LINKS` を使う。
 4. `strata-official` のユニットがまだ無い間は、カードは「未導入」のまま（ボタンは出ず、
    `POST /api/service/strata-official/start` は 409）。
+
+### Strata 公式版 IQ3_S（`strata-official-iq3s`）と Strata Swift 1.5（`strata-swift`）
+
+2026-10-16 に足した 4 つ目・5 つ目の Strata。公式版 IQ3_S は公式版と同じ公式モデルの軽い量子化（API のモデル名 `strata-official:IQ3_S`、
+ポート 8085）、Swift 1.5 は UkisAI が Qwen3.8-Flash-Next を思考が短く終わるように追加学習した派生の IQ3_XXS（`strata-swift:IQ3_XXS`、ポート 8086。
+Swift Open License v1.0。この機体では個人の非商用・研究用途）。どちらも自動起動しない。導入はこのツールの外で行う（`tools/strata/README.md`）。
+入口ページ側でしたことは公式版と同じ型:
+
+1. `SERVICES` に `strata-official-iq3s`（`"name": "Strata 公式版 IQ3_S（軽い量子化）"`）と `strata-swift`（`"name": "Strata Swift 1.5（IQ3_XXS）"`）を
+   `strata-official` の次に順に足した。`options` 無し。メモリ上限の既定値は実測前の仮置きで 50 / 54 GiB。
+2. `GPU_EXCLUSIVE_KEYS`・`OLLAMA_UNLOAD_BEFORE_START_KEYS` に足した（`portal.py` と `index.html` の両方）。
+3. `index.html` に `SERVICE_META` の 2 件・用語集（カード名の括弧の前が用語になる: 「Strata 公式版 IQ3_S」「Strata Swift 1.5」）・
+   ツールチップ・Qwen の警告文・ポートの説明・ほかのカードの「GPU の排他」の文言を足した。
+4. ユニットがまだ無い間は、カードは「未導入」のまま。
 
 ## 別の PC から開く
 

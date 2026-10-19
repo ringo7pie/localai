@@ -45,7 +45,8 @@ this project is not affiliated with or endorsed by them.
 
 | モデル | 配布元 | 条件 |
 |---|---|---|
-| Qwen3.8-27B（Ollama `qwen3.8:27b`）・Qwen3.8-Flash-Next | Qwen・Ollama・[ISTA-DASLab](https://huggingface.co/ISTA-DASLab) | 配布元のカードの表示に従う。Strata の Coder 版・公式版は HF の表示で Apache-2.0 |
+| Qwen3.8-27B（Ollama `qwen3.8:27b`）・Qwen3.8-Flash-Next | Qwen・Ollama・[ISTA-DASLab](https://huggingface.co/ISTA-DASLab) | 配布元のカードの表示に従う。Strata の Coder 版・公式版（IQ3_XXS・IQ3_S）は HF の表示で Apache-2.0 |
+| Swift 1.5 Qwen3.8-Flash-Next（Strata `strata-swift:IQ3_XXS`） | [ukisai](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF)（UkisAI） | **Swift Open License v1.0**（UkisAI の追加学習の部分。年商 100 万ドル以上の法人の商用利用は別契約「Swift Enterprise License」が要る。非商用・研究用途は可）+ 元の Qwen の部分は Qwen Community License 1.0（配布元の `LICENSE-QWEN`）。このリポジトリでは個人の非商用・研究用途で使う（2026-10-16）。配布元の付録の表示: Copyright 2026 UkisAI. Swift Contribution licensed under the Swift Open License v1.0. Derivative of Qwen3.8-Flash-Next, Copyright (c) 2026 Qwen, Qwen Community License 1.0. |
 | Strata 汎用版（RVN-Qwen3.8-Flash-Next-Abliterated-Uncensored IQ3_S） | [jimmy31chen](https://huggingface.co/jimmy31chen/RVN-Qwen3.8-Flash-Next-Abliterated-Uncensored-IQ3_S-Strata) | カードの表示に従う。abliterated（拒否の方向を取り除いた版）で、有害な依頼にも応じる。LAN に開くときは `STRATA_API_KEY` を付ける |
 | Gemma 4 系（e4b・31b） | Google | Gemma の利用規約と禁止利用ポリシー |
 | Hunyuan3D-2mv・Hunyuan3D-2 | [tencent](https://huggingface.co/tencent) | Tencent Hunyuan 3D 2.0 Community License |
@@ -67,7 +68,7 @@ this project is not affiliated with or endorsed by them.
 
 ## 5. 評価の記録に含まれるモデルの出力
 
-`tools/model-eval/results/` と `Documents/` の評価レポートは、各モデル（Claude・Qwen・Gemma・Strata の 3 種ほか）が
+`tools/model-eval/results/` と `Documents/` の評価レポートは、各モデル（Claude・Qwen・Gemma・Strata の 5 種ほか）が
 出題に答えた出力を、評価の記録として含む。出力の取り扱いは各提供元の利用規約に従う。
 Hunyuan3D・Pixal3D が生成した 3D メッシュは含めない。
 

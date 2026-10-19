@@ -29,3 +29,24 @@ Strata の上流（`vendor/Strata`、固定コミットは `tools/strata/stra/co
 - 起動前に、全モデルと MTP の draft 層の GGUF の page cache を捨てると避けられる（root 不要、`tools/strata/README.md`
   の「v0.1.44.1 への更新」に同じ手順がある）:
   `os.posix_fadvise(os.open(path, os.O_RDONLY), 0, 0, os.POSIX_FADV_DONTNEED)` をモデルごとに呼ぶ。
+- 2026-10-18 にも、`tools/model-eval/run_local.sh` が Coder を止めて RVN を起動したときに同じく落ちた。直前が Ollama のときは、
+  Ollama の重み（`/usr/share/ollama/.ollama/models/blobs/sha256-*`。ollama 所有だが読める）の page cache も同じ呼び出しで捨てられ、
+  捨ててから起動し直すと通った（buff/cache 55 GiB → 3 GiB）。`run_local.sh` はこの手順を自動では行わない。
+
+## 0.1.40〜0.1.44 の速さの設定と文脈長 262144 の、この機体（A30・RAM 62.5 GiB・i7-12700）での実測（2026-10-17〜18）
+
+数値と採った設定は `tools/strata/README.md` の「速さの設定と文脈長 262144」を Read する。ここには上流の記述と違った点と、判断の根拠だけを置く。
+
+- `--adapt-async 1` は 5 モデルすべてで 4K 入力・thinking ありが 6〜14% 速い（上流の実測 +7〜11% と同じ範囲）。採った。
+- 通常モード（エキスパートを全部 RAM に写す）は resident 版（`--resident-experts`）より 8〜20% 速い。エキスパートが 39.97 GiB の
+  公式 IQ3_XXS と Swift 1.5 は落とせない RAM が約 42.3 GiB で MemoryHigh 50G に収まる。46.84 GiB の公式 IQ3_S と 53.3 GiB の RVN は
+  収まらないので resident 版のまま。
+- `--kv-grow` は通常モード限定（resident 版と KV ストリーミングでは engine が無効にする）。262144 にしても GPU のキャッシュの枠が
+  131072・kv-grow なしより多く、速さは同じ範囲。131072 で kv-grow だけ足しても速さは変わらない（枠だけ増える）。
+- `--kv-resident 65536`（KV ストリーミング）は resident 版と併用できる。RVN では 262144 で枠が 6549 → 7732 に増えて 4% 速く、
+  RAM は +1.0 GiB。公式 IQ3_S では差 2% で RAM +2.3 GiB なので付けない。
+- **`--max-context` を 131072 → 262144 にすると、KV が VRAM にあっても cgroup の落とせない RAM（shmem + anon）が約 1.9 GiB 増える**
+  （RVN 43.2 → 45.1 GiB）。上流 `docs/DETAILS.md` の「low-RAM モードでは文脈長は RAM に数えない」とは合わない。原因は未確認。
+- `STRATA_IQ3S_MT1=1`（IQ3_S 型のエキスパートの複数トークン用カーネル）は公式 IQ3_XXS で効かない（+1%、短い質問 −6.5%）。
+- 262144 の実機確認: 公式 IQ3_XXS に 190,947 トークンの入力を送り、prefill 1,760 tok/s（最初の文字まで 109 秒）・生成 61.3 tok/s で
+  正しい答えが返った。

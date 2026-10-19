@@ -251,7 +251,7 @@ def classify_port_status(port: int, in_use: bool, service_active: bool, service_
 def classify_other_service(other_name: str, other_active: bool) -> tuple[bool, str]:
     """同時に載せられないほかのモデルのユニット（表示のみ。常に OK）。
 
-    3 つのユニットは Conflicts= で互いを止めるので、こちらを start すると systemd がほかを止める。
+    5 つのユニットは Conflicts= で互いを止めるので、こちらを start すると systemd がほかを止める。
     手で起動した serve はこの対象にならない。
     """
 
@@ -350,8 +350,10 @@ def build_engine_args(
     - --resident-experts（low-RAM モードの resident 版）を足す。エキスパート 53.3 GiB を全部 RAM に置く
       通常のモードは「エキスパート + 約 10 GB」= 63 GB を要し、この機体では足りない。resident 版は GPU が
       持たない分だけを RAM に写す（DETAILS.md の Low-RAM mode, resident）。
-    - --kv-resident（KV を RAM に置く）は付けない。low-RAM モードでは KV は VRAM に置く（setup.py も同じ）。
-    - --max-context はカードの 262144 ではなく 131072（65536 から始めて実測で広げた。env ファイルで変える）。
+    - --kv-resident（KV ストリーミング: KV を RAM に置き、VRAM には直近の N セル）は kv_resident を与えたときだけ付ける。
+      2026-10-18 から汎用版（rvn）は 65536（262144 で枠が増えて 4% 速い）。ほかの 4 つは付けない（config の各注記）。
+    - --max-context はモデルの上限 262144（65536 → 131072 → 262144 と実測で広げた。config.DEFAULT_MAX_CONTEXT の注記。
+      env ファイルで変える）。
     - --mtp（MTP の draft 層）は、scripts/build-mtp.sh で作ってあれば付ける（mtp_dir）。カードは任意としているが、
       実測で thinking ありの 4K 入力が 42→61 tok/s になった。--spec-min-p 0.5 は上流 setup.py が --mtp と
       一緒に書く値（setup.py:4775-4777）。無ければ --spec 4 は suffix / prompt-lookup の draft だけで効く。

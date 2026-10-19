@@ -17,8 +17,8 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 | `tools/hunyuan3d/` | 正面・背面・左・右の 4 枚の画像から 3D メッシュを作る Hunyuan3D-2mv（ポート 7860） |
 | `tools/pixal3d/` | 同じく複数画像から 3D メッシュを作る Pixal3D（TencentARC、ポート 7861）。Hunyuan3D とは排他 |
 | `tools/comfyui/` | ComfyUI と PixelArtistry の防水メッシュ用ワークフロー（ポート 8188）。WTiVo のネイティブ部分（CGAL・CUDA 12.6）を自前でビルドする |
-| `tools/strata/` | MoE の CPU-GPU 分担推論エンジン Strata（OpenAI 互換 API）。汎用版 RVN IQ3_S（8082、unit `strata`）・Coder IQ1_M（8083、`strata-coder`）・公式 IQ3_XXS（8084、`strata-official`）。モデルごとの値は `stra/config.py` の `ModelSpec` |
-| `tools/portal/` | ポート 8080 のサービス入口ページ。Open WebUI / Strata 3 種 / Hunyuan3D / Pixal3D / ComfyUI を起動・停止する |
+| `tools/strata/` | MoE の CPU-GPU 分担推論エンジン Strata（OpenAI 互換 API）。汎用版 RVN IQ3_S（8082、unit `strata`）・Coder IQ1_M（8083、`strata-coder`）・公式 IQ3_XXS（8084、`strata-official`）・公式 IQ3_S（8085、`strata-official-iq3s`）・Swift 1.5 IQ3_XXS（8086、`strata-swift`）。モデルごとの値は `stra/config.py` の `ModelSpec` |
+| `tools/portal/` | ポート 8080 のサービス入口ページ。Open WebUI / Strata 5 種 / Hunyuan3D / Pixal3D / ComfyUI を起動・停止する |
 | `tools/qwen-model-bench/` | Ollama の 1 モデルをこの機体で実用になるか測る（`bench-model.sh <モデル名>`、結果は `results/`） |
 | `tools/gpu-watch-gui/` | gpu-watch.sh の値を見る小さな常駐ウィンドウ（GTK4）。ログイン時に自動起動できる |
 | `scripts/` | 導入スクリプトの共通部品（`lib/render-unit.sh` `lib/server-host.sh`）、試験（`tests/`）、Pages の組み立て（`build-site.sh`） |
@@ -34,7 +34,7 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 
 - **GPU は 1 枚を取り合う。** Ollama（Qwen 27B で VRAM 22 GiB）・Strata・Hunyuan3D・Pixal3D・ComfyUI は同時に載らない。
   排他は 2 か所で実装している: 入口ページの `portal.py` の `GPU_EXCLUSIVE_KEYS`（起動前にほかを止める）と
-  `OLLAMA_UNLOAD_BEFORE_START_KEYS`（起動前に Ollama のモデルを降ろす）、Strata 3 種どうしは systemd の `Conflicts=`
+  `OLLAMA_UNLOAD_BEFORE_START_KEYS`（起動前に Ollama のモデルを降ろす）、Strata 5 種どうしは systemd の `Conflicts=`
   （`After=` は一方向だけに書く。両側に書くと順序が輪になる）。サービスを足すときは両方と `index.html` の同じキーを揃える。
 - **サービスは systemd の user unit で、enable しない。** 各ツールの `systemd/*.service.example` が雛形で、`setup-server.sh` が
   `@REPO_ROOT@` をこの clone の絶対パスに置換して `~/.config/systemd/user/` に置く（`scripts/lib/render-unit.sh`。既にあれば上書きしないので、
@@ -42,10 +42,11 @@ NVIDIA A30 1 枚でローカル LLM を動かし、その上に作業を任せ�
 - **ツールごとの共通の型。** `setup-server.sh`（非対話・sudo を使わない導入。上流の対話式インストーラを置き換える）、
   `run-<tool>`（`serve` / `doctor` などの入口）、`vendor/`（上流をコミット固定で取り込む。直接は直さず `patches/` で当てる。**Hunyuan3D のパッチは Tencent のライセンスの地域制限のため追跡・公開しない**。手元の `tools/hunyuan3d/patches/` は `.gitignore`）、
   `models/` と `.venv` は追跡しない。Python と CUDA はツールごとに違う（下の「ビルドとテスト」）。
-- **Open WebUI（8081、このリポジトリ外）** は Ollama と Strata 3 種（8082〜8084 の `/v1`）につなぐ。接続先は
+- **Open WebUI（8081、このリポジトリ外）** は Ollama と Strata 5 種（8082〜8086 の `/v1`）につなぐ。接続先は
   `~/.local/share/open-webui/data/webui.db` の `config` テーブルが優先され、env は初期値でしかない（`tools/strata/README.md`）。
 - **Strata の設定は起動のたびに作り直される。** `run-strata serve` が `run/strata-server*.json` を `stra/config.py` と env から
-  生成するので、画面の Settings で変えた値は次の起動で消える。思考の予算（`STRATA_REASONING_BUDGET_TOKENS`）なども env で変える。
+  生成するので、画面の Settings で変えた値は次の起動で消える。思考の予算（`STRATA_REASONING_BUDGET_TOKENS`）や
+  コンテキスト長（`STRATA_MAX_CONTEXT`。既定はモデルの上限 262144）なども env で変える。
 
 ## ビルドとテスト
 

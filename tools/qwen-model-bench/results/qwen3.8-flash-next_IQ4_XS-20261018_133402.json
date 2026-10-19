@@ -1,0 +1,22 @@
+{
+  "model": "qwen3.8-flash-next:IQ4_XS",
+  "tokens_per_sec": 8.3,
+  "eval_count": 249,
+  "load_duration_sec": 20.1,
+  "total_elapsed_sec": 55,
+  "placement": {
+    "size_bytes": 50812524952,
+    "size_vram_bytes": 21815025991,
+    "gpu_percent": 43
+  },
+  "peaks": {
+    "vram_mib": 22770,
+    "ram_mib": 5068,
+    "swap_mib": 1340,
+    "memory_pressure_full_max": 1.0,
+    "memory_pressure_full_mean": 0.32,
+    "samples": 54
+  },
+  "usable": true,
+  "reasons": []
+}

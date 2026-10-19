@@ -71,7 +71,8 @@ GPU の使用量・Ollama のモデル・各サービスの状態と「起動」
 - モデルと MTP の材料で約 100 GB を取得する。RAM が足りないと `doctor`（`run-strata doctor`）が NG を出す。
   ほかの Strata を止めておく。
 - API は OpenAI 互換。`http://<server-ip>:8082/v1`、モデル名は `strata-flash-next:IQ3_S`
-  （Coder は 8083 `strata-flash-coder:IQ1_M`、公式は 8084 `strata-official:IQ3_XXS`）。
+  （Coder は 8083 `strata-flash-coder:IQ1_M`、公式は 8084 `strata-official:IQ3_XXS`、公式の IQ3_S は 8085 `strata-official:IQ3_S`、
+  Swift 1.5 は 8086 `strata-swift:IQ3_XXS`）。
 - 起動のたびに設定が作り直される。画面の Settings で変えた値は残らない。思考の予算などは環境変数
   （`~/.config/strata/*.env`）で変える。詳しくは `tools/strata/README.md`。
 - **汎用版は abliterated** で有害な依頼にも応じる。LAN に開くなら `STRATA_API_KEY` を付ける。
@@ -121,7 +122,7 @@ Claude Code への MCP 登録（`claude mcp add -s user qwen-worker`）までを
 |---|---|
 | サーバーからは動くが、ほかの PC から見えない | ファイアウォールでポートを許可したか（`lan-access.md`） |
 | 起動ボタンを押しても「起動中…」のまま | 冷えた状態では 4〜5 分かかる。ポートが開くまで待つ。`journalctl --user -u <名前>` |
-| `Conflicts` で別の Strata が止まる | 仕様。3 種は同時に載せない |
+| `Conflicts` で別の Strata が止まる | 仕様。5 種は同時に載せない |
 | RAM 不足でサービスが落ちる | `MemoryMax` の歯止めが効いた。ほかの重いサービスを止める。値は入口ページで変える |
 | 設定ファイルを変えたのに反映されない | Strata は起動のたびに作り直す。Open WebUI の接続先は DB が優先される |
 | 試験が `SKIP` になる | 実機が要る試験（`hunyuan3d-real`・`local-ai-bridge-real`）は手で流す |

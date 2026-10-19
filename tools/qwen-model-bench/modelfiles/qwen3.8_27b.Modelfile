@@ -1,0 +1,5 @@
+# qwen3.8:27b の文脈長の上限（2026-10-18）。A30（VRAM 24 GiB）で KV キャッシュ q8_0 のとき、全部 GPU に載る最大。
+# 当て方: ollama create qwen3.8:27b -f この file（FROM に同じ名前を書き、template・ほかの PARAMETER・LICENSE を引き継いだまま
+# num_ctx だけ変える）。根拠と実測は tools/qwen-model-bench/README.md の「文脈長の上限」。
+FROM qwen3.8:27b
+PARAMETER num_ctx 114688

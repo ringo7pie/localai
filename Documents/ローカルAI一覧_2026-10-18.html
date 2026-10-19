@@ -1,0 +1,766 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ローカル AI 一覧 2026-10-18</title><style>
+:root{color-scheme:light;--surface:#fcfcfb;--surface-2:#f3f3f1;--grid:#e6e5e1;--axis:#bdbcb6;
+--text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#76756f;
+--c-ollama:#2a78d6;--b-ollama:#dae7f5;--c-strata:#eb6834;--b-strata:#f9e4db;
+--c-3d:#6250d6;--b-3d:#e3e0f5;--c-tool:#199e70;--b-tool:#d8efe5;
+--st-good:#0ca30c;--st-stop:#8a8f98;--st-critical:#d03b3b}
+body{margin:0;background:var(--surface);color:var(--text-primary);
+font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;line-height:1.65}
+main{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+h1{font-size:1.6rem;margin:0 0 4px}
+h2{font-size:1.3rem;margin:44px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--grid)}
+h3{font-size:1.05rem;margin:24px 0 8px}
+p{margin:6px 0}
+.sub,.caption{color:var(--text-secondary)}.caption{font-size:.85rem;margin:4px 0 0}.muted{color:var(--text-muted)}
+code{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:.88em;background:var(--surface-2);
+padding:0 4px;border-radius:3px}
+nav ol{display:flex;flex-wrap:wrap;gap:4px 18px;padding-left:20px;margin:8px 0}
+.tiles{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0}
+.tile{flex:1 1 220px;background:var(--surface-2);border-radius:8px;padding:12px 16px;border-top:6px solid var(--cat,var(--grid))}
+.tile-label{font-size:.85rem;color:var(--text-secondary)}.tile-value{font-size:1.3rem;font-weight:700}
+.tile-sub{font-size:.85rem;color:var(--text-muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:.88rem;color:var(--text-secondary);margin:8px 0}
+.chip-cat{display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border:1px solid var(--cat);border-radius:12px;
+background:var(--surface);color:var(--text-primary);font-size:.85rem;font-weight:600;white-space:nowrap}
+.dot{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--cat)}
+.st{display:inline-flex;align-items:center;gap:5px;font-weight:600;white-space:nowrap}
+.st::before{content:"";display:inline-block;width:10px;height:10px;border-radius:5px;box-sizing:border-box}
+.st.on::before{background:var(--st-good)}.st.off::before{border:2px solid var(--st-stop)}
+.new{display:inline-block;background:#0b0b0b;color:#fff;font-size:.75rem;font-weight:700;border-radius:4px;padding:1px 7px;
+vertical-align:2px;white-space:nowrap}
+.cat-ollama{--cat:var(--c-ollama);--band:var(--b-ollama)}.cat-strata{--cat:var(--c-strata);--band:var(--b-strata)}
+.cat-3d{--cat:var(--c-3d);--band:var(--b-3d)}.cat-tool{--cat:var(--c-tool);--band:var(--b-tool)}
+table.data{border-collapse:collapse;width:100%;margin:8px 0;font-size:.9rem}
+table.data th,table.data td{border-bottom:1px solid var(--grid);padding:6px 8px;text-align:left;vertical-align:top}
+table.data thead th{color:var(--text-secondary);font-weight:600;background:var(--surface-2)}
+table.data tr.cat-row td:first-child{border-left:6px solid var(--cat)}
+table.data tr.cat-row td:first-child{background:var(--band)}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}td.note{color:var(--text-secondary);font-size:.85rem}
+td.best{font-weight:700}
+.card{margin:16px 0 22px;border:1px solid var(--grid);border-left:8px solid var(--cat);border-radius:8px;padding:0 16px 12px}
+.card>header{margin:0 -16px 10px;padding:10px 16px;background:var(--band);border-radius:0 7px 0 0;display:flex;flex-wrap:wrap;
+align-items:center;gap:6px 12px}
+.card>header h3{margin:0;font-size:1.12rem}
+.card>header .port{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;color:var(--text-secondary)}
+.card p.one-line{font-weight:600;margin:4px 0 8px}
+dl.spec{display:grid;grid-template-columns:8.5em 1fr;gap:3px 14px;margin:6px 0;font-size:.9rem}
+dl.spec dt{font-weight:600;color:var(--text-secondary)}dl.spec dd{margin:0}
+.cards2{display:grid;grid-template-columns:repeat(auto-fill,minmax(470px,1fr));gap:0 16px}
+@media (max-width:560px){.cards2{grid-template-columns:1fr}dl.spec{grid-template-columns:1fr}dl.spec dt{margin-top:4px}}
+.callout{background:var(--surface-2);border-radius:8px;padding:10px 14px;margin:10px 0}
+.callout.warn{border-left:6px solid var(--st-critical)}
+.callout .head{font-weight:700}
+.opinion{border-left:6px solid var(--axis)}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;border:1px solid var(--text-secondary);color:var(--text-secondary);
+border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px}
+ul.points{padding-left:22px;margin:6px 0}ul.points li{margin:4px 0}
+.map{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin:12px 0}
+.map-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.node{flex:1 1 200px;max-width:340px;border:1px solid var(--cat,var(--axis));border-top:6px solid var(--cat,var(--axis));
+background:var(--band,var(--surface-2));border-radius:8px;padding:8px 12px;text-align:center;font-weight:600}
+.node small{display:block;font-weight:400;color:var(--text-secondary);font-size:.82rem}
+.node.hw{--cat:#52514e;--band:var(--surface-2)}.node.user{--cat:#52514e;--band:var(--surface)}
+.map .arrow{text-align:center;color:var(--text-secondary);font-size:1.1rem;line-height:1.2}
+svg.chart{display:block;max-width:100%;height:auto;margin:6px 0;font-size:12.5px}
+svg .grid{stroke:var(--grid);stroke-width:1}svg .axis{stroke:var(--axis);stroke-width:1}
+svg .tick,svg .axis-title{fill:var(--text-secondary)}svg .label{fill:var(--text-primary)}svg .value{fill:var(--text-secondary)}
+svg .hit{fill:transparent}svg .mark{cursor:default;outline:none}
+svg .mark:hover>path,svg .mark:focus>path{filter:brightness(1.12)}
+svg .mark:focus>path{stroke:var(--text-primary);stroke-width:1.5}
+#tip{position:fixed;pointer-events:none;background:#fff;border:1px solid var(--grid);border-radius:6px;padding:6px 10px;
+box-shadow:0 2px 8px rgba(0,0,0,.12);font-size:.82rem;color:var(--text-secondary);max-width:320px;z-index:10;display:none}
+#tip .tip-value{color:var(--text-primary);font-weight:700;font-size:.95rem}
+.cellbar{display:block;height:6px;margin-top:4px;border-radius:0 3px 3px 0;background:var(--cat)}
+td .small{display:block;font-size:.78rem;color:var(--text-secondary);font-weight:400}
+.compare{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin:10px 0}
+.compare>div{background:var(--surface-2);border-radius:8px;padding:8px 12px;border-left:6px solid var(--cat)}
+.compare .from{color:var(--text-secondary);font-size:.85rem}.compare .to{font-weight:700}
+dl.terms{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:6px 0;font-size:.92rem}
+dl.terms dt{font-weight:700}dl.terms dd{margin:0;color:var(--text-secondary)}
+@media (max-width:560px){dl.terms{grid-template-columns:1fr}}
+@media print{#tip{display:none}.card{break-inside:avoid}}
+</style></head>
+<body><main>
+
+<h1>この機体に入っているローカル AI の一覧</h1>
+<p class="sub">2026-10-18 時点。サーバーは NVIDIA A30（VRAM 24 GiB）1 枚・RAM 64 GB・Core i7-12700。
+調べた方法と出典は末尾の「<a href="#source">出典と調べ方</a>」にあります。</p>
+
+<div class="tiles">
+  <div class="tile cat-ollama" style="--cat:var(--c-ollama)"><div class="tile-label">文章を生成する AI（Ollama）</div>
+    <div class="tile-value">4 モデル</div><div class="tile-sub">Qwen 27B を中心に、手軽に使える（10-18 に 1 つ整理）</div></div>
+  <div class="tile" style="--cat:var(--c-strata)"><div class="tile-label">文章を生成する AI（Strata）</div>
+    <div class="tile-value">5 モデル</div><div class="tile-sub">GPU に載らない大きなモデルを RAM と CPU を併用して動かす</div></div>
+  <div class="tile" style="--cat:var(--c-3d)"><div class="tile-label">3D を生成する AI</div>
+    <div class="tile-value">3 サービス</div><div class="tile-sub">画像から 3D メッシュを作る</div></div>
+  <div class="tile" style="--cat:var(--c-tool)"><div class="tile-label">画面・連携の道具</div>
+    <div class="tile-value">5 つ</div><div class="tile-sub">モデルは持たず、AI を使うための入口</div></div>
+</div>
+
+<div class="legend" aria-label="色の意味">
+  <strong>色の意味:</strong>
+  <span class="chip-cat cat-ollama"><span class="dot"></span>Ollama（文章）</span>
+  <span class="chip-cat cat-strata"><span class="dot"></span>Strata（文章）</span>
+  <span class="chip-cat cat-3d"><span class="dot"></span>3D 生成</span>
+  <span class="chip-cat cat-tool"><span class="dot"></span>画面・連携の道具</span>
+  <span class="st on">起動中</span><span class="st off">停止中</span>
+  <span class="new">今回追加</span><span class="muted">＝2026-10-16 に足したモデル</span>
+</div>
+
+<nav><ol>
+  <li><a href="#points">まず押さえること</a></li><li><a href="#map">全体の見取り図</a></li>
+  <li><a href="#ollama">Ollama のモデル</a></li><li><a href="#strata">Strata のモデル</a></li>
+  <li><a href="#ctx">文脈長と KV キャッシュ</a></li>
+  <li><a href="#d3">3D 生成</a></li><li><a href="#tools">画面・連携の道具</a></li>
+  <li><a href="#status">いまの状態</a></li><li><a href="#work">進行中の作業</a></li>
+  <li><a href="#terms">用語集</a></li><li><a href="#source">出典と調べ方</a></li>
+</ol></nav>
+
+<!-- ================================================================ -->
+<h2 id="points">1. まず押さえること</h2>
+<ul class="points">
+  <li><strong>GPU は 1 枚だけで、大きな AI は同時に 1 つしか動かせません。</strong>Ollama の Qwen 27B だけで VRAM 24 GiB のうち
+    22 GiB を使います。入口ページ（8080）から起動すると、GPU を取り合うほかのサービスを先に止め、Ollama のモデルを降ろしてくれます。
+    Strata の 5 つどうしも、1 つを起動するとほかが自動で止まります。</li>
+  <li><strong>自動で起動するのは Ollama と入口ページだけです。</strong>それ以外（Strata・3D 生成・Open WebUI）は、使うときに入口ページから起動します。</li>
+  <li><strong>Ollama と Strata の違い。</strong>Ollama は GPU に収まるモデルを手軽に動かします。Strata は Qwen3.8-Flash-Next という
+    40〜85 GiB の大きなモデル（MoE）を、GPU・RAM・CPU に分けて動かす専用のエンジンです。起動に 20〜80 秒ほどかかり、RAM を 25〜44 GiB 使います。</li>
+  <li><strong>文脈長（一度に扱えるトークン数）は、2026-10-18 に「A30 に全部載る最大」にそろえました。</strong>Ollama は KV キャッシュを 8 ビットにして
+    モデルごとに上限を決め（27b 114,688・it-qat 65,536・e4b と IQ4_XS 131,072）、Strata は 5 つともモデルの上限 262,144 です。文脈長と KV キャッシュの大きさは第 5 節にまとめました。</li>
+  <li><strong>どれも同じ API の形で呼べます。</strong>Strata はポート 8082〜8086 の <code>/v1</code>（OpenAI 互換）です。
+    Ollama は <code>127.0.0.1:11434</code> で、この機体の中からしか呼べません。チャット画面の Open WebUI は、この両方につながっています。</li>
+</ul>
+
+<div class="callout opinion">
+  <div class="head"><span class="tag">意見</span>用途ごとの目安（根拠は下の各節の評価と実測）</div>
+  <ul class="points">
+    <li><strong>ふだんの質問や画像を見せる質問:</strong> <code>qwen3.8:27b</code>。速く（34〜38 tok/s）、画像も読めて、追加 3 試験で 100%。</li>
+    <li><strong>難しい数学など長い推論:</strong> <code>gemma4:31b-it-qat</code>（10-08 の評価では ctx32k の名前で 3D 数学を全問正解・ローカル最短の 441 秒。
+      10-18 からは it-qat 本体が同じように全部 GPU に載る設定になった）か、Strata 公式 IQ3_XXS（全問正解、839 秒）。</li>
+    <li><strong>コーディング:</strong> 点数は <code>gemma4:31b-it-qat</code>（92%）が最も高いものの、699 秒かかります。
+      速さとの釣り合いでは <code>qwen3.8:27b</code>（83%・243 秒）か Strata 公式 IQ3_XXS（84%・464 秒）。</li>
+    <li><strong>画像から 3D モデル:</strong> 正面・背面・左・右の 4 枚がそろうなら Hunyuan3D-2mv。材質まで欲しいなら Pixal3D。
+      穴のない閉じたメッシュが要るなら ComfyUI の防水メッシュのワークフロー。</li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="map">2. 全体の見取り図</h2>
+<p>利用者は入口ページかチャット画面から AI を使います。Claude Code からは連携の道具を通して使います。
+その下で、文章の AI と 3D の AI が <strong>1 枚の GPU を取り合います</strong>。</p>
+<div class="map" role="img" aria-label="利用者から入口・道具、AI のエンジン、ハードウェアへの流れ">
+  <div class="map-row"><div class="node user">利用者<small>ブラウザ・Claude Code</small></div></div>
+  <div class="arrow">↓</div>
+  <div class="map-row">
+    <div class="node cat-tool">入口ページ <small>ポート 8080。起動・停止のボタン</small></div>
+    <div class="node cat-tool">Open WebUI <small>ポート 8081。チャット画面</small></div>
+    <div class="node cat-tool">連携の道具 <small>qwen-worker・local-ai-bridge・OpenCode</small></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="map-row">
+    <div class="node cat-ollama">Ollama <small>ポート 11434。4 モデル（使うものを VRAM へ読み込む）</small></div>
+    <div class="node cat-strata">Strata <small>ポート 8082〜8086。5 モデル（同時に 1 つ）</small></div>
+    <div class="node cat-3d">3D 生成 <small>7860 Hunyuan3D・7861 Pixal3D・8188 ComfyUI</small></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="map-row">
+    <div class="node hw">GPU: NVIDIA A30（VRAM 24 GiB）<small>1 枚をすべてで取り合う</small></div>
+    <div class="node hw">RAM 64 GB・CPU i7-12700<small>Strata はモデルの大部分をここに置く</small></div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="ollama">3. Ollama のモデル（4 つ）</h2>
+<p><strong>Ollama</strong>（版 0.40.5）は、モデルを読み込んで文章を生成するサーバーです。この機体では常に起動していて、
+呼ばれたモデルを GPU に読み込みます（入りきらない分は CPU 側に置きます）。5 分使わないと VRAM から降ろします。サイズは <code>ollama list</code> の値です。</p>
+<p><strong>文脈長の設定（2026-10-18）:</strong> KV キャッシュを 8 ビット（q8_0。Ollama 全体の設定）にして半分の大きさにし、モデルごとの上限を
+Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部載る最大」を実際に読み込んで決めたものです（表の「文脈長」列）。
+<code>gemma4:31b-ctx32k</code>（it-qat と同じ重みで文脈長を 32,768 に固定した派生）は、it-qat 本体が全部 GPU に載るようになったので同じ日に消しました。
+2026-10-08 の評価の記録には残っています。</p>
+
+<table class="data">
+  <thead><tr><th>モデル</th><th>中身</th><th class="num">サイズ</th><th class="num">文脈長（上限）</th><th>3D 数学</th><th>コーディング 6 問</th><th>追加 3 試験</th></tr></thead>
+  <tbody>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8:27b</strong><br><span class="muted">主に使うモデル</span></td><td>Qwen3.8-27B・4 ビット（Q4_K_M）</td><td class="num">17 GB</td><td class="num">114,688</td><td>88% / 873 秒</td><td>83% / 243 秒</td><td>100% / 13 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:31b-it-qat</strong></td><td>Gemma 4 31B・4 ビット（Q4_0）</td><td class="num">18 GB</td><td class="num">65,536</td><td>100% / 3,660 秒</td><td class="best">92% / 699 秒</td><td>100% / 45 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><span class="muted"><strong>gemma4:31b-ctx32k</strong><br>10-18 に消した</span></td><td class="muted">it-qat と同じ重みで文脈長 32,768 の派生</td><td class="num muted">—</td><td class="num muted">32,768</td><td class="best">100% / 441 秒</td><td>79% / 266 秒</td><td>100% / 51 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:e4b</strong></td><td>Gemma 4 の小型版 8.0B・4 ビット（Q4_K_M）</td><td class="num">9.6 GB</td><td class="num">131,072</td><td>67% / 115 秒</td><td>52% / 48 秒</td><td>96% / 6 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8-flash-next:IQ4_XS</strong></td><td>Qwen3.8-Flash-Next 176.9B（MoE）・約 4 ビット（IQ4_XS）</td><td class="num">97 GB</td><td class="num">131,072</td><td>100% / 3,720 秒</td><td>57% / 536 秒</td><td>100% / 52 秒</td></tr>
+  </tbody>
+</table>
+<p class="caption">評価は 2026-10-08 の比較評価（<code>Documents/AIモデル評価_2026-10-08.html</code>）。「能力 / かかった時間の中央値」。
+太字は Ollama の 5 つ（当時）の中で最も良い値。試行の回数は少なく（3D は 1〜3 回、コーディングと追加は各問 1 回）、同じモデルでも回によって結果は変わりえます。
+文脈長は 2026-10-18 の設定で、評価のときは 27b・it-qat・IQ4_XS が 65,536（f16 の KV）、e4b が 65,536 でした。it-qat は当時 KV が溢れて 6 層が CPU にあり、
+それが 3,660 秒・699 秒の遅さの原因です。</p>
+
+<div class="cards2">
+<section class="card cat-ollama"><header><h3>qwen3.8:27b</h3><span class="port">Ollama・17 GB</span></header>
+  <p class="one-line">いちばんよく使う主モデル。速く、画像も読める。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>Qwen 公式の Qwen3.8-27B（2026-08-14 公開）。パラメータ 27.3B を 4 ビットに量子化（Q4_K_M）</dd>
+    <dt>できること</dt><dd>文章・画像の読み取り（vision）・ツール呼び出し・思考（thinking。強さは low / medium / xhigh）</dd>
+    <dt>速さ</dt><dd>生成 34.3〜37.8 tok/s（2026-10-16 実測、読み込み済みの 2 回目以降）。VRAM 22 GiB を使い、全部 GPU で動く</dd>
+    <dt>文脈の長さ</dt><dd><strong>114,688 トークン</strong>（Modelfile の <code>num_ctx</code>、2026-10-18）。KV キャッシュを 8 ビット（q8_0）にして、全部 GPU に載る最大。
+      114,688 で VRAM 22,614 MiB・生成 32.8 tok/s（300 トークン）。131,072 では 66 層のうち 63 層しか GPU に載らず、生成が 25.6 tok/s に落ちた。
+      10-17 までは 65,536（f16 の KV。それ以上は KV が CPU 側に溢れた）</dd>
+    <dt>KV キャッシュ</dt><dd><strong>4,256 MiB</strong>（q8_0。全体を見る注意の 16 層が 3,808 MiB、先読み（MTP）用の 1 層が f16 で 448 MiB）。
+      1 トークンあたり約 38 KiB。読み込み時に上限の分を全部 VRAM に確保する。f16・65,536 のときは 4,352 MiB で、ほぼ同じ量のまま文脈が 1.75 倍になった</dd>
+    <dt>使われ方</dt><dd>qwen-worker と、Claude Code の <code>/qwen</code>・<code>/qwen-read</code> の作業者</dd>
+    <dt>注意</dt><dd>最初の 1 回は読み込みに約 60 秒かかる。5 分使わないと VRAM から降りて、次にまた 60 秒かかる</dd>
+  </dl></section>
+
+<section class="card cat-ollama"><header><h3>gemma4:31b-it-qat</h3><span class="port">Ollama・18 GB</span></header>
+  <p class="one-line">コーディングの点がローカルで最も高い。ただし遅い。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>Gemma 4 の 31B（30.7B）。「it」は指示に従うよう調整した版、「qat」は量子化を見込んで学習した版。4 ビット（Q4_0）。Apache-2.0</dd>
+    <dt>できること</dt><dd>文章・画像の読み取り・ツール呼び出し・思考（オン / オフ）</dd>
+    <dt>文脈の長さ</dt><dd><strong>65,536 トークン</strong>（Modelfile の <code>num_ctx</code>、2026-10-18）。KV を q8_0 にして 61 層すべてが GPU に載る
+      （VRAM 22,458 MiB、生成 25.4 tok/s）。10-17 までは同じ 65,536 でも f16 の KV が溢れ、6 層が CPU にあった</dd>
+    <dt>KV キャッシュ</dt><dd><strong>3,358 MiB</strong>（q8_0。全体を見る注意の 10 層が 2,720 MiB、直近 1,536 トークンだけを見る窓付きの 50 層が 638 MiB）。
+      全体注意の分は 1 トークンあたり 42.5 KiB で、Ollama の 4 モデルで最も大きい。f16 のときは 6,320 MiB で GPU に入りきらなかった</dd>
+    <dt>速さ</dt><dd>3D の問題を Open WebUI で解かせたとき 5.2 tok/s、1 時間 1 分（2026-09-27。KV が溢れていた状態）。10-18 の設定では 25.4 tok/s（300 トークンの計測）</dd>
+    <dt>評価</dt><dd>コーディング 92% はローカルの中で最高。3D 数学も全問正解だが 3,660 秒（溢れていた状態での値。測り直していない）</dd>
+  </dl></section>
+
+<section class="card cat-ollama"><header><h3>gemma4:31b-ctx32k <span class="muted">（2026-10-18 に消した）</span></h3><span class="port">Ollama・it-qat と同じ重み</span></header>
+  <p class="one-line">it-qat と同じ構成で、文脈の長さを 32,768 に固定した派生。10-08 の評価では 3D 数学がローカルで最速だった。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>30.7B・4 ビット（Q4_0）。設定に <code>num_ctx 32768</code> を足しただけで、重みのファイルは it-qat と共有</dd>
+    <dt>KV キャッシュ</dt><dd>f16 で約 3,760 MiB（全体注意 10 層 2,560 MiB + 窓付き 50 層 1,200 MiB。ログの層の数と大きさからの計算）。これなら GPU に収まっていた</dd>
+    <dt>速さ</dt><dd>3D の問題を Open WebUI で解かせたとき 27.6 tok/s、7 分 21 秒（2026-09-28）。it-qat の約 5 倍速かった。
+      原因は 10-18 に判明: it-qat は 65,536 で KV キャッシュが GPU に収まらず 6 層が CPU にあり、ctx32k は 32,768 なので全部 GPU に載っていた</dd>
+    <dt>評価</dt><dd>3D 数学を 441 秒で全問正解（ローカルで全問正解した中で最速）。コーディングは 79%</dd>
+    <dt>消した理由</dt><dd>KV を q8_0 にして it-qat 本体が 65,536 で全部 GPU に載るようになり、32,768 に固定する意味がなくなった。
+      重みは it-qat が持っているので消えていない。評価の道具の対象一覧からも外した（記録は残る）</dd>
+  </dl></section>
+
+<section class="card cat-ollama"><header><h3>gemma4:e4b</h3><span class="port">Ollama・9.6 GB</span></header>
+  <p class="one-line">小さくて速いが、難しい問題では正答率が下がる。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>Gemma 4 の小型版。8.0B・4 ビット（Q4_K_M）</dd>
+    <dt>文脈の長さ</dt><dd><strong>131,072 トークン</strong>（モデルの上限。Modelfile の <code>num_ctx</code>、2026-10-18）。全部 GPU に載り VRAM 6.1 GiB。10-17 までは 65,536</dd>
+    <dt>KV キャッシュ</dt><dd><strong>1,109 MiB</strong>（q8_0。全体を見る注意の 4 層が 1,088 MiB、直近 1,024 トークンだけを見る窓付きの 20 層が 21 MiB）。
+      1 トークンあたり 8.5 KiB と小さく、文脈長をモデルの上限にしても余裕がある（f16 でも 131,072 なら 2,048 MiB で載る）</dd>
+    <dt>できること</dt><dd>文章・画像・音声（audio）・ツール呼び出し・思考</dd>
+    <dt>評価</dt><dd>どの試験も最速の部類（コーディング 48 秒、追加 6 秒）。ただし 3D 数学 67%・コーディング 52%</dd>
+  </dl></section>
+
+<section class="card cat-ollama"><header><h3>qwen3.8-flash-next:IQ4_XS</h3><span class="port">Ollama・97 GB</span></header>
+  <p class="one-line">Strata のモデルと同じ系統の大きな MoE を、Ollama で動かしたもの。正確だがとても遅い。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>Qwen3.8-Flash-Next。Ollama の表示では 176.9B の MoE。約 4 ビット（IQ4_XS）。Qwen Community License 1.0。手を加えていない版（abliterated ではない）</dd>
+    <dt>できること</dt><dd>文章・ツール呼び出し・思考（画像は読めない）</dd>
+    <dt>速さ</dt><dd>3D の問題を Open WebUI で解かせたとき 13.6 tok/s、1 時間 2 分（2026-09-28）。VRAM 24 GiB に収まらない大きさ。10-18 の計測（300 トークン）は 8.3 tok/s</dd>
+    <dt>文脈の長さ</dt><dd><strong>131,072 トークン</strong>（Modelfile の <code>num_ctx</code>、2026-10-18）。GPU に載るのは共通部分（dense）の 49 層と KV キャッシュ（q8_0、2,040 MiB）で、
+      エキスパート（約 92 GB）は CPU 側のまま。VRAM 22,766 MiB。10-17 までは 65,536</dd>
+    <dt>KV キャッシュ</dt><dd><strong>2,040 MiB</strong>（q8_0。注意の 12 層が 1,632 MiB、長い文脈から要る所を拾う索引（indexer）のキーが 408 MiB）。
+      1 トークンあたり約 16 KiB。48 層のうち KV を持つのは 12 層だけで、残りは文章が長くなっても大きさの変わらない状態を持つ</dd>
+    <dt>評価</dt><dd>3D 数学と追加 3 試験は 100%。コーディングは 57%</dd>
+  </dl></section>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="strata">4. Strata のモデル（5 つ）</h2>
+<p><strong>Strata</strong>（Niko1221/Strata、版 v0.1.44.1）は、<strong>MoE</strong> という形のモデルを CPU と GPU で分担して動かすエンジンです。
+5 つのモデルはどれも Qwen3.8-Flash-Next 系で、各層に 512 の「専門家（エキスパート）」を持ち、1 トークンごとにそのうちの一部だけを使います。</p>
+<ul class="points">
+  <li><strong>分担の仕組み:</strong> よく使われるエキスパートを GPU のキャッシュに置き、残りは RAM に置いて CPU で計算します。
+    だから VRAM 24 GiB の機体でも、40〜85 GiB のモデルが動きます。</li>
+  <li><strong>先読みで速くする（MTP の投機デコード）:</strong> 小さな予想役（draft 層。5 モデルで共有、6.5 GiB）が数トークン先を予想し、
+    本体がまとめて確かめます。当たった分だけ速くなります。</li>
+  <li><strong>同時に 1 つだけ:</strong> 1 つを起動すると、ほかの 4 つは自動で止まります（systemd の <code>Conflicts=</code>）。</li>
+  <li><strong>文脈長（コンテキスト長）:</strong> 5 つとも <strong>262,144 トークン</strong>（モデルの上限。2026-10-18 に 131,072 から広げた）。
+    KV キャッシュは 8 ビット（int8）で、262,144 分で 3.35 GiB（engine のログ）。置き方はモデルで違う（第 5 節）。速さの設定は第 9 節。</li>
+  <li><strong>呼び方:</strong> <code>http://&lt;サーバー&gt;:808x/v1</code>（OpenAI 互換）。Open WebUI にも 5 つともつないであります。</li>
+</ul>
+
+<table class="data">
+  <thead><tr><th>モデル名（API）</th><th>ポート / unit</th><th>中身</th><th class="num">ディスク</th><th>3D 数学</th><th>コーディング</th><th>追加 3 試験</th></tr></thead>
+  <tbody>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-next:IQ3_S</strong><br><span class="muted">汎用版 RVN</span></td><td>8082 / <code>strata</code></td><td>RVN の改変版（abliterated）・約 3.4 ビット</td><td class="num">85 GiB</td><td colspan="3" class="note">比較から外した（思考が終わらず、上限なしでは答えが出なかった）</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-coder:IQ1_M</strong><br><span class="muted">Coder</span></td><td>8083 / <code>strata-coder</code></td><td>公式のコード向け版・約 1.75 ビット</td><td class="num">56 GiB</td><td>100% / 728 秒</td><td>59% / 406 秒</td><td>89% / 7 秒</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_XXS</strong><br><span class="muted">公式版</span></td><td>8084 / <code>strata-official</code></td><td>公式の量子化版・約 3.1 ビット</td><td class="num">46 GiB</td><td>100% / 839 秒</td><td class="best">84% / 464 秒</td><td class="best">98% / 8 秒</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_S</strong> <span class="new">今回追加</span><br><span class="muted">公式版（軽い量子化）</span></td><td>8085 / <code>strata-official-iq3s</code></td><td>公式の量子化版・約 3.4 ビット</td><td class="num">53 GiB※</td><td colspan="3" class="note">まだ評価していない</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-swift:IQ3_XXS</strong> <span class="new">今回追加</span><br><span class="muted">Swift 1.5</span></td><td>8086 / <code>strata-swift</code></td><td>公式版を元に思考を短くした fine-tune・約 3.1 ビット</td><td class="num">73 GiB</td><td colspan="3" class="note">まだ評価していない（動作確認で 3D の 4 問は正解）</td></tr>
+  </tbody>
+</table>
+<p class="caption">評価は 2026-10-08。ディスクは <code>du -sh</code>（GiB）。※公式 IQ3_S の 2 つ目のファイル（26.8 GiB）は Coder のものをハードリンクで共有しているので、
+この 53 GiB には入っていません。ビット数は量子化の型ごとのおおよその目安です。</p>
+
+<h3>生成の速さの比較</h3>
+<p>4K トークンの文章を入力し、思考ありで答えさせたときの生成速度です。評価のコーディング問題に近い条件です。値が大きいほど速く、単位は tok/s です。</p>
+<svg class="chart" id="speedChart" viewBox="0 0 760 236" role="img" aria-label="Strata 5 モデルの生成速度（4K 入力・思考あり）。下の表に同じ値があります。"></svg>
+<p class="caption">測り方: <code>scripts/bench_api.py</code>、temperature 0.7、max_tokens 256、思考は effort low、3 回の中央値。
+測った日: 公式 IQ3_XXS は 2026-10-07、RVN と Coder は 10-16、公式 IQ3_S と Swift 1.5 は 10-17。棒にポインタを当てると詳細が出ます。</p>
+
+<table class="data">
+  <thead><tr><th>モデル</th><th class="num">短い質問・思考なし</th><th class="num">4K 入力・思考なし</th><th class="num">4K 入力・思考あり</th><th class="num">入力を読む速さ（prefill）</th><th>測った日</th></tr></thead>
+  <tbody>
+    <tr class="cat-row cat-strata"><td>汎用版 RVN IQ3_S</td><td class="num">42.1</td><td class="num">48.8</td><td class="num">56.4</td><td class="num">1,001</td><td>10-16</td></tr>
+    <tr class="cat-row cat-strata"><td>Coder IQ1_M</td><td class="num best">62.4</td><td class="num best">65.2</td><td class="num best">98.2</td><td class="num best">1,641</td><td>10-16</td></tr>
+    <tr class="cat-row cat-strata"><td>公式 IQ3_XXS</td><td class="num">53.2</td><td class="num">53.3</td><td class="num">89.0</td><td class="num">1,265</td><td>10-16（思考ありは 10-07）</td></tr>
+    <tr class="cat-row cat-strata"><td>公式 IQ3_S <span class="new">今回追加</span></td><td class="num">44.1</td><td class="num">48.0</td><td class="num">72.9</td><td class="num">1,073</td><td>10-17</td></tr>
+    <tr class="cat-row cat-strata"><td>Swift 1.5 IQ3_XXS <span class="new">今回追加</span></td><td class="num">45.1</td><td class="num">53.4</td><td class="num">79.7</td><td class="num">1,248</td><td>10-17</td></tr>
+  </tbody>
+</table>
+<p class="caption">単位は tok/s。太字は最も速い値。同じモデルでも測った日によって 1〜2 割ほど違うことがあります（RVN の 4K 入力・思考ありは 10-07 に 60.0〜71.9）。</p>
+
+<div class="cards2">
+<section class="card cat-strata"><header><h3>汎用版 RVN IQ3_S</h3><span class="port">8082・strata-flash-next:IQ3_S</span></header>
+  <p class="one-line">最初に入れた Strata のモデル。難しい問題では思考が終わらないことがある。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>jimmy31chen の RVN-Qwen3.8-Flash-Next。<strong>abliterated</strong>（頼みを断る働きを取り除いた改変版）。IQ3_S</dd>
+    <dt>動かし方</dt><dd>常駐モード（RAM を節約する動かし方）。文脈長 262,144（モデルの上限）。KV キャッシュは RAM に置き、VRAM には直近の 65,536 トークン分だけ残す（KV ストリーミング）。
+      思考の上限 32,768 トークン。RAM は約 46 GiB を固定する。2026-10-18 の計測で 64.5 → 76.0 tok/s（4K 入力・思考あり）</dd>
+    <dt>KV キャッシュ</dt><dd><strong>3.09 GiB を RAM に固定</strong>（int8、engine のログ）。VRAM には直近 65,536 トークン分（約 0.8 GiB、計算）だけを置き、
+      空いた VRAM をエキスパートの枠に回す（枠 7,732。KV を全部 VRAM に置くと 6,549）。読み込み後の VRAM の空き 376 MiB</dd>
+    <dt>評価</dt><dd>3D 数学では、思考の上限を外すと 9 回とも答えが出なかった。同じ式の書き直しと、問題の前提を疑う寄り道が続く。
+      このため 10-08 の比較から外した（記録は残してある）</dd>
+    <dt>注意</dt><dd>断る働きを外した版なので、出力をそのまま公開する用途には向かない<span class="muted">（意見）</span></dd>
+  </dl></section>
+
+<section class="card cat-strata"><header><h3>Coder IQ1_M</h3><span class="port">8083・strata-flash-coder:IQ1_M</span></header>
+  <p class="one-line">Strata の中で最も速い。ただしコーディングの点は公式版より低い。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>ISTA-DASLab の Qwen3.8-Flash-Next-GSQ-RCO-Coder（コード向け）。最も小さい量子化の IQ1_M。Apache-2.0</dd>
+    <dt>動かし方</dt><dd>通常モード（RAM を約 26 GiB 固定）。文脈長 262,144（モデルの上限）。KV キャッシュは使った分だけ VRAM に取り、残りをエキスパートの枠に回す（<code>--kv-grow</code>）。
+      思考の上限なし。同じ文の繰り返しを見つけると、考え直させる回復機能が働く</dd>
+    <dt>KV キャッシュ</dt><dd><strong>最大 3.35 GiB</strong>（int8、262,144 トークン分、engine のログ）。起動時は 16,384 トークン分（0.25 GiB）だけ VRAM に取り、
+      文脈が伸びるとエキスパートの枠（8,753）から少しずつ借りる（最少 6,604 枠まで）。読み込み後の VRAM の空き 456 MiB</dd>
+    <dt>評価</dt><dd>3D 数学 100%。コーディングは 59% で、6 問のうち 5 問は思考が上限（24,576）で打ち切られたあとの答えだった
+      （<code>Documents/Strata_コーディング性能の調査_2026-10-09.html</code>）</dd>
+  </dl></section>
+
+<section class="card cat-strata"><header><h3>公式版 IQ3_XXS</h3><span class="port">8084・strata-official:IQ3_XXS</span></header>
+  <p class="one-line">Strata の中で評価が最も良い。元のモデルに手を加えていない公式の量子化版。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>ISTA-DASLab の Qwen3.8-Flash-Next-GSQ-RCO。IQ3_XXS。Apache-2.0</dd>
+    <dt>動かし方</dt><dd>通常モード（エキスパートを全部 RAM に置く。約 42 GiB を固定）。文脈長 262,144（モデルの上限）、<code>--kv-grow</code>。思考の上限 65,536。
+      2026-10-17〜18 の計測で常駐モードより 8〜20% 速かった（4K 入力・思考あり 89.8 → 102.9 tok/s）ので、10-18 に正式に通常モードにした（第 9 節）</dd>
+    <dt>KV キャッシュ</dt><dd><strong>最大 3.35 GiB</strong>（int8、262,144 トークン分）。Coder と同じく使った分だけ VRAM に取る（<code>--kv-grow</code>）。
+      起動時は 0.25 GiB、文脈が伸びるとエキスパートの枠（10,452）から借りる（最少 8,017 枠まで）。読み込み後の VRAM の空き 460 MiB</dd>
+    <dt>評価</dt><dd>3D 数学 100%（2 回とも全問正解）、コーディング 84%、追加 3 試験 98%</dd>
+    <dt>弱み</dt><dd>コーディングの 6 問は、どれも思考が上限で打ち切られたあとの答えだった。上限を外すと 0%（答えが出ない）</dd>
+  </dl></section>
+
+<section class="card cat-strata"><header><h3>公式版 IQ3_S <span class="new">今回追加</span></h3><span class="port">8085・strata-official:IQ3_S</span></header>
+  <p class="one-line">公式版の、量子化を軽くした版。元のモデルに近いぶん少し遅い。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>公式版と同じリポジトリの IQ3_S。元の精度（Q8_0）との差を表す KL が 0.202 → 0.144 と小さい。2 つ目のファイルは Coder と同じもの</dd>
+    <dt>速さ</dt><dd>公式 IQ3_XXS より 10〜18% 遅い（4K 入力・思考ありで 72.9 tok/s）。起動 49 秒</dd>
+    <dt>動かし方</dt><dd>常駐モード。文脈長 262,144（モデルの上限）。思考の上限 65,536。RAM の落とせない分は約 39.5 GiB。エキスパートが大きく（46.84 GiB）、通常モードでは RAM の上限 50 GiB に収まらない。
+      2026-10-18 の計測で 74.9 → 83.1 tok/s（<code>--adapt-async</code>）</dd>
+    <dt>KV キャッシュ</dt><dd><strong>3.35 GiB を起動時に全部 VRAM に確保</strong>（int8、262,144 トークン分。値は同じ構造の公式版のログ）。
+      常駐モードでは使った分だけ取る <code>--kv-grow</code> が使えない。KV を RAM に置く方法は 2% しか速くならず RAM が 2.3 GiB 増えるので採らなかった。
+      エキスパートの枠 7,146、読み込み後の VRAM の空き 384 MiB</dd>
+    <dt>入れた理由</dt><dd>「量子化が強いほど思考が終わらないのでは」という見立てを確かめるため。評価はまだ</dd>
+  </dl></section>
+
+<section class="card cat-strata"><header><h3>Swift 1.5 IQ3_XXS <span class="new">今回追加</span></h3><span class="port">8086・strata-swift:IQ3_XXS</span></header>
+  <p class="one-line">公式版を元に、思考を短く終えるよう調整した版。Strata の弱み（思考が長い）に効く見込み。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>UkisAI の Swift 1.5（公式版の fine-tune）。IQ3_XXS。2 つのファイルとも公式版とは別物</dd>
+    <dt>動かし方</dt><dd>公式版と同じ通常モード（約 42 GiB を固定）。文脈長 262,144（モデルの上限）、<code>--kv-grow</code>。思考の上限 65,536。
+      2026-10-18 の計測で、常駐モードの 94.9 に対し通常モードは 105.9 tok/s（4K 入力・思考あり）</dd>
+    <dt>KV キャッシュ</dt><dd><strong>最大 3.35 GiB</strong>（int8、262,144 トークン分）。公式版と同じく使った分だけ VRAM に取る（<code>--kv-grow</code>。
+      起動時 0.25 GiB、エキスパートの枠 10,452 から最少 8,017 まで借りる）。読み込み後の VRAM の空き 460 MiB</dd>
+    <dt>作者の計測</dt><dd>元の精度（BF16）で、思考のトークン数の中央値が −63%、精度の差は 1% 未満
+      （GPQA 89.8→89.6、AIME 98.7→96.7、LiveCodeBench 88.4→90.4）。この機体の量子化版で同じかは未確認</dd>
+    <dt>この機体での確認</dt><dd>速さは公式 IQ3_XXS とほぼ同じ（4K 入力・思考ありで 79.7 tok/s）。日本語の 3 問はどれも自然で正しい。
+      3D の問題は 4 問すべて正解し、42,744 トークン・664 秒。公式版の 2 回より思考が 13〜21% 短かった
+      （ただし途中で繰り返しの回復が働いたので、条件は同じではない）</dd>
+    <dt>ライセンス</dt><dd>Swift Open License v1.0（年商 100 万ドル以上の法人は商用利用できない）と、元の Qwen Community License 1.0。
+      この機体では<strong>個人・非商用の研究用途</strong>で使う</dd>
+  </dl></section>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="ctx">5. 文脈長と KV キャッシュ（文章の AI 9 モデル）</h2>
+<p><strong>文脈長（コンテキスト長）</strong>は、1 回の会話で扱えるトークン数の上限です。入力・会話の履歴・思考・答えをすべて合わせた長さで、
+これを超える文章は読めません。<strong>KV キャッシュ</strong>は、読んだトークンの途中の計算結果を残しておくメモリです。文脈長を長くするほど
+KV キャッシュも比例して大きくなり、VRAM を使います。2026-10-18 に、9 モデルとも「A30 に収まる最大」にそろえました。</p>
+<ul class="points">
+  <li><strong>KV を 8 ビットに縮めた。</strong>Ollama は f16（16 ビット）から q8_0（8 ビット）に変え、同じ VRAM で約 2 倍の長さを持てるようにした
+    （Ollama 全体の設定）。Strata はもとから int8（8 ビット）。精度の低下はごく小さい（Ollama の説明）。</li>
+  <li><strong>決め方。</strong>Ollama はモデルを実際に読み込み、<em>全部の層が GPU に載る最大</em>を探した（載らないと Ollama は黙って層を CPU に移し、遅くなる）。
+    Strata は KV が小さいので、5 つともモデルの上限 262,144 にした。</li>
+  <li><strong>1 トークンあたりの大きさがモデルで違う理由。</strong>KV を持つのは「文章全体を見る注意の層」だけ。Qwen3.8 系は 4 層のうち 1 層だけがそれで、
+    残りは長さに関係なく一定の状態を持つ。Gemma 4 は多くの層が「直近 1,024〜1,536 トークンだけを見る窓付き」で、その分は一定の大きさで済む。</li>
+</ul>
+
+<table class="data">
+  <thead><tr><th>モデル</th><th class="num">文脈長（上限）</th><th>KV の型</th><th class="num">KV の大きさ</th><th class="num">1 トークンあたり</th><th>KV の置き場所と確保のしかた</th><th class="num">読み込み後の VRAM</th></tr></thead>
+  <tbody>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8:27b</strong><span class="small">Ollama</span></td>
+      <td class="num">114,688<span class="small">前 65,536</span><span class="cellbar" style="width:43.8%"></span></td>
+      <td>q8_0<span class="small">先読み用の 1 層は f16</span></td>
+      <td class="num">4,256 MiB<span class="small">本体 3,808 + 先読み 448</span><span class="cellbar" style="width:100%"></span></td>
+      <td class="num">約 38 KiB</td><td>VRAM。読み込み時に全部確保</td><td class="num">使用 22,614 MiB</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:31b-it-qat</strong><span class="small">Ollama</span></td>
+      <td class="num">65,536<span class="small">前 65,536（溢れていた）</span><span class="cellbar" style="width:25%"></span></td>
+      <td>q8_0</td>
+      <td class="num">3,358 MiB<span class="small">全体注意 2,720 + 窓付き 638</span><span class="cellbar" style="width:78.9%"></span></td>
+      <td class="num">42.5 KiB<span class="small">窓付きの分は一定</span></td><td>VRAM。読み込み時に全部確保</td><td class="num">使用 22,458 MiB</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:e4b</strong><span class="small">Ollama</span></td>
+      <td class="num">131,072<span class="small">前 65,536・モデルの上限</span><span class="cellbar" style="width:50%"></span></td>
+      <td>q8_0</td>
+      <td class="num">1,109 MiB<span class="small">全体注意 1,088 + 窓付き 21</span><span class="cellbar" style="width:26.1%"></span></td>
+      <td class="num">8.5 KiB</td><td>VRAM。読み込み時に全部確保</td><td class="num">使用 6,100 MiB</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8-flash-next:IQ4_XS</strong><span class="small">Ollama</span></td>
+      <td class="num">131,072<span class="small">前 65,536</span><span class="cellbar" style="width:50%"></span></td>
+      <td>q8_0</td>
+      <td class="num">2,040 MiB<span class="small">注意 1,632 + 索引のキー 408</span><span class="cellbar" style="width:47.9%"></span></td>
+      <td class="num">約 16 KiB</td><td>VRAM。読み込み時に全部確保（重みの大半は RAM）</td><td class="num">使用 22,766 MiB</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>公式 IQ3_XXS</strong><span class="small">Strata 8084</span></td>
+      <td class="num">262,144<span class="small">前 131,072・モデルの上限</span><span class="cellbar" style="width:100%"></span></td>
+      <td>int8</td>
+      <td class="num">最大 3.35 GiB<span class="small">3,430 MiB</span><span class="cellbar" style="width:80.6%"></span></td>
+      <td class="num">13.4 KiB</td><td>VRAM。<strong>使った分だけ</strong>（<code>--kv-grow</code>）。起動時 0.25 GiB、伸びるとエキスパートの枠 10,452 → 最少 8,017 から借りる</td><td class="num">空き 460 MiB</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>Swift 1.5</strong><span class="small">Strata 8086</span></td>
+      <td class="num">262,144<span class="small">前 131,072・モデルの上限</span><span class="cellbar" style="width:100%"></span></td>
+      <td>int8</td>
+      <td class="num">最大 3.35 GiB<span class="small">3,430 MiB</span><span class="cellbar" style="width:80.6%"></span></td>
+      <td class="num">13.4 KiB</td><td>公式版と同じ（使った分だけ。枠 10,452 → 最少 8,017）</td><td class="num">空き 460 MiB</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>Coder</strong><span class="small">Strata 8083</span></td>
+      <td class="num">262,144<span class="small">前 131,072・モデルの上限</span><span class="cellbar" style="width:100%"></span></td>
+      <td>int8</td>
+      <td class="num">最大 3.35 GiB<span class="small">3,430 MiB</span><span class="cellbar" style="width:80.6%"></span></td>
+      <td class="num">13.4 KiB</td><td>VRAM。使った分だけ（枠 8,753 → 最少 6,604）</td><td class="num">空き 456 MiB</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>公式 IQ3_S</strong><span class="small">Strata 8085</span></td>
+      <td class="num">262,144<span class="small">前 131,072・モデルの上限</span><span class="cellbar" style="width:100%"></span></td>
+      <td>int8</td>
+      <td class="num">3.35 GiB<span class="small">3,430 MiB（公式版のログの値）</span><span class="cellbar" style="width:80.6%"></span></td>
+      <td class="num">13.4 KiB</td><td>VRAM。起動時に全部確保（常駐モードでは使った分だけ取る方式が使えない）。枠 7,146</td><td class="num">空き 384 MiB</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>汎用版 RVN</strong><span class="small">Strata 8082</span></td>
+      <td class="num">262,144<span class="small">前 131,072・モデルの上限</span><span class="cellbar" style="width:100%"></span></td>
+      <td>int8</td>
+      <td class="num">3.09 GiB<span class="small">3,164 MiB</span><span class="cellbar" style="width:74.3%"></span></td>
+      <td class="num">約 12 KiB</td><td><strong>RAM</strong> にページロック（KV ストリーミング）。VRAM には直近 65,536 トークン分（約 0.8 GiB、計算）だけ。枠 7,732</td><td class="num">空き 376 MiB</td></tr>
+  </tbody>
+</table>
+<p class="caption">2026-10-18 の実測。Ollama の KV は llama-server のログ（<code>llama_kv_cache: size = …</code>）、VRAM は nvidia-smi。Strata の KV と VRAM の空きは engine のログ
+（<code>elastic K/V: … of 3.35 GiB</code>、<code>KV streaming: … 3.09 GiB of pinned RAM</code>、<code>MiB of VRAM free with everything loaded</code>）。
+棒は、文脈長が 262,144、KV が 4,256 MiB を全長とした長さ。Strata はエキスパートのキャッシュが VRAM の残りを使い切るように取るので、空きが数百 MiB なのは正常。</p>
+
+<h3>KV の型: Ollama の q8_0 と Strata の int8 の違い</h3>
+<p>どちらも「8 ビットの整数と、何個かごとに 1 つの倍率（f16）」で数値を持つ、同じ考え方の 8 ビット形式です。名前が違うのは、エンジンごとに
+別の実装だからです。<strong>Strata には q8_0 が無く、Ollama には int8 が無いので、同じエンジンの中でどちらかを選ぶことはできません。</strong></p>
+<table class="data">
+  <thead><tr><th>項目</th><th><span class="chip-cat cat-ollama"><span class="dot"></span>Ollama の q8_0</span></th><th><span class="chip-cat cat-strata"><span class="dot"></span>Strata の int8</span></th></tr></thead>
+  <tbody>
+    <tr><td>実装</td><td>llama.cpp（ggml）の型。Ollama の中の llama-server が使う</td><td>Strata 独自の CUDA カーネル（読み込み・生成・KV ストリーミング・先読みの各経路が対応）</td></tr>
+    <tr><td>そのエンジンで選べる型</td><td>f16（既定）・<strong>q8_0</strong>・q4_0</td><td>fp16（engine の既定）・<strong>int8</strong>・k8v4・q4_0（<code>generate.cpp</code> の <code>--kv</code> の検査）</td></tr>
+    <tr><td>倍率をかける単位</td><td><strong>32 個</strong>ごとに倍率 1 つ（1 ブロック 34 バイト）</td><td><strong>64 個</strong>ごとに倍率 1 つ（ヘッドの次元 256 に倍率 4 つ）</td></tr>
+    <tr><td>1 つの値あたり</td><td>8.5 ビット</td><td>8.25 ビット</td></tr>
+    <tr><td>同じモデルで比べた大きさ<br><span class="muted">Qwen3.8-Flash-Next の注意 12 層、1 トークン</span></td>
+      <td class="num">12.75 KiB（IQ4_XS の実測 1,632 MiB ÷ 131,072）</td><td class="num">12.4 KiB（RVN の実測 3.09 GiB ÷ 262,144）。<strong>約 3% 小さい</strong></td></tr>
+    <tr><td>精度（f16 との差）</td><td>「ごく小さい低下（very small loss in precision）」（Ollama の説明。数値は公開されていない）</td>
+      <td>上流の実測で「fp16 と区別できない」: 次の 1 トークンが fp16 と同じになる割合 92〜98%、パープレキシティの差は誤差の範囲（2 標準誤差以内）。
+        この機体でも 2026-10-09 に fp16 と比べ、コーディング 2 問 × 3 回で点の差は判定できず、速さも同じだった</td></tr>
+    <tr><td>有効にする条件</td><td>Flash Attention が要る（<code>OLLAMA_FLASH_ATTENTION=1</code>）</td><td><code>--kv int8</code> だけ</td></tr>
+    <tr><td>設定の単位</td><td>Ollama 全体で 1 つ（全モデル共通）</td><td>モデルごと（engine の引数）</td></tr>
+  </tbody>
+</table>
+<p class="caption">出典: Strata は <code>vendor/Strata/src/program/generate.cpp</code>（<code>--kv</code> の選択肢）・<code>src/core/conversation_snapshot_test.cpp</code>（int8 の倍率は 64 個に 1 つ）・
+<code>bench/results/2026-09-27-kv-q4/README.md</code>（int8 は 1 セル・1 層 1,056 バイト、精度の表）。q8_0 のブロックは llama.cpp の型の定義（32 個 + f16 の倍率）。
+大きさは 2026-10-18 のログの値から計算。</p>
+
+<div class="callout opinion">
+  <div class="head"><span class="tag">意見</span>Strata は int8 のまま、Ollama は q8_0 のままがよい</div>
+  <ul class="points">
+    <li><strong>Strata は int8 が最善です。</strong>Strata で選べる 4 つのうち、fp16 と同じ精度で大きさが半分になるのは int8 だけです。上流の既定で、公開されている品質の数値はすべて
+      int8 で測られています。この機体でも fp16 にして点は変わりませんでした。q8_0 は倍率の単位が細かい（32 個）ぶん理屈では少し正確ですが、int8 でも fp16 との差が
+      測れないので、差は出ない見込みです（Strata では q8_0 を選べないので、確かめる方法もありません）。</li>
+    <li><strong>Ollama は q8_0 が最善です。</strong>Ollama で 8 ビットの型はこれだけです。q4_0 にすればさらに半分になりますが、精度が落ちます。</li>
+    <li><strong>Strata のさらに小さい型:</strong>
+      <ul>
+        <li><code>k8v4</code>（K を 8 ビット、V を 4 ビット）は int8 より 23% 小さい（1 セル・1 層 816 バイト）。上流では RTX 3090・Coder・198K で 85 → 99 tok/s。
+          <strong>この機体で 2026-10-18 に測り、採らなかった</strong>（下の「k8v4 を測った結果」）。</li>
+        <li><code>q4_0</code> は int8 の約半分（576 バイト）。ただし長い文書でパープレキシティが 8〜12% 悪くなる（上流の実測）。この機体では測っていない。</li>
+      </ul></li>
+  </ul>
+</div>
+
+<h3>k8v4 を測った結果（2026-10-18）</h3>
+<p>Strata の 5 モデルで、いまの <code>int8</code> と <code>k8v4</code>（K を 8 ビット・V を 4 ビット）を比べました。測り方はこれまでと同じ速さの 3 条件（greedy・3 回の中央値）に、
+<strong>約 19 万トークンの資料を読ませて答えを照合する試験</strong>と、公式版だけ<strong>128K トークンの文章の 10・50・90% の位置に隠した合言葉を探させる試験（needle）</strong>を足しました。</p>
+<table class="data">
+  <thead><tr><th>モデル（KV の置き方）</th><th>型</th><th class="num">KV の大きさ</th><th class="num">エキスパートの枠</th><th class="num">4K 思考あり</th><th class="num">短い質問</th><th class="num">19 万トークン: 読む速さ</th><th class="num">同: 生成</th><th>答え</th></tr></thead>
+  <tbody>
+    <tr class="cat-row cat-strata"><td rowspan="2"><strong>公式 IQ3_XXS</strong><span class="small">使った分だけ（kv-grow）</span></td><td>int8</td><td class="num">3.35 GiB</td><td class="num">10,452</td><td class="num best">107.4</td><td class="num best">77.4</td><td class="num best">1,746</td><td class="num best">69.4</td><td>正しい・needle 3/3</td></tr>
+    <tr><td>k8v4</td><td class="num">2.65 GiB</td><td class="num">10,480</td><td class="num">103.8</td><td class="num">75.0</td><td class="num">1,608</td><td class="num">68.1</td><td>正しい・needle 3/3</td></tr>
+    <tr class="cat-row cat-strata"><td rowspan="2"><strong>Swift 1.5</strong><span class="small">使った分だけ</span></td><td>int8</td><td class="num">3.35 GiB</td><td class="num">10,452</td><td class="num">103.7</td><td class="num">77.1</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>k8v4</td><td class="num">2.65 GiB</td><td class="num">10,480</td><td class="num">103.2</td><td class="num">81.9</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+    <tr class="cat-row cat-strata"><td rowspan="2"><strong>Coder</strong><span class="small">使った分だけ</span></td><td>int8</td><td class="num">3.35 GiB</td><td class="num">8,753</td><td class="num">83.1</td><td class="num">81.4</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>k8v4</td><td class="num">2.65 GiB</td><td class="num">8,775</td><td class="num">103.3</td><td class="num">73.6</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+    <tr class="cat-row cat-strata"><td rowspan="2"><strong>公式 IQ3_S</strong><span class="small">全部 VRAM</span></td><td>int8</td><td class="num">3.35 GiB</td><td class="num">7,146</td><td class="num">81.4</td><td class="num">61.3</td><td class="num best">1,510</td><td class="num">57.2</td><td>正しい</td></tr>
+    <tr><td>k8v4</td><td class="num">2.65 GiB</td><td class="num">7,519</td><td class="num best">84.0</td><td class="num">61.1</td><td class="num">1,428</td><td class="num best">60.3</td><td>正しい</td></tr>
+    <tr class="cat-row cat-strata"><td rowspan="2"><strong>汎用版 RVN</strong><span class="small">KV を RAM に</span></td><td>int8</td><td class="num">3.09 GiB（RAM）</td><td class="num">7,732</td><td class="num best">74.7</td><td class="num best">60.6</td><td class="num best">1,388</td><td class="num best">51.6</td><td>正しい</td></tr>
+    <tr><td>k8v4</td><td class="num">2.39 GiB（RAM）</td><td class="num">7,813</td><td class="num">72.9</td><td class="num">54.8</td><td class="num">1,343</td><td class="num">47.8</td><td>正しい</td></tr>
+  </tbody>
+</table>
+<p class="caption">速さは tok/s。太字は同じモデルの 2 つの型のうち明らかに良いほう（Swift と Coder は揺れの範囲なので付けていない）。Coder の 4K 思考ありは、同じ条件でも
+78〜101 tok/s と揺れる（10-17〜18 の記録）ので、83.1 → 103.3 は k8v4 の効果とは言えない。記録: <code>tools/strata/logs/k8v4-20261018/</code>。詳しい表は <code>tools/strata/README.md</code> の「KV の型 k8v4 の比較」。</p>
+
+<div class="callout opinion">
+  <div class="head"><span class="tag">意見</span>k8v4 は採らず、5 モデルとも int8 のままにした</div>
+  <ul class="points">
+    <li><strong>使った分だけ KV を取る 3 つ（公式・Swift・Coder）では効かない。</strong>短い会話では KV がもともと 0.25 GiB しか無く、k8v4 で減るのは 0.04 GiB だけ（枠は 28 増えるだけ）。
+      19 万トークンでも生成の速さは同じで、資料を読む速さは 8% 落ちた。</li>
+    <li><strong>KV を全部 VRAM に置く公式 IQ3_S では少し効く</strong>（枠 +373、4K +3%、19 万トークンの生成 +5%）。ただし資料を読む速さは −5% で、差は測り直しの揺れ（1〜2%）より少し大きい程度。
+      V を 4 ビットにする精度の代わりに取るほどではない、と判断した。</li>
+    <li><strong>KV を RAM に置く RVN では遅くなる</strong>（短い質問 −10%、19 万トークンの生成 −7%）。</li>
+    <li>答えはどれも正しく、needle も 3/3 で、この試験の範囲では精度の差は見えなかった。精度を細かく比べる道具（上流の <code>kv_precision_compare.py</code>）はこの版に無く、測っていない。</li>
+  </ul>
+</div>
+<div class="callout warn">
+  <div class="head">⚠ 計測の途中で起きたこと</div>
+  <ul class="points">
+    <li>公式 IQ3_S で 19 万トークンを読ませた直後に起動した RVN（int8）が、エキスパートを RAM に写している途中で systemd-oomd に止められた（14:24）。
+      モデルのファイルのキャッシュは捨ててあったが、RAM の本当の空きは 22 GiB しかなかった。10 分後に同じ設定で測り直すと、88 秒で起動した。原因は切り分けていない。
+      RVN は 5 モデルで最も RAM を使う（約 46 GiB を固定）ので、ほかのモデルの直後に起動するときは注意が要る。</li>
+  </ul>
+</div>
+
+<h3>以前（〜10-17）との比較</h3>
+<div class="compare">
+  <div class="cat-ollama"><strong>qwen3.8:27b</strong><br><span class="from">f16・65,536 で 4,352 MiB</span> → <span class="to">q8_0・114,688 で 4,256 MiB</span><br>
+    ほぼ同じ VRAM で、扱える長さが 1.75 倍。131,072 は 66 層のうち 63 層しか GPU に載らず 25.6 tok/s に落ちたので採らなかった。</div>
+  <div class="cat-ollama"><strong>gemma4:31b-it-qat</strong><br><span class="from">f16・65,536 で 6,320 MiB（入りきらず 6 層が CPU）</span> → <span class="to">q8_0・65,536 で 3,358 MiB（全部 GPU）</span><br>
+    長さは同じだが、溢れがなくなり 5.2 → 25.4 tok/s。文脈長 32,768 に固定した派生 ctx32k（f16 で約 3,760 MiB）は役目を終えたので消した。</div>
+  <div class="cat-ollama"><strong>gemma4:e4b / IQ4_XS</strong><br><span class="from">f16・65,536 で 1,084 / 1,728 MiB</span> → <span class="to">q8_0・131,072 で 1,109 / 2,040 MiB</span><br>
+    どちらも長さが 2 倍。e4b はモデルの上限まで届いた。</div>
+  <div class="cat-strata"><strong>Strata 5 モデル</strong><br><span class="from">int8・131,072 で約 1.7 GiB（計算）</span> → <span class="to">int8・262,144 で 3.35 GiB</span><br>
+    長さが 2 倍でモデルの上限。使った分だけ取る方式と KV を RAM に置く方式で、短い会話の速さは落ちていない（第 9 節）。</div>
+</div>
+
+<div class="callout warn">
+  <div class="head">⚠ 長い文脈を使うときの注意</div>
+  <ul class="points">
+    <li><strong>読み込みに時間がかかる。</strong>Strata 公式版に 190,947 トークンの資料を入れたとき、答えの最初の文字まで 109 秒かかった（読み込み 1,760 tok/s）。答えは正しかった。</li>
+    <li><strong>Ollama は KV を読み込み時に上限まで確保する。</strong>短い質問でも VRAM の使用量は同じ（上の表の値）。Strata の公式版・Swift・Coder は使った分だけ取る。</li>
+    <li><strong>呼び出す側が文脈長を指定すると、その値で読み直す。</strong>qwen-worker（<code>/qwen-read</code>）は 65,536 を送るので、ブラウザ（114,688）と行き来するたびに
+      27b を読み直す（約 60 秒）。qwen-worker は後で設計し直す予定（未変更）。</li>
+    <li><strong>上限の値を変えるとき</strong>は、Ollama は <code>tools/qwen-model-bench/modelfiles/</code> の Modelfile を <code>ollama create</code> で当て直し、
+      Strata は env ファイルの <code>STRATA_MAX_CONTEXT</code> を変える。Ollama の値を上げると層が CPU に溢れて遅くなるので、<code>ollama ps</code> が <code>100% GPU</code> のままか確かめる。</li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="d3">6. 3D を生成する AI（3 サービス）</h2>
+<p>画像から 3D のメッシュ（形）を作ります。どれも VRAM を大きく使うので、同時には動かせません。文章の AI とも GPU を取り合います。</p>
+<div class="cards2">
+<section class="card cat-3d"><header><h3>Hunyuan3D-2mv</h3><span class="port">ポート 7860・unit hunyuan3d</span></header>
+  <p class="one-line">正面・背面・左・右の 4 枚の画像から、形とテクスチャ付きの 3D メッシュを作る。</p>
+  <dl class="spec">
+    <dt>作り手</dt><dd>Tencent の Hunyuan3D-2（固定コミット <code>f8db630</code>）</dd>
+    <dt>入っているモデル</dt><dd>Hunyuan3D-2・Hunyuan3D-2mv（複数視点用）・u2net（背景を切り抜く）。計 23 GiB</dd>
+    <dt>画面</dt><dd>gradio のブラウザ画面。使い方は <code>Documents/Hunyuan3D-2mv_使い方_4画像入力ガイド_2026-09-22.html</code></dd>
+    <dt>ライセンス</dt><dd>Tencent Hunyuan 3D 2.0 Community License。EU・英国・韓国は対象外なので、この機体の当て物（patches）は公開しない</dd>
+  </dl></section>
+
+<section class="card cat-3d"><header><h3>Pixal3D</h3><span class="port">ポート 7861・unit pixal3d</span></header>
+  <p class="one-line">複数の視点の画像から、形と PBR テクスチャ（光の当たり方まで表す材質）付きのメッシュを作る。</p>
+  <dl class="spec">
+    <dt>作り手</dt><dd>TencentARC の Pixal3D（Microsoft の TRELLIS.2 系）</dd>
+    <dt>入っているモデル</dt><dd>Pixal3D・DINOv3（画像の特徴を取り出す）・BiRefNet と RMBG-2.0（背景を切り抜く）。計 24 GiB</dd>
+    <dt>動く環境</dt><dd>Python 3.10・CUDA 12.6（Hunyuan3D の 3.11・CUDA 13.2 とは別）</dd>
+  </dl></section>
+
+<section class="card cat-3d"><header><h3>ComfyUI（防水メッシュのワークフロー）</h3><span class="port">ポート 8188・unit comfyui</span></header>
+  <p class="one-line">処理の部品（ノード）を線でつないで組む画面。穴のない閉じたメッシュ（防水メッシュ）を作るワークフローが 4 本入っている。</p>
+  <dl class="spec">
+    <dt>中身</dt><dd>ComfyUI と、PixelArtistry の防水メッシュ用ワークフロー（v1.1）。配布元の Windows 用インストーラーの手順を Linux で置き換えた</dd>
+    <dt>入っているモデル</dt><dd>TRELLIS.2 の int8 版（4.9 GiB）・Pixal3D の int8 版（5.2 GiB）・TRELLIS.2 の形とテクスチャの VAE・
+      MoGe-2（画像から形を推定）・BiRefNet・DINOv3。本体込みで 22 GiB</dd>
+    <dt>独自の部品</dt><dd>WTiVo（メッシュを防水にするボクセル化）。CGAL と CUDA 12.6 で、この機体で組み立てた</dd>
+  </dl></section>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="tools">7. 画面・連携の道具（5 つ）</h2>
+<p>これ自体はモデルを持ちません。上の AI を人や Claude Code が使うための入口です。</p>
+<div class="cards2">
+<section class="card cat-tool"><header><h3>入口ページ（portal）</h3><span class="port">ポート 8080・<span class="st on">起動中</span></span></header>
+  <p class="one-line">ブラウザで開くと、9 つのサービスのカードと起動・停止のボタンが並ぶ。</p>
+  <dl class="spec">
+    <dt>役目</dt><dd>起動の前に GPU を取り合うほかのサービスを止め、Ollama のモデルを降ろす。ログイン時に自動で起動する唯一の道具</dd>
+    <dt>並ぶもの</dt><dd>Open WebUI・Strata 5 つ・Hunyuan3D・Pixal3D・ComfyUI</dd>
+  </dl></section>
+
+<section class="card cat-tool"><header><h3>Open WebUI</h3><span class="port">ポート 8081・<span class="st off">停止中</span></span></header>
+  <p class="one-line">ChatGPT に似たチャット画面。モデルを選んで話しかける。</p>
+  <dl class="spec">
+    <dt>版</dt><dd>v0.12.2</dd>
+    <dt>つないでいる先</dt><dd>Ollama と Strata の 5 つ（8082〜8086 の <code>/v1</code>）</dd>
+    <dt>注意</dt><dd>接続先の設定は画面の DB（<code>webui.db</code>）に保存され、そちらが優先される</dd>
+  </dl></section>
+
+<section class="card cat-tool"><header><h3>OpenCode</h3><span class="port">コマンド・版 1.19.2</span></header>
+  <p class="one-line">ターミナルで動く、コードを書くための AI の道具。</p>
+  <dl class="spec"><dt>使われ方</dt><dd>local-ai-bridge が、ローカルの Qwen に実装を頼むときの土台として使う</dd></dl></section>
+
+<section class="card cat-tool"><header><h3>local-ai-bridge</h3><span class="port">Claude Code の <code>/qwen</code></span></header>
+  <p class="one-line">Claude Code から、実装の作業をローカルの Qwen に任せる仕組み。</p>
+  <dl class="spec"><dt>流れ</dt><dd>OpenCode を経由して <code>qwen3.8:27b</code> に作業を渡し、結果の差分を Claude Code 側で確かめてから取り込む</dd></dl></section>
+
+<section class="card cat-tool"><header><h3>qwen-worker</h3><span class="port">Claude Code の <code>/qwen-read</code>（MCP）</span></header>
+  <p class="one-line">Claude Code や Codex から、ローカルの Qwen を調査・実装の作業者として呼ぶサーバー（MCP）。</p>
+  <dl class="spec"><dt>できること</dt><dd>読むだけの調査（<code>qwen_research</code>）と、隔離した作業コピーの中での実装（<code>qwen_implement</code>）</dd></dl></section>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="status">8. いまの状態（2026-10-18 に確認）</h2>
+<table class="data">
+  <thead><tr><th>サービス</th><th>ポート</th><th>自動で起動</th><th>いま</th><th>補足</th></tr></thead>
+  <tbody>
+    <tr class="cat-row cat-ollama"><td>Ollama</td><td>11434</td><td>する</td><td><span class="st on">起動中</span></td><td class="note">モデルは読み込まれていない（VRAM を使っていない）</td></tr>
+    <tr class="cat-row cat-tool"><td>入口ページ</td><td>8080</td><td>する</td><td><span class="st on">起動中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-tool"><td>Open WebUI</td><td>8081</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-strata"><td>Strata 汎用版 RVN</td><td>8082</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-strata"><td>Strata Coder</td><td>8083</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-strata"><td>Strata 公式 IQ3_XXS</td><td>8084</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note">設定は計測のための仮の状態（通常モード）</td></tr>
+    <tr class="cat-row cat-strata"><td>Strata 公式 IQ3_S <span class="new">今回追加</span></td><td>8085</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-strata"><td>Strata Swift 1.5 <span class="new">今回追加</span></td><td>8086</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-3d"><td>Hunyuan3D-2mv</td><td>7860</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-3d"><td>Pixal3D</td><td>7861</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+    <tr class="cat-row cat-3d"><td>ComfyUI</td><td>8188</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
+  </tbody>
+</table>
+<p class="caption">GPU を使っているプロセスは無し（<code>nvidia-smi</code>）。「自動で起動しない」サービスは、入口ページか
+<code>systemctl --user start &lt;unit&gt;</code> で起動します。</p>
+
+<!-- ================================================================ -->
+<h2 id="work">9. Strata の速さの設定と文脈長 262,144（2026-10-18 に反映）</h2>
+<p>「A30 に収まるように、文脈長と KV キャッシュを最大に」という指示で、Strata の 5 モデルの文脈長をモデルの上限 262,144 にしました。
+あわせて、Strata の新しい速さの設定をこの機体で測り、効いたものを正式な設定（<code>tools/strata/stra/config.py</code>）に入れました。</p>
+<ul class="points">
+  <li><strong><code>--adapt-async</code>:</strong> GPU に置くエキスパートの入れ替えを、生成の合間に裏で進める。5 モデルとも 6〜14% 速くなったので全部に入れた。</li>
+  <li><strong>通常モード:</strong> エキスパートを全部 RAM に置く（約 42 GiB）。RAM に収まる 3 モデル（Coder・公式 IQ3_XXS・Swift）で常駐モードより 8〜20% 速い。
+    公式 IQ3_S と RVN はエキスパートが大きく収まらないので、常駐モードのまま。</li>
+  <li><strong><code>--kv-grow</code>（通常モード限定）:</strong> KV キャッシュは使った分だけ VRAM に取り、残りをエキスパートの枠に回す。これで文脈長を 2 倍にしても枠は減らず、速さも変わらない。</li>
+  <li><strong>KV を RAM に置く（KV ストリーミング、常駐モード向け）:</strong> VRAM には直近の 65,536 トークン分だけ残す。RVN では枠が増えて 4% 速くなったので入れた。公式 IQ3_S では差が 2% で RAM が 2.3 GiB 増えるので入れなかった。</li>
+</ul>
+<p><strong>測り方は上の「生成の速さの比較」と違います</strong>（乱数を使わない greedy、思考ありは effort low・最大 512 トークン、3 回の中央値）。
+このため値もそろいません。比べられるのは、同じ表の中の列どうしだけです。</p>
+<table class="data">
+  <thead><tr><th>モデル</th><th>採った動かし方</th><th class="num">131,072・設定なし</th><th class="num">131,072 + adapt-async</th><th class="num">262,144・採った設定</th><th>補足</th></tr></thead>
+  <tbody>
+    <tr class="cat-row cat-strata"><td>公式 IQ3_XXS</td><td>通常 + adapt-async + kv-grow</td><td class="num">89.8（常駐）</td><td class="num">104.3（通常）</td><td class="num best">102.9</td><td class="note">常駐の基準から +15%。枠 9,773 → 10,452</td></tr>
+    <tr class="cat-row cat-strata"><td>Coder</td><td>通常 + adapt-async + kv-grow</td><td class="num">78.2</td><td class="num">84.2</td><td class="num">81.0</td><td class="note">回ごとの揺れが大きい（同じ条件で 78〜101）。枠 8,135 → 8,752</td></tr>
+    <tr class="cat-row cat-strata"><td>Swift 1.5</td><td>通常 + adapt-async + kv-grow</td><td class="num">87.4（常駐）</td><td class="num">97.7（常駐）</td><td class="num best">105.9</td><td class="note">常駐のまま 262,144 だと 94.9（KV を RAM に置いて 97.9）</td></tr>
+    <tr class="cat-row cat-strata"><td>公式 IQ3_S</td><td>常駐 + adapt-async</td><td class="num">74.9</td><td class="num">83.8</td><td class="num">83.1</td><td class="note">KV を RAM に置くと 84.8 だが RAM +2.3 GiB で採らず</td></tr>
+    <tr class="cat-row cat-strata"><td>汎用版 RVN</td><td>常駐 + adapt-async + KV を RAM に</td><td class="num">64.5</td><td class="num">73.3</td><td class="num">76.0</td><td class="note">262,144 そのままだと 72.9（枠 6,549）。KV を RAM に置くと枠 7,732</td></tr>
+  </tbody>
+</table>
+<p class="caption">値は 4K 入力・思考ありの生成速度（tok/s）。2026-10-17〜18 の計測（<code>tools/strata/logs/phase2-20261017/</code> と <code>ctx262k-20261018/summary.tsv</code>）。
+効かなかった設定: <code>STRATA_IQ3S_MT1</code>（公式 IQ3_XXS で 89.8 → 90.7、短い質問は −6.5%）。131,072 で <code>--kv-grow</code> だけ足しても速さは変わらない（98.0 → 97.8）。
+RAM の落とせない分は、採った形で 公式・Swift 約 42.3 GiB、Coder 約 25.8 GiB、公式 IQ3_S 約 39.5 GiB、RVN 約 46.2 GiB（どれも上限 50 GiB に収まる）。</p>
+<div class="callout">
+  <div class="head">残っていること</div>
+  <ul class="points">
+    <li>上流の自動調整（<code>calibrate.py</code>: PCIe 経由の割合・投機の閾値・CPU のワーカー数）はまだ試していない。</li>
+    <li>評価（第 3・4 節の表）の測り直しは、測り方の指示を待っている。新しい 2 モデルと新しい設定での点数はまだ無い。</li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="terms">10. 用語集</h2>
+<dl class="terms">
+  <dt>トークン</dt><dd>AI が文章を区切って扱う単位。単語や文字のかけら</dd>
+  <dt>tok/s</dt><dd>1 秒に作るトークンの数。大きいほど速い</dd>
+  <dt>prefill</dt><dd>答えを書き始める前に、入力の文章を読み込む処理。長い入力ほど時間がかかる</dd>
+  <dt>文脈長（コンテキスト長）</dt><dd>1 回の会話で扱えるトークン数の上限。入力・会話の履歴・思考・答えの合計。Ollama では <code>num_ctx</code>、Strata では <code>--max-context</code></dd>
+  <dt>KV キャッシュ</dt><dd>読んだトークンの途中の計算結果（Key と Value）を残しておくメモリ。これがあるので、1 トークン作るたびに過去を全部計算し直さずに済む。
+    大きさはトークン数に比例し、文脈長を長くするほど VRAM を使う</dd>
+  <dt>f16 / q8_0 / int8</dt><dd>KV キャッシュの数値の持ち方。f16 は 16 ビット（Ollama の既定）。q8_0（Ollama）と int8（Strata）はどちらも 8 ビットの整数と
+    ブロックごとの倍率で、大きさが f16 の約半分。違いは倍率をかける単位（q8_0 は 32 個、int8 は 64 個）で、精度はどちらも f16 とほぼ同じ。第 5 節の「KV の型」</dd>
+  <dt>k8v4 / q4_0（KV）</dt><dd>Strata で選べる、さらに小さい KV の型。k8v4 は K を 8 ビット・V を 4 ビット（int8 より 23% 小さい）、q4_0 は全部 4 ビット（約半分。長い文書で精度が落ちる）。
+    k8v4 は 2026-10-18 に測り、速さがほとんど変わらないので採らなかった（第 5 節）。q4_0 は測っていない</dd>
+  <dt>窓付きの注意（sliding window）</dt><dd>直近の一定数（Gemma 4 では 1,024〜1,536）のトークンだけを見る層。KV の大きさが文脈長に関係なく一定で済む</dd>
+  <dt>kv-grow / KV ストリーミング</dt><dd>Strata の KV の置き方。kv-grow は使った分だけ VRAM に取る（通常モード限定）。KV ストリーミングは KV を RAM に置き、VRAM には直近の一部だけを残す。
+    どちらも空いた VRAM をエキスパートのキャッシュに回して速くするため</dd>
+  <dt>思考（thinking）</dt><dd>答える前に、AI が内部で考える文章を書く機能。正確になるが、長いと答えまで時間がかかる</dd>
+  <dt>思考の上限（予算）</dt><dd>思考の長さの上限。達すると、思考を打ち切って答えを書かせる</dd>
+  <dt>MoE</dt><dd>Mixture of Experts。モデルの中に多数の専門家（エキスパート）があり、1 トークンごとに一部だけを使う形。全体は大きいが、1 回の計算は軽い</dd>
+  <dt>量子化</dt><dd>モデルの数値を少ないビット数に丸めて小さくすること。ビットが少ないほど小さく速いが、元のモデルから離れる。
+    目安は Q4_K_M・Q4_0・IQ4_XS が約 4〜5 ビット、IQ3_S が約 3.4、IQ3_XXS が約 3.1、IQ1_M が約 1.75 ビット</dd>
+  <dt>abliterated</dt><dd>モデルの中の「頼みを断る」働きを取り除く改変</dd>
+  <dt>fine-tune</dt><dd>できあがったモデルに追加の学習をして、性質を調整すること</dd>
+  <dt>MTP・投機デコード</dt><dd>小さな予想役が数トークン先を予想し、本体がまとめて確かめる方法。当たった分だけ速くなる。答えの傾向は変わらない（計算の丸めの違いだけ）</dd>
+  <dt>常駐モード / 通常モード</dt><dd>Strata の動かし方。常駐モードは RAM を節約し、通常モードは全部のエキスパートを RAM に固定して速くする（RAM を多く使う）</dd>
+  <dt>VRAM / RAM</dt><dd>VRAM は GPU の中のメモリ（24 GiB）。RAM はコンピューター本体のメモリ（64 GB）</dd>
+  <dt>ポート</dt><dd>サービスの窓口の番号。ブラウザでは <code>http://&lt;サーバー&gt;:8080</code> のように指定する</dd>
+  <dt>unit（systemd）</dt><dd>サービスを起動・停止する仕組みの単位。この機体のサービスは「自動で起動しない」設定にしてある（Ollama と入口ページを除く）</dd>
+  <dt>OpenAI 互換 API</dt><dd>ChatGPT の API と同じ形で呼べる窓口。対応している道具からそのまま使える</dd>
+</dl>
+
+<!-- ================================================================ -->
+<h2 id="source">11. 出典と調べ方</h2>
+<ul class="points">
+  <li>入っているモデルと状態: <code>ollama list</code>・<code>ollama show</code>・<code>systemctl --user list-unit-files</code>・
+    <code>du -sh tools/*/models</code>・<code>nvidia-smi</code>（2026-10-18 に実行）</li>
+  <li>評価: <code>Documents/AIモデル評価_2026-10-08.html</code>・<code>docs/portfolio.md</code>・<code>Documents/3D問題_実施モデル一覧_2026-10-08.md</code></li>
+  <li>Strata の速さと各モデルの記録: <code>tools/strata/README.md</code>・<code>tools/strata/stra/config.py</code></li>
+  <li>速さの調整: <code>tools/strata/logs/phase2-20261017/summary.tsv</code>・<code>tools/strata/logs/ctx262k-20261018/summary.tsv</code>（git では追跡していない）</li>
+  <li>文脈長と KV キャッシュ: Ollama は <code>journalctl -u ollama</code> の llama-server のログ（<code>llama_kv_cache: size</code>・<code>offloaded N/N layers</code>）と
+    <code>ollama ps</code>・nvidia-smi（控え <code>tools/qwen-model-bench/work/ctx-check-20261018/</code>）、<code>tools/qwen-model-bench/README.md</code> の「文脈長の上限」。
+    Strata は engine のログ（<code>tools/strata/logs/ctx262k-20261018/final-engine-*.log</code>）。「計算」と書いた値は、ログの層の数と大きさから求めたもの</li>
+  <li>KV の型（q8_0 と int8）: Strata の上流のソース（<code>vendor/Strata/src/program/generate.cpp</code>・<code>src/core/conversation_snapshot_test.cpp</code>）と計測
+    （<code>vendor/Strata/bench/results/2026-09-27-kv-q4/README.md</code>・<code>docs/DETAILS.md</code>）、Ollama の FAQ（<code>docs.ollama.com/faq</code>）、
+    この機体の 2026-10-09 の比較（<code>Documents/Strata_コーディング性能の調査_2026-10-09.html</code>）</li>
+  <li>k8v4 の比較: <code>tools/strata/logs/k8v4-20261018/</code>（<code>speed.tsv</code>・<code>long.tsv</code>・<code>needle.tsv</code>・engine のログ。git では追跡していない）と、
+    <code>tools/strata/README.md</code> の「KV の型 k8v4 の比較」</li>
+  <li>3D 生成と道具: <code>tools/hunyuan3d/README.md</code>・<code>tools/pixal3d/README.md</code>・<code>tools/comfyui/README.md</code>・
+    <code>tools/portal/README.md</code>・<code>knowledge/10-silver/areas/env.md</code></li>
+  <li>「意見」と書いた部分は、上の事実からの判断です。それ以外は記録と実測の値です。</li>
+</ul>
+
+</main>
+<div id="tip" role="tooltip"></div>
+<script>
+(function(){
+  const data=[
+    {name:"Coder IQ1_M",port:8083,value:98.2,date:"2026-10-16"},
+    {name:"公式 IQ3_XXS",port:8084,value:89.0,date:"2026-10-07"},
+    {name:"Swift 1.5 IQ3_XXS（今回追加）",port:8086,value:79.7,date:"2026-10-17"},
+    {name:"公式 IQ3_S（今回追加）",port:8085,value:72.9,date:"2026-10-17"},
+    {name:"汎用版 RVN IQ3_S",port:8082,value:56.4,date:"2026-10-16"}
+  ];
+  const svg=document.getElementById("speedChart"),ns="http://www.w3.org/2000/svg";
+  const left=230,right=60,top=14,rowH=36,barH=18,width=760,maxV=100;
+  const plotW=width-left-right,axisY=top+rowH*data.length+4;
+  const xs=v=>left+plotW*v/maxV;
+  function el(tag,attrs,text){const node=document.createElementNS(ns,tag);
+    for(const key in attrs)node.setAttribute(key,attrs[key]);if(text!==undefined)node.textContent=text;return node}
+  for(let tick=0;tick<=maxV;tick+=25){
+    svg.appendChild(el("line",{class:tick===0?"axis":"grid",x1:xs(tick),x2:xs(tick),y1:top-4,y2:axisY}));
+    svg.appendChild(el("text",{class:"tick",x:xs(tick),y:axisY+16,"text-anchor":"middle"},String(tick)));
+  }
+  svg.appendChild(el("text",{class:"axis-title",x:left+plotW/2,y:axisY+34,"text-anchor":"middle"},"生成の速さ（tok/s）"));
+  const tip=document.getElementById("tip");
+  function show(evt,item){tip.innerHTML='<div class="tip-value">'+item.value.toFixed(1)+' tok/s</div>'+item.name+
+    '<br>ポート '+item.port+'・測った日 '+item.date;tip.style.display="block";move(evt)}
+  function move(evt){const pad=14;let posX=(evt.clientX||0)+pad,posY=(evt.clientY||0)+pad;
+    const rect=tip.getBoundingClientRect();if(posX+rect.width>innerWidth-8)posX=(evt.clientX||0)-rect.width-pad;
+    if(posY+rect.height>innerHeight-8)posY=(evt.clientY||0)-rect.height-pad;tip.style.left=posX+"px";tip.style.top=posY+"px"}
+  function hide(){tip.style.display="none"}
+  data.forEach((item,index)=>{
+    const rowY=top+index*rowH,barY=rowY+(rowH-barH)/2,x0=xs(0),barW=xs(item.value)-x0;
+    svg.appendChild(el("text",{class:"label",x:left-10,y:barY+barH/2+4,"text-anchor":"end"},item.name));
+    const group=el("g",{class:"mark",tabindex:"0","aria-label":item.name+" "+item.value.toFixed(1)+" tok/s"});
+    group.appendChild(el("rect",{class:"hit",x:x0,y:rowY+1,width:plotW,height:rowH-2}));
+    const radius=4;
+    group.appendChild(el("path",{fill:"#eb6834",d:"M"+x0+","+barY+" H"+(x0+barW-radius)+" A"+radius+","+radius+" 0 0 1 "+(x0+barW)+","+(barY+radius)+
+      " V"+(barY+barH-radius)+" A"+radius+","+radius+" 0 0 1 "+(x0+barW-radius)+","+(barY+barH)+" H"+x0+" Z"}));
+    group.appendChild(el("text",{class:"value",x:x0+barW+6,y:barY+barH/2+4},item.value.toFixed(1)));
+    group.addEventListener("mouseenter",evt=>show(evt,item));group.addEventListener("mousemove",move);
+    group.addEventListener("mouseleave",hide);
+    group.addEventListener("focus",()=>{const box=group.getBoundingClientRect();show({clientX:box.right,clientY:box.top},item)});
+    group.addEventListener("blur",hide);
+    svg.appendChild(group);
+  });
+})();
+</script>
+</body></html>

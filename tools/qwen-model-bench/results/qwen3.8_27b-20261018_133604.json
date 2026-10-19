@@ -1,0 +1,22 @@
+{
+  "model": "qwen3.8:27b",
+  "tokens_per_sec": 32.8,
+  "eval_count": 255,
+  "load_duration_sec": 4.8,
+  "total_elapsed_sec": 13,
+  "placement": {
+    "size_bytes": 18291307314,
+    "size_vram_bytes": 18291307314,
+    "gpu_percent": 100
+  },
+  "peaks": {
+    "vram_mib": 22636,
+    "ram_mib": 5275,
+    "swap_mib": 1283,
+    "memory_pressure_full_max": 1.96,
+    "memory_pressure_full_mean": 1.01,
+    "samples": 13
+  },
+  "usable": true,
+  "reasons": []
+}

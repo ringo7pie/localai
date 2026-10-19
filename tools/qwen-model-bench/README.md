@@ -49,6 +49,37 @@ Hunyuan3D か Pixal3D が動いていると VRAM を食い合って測る意味�
 `results/<モデル名>-<日時>.json`。モデル名の `:` と `/` は `_` に置き換える。
 git で追跡する（小さく、機体の性能の記録として残す価値があるため）。
 
+## 文脈長の上限（Modelfile、2026-10-18）
+
+利用者の指示「A30 に収まるように、文脈長と KV キャッシュを最大に」で、Ollama の各モデルの文脈長（`num_ctx`）を
+**A30（VRAM 24 GiB）に全部載る最大**にした。載るかどうかは、実際に読み込んで `ollama ps` の PROCESSOR（`100% GPU`）と
+journal の `offloaded N/N layers`・`llama_kv_cache: size`、nvidia-smi で確かめた（Ollama は収まらないと黙って層を CPU に移す。
+`LLAMA_ARG_FIT` 既定 on）。速さは `bench-model.sh <モデル名> --num-predict 300`（`results/*-20261018_*.json`）。
+
+- **KV キャッシュは q8_0**（Ollama 全体の設定。`/etc/systemd/system/ollama.service.d/override.conf` に
+  `OLLAMA_FLASH_ATTENTION=1` と `OLLAMA_KV_CACHE_TYPE=q8_0`。`OLLAMA_CONTEXT_LENGTH=65536` は Modelfile に値の無いモデルの既定として残す）。
+  f16 の半分になり、llama-server は `--cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on` で起動する（journal で確認。ヘッド次元 256 の
+  qwen35・gemma4・qwen4exp のどれでも Flash Attention が有効になった）。Ollama の FAQ は q8_0 を「very small loss in precision」としている。
+- **モデルごとの上限は `modelfiles/<名前>.Modelfile`**（`FROM <同じ名前>` と `PARAMETER num_ctx N` だけ。template・ほかの PARAMETER・LICENSE は
+  引き継がれる）。当て方は `ollama create <名前> -f modelfiles/<名前>.Modelfile`（同じ名前で作り直す。ID は変わるがサイズと blob は同じ）。
+  元の Modelfile は `work/modelfiles-before-20261018/`（追跡しない）に控えてあり、戻すときは `ollama create <名前> -f <控え>`。
+- **`gemma4:31b-ctx32k`（it-qat と同じ重みで `num_ctx 32768` に固定した派生）は消した**（`ollama rm`。重みは it-qat が持つので消えない）。
+  it-qat 本体が 65536 で全部 GPU に載るようになったため。評価の記録（2026-10-08）には残る。
+
+| モデル | `num_ctx` | KV（q8_0） | 載り方 | VRAM（nvidia-smi） | 生成（300 トークン） | 補足 |
+|---|---:|---:|---|---:|---:|---|
+| qwen3.8:27b | **114,688** | 4,256 MiB | 66/66 層 GPU、100% | 22,614 MiB | 32.8 tok/s | 131,072 は 63/66 層（91% GPU、KV 4,864 MiB、25.6 tok/s）で不可。10-16 の 65,536（f16）は 34.3〜37.8 tok/s |
+| gemma4:31b-it-qat | **65,536** | 3,358 MiB | 61/61 層 GPU、100% | 22,458 MiB | 25.4 tok/s | **f16 の KV では同じ 65,536 で 55/61 層しか載らず**（2026-10-08 の評価はこの状態。5.2 tok/s）。ctx32k が 5 倍速かった原因 |
+| gemma4:e4b | **131,072**（モデルの上限） | 1,088 MiB | 43/43 層 GPU、100% | 6,100 MiB | —（10-18 は未計測） | f16 でも載る（2,048 MiB） |
+| qwen3.8-flash-next:IQ4_XS | **131,072** | 2,040 MiB | dense の 49/49 層 GPU（エキスパート 92 GB は CPU。`ollama ps` は 43%） | 22,766 MiB | 8.3 tok/s | 「A30 に収まる」のは dense と KV。09-24 の 65,536 は 5.9 tok/s（300 トークン、2 回目） |
+
+f16 のままなら上げられたのは e4b だけ（27b・IQ4_XS は 65,536 が限界。it-qat は 32,768 に下げないと載らない）。
+09-19 の「65,536 が上限」（`knowledge/10-silver/archive/setup-inference.md`）は f16 の KV での値。
+
+呼ぶ側: 評価の道具（`tools/model-eval`）・Open WebUI・local-ai-bridge は `num_ctx` を送らないので Modelfile の値で動く。
+**qwen-worker は `~/.config/qwen-worker/config.toml` の `num_ctx = 65536` を送る**ので、27b を使うたびに Ollama が 114,688 ↔ 65,536 で
+読み直す（約 60 秒。利用者が後で設計し直す）。
+
 ## 実測（2026-09-24）
 
 ### qwen3.8:27b
