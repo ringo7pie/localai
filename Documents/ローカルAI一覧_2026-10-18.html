@@ -84,7 +84,7 @@ dl.terms dt{font-weight:700}dl.terms dd{margin:0;color:var(--text-secondary)}
 <body><main>
 
 <h1>この機体に入っているローカル AI の一覧</h1>
-<p class="sub">2026-10-18 時点。サーバーは NVIDIA A30（VRAM 24 GiB）1 枚・RAM 64 GB・Core i7-12700。
+<p class="sub">2026-10-18 に作成し、2026-10-19 に難問 9 問の評価結果（第 5 節）といまの状態（第 9 節）を反映しました。サーバーは NVIDIA A30（VRAM 24 GiB）1 枚・RAM 64 GB・Core i7-12700。
 調べた方法と出典は末尾の「<a href="#source">出典と調べ方</a>」にあります。</p>
 
 <div class="tiles">
@@ -110,10 +110,10 @@ dl.terms dt{font-weight:700}dl.terms dd{margin:0;color:var(--text-secondary)}
 
 <nav><ol>
   <li><a href="#points">まず押さえること</a></li><li><a href="#map">全体の見取り図</a></li>
-  <li><a href="#ollama">Ollama のモデル</a></li><li><a href="#strata">Strata のモデル</a></li>
+  <li><a href="#ollama">Ollama のモデル</a></li><li><a href="#strata">Strata のモデル</a></li><li><a href="#eval">難問 9 問の評価（Sonnet との比較）</a></li>
   <li><a href="#ctx">文脈長と KV キャッシュ</a></li>
   <li><a href="#d3">3D 生成</a></li><li><a href="#tools">画面・連携の道具</a></li>
-  <li><a href="#status">いまの状態</a></li><li><a href="#work">進行中の作業</a></li>
+  <li><a href="#status">いまの状態</a></li><li><a href="#work">Strata の速さの設定</a></li>
   <li><a href="#terms">用語集</a></li><li><a href="#source">出典と調べ方</a></li>
 </ol></nav>
 
@@ -126,8 +126,9 @@ dl.terms dt{font-weight:700}dl.terms dd{margin:0;color:var(--text-secondary)}
   <li><strong>自動で起動するのは Ollama と入口ページだけです。</strong>それ以外（Strata・3D 生成・Open WebUI）は、使うときに入口ページから起動します。</li>
   <li><strong>Ollama と Strata の違い。</strong>Ollama は GPU に収まるモデルを手軽に動かします。Strata は Qwen3.8-Flash-Next という
     40〜85 GiB の大きなモデル（MoE）を、GPU・RAM・CPU に分けて動かす専用のエンジンです。起動に 20〜80 秒ほどかかり、RAM を 25〜44 GiB 使います。</li>
+  <li><strong>難問 9 問で測ると、いちばん良いローカルは Sonnet の約 8 割です。</strong>strata-official:IQ3_XXS の能力は 77.8%（Sonnet5.5-xHigh は 98.6%）で、1 問にかかる時間の中央値は 3.7 倍 です。比較の表は第 5 節。</li>
   <li><strong>文脈長（一度に扱えるトークン数）は、2026-10-18 に「A30 に全部載る最大」にそろえました。</strong>Ollama は KV キャッシュを 8 ビットにして
-    モデルごとに上限を決め（27b 114,688・it-qat 65,536・e4b と IQ4_XS 131,072）、Strata は 5 つともモデルの上限 262,144 です。文脈長と KV キャッシュの大きさは第 5 節にまとめました。</li>
+    モデルごとに上限を決め（27b 114,688・it-qat 65,536・e4b と IQ4_XS 131,072）、Strata は 5 つともモデルの上限 262,144 です。文脈長と KV キャッシュの大きさは第 6 節にまとめました。</li>
   <li><strong>どれも同じ API の形で呼べます。</strong>Strata はポート 8082〜8086 の <code>/v1</code>（OpenAI 互換）です。
     Ollama は <code>127.0.0.1:11434</code> で、この機体の中からしか呼べません。チャット画面の Open WebUI は、この両方につながっています。</li>
 </ul>
@@ -135,11 +136,16 @@ dl.terms dt{font-weight:700}dl.terms dd{margin:0;color:var(--text-secondary)}
 <div class="callout opinion">
   <div class="head"><span class="tag">意見</span>用途ごとの目安（根拠は下の各節の評価と実測）</div>
   <ul class="points">
-    <li><strong>ふだんの質問や画像を見せる質問:</strong> <code>qwen3.8:27b</code>。速く（34〜38 tok/s）、画像も読めて、追加 3 試験で 100%。</li>
-    <li><strong>難しい数学など長い推論:</strong> <code>gemma4:31b-it-qat</code>（10-08 の評価では ctx32k の名前で 3D 数学を全問正解・ローカル最短の 441 秒。
-      10-18 からは it-qat 本体が同じように全部 GPU に載る設定になった）か、Strata 公式 IQ3_XXS（全問正解、839 秒）。</li>
-    <li><strong>コーディング:</strong> 点数は <code>gemma4:31b-it-qat</code>（92%）が最も高いものの、699 秒かかります。
-      速さとの釣り合いでは <code>qwen3.8:27b</code>（83%・243 秒）か Strata 公式 IQ3_XXS（84%・464 秒）。</li>
+    <li><strong>ふだんの質問や画像を見せる質問:</strong> <code>qwen3.8:27b</code>。速く（34〜38 tok/s）、画像も読めて、10-08 の追加 3 試験で 100%。
+      ただし長いコーディングの難問（10-18）では、思考の途中で止まる回が多く 27.8% だった（第 5 節）。</li>
+    <li><strong>難しい数学など長い推論:</strong> Strata 公式 IQ3_XXS。10-18 の数学 3 問は 3 問とも満点、10-08 の 3D 数学も全問正解（839 秒）。
+      <code>gemma4:31b-it-qat</code> は 10-08 の 3D 数学が全問正解（10-08 では ctx32k の名前で 441 秒が最短）だが、10-18 の数学 3 問は
+      100%・33%・67% だった。</li>
+    <li><strong>コーディング:</strong> 10-18 の難問 6 問では Strata 公式 IQ3_XXS が最も高い（66.7%。
+      Sonnet5.5-xHigh は 97.9%）。10-08 の易しめの 6 問では <code>gemma4:31b-it-qat</code>（92%）が最高だったが 699 秒かかった。
+      速さとの釣り合いでは Strata 公式 IQ3_XXS を第一候補にする。</li>
+    <li><strong>Claude の代わりにできるか:</strong> 難問では、最良のローカルでも Sonnet の約 8 割・時間は約 4 倍。
+      長い仕様を守る型推論（H3）と最小 DFA（H5）は、どのローカルも満点にならなかった。ふだんの作業での差は、この難問より小さいかもしれない（測っていない）。</li>
     <li><strong>画像から 3D モデル:</strong> 正面・背面・左・右の 4 枚がそろうなら Hunyuan3D-2mv。材質まで欲しいなら Pixal3D。
       穴のない閉じたメッシュが要るなら ComfyUI の防水メッシュのワークフロー。</li>
   </ul>
@@ -179,18 +185,20 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
 <code>gemma4:31b-ctx32k</code>（it-qat と同じ重みで文脈長を 32,768 に固定した派生）は、it-qat 本体が全部 GPU に載るようになったので同じ日に消しました。
 2026-10-08 の評価の記録には残っています。</p>
 
+<div style="overflow-x:auto">
 <table class="data">
-  <thead><tr><th>モデル</th><th>中身</th><th class="num">サイズ</th><th class="num">文脈長（上限）</th><th>3D 数学</th><th>コーディング 6 問</th><th>追加 3 試験</th></tr></thead>
+  <thead><tr><th>モデル</th><th>中身</th><th class="num">サイズ</th><th class="num">文脈長（上限）</th><th>3D 数学（10-08）</th><th>コーディング 6 問（10-08）</th><th>追加 3 試験（10-08）</th><th>難問 9 問（10-18）</th></tr></thead>
   <tbody>
-    <tr class="cat-row cat-ollama"><td><strong>qwen3.8:27b</strong><br><span class="muted">主に使うモデル</span></td><td>Qwen3.8-27B・4 ビット（Q4_K_M）</td><td class="num">17 GB</td><td class="num">114,688</td><td>88% / 873 秒</td><td>83% / 243 秒</td><td>100% / 13 秒</td></tr>
-    <tr class="cat-row cat-ollama"><td><strong>gemma4:31b-it-qat</strong></td><td>Gemma 4 31B・4 ビット（Q4_0）</td><td class="num">18 GB</td><td class="num">65,536</td><td>100% / 3,660 秒</td><td class="best">92% / 699 秒</td><td>100% / 45 秒</td></tr>
-    <tr class="cat-row cat-ollama"><td><span class="muted"><strong>gemma4:31b-ctx32k</strong><br>10-18 に消した</span></td><td class="muted">it-qat と同じ重みで文脈長 32,768 の派生</td><td class="num muted">—</td><td class="num muted">32,768</td><td class="best">100% / 441 秒</td><td>79% / 266 秒</td><td>100% / 51 秒</td></tr>
-    <tr class="cat-row cat-ollama"><td><strong>gemma4:e4b</strong></td><td>Gemma 4 の小型版 8.0B・4 ビット（Q4_K_M）</td><td class="num">9.6 GB</td><td class="num">131,072</td><td>67% / 115 秒</td><td>52% / 48 秒</td><td>96% / 6 秒</td></tr>
-    <tr class="cat-row cat-ollama"><td><strong>qwen3.8-flash-next:IQ4_XS</strong></td><td>Qwen3.8-Flash-Next 176.9B（MoE）・約 4 ビット（IQ4_XS）</td><td class="num">97 GB</td><td class="num">131,072</td><td>100% / 3,720 秒</td><td>57% / 536 秒</td><td>100% / 52 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8:27b</strong><br><span class="muted">主に使うモデル</span></td><td>Qwen3.8-27B・4 ビット（Q4_K_M）</td><td class="num">17 GB</td><td class="num">114,688</td><td>88% / 873 秒</td><td>83% / 243 秒</td><td>100% / 13 秒</td><td>27.8% / 534 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:31b-it-qat</strong></td><td>Gemma 4 31B・4 ビット（Q4_0）</td><td class="num">18 GB</td><td class="num">65,536</td><td>100% / 3,660 秒</td><td class="best">92% / 699 秒</td><td>100% / 45 秒</td><td class="best">54.5% / 443 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><span class="muted"><strong>gemma4:31b-ctx32k</strong><br>10-18 に消した</span></td><td class="muted">it-qat と同じ重みで文脈長 32,768 の派生</td><td class="num muted">—</td><td class="num muted">32,768</td><td class="best">100% / 441 秒</td><td>79% / 266 秒</td><td>100% / 51 秒</td><td class="note">消したので測っていない</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:e4b</strong></td><td>Gemma 4 の小型版 8.0B・4 ビット（Q4_K_M）</td><td class="num">9.6 GB</td><td class="num">131,072</td><td>67% / 115 秒</td><td>52% / 48 秒</td><td>96% / 6 秒</td><td>18.0% / 115 秒</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8-flash-next:IQ4_XS</strong></td><td>Qwen3.8-Flash-Next 125B（活性 6B）の MoE・約 4 ビット（IQ4_XS）。Ollama の表示は 176.9B（うち 51.2B は層ごとの埋め込み表）</td><td class="num">97 GB</td><td class="num">131,072</td><td>100% / 3,720 秒</td><td>57% / 536 秒</td><td>100% / 52 秒</td><td>11.1% / 1,404 秒</td></tr>
   </tbody>
 </table>
-<p class="caption">評価は 2026-10-08 の比較評価（<code>Documents/AIモデル評価_2026-10-08.html</code>）。「能力 / かかった時間の中央値」。
-太字は Ollama の 5 つ（当時）の中で最も良い値。試行の回数は少なく（3D は 1〜3 回、コーディングと追加は各問 1 回）、同じモデルでも回によって結果は変わりえます。
+</div>
+<p class="caption">評価は 2026-10-08 の比較評価（<code>Documents/AIモデル評価_2026-10-08.html</code>）と、2026-10-18 の難問 9 問（第 5 節）。「能力 / かかった時間の中央値」。
+太字は Ollama の 5 つ（当時。難問 9 問の列は 4 つ）の中で最も良い値。試行の回数は少なく（3D は 1〜3 回、コーディングと追加は各問 1 回）、同じモデルでも回によって結果は変わりえます。
 文脈長は 2026-10-18 の設定で、評価のときは 27b・it-qat・IQ4_XS が 65,536（f16 の KV）、e4b が 65,536 でした。it-qat は当時 KV が溢れて 6 層が CPU にあり、
 それが 3,660 秒・699 秒の遅さの原因です。</p>
 
@@ -206,12 +214,13 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
       10-17 までは 65,536（f16 の KV。それ以上は KV が CPU 側に溢れた）</dd>
     <dt>KV キャッシュ</dt><dd><strong>4,256 MiB</strong>（q8_0。全体を見る注意の 16 層が 3,808 MiB、先読み（MTP）用の 1 層が f16 で 448 MiB）。
       1 トークンあたり約 38 KiB。読み込み時に上限の分を全部 VRAM に確保する。f16・65,536 のときは 4,352 MiB で、ほぼ同じ量のまま文脈が 1.75 倍になった</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>27.8%</strong>・1 問の時間の中央値 534 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 28%、時間は 5.4 倍）。満点の問: H2・M2。9 問中 6 問が正常に終わらなかった（4 問は思考の文の途中で止まり本文が空、2 問は生成の上限 32,768 トークン）。止まった問は、流し直した 2 回目も同じだった。原因は確かめていない（先読み（MTP）との関係を疑っている）</dd>
     <dt>使われ方</dt><dd>qwen-worker と、Claude Code の <code>/qwen</code>・<code>/qwen-read</code> の作業者</dd>
     <dt>注意</dt><dd>最初の 1 回は読み込みに約 60 秒かかる。5 分使わないと VRAM から降りて、次にまた 60 秒かかる</dd>
   </dl></section>
 
 <section class="card cat-ollama"><header><h3>gemma4:31b-it-qat</h3><span class="port">Ollama・18 GB</span></header>
-  <p class="one-line">コーディングの点がローカルで最も高い。ただし遅い。</p>
+  <p class="one-line">10-08 の易しめのコーディングではローカルで最も高かった（難問 9 問では Strata 公式 IQ3_XXS が上）。ただし遅い。</p>
   <dl class="spec">
     <dt>中身</dt><dd>Gemma 4 の 31B（30.7B）。「it」は指示に従うよう調整した版、「qat」は量子化を見込んで学習した版。4 ビット（Q4_0）。Apache-2.0</dd>
     <dt>できること</dt><dd>文章・画像の読み取り・ツール呼び出し・思考（オン / オフ）</dd>
@@ -221,6 +230,7 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
       全体注意の分は 1 トークンあたり 42.5 KiB で、Ollama の 4 モデルで最も大きい。f16 のときは 6,320 MiB で GPU に入りきらなかった</dd>
     <dt>速さ</dt><dd>3D の問題を Open WebUI で解かせたとき 5.2 tok/s、1 時間 1 分（2026-09-27。KV が溢れていた状態）。10-18 の設定では 25.4 tok/s（300 トークンの計測）</dd>
     <dt>評価</dt><dd>コーディング 92% はローカルの中で最高。3D 数学も全問正解だが 3,660 秒（溢れていた状態での値。測り直していない）</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>54.5%</strong>・1 問の時間の中央値 443 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 55%、時間は 4.5 倍）。満点の問: M1。ローカルの中で H3（型推論）32%・H5（最小 DFA）84% の点が最も高い。一方 H4・H6 は 19%・19%、M2 は 33%</dd>
   </dl></section>
 
 <section class="card cat-ollama"><header><h3>gemma4:31b-ctx32k <span class="muted">（2026-10-18 に消した）</span></h3><span class="port">Ollama・it-qat と同じ重み</span></header>
@@ -244,10 +254,11 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
       1 トークンあたり 8.5 KiB と小さく、文脈長をモデルの上限にしても余裕がある（f16 でも 131,072 なら 2,048 MiB で載る）</dd>
     <dt>できること</dt><dd>文章・画像・音声（audio）・ツール呼び出し・思考</dd>
     <dt>評価</dt><dd>どの試験も最速の部類（コーディング 48 秒、追加 6 秒）。ただし 3D 数学 67%・コーディング 52%</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>18.0%</strong>・1 問の時間の中央値 115 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 18%、時間は 1.2 倍）。満点の問: M1。時間は Sonnet に近いが、能力は 2 割以下</dd>
   </dl></section>
 
 <section class="card cat-ollama"><header><h3>qwen3.8-flash-next:IQ4_XS</h3><span class="port">Ollama・97 GB</span></header>
-  <p class="one-line">Strata のモデルと同じ系統の大きな MoE を、Ollama で動かしたもの。正確だがとても遅い。</p>
+  <p class="one-line">Strata のモデルと同じ系統の大きな MoE を、Ollama で動かしたもの。とても遅く、難問 9 問では 11.1% だった。</p>
   <dl class="spec">
     <dt>中身</dt><dd>Qwen3.8-Flash-Next。Ollama の表示では 176.9B の MoE。約 4 ビット（IQ4_XS）。Qwen Community License 1.0。手を加えていない版（abliterated ではない）</dd>
     <dt>できること</dt><dd>文章・ツール呼び出し・思考（画像は読めない）</dd>
@@ -257,13 +268,14 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
     <dt>KV キャッシュ</dt><dd><strong>2,040 MiB</strong>（q8_0。注意の 12 層が 1,632 MiB、長い文脈から要る所を拾う索引（indexer）のキーが 408 MiB）。
       1 トークンあたり約 16 KiB。48 層のうち KV を持つのは 12 層だけで、残りは文章が長くなっても大きさの変わらない状態を持つ</dd>
     <dt>評価</dt><dd>3D 数学と追加 3 試験は 100%。コーディングは 57%</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>11.1%</strong>・1 問の時間の中央値 1,404 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 11%、時間は 14.3 倍）。満点の問: M1。9 問中 6 問が生成の上限 32,768 トークンに達した。1 問に 20〜24 分かかった問がある。9 問の合計は 3.3 時間</dd>
   </dl></section>
 </div>
 
 <!-- ================================================================ -->
 <h2 id="strata">4. Strata のモデル（5 つ）</h2>
 <p><strong>Strata</strong>（Niko1221/Strata、版 v0.1.44.1）は、<strong>MoE</strong> という形のモデルを CPU と GPU で分担して動かすエンジンです。
-5 つのモデルはどれも Qwen3.8-Flash-Next 系で、各層に 512 の「専門家（エキスパート）」を持ち、1 トークンごとにそのうちの一部だけを使います。</p>
+5 つのモデルはどれも Qwen3.8-Flash-Next 系の MoE です。各層に「専門家（エキスパート）」を持ち（汎用版・公式版 2 つ・Swift は 512 個、Coder は 256 個。どれも GGUF の見出しで確認）、1 トークンごとにそのうち 10 個だけを使います。</p>
 <ul class="points">
   <li><strong>分担の仕組み:</strong> よく使われるエキスパートを GPU のキャッシュに置き、残りは RAM に置いて CPU で計算します。
     だから VRAM 24 GiB の機体でも、40〜85 GiB のモデルが動きます。</li>
@@ -271,21 +283,23 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
     本体がまとめて確かめます。当たった分だけ速くなります。</li>
   <li><strong>同時に 1 つだけ:</strong> 1 つを起動すると、ほかの 4 つは自動で止まります（systemd の <code>Conflicts=</code>）。</li>
   <li><strong>文脈長（コンテキスト長）:</strong> 5 つとも <strong>262,144 トークン</strong>（モデルの上限。2026-10-18 に 131,072 から広げた）。
-    KV キャッシュは 8 ビット（int8）で、262,144 分で 3.35 GiB（engine のログ）。置き方はモデルで違う（第 5 節）。速さの設定は第 9 節。</li>
+    KV キャッシュは 8 ビット（int8）で、262,144 分で 3.35 GiB（engine のログ）。置き方はモデルで違う（第 6 節）。速さの設定は第 10 節。</li>
   <li><strong>呼び方:</strong> <code>http://&lt;サーバー&gt;:808x/v1</code>（OpenAI 互換）。Open WebUI にも 5 つともつないであります。</li>
 </ul>
 
+<div style="overflow-x:auto">
 <table class="data">
-  <thead><tr><th>モデル名（API）</th><th>ポート / unit</th><th>中身</th><th class="num">ディスク</th><th>3D 数学</th><th>コーディング</th><th>追加 3 試験</th></tr></thead>
+  <thead><tr><th>モデル名（API）</th><th>ポート / unit</th><th>中身</th><th class="num">ディスク</th><th>3D 数学（10-08）</th><th>コーディング（10-08）</th><th>追加 3 試験（10-08）</th><th>難問 9 問（10-18）</th></tr></thead>
   <tbody>
-    <tr class="cat-row cat-strata"><td><strong>strata-flash-next:IQ3_S</strong><br><span class="muted">汎用版 RVN</span></td><td>8082 / <code>strata</code></td><td>RVN の改変版（abliterated）・約 3.4 ビット</td><td class="num">85 GiB</td><td colspan="3" class="note">比較から外した（思考が終わらず、上限なしでは答えが出なかった）</td></tr>
-    <tr class="cat-row cat-strata"><td><strong>strata-flash-coder:IQ1_M</strong><br><span class="muted">Coder</span></td><td>8083 / <code>strata-coder</code></td><td>公式のコード向け版・約 1.75 ビット</td><td class="num">56 GiB</td><td>100% / 728 秒</td><td>59% / 406 秒</td><td>89% / 7 秒</td></tr>
-    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_XXS</strong><br><span class="muted">公式版</span></td><td>8084 / <code>strata-official</code></td><td>公式の量子化版・約 3.1 ビット</td><td class="num">46 GiB</td><td>100% / 839 秒</td><td class="best">84% / 464 秒</td><td class="best">98% / 8 秒</td></tr>
-    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_S</strong> <span class="new">今回追加</span><br><span class="muted">公式版（軽い量子化）</span></td><td>8085 / <code>strata-official-iq3s</code></td><td>公式の量子化版・約 3.4 ビット</td><td class="num">53 GiB※</td><td colspan="3" class="note">まだ評価していない</td></tr>
-    <tr class="cat-row cat-strata"><td><strong>strata-swift:IQ3_XXS</strong> <span class="new">今回追加</span><br><span class="muted">Swift 1.5</span></td><td>8086 / <code>strata-swift</code></td><td>公式版を元に思考を短くした fine-tune・約 3.1 ビット</td><td class="num">73 GiB</td><td colspan="3" class="note">まだ評価していない（動作確認で 3D の 4 問は正解）</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-next:IQ3_S</strong><br><span class="muted">汎用版 RVN</span></td><td>8082 / <code>strata</code></td><td>RVN の改変版（abliterated）・約 3.4 ビット</td><td class="num">85 GiB</td><td colspan="3" class="note">10-08 は比較から外した（思考が終わらず、上限なしでは答えが出なかった）</td><td>4.0% / 480 秒</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-coder:IQ1_M</strong><br><span class="muted">Coder</span></td><td>8083 / <code>strata-coder</code></td><td>公式のコード向け版・約 1.75 ビット</td><td class="num">56 GiB</td><td>100% / 728 秒</td><td>59% / 406 秒</td><td>89% / 7 秒</td><td>68.2% / 393 秒</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_XXS</strong><br><span class="muted">公式版</span></td><td>8084 / <code>strata-official</code></td><td>公式の量子化版・約 3.1 ビット</td><td class="num">46 GiB</td><td>100% / 839 秒</td><td class="best">84% / 464 秒</td><td class="best">98% / 8 秒</td><td class="best">77.8% / 363 秒</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_S</strong> <span class="new">今回追加</span><br><span class="muted">公式版（軽い量子化）</span></td><td>8085 / <code>strata-official-iq3s</code></td><td>公式の量子化版・約 3.4 ビット</td><td class="num">53 GiB※</td><td colspan="3" class="note">10-08 には無かった（10-16 に追加）</td><td>66.5% / 451 秒</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-swift:IQ3_XXS</strong> <span class="new">今回追加</span><br><span class="muted">Swift 1.5</span></td><td>8086 / <code>strata-swift</code></td><td>公式版を元に思考を短くした fine-tune・約 3.1 ビット</td><td class="num">73 GiB</td><td colspan="3" class="note">10-08 には無かった（10-16 に追加。動作確認で 3D の 4 問は正解）</td><td>55.2% / 364 秒</td></tr>
   </tbody>
 </table>
-<p class="caption">評価は 2026-10-08。ディスクは <code>du -sh</code>（GiB）。※公式 IQ3_S の 2 つ目のファイル（26.8 GiB）は Coder のものをハードリンクで共有しているので、
+</div>
+<p class="caption">評価は 2026-10-08 と 2026-10-18（難問 9 問、第 5 節）。ディスクは <code>du -sh</code>（GiB）。※公式 IQ3_S の 2 つ目のファイル（26.8 GiB）は Coder のものをハードリンクで共有しているので、
 この 53 GiB には入っていません。ビット数は量子化の型ごとのおおよその目安です。</p>
 
 <h3>生成の速さの比較</h3>
@@ -317,6 +331,7 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
       空いた VRAM をエキスパートの枠に回す（枠 7,732。KV を全部 VRAM に置くと 6,549）。読み込み後の VRAM の空き 376 MiB</dd>
     <dt>評価</dt><dd>3D 数学では、思考の上限を外すと 9 回とも答えが出なかった。同じ式の書き直しと、問題の前提を疑う寄り道が続く。
       このため 10-08 の比較から外した（記録は残してある）</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>4.0%</strong>・1 問の時間の中央値 480 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 4%、時間は 4.9 倍）。満点の問: なし。9 問中 7 問が 0 点で、2 問は生成の上限に達した。10-18 の最初の起動は systemd-oomd に落とされ、前のモデルの重みのキャッシュを捨ててから起動し直した</dd>
     <dt>注意</dt><dd>断る働きを外した版なので、出力をそのまま公開する用途には向かない<span class="muted">（意見）</span></dd>
   </dl></section>
 
@@ -330,6 +345,7 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
       文脈が伸びるとエキスパートの枠（8,753）から少しずつ借りる（最少 6,604 枠まで）。読み込み後の VRAM の空き 456 MiB</dd>
     <dt>評価</dt><dd>3D 数学 100%。コーディングは 59% で、6 問のうち 5 問は思考が上限（24,576）で打ち切られたあとの答えだった
       （<code>Documents/Strata_コーディング性能の調査_2026-10-09.html</code>）</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>68.2%</strong>・1 問の時間の中央値 393 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 69%、時間は 4.0 倍）。満点の問: H1・H2・H4・H6・M1・M2。H3・H5 はほぼ 0 点（4%・11%）で、公式 IQ3_XXS と同じ。M3 は答えが違って 0 点で、満点の公式 IQ3_XXS との差はこの 1 問</dd>
   </dl></section>
 
 <section class="card cat-strata"><header><h3>公式版 IQ3_XXS</h3><span class="port">8084・strata-official:IQ3_XXS</span></header>
@@ -337,10 +353,11 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
   <dl class="spec">
     <dt>中身</dt><dd>ISTA-DASLab の Qwen3.8-Flash-Next-GSQ-RCO。IQ3_XXS。Apache-2.0</dd>
     <dt>動かし方</dt><dd>通常モード（エキスパートを全部 RAM に置く。約 42 GiB を固定）。文脈長 262,144（モデルの上限）、<code>--kv-grow</code>。思考の上限 65,536。
-      2026-10-17〜18 の計測で常駐モードより 8〜20% 速かった（4K 入力・思考あり 89.8 → 102.9 tok/s）ので、10-18 に正式に通常モードにした（第 9 節）</dd>
+      2026-10-17〜18 の計測で常駐モードより 8〜20% 速かった（4K 入力・思考あり 89.8 → 102.9 tok/s）ので、10-18 に正式に通常モードにした（第 10 節）</dd>
     <dt>KV キャッシュ</dt><dd><strong>最大 3.35 GiB</strong>（int8、262,144 トークン分）。Coder と同じく使った分だけ VRAM に取る（<code>--kv-grow</code>）。
       起動時は 0.25 GiB、文脈が伸びるとエキスパートの枠（10,452）から借りる（最少 8,017 枠まで）。読み込み後の VRAM の空き 460 MiB</dd>
     <dt>評価</dt><dd>3D 数学 100%（2 回とも全問正解）、コーディング 84%、追加 3 試験 98%</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>77.8%</strong>・1 問の時間の中央値 363 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 79%、時間は 3.7 倍）。満点の問: H1・H2・H4・H6・M1・M2・M3。H3（型推論）と H5（最小 DFA）が 0 点で、ほかの 7 問は満点。この 9 問ではローカル最高</dd>
     <dt>弱み</dt><dd>コーディングの 6 問は、どれも思考が上限で打ち切られたあとの答えだった。上限を外すと 0%（答えが出ない）</dd>
   </dl></section>
 
@@ -354,11 +371,12 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
     <dt>KV キャッシュ</dt><dd><strong>3.35 GiB を起動時に全部 VRAM に確保</strong>（int8、262,144 トークン分。値は同じ構造の公式版のログ）。
       常駐モードでは使った分だけ取る <code>--kv-grow</code> が使えない。KV を RAM に置く方法は 2% しか速くならず RAM が 2.3 GiB 増えるので採らなかった。
       エキスパートの枠 7,146、読み込み後の VRAM の空き 384 MiB</dd>
-    <dt>入れた理由</dt><dd>「量子化が強いほど思考が終わらないのでは」という見立てを確かめるため。評価はまだ</dd>
+    <dt>入れた理由</dt><dd>「量子化が強いほど思考が終わらないのでは」という見立てを確かめるため。評価は 10-18 に行った（下の「難問 9 問」）</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>66.5%</strong>・1 問の時間の中央値 451 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 67%、時間は 4.6 倍）。満点の問: H2・H4・H6・M1・M2。量子化を軽くしても、公式 IQ3_XXS より低かった（H1 が 12%、M3 が 67%）。量子化が軽いほど点が高い、という結果にはならなかった。各 1 回なので、揺れの範囲かもしれない（意見）</dd>
   </dl></section>
 
 <section class="card cat-strata"><header><h3>Swift 1.5 IQ3_XXS <span class="new">今回追加</span></h3><span class="port">8086・strata-swift:IQ3_XXS</span></header>
-  <p class="one-line">公式版を元に、思考を短く終えるよう調整した版。Strata の弱み（思考が長い）に効く見込み。</p>
+  <p class="one-line">公式版を元に、思考を短く終えるよう調整した版。10-18 の難問 9 問では公式 IQ3_XXS より低かった（55.2% 対 77.8%、各 1 回）。</p>
   <dl class="spec">
     <dt>中身</dt><dd>UkisAI の Swift 1.5（公式版の fine-tune）。IQ3_XXS。2 つのファイルとも公式版とは別物</dd>
     <dt>動かし方</dt><dd>公式版と同じ通常モード（約 42 GiB を固定）。文脈長 262,144（モデルの上限）、<code>--kv-grow</code>。思考の上限 65,536。
@@ -370,13 +388,97 @@ Modelfile の <code>num_ctx</code> に書きました。値は「A30 に全部�
     <dt>この機体での確認</dt><dd>速さは公式 IQ3_XXS とほぼ同じ（4K 入力・思考ありで 79.7 tok/s）。日本語の 3 問はどれも自然で正しい。
       3D の問題は 4 問すべて正解し、42,744 トークン・664 秒。公式版の 2 回より思考が 13〜21% 短かった
       （ただし途中で繰り返しの回復が働いたので、条件は同じではない）</dd>
+    <dt>難問 9 問（10-18）</dt><dd>能力 <strong>55.2%</strong>・1 問の時間の中央値 364 秒（Sonnet5.5-xHigh（98.6%・98 秒）の能力の 56%、時間は 3.7 倍）。満点の問: H2・H4・M1・M2。H1 が 8%、H6 が 10%、M3 が 67% で、3 問とも満点の公式 IQ3_XXS との差になった。時間は公式 IQ3_XXS とほぼ同じ（364 秒対 363 秒）。思考を短くする調整が点につながったかは、この 9 問からは言えない（意見）</dd>
     <dt>ライセンス</dt><dd>Swift Open License v1.0（年商 100 万ドル以上の法人は商用利用できない）と、元の Qwen Community License 1.0。
       この機体では<strong>個人・非商用の研究用途</strong>で使う</dd>
   </dl></section>
 </div>
 
 <!-- ================================================================ -->
-<h2 id="ctx">5. 文脈長と KV キャッシュ（文章の AI 9 モデル）</h2>
+<h2 id="eval">5. 難問 9 問での評価（2026-10-18〜19）— Sonnet との比較</h2>
+<p>Sonnet と Opus に差が出るように作った難問 9 問（コーディング 6・数学 3）で、この機体のローカル 9 モデルと、Claude 8 構成（Sonnet・Opus × effort 4 段階）を測りました。
+隠しテストで採点し、能力は 9 問の点数の平均です。問題の中身と結果の詳しい説明は
+<a href="AIモデル評価_出題内容_2026-10-18.html">AIモデル評価_出題内容_2026-10-18.html</a>・
+<a href="AIモデル評価_2026-10-18.html">AIモデル評価_2026-10-18.html</a> にあります。</p>
+
+<div class="tiles">
+  <div class="tile" style="--cat:var(--axis)"><div class="tile-label">基準 Sonnet5.5-xHigh</div>
+    <div class="tile-value">能力 98.6%</div><div class="tile-sub">1 問の時間の中央値 98 秒（9 問 × 3 回）</div></div>
+  <div class="tile" style="--cat:var(--c-strata)"><div class="tile-label">いちばん良いローカル（strata-official:IQ3_XXS）</div>
+    <div class="tile-value">能力 77.8%</div><div class="tile-sub">Sonnet の 79%、時間は 3.7 倍（363 秒）</div></div>
+  <div class="tile" style="--cat:var(--c-ollama)"><div class="tile-label">ローカル 9 モデルの時間</div>
+    <div class="tile-value">Sonnet の 1.2〜14 倍</div><div class="tile-sub">近いのは gemma4:e4b（1.2 倍）だが、能力は 18%</div></div>
+</div>
+
+<table class="data">
+  <thead><tr><th>モデル</th><th>規模・構造</th><th class="num">能力</th><th class="num">Sonnet xHigh 比（能力）</th><th class="num">1 問の時間（中央値）</th><th class="num">Sonnet xHigh の何倍</th><th class="num">Sonnet Low の何倍</th></tr></thead>
+  <tbody>
+    <tr class="cat-row" style="--cat:var(--axis);--band:var(--surface-2)"><td><strong>Sonnet5.5-xHigh</strong><br><span class="muted">Claude（基準・参考）</span></td><td class="muted">非公開</td><td class="num">98.6%</td><td class="num">100%</td><td class="num">98 秒</td><td class="num">1.0 倍</td><td class="num">3.4 倍</td></tr>
+    <tr class="cat-row" style="--cat:var(--axis);--band:var(--surface-2)"><td><strong>Sonnet5.5-Low</strong><br><span class="muted">Claude（基準・参考）</span></td><td class="muted">非公開</td><td class="num">98.4%</td><td class="num">100%</td><td class="num">29 秒</td><td class="num">0.3 倍</td><td class="num">1.0 倍</td></tr>
+    <tr class="cat-row" style="--cat:var(--axis);--band:var(--surface-2)"><td><strong>Opus5.5-xHigh</strong><br><span class="muted">Claude（基準・参考）</span></td><td class="muted">非公開</td><td class="num">99.9%</td><td class="num">101%</td><td class="num">123 秒</td><td class="num">1.2 倍</td><td class="num">4.3 倍</td></tr>
+    <tr class="cat-row" style="--cat:var(--axis);--band:var(--surface-2)"><td><strong>Opus5.5-Low</strong><br><span class="muted">Claude（基準・参考）</span></td><td class="muted">非公開</td><td class="num">98.8%</td><td class="num">100%</td><td class="num">31 秒</td><td class="num">0.3 倍</td><td class="num">1.1 倍</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_XXS</strong><br><span class="muted">公式版</span></td><td>125B（活性 6B）・MoE</td><td class="num">77.8%</td><td class="num">79%</td><td class="num">363 秒</td><td class="num">3.7 倍</td><td class="num">12.7 倍</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-coder:IQ1_M</strong><br><span class="muted">Coder</span></td><td>約 65B（活性は同程度）・MoE</td><td class="num">68.2%</td><td class="num">69%</td><td class="num">393 秒</td><td class="num">4.0 倍</td><td class="num">13.8 倍</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_S</strong><br><span class="muted">公式版（軽い量子化）</span></td><td>125B（活性 6B）・MoE</td><td class="num">66.5%</td><td class="num">67%</td><td class="num">451 秒</td><td class="num">4.6 倍</td><td class="num">15.8 倍</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-swift:IQ3_XXS</strong><br><span class="muted">Swift 1.5</span></td><td>125B（活性 6B）・MoE</td><td class="num">55.2%</td><td class="num">56%</td><td class="num">364 秒</td><td class="num">3.7 倍</td><td class="num">12.8 倍</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:31b-it-qat</strong></td><td>30.7B・Dense</td><td class="num">54.5%</td><td class="num">55%</td><td class="num">443 秒</td><td class="num">4.5 倍</td><td class="num">15.5 倍</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8:27b</strong></td><td>27.3B・Dense</td><td class="num">27.8%</td><td class="num">28%</td><td class="num">534 秒</td><td class="num">5.4 倍</td><td class="num">18.7 倍</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:e4b</strong></td><td>実効 4B（ファイル全体 8.0B）・Dense</td><td class="num">18.0%</td><td class="num">18%</td><td class="num">115 秒</td><td class="num">1.2 倍</td><td class="num">4.0 倍</td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8-flash-next:IQ4_XS</strong></td><td>125B（活性 6B）・MoE</td><td class="num">11.1%</td><td class="num">11%</td><td class="num">1,404 秒</td><td class="num">14.3 倍</td><td class="num">49.2 倍</td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-next:IQ3_S</strong><br><span class="muted">汎用版 RVN</span></td><td>125B（活性 6B）・MoE</td><td class="num">4.0%</td><td class="num">4%</td><td class="num">480 秒</td><td class="num">4.9 倍</td><td class="num">16.8 倍</td></tr>
+  </tbody>
+</table>
+<p class="caption">能力 = 9 問の点数の平均。どの問が満点かは、下の「問ごとの点」の表にあります。Claude の能力と時間は 9 問 × 3 回（27 回）、ローカルは 9 問 × 1 回。時間は 1 問あたりの中央値です。
+<strong>時間の意味が違います。</strong>Claude は Agent の所要時間（API の待ちと通信を含む）、ローカルはこの機体での生成時間（モデルの読み込みを含まない）です。
+Opus5.5-High など残りの Claude 4 構成は、レポート（<a href="AIモデル評価_2026-10-18.html">AIモデル評価_2026-10-18.html</a>）にあります。Claude 8 構成の能力は 98〜100% でした。
+規模は、Ollama は <code>/api/show</code>、Strata は重みのファイル（GGUF）の見出しから取りました（「活性」は 1 トークンで実際に使う量。125B 版はタグ名 <code>125b-a6b</code> の値）。</p>
+
+<h3>問ごとの点（100 = 全ケース合格）</h3>
+<table class="data">
+  <thead><tr><th>モデル</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>M1</th><th>M2</th><th>M3</th><th class="num">能力</th></tr></thead>
+  <tbody>
+    <tr class="cat-row" style="--cat:var(--axis);--band:var(--surface-2)"><td><strong>Sonnet5.5-xHigh</strong></td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="整数座標の 3 次元凸包">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="最短で、辞書順が最小の編集スクリプト">100</td><td class="num" style="background:rgba(12,163,12,0.47);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">96</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="分母に上限のある最良の有理近似">100</td><td class="num" style="background:rgba(12,163,12,0.44);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">91</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="ドミノと L トロミノの敷き詰めの数">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="2 本の線分のまわりの立体の差">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="立方体の中の点">100</td><td class="num"><strong>98.6%</strong></td></tr>
+    <tr class="cat-row" style="--cat:var(--axis);--band:var(--surface-2)"><td><strong>Opus5.5-xHigh</strong></td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="整数座標の 3 次元凸包">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="最短で、辞書順が最小の編集スクリプト">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">99</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="分母に上限のある最良の有理近似">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="ドミノと L トロミノの敷き詰めの数">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="2 本の線分のまわりの立体の差">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="立方体の中の点">100</td><td class="num"><strong>99.9%</strong></td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_XXS</strong></td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="整数座標の 3 次元凸包">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="最短で、辞書順が最小の編集スクリプト">100</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">0</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="分母に上限のある最良の有理近似">100</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">0</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="ドミノと L トロミノの敷き詰めの数">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="2 本の線分のまわりの立体の差">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="立方体の中の点">100</td><td class="num"><strong>77.8%</strong></td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-coder:IQ1_M</strong></td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="整数座標の 3 次元凸包">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="最短で、辞書順が最小の編集スクリプト">100</td><td class="num" style="background:rgba(12,163,12,0.07);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">4</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="分母に上限のある最良の有理近似">100</td><td class="num" style="background:rgba(12,163,12,0.10);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">11</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="ドミノと L トロミノの敷き詰めの数">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="2 本の線分のまわりの立体の差">100</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="立方体の中の点">0</td><td class="num"><strong>68.2%</strong></td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-official:IQ3_S</strong></td><td class="num" style="background:rgba(12,163,12,0.11);text-align:center" title="整数座標の 3 次元凸包">12</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="最短で、辞書順が最小の編集スクリプト">100</td><td class="num" style="background:rgba(12,163,12,0.12);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">14</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="分母に上限のある最良の有理近似">100</td><td class="num" style="background:rgba(12,163,12,0.08);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">5</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="ドミノと L トロミノの敷き詰めの数">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="2 本の線分のまわりの立体の差">100</td><td class="num" style="background:rgba(12,163,12,0.34);text-align:center" title="立方体の中の点">67</td><td class="num"><strong>66.5%</strong></td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-swift:IQ3_XXS</strong></td><td class="num" style="background:rgba(12,163,12,0.09);text-align:center" title="整数座標の 3 次元凸包">8</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="最短で、辞書順が最小の編集スクリプト">100</td><td class="num" style="background:rgba(12,163,12,0.09);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">7</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="分母に上限のある最良の有理近似">100</td><td class="num" style="background:rgba(12,163,12,0.08);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">5</td><td class="num" style="background:rgba(12,163,12,0.10);text-align:center" title="ドミノと L トロミノの敷き詰めの数">10</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="2 本の線分のまわりの立体の差">100</td><td class="num" style="background:rgba(12,163,12,0.34);text-align:center" title="立方体の中の点">67</td><td class="num"><strong>55.2%</strong></td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:31b-it-qat</strong></td><td class="num" style="background:rgba(12,163,12,0.30);text-align:center" title="整数座標の 3 次元凸包">58</td><td class="num" style="background:rgba(12,163,12,0.39);text-align:center" title="最短で、辞書順が最小の編集スクリプト">78</td><td class="num" style="background:rgba(12,163,12,0.19);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">32</td><td class="num" style="background:rgba(12,163,12,0.14);text-align:center" title="分母に上限のある最良の有理近似">19</td><td class="num" style="background:rgba(12,163,12,0.41);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">84</td><td class="num" style="background:rgba(12,163,12,0.14);text-align:center" title="ドミノと L トロミノの敷き詰めの数">19</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.20);text-align:center" title="2 本の線分のまわりの立体の差">33</td><td class="num" style="background:rgba(12,163,12,0.34);text-align:center" title="立方体の中の点">67</td><td class="num"><strong>54.5%</strong></td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8:27b</strong></td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="整数座標の 3 次元凸包">0†</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="最短で、辞書順が最小の編集スクリプト">100</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="分母に上限のある最良の有理近似">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="ドミノと L トロミノの敷き詰めの数">0†</td><td class="num" style="background:rgba(12,163,12,0.27);text-align:center" title="正四面体のまわりの立体">50</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="2 本の線分のまわりの立体の差">100</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="立方体の中の点">0†</td><td class="num"><strong>27.8%</strong></td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>gemma4:e4b</strong></td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="整数座標の 3 次元凸包">0</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="最短で、辞書順が最小の編集スクリプト">0</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">0</td><td class="num" style="background:rgba(12,163,12,0.10);text-align:center" title="分母に上限のある最良の有理近似">10</td><td class="num" style="background:rgba(12,163,12,0.08);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">5</td><td class="num" style="background:rgba(12,163,12,0.12);text-align:center" title="ドミノと L トロミノの敷き詰めの数">14</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="2 本の線分のまわりの立体の差">0</td><td class="num" style="background:rgba(12,163,12,0.20);text-align:center" title="立方体の中の点">33</td><td class="num"><strong>18.0%</strong></td></tr>
+    <tr class="cat-row cat-ollama"><td><strong>qwen3.8-flash-next:IQ4_XS</strong></td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="整数座標の 3 次元凸包">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="最短で、辞書順が最小の編集スクリプト">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="分母に上限のある最良の有理近似">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="ドミノと L トロミノの敷き詰めの数">0</td><td class="num" style="background:rgba(12,163,12,0.48);text-align:center" title="正四面体のまわりの立体">100</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="2 本の線分のまわりの立体の差">0</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="立方体の中の点">0†</td><td class="num"><strong>11.1%</strong></td></tr>
+    <tr class="cat-row cat-strata"><td><strong>strata-flash-next:IQ3_S</strong></td><td class="num" style="background:rgba(12,163,12,0.13);text-align:center" title="整数座標の 3 次元凸包">17</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="最短で、辞書順が最小の編集スクリプト">0</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="小さな関数型言語の型推論（Hindley–Milner）">0</td><td class="num" style="background:rgba(12,163,12,0.14);text-align:center" title="分母に上限のある最良の有理近似">19</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列">0</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="ドミノと L トロミノの敷き詰めの数">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="正四面体のまわりの立体">0</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="2 本の線分のまわりの立体の差">0†</td><td class="num" style="background:rgba(12,163,12,0.06);text-align:center" title="立方体の中の点">0</td><td class="num"><strong>4.0%</strong></td></tr>
+  </tbody>
+</table>
+<p class="caption">H1 整数座標の 3 次元凸包・H2 最短で、辞書順が最小の編集スクリプト・H3 小さな関数型言語の型推論（Hindley–Milner）・H4 分母に上限のある最良の有理近似・H5 正規表現の最小 DFA と、2 つの正規表現を区別する最短の文字列・H6 ドミノと L トロミノの敷き詰めの数・M1 正四面体のまわりの立体・M2 2 本の線分のまわりの立体の差・M3 立方体の中の点。H はコーディング、M は数学。Claude の 2 行は 3 回の平均。
+† 生成の上限（32,768 トークン）に達したか、思考の途中で止まって答えが出なかった回。緑が濃いほど高い点です。</p>
+
+<div class="callout">
+  <div class="head">事実（記録: <code>tools/model-eval/results/2026-10-18/</code>）</div>
+  <ul class="points">
+    <li>Claude 8 構成はどれも 98% 以上。Sonnet と Opus は、effort が high のときだけ Opus が上で、xhigh・medium・low は点の範囲が重なり差は判定できない。
+      決まって違ったのは H3 の 1 ケースだけで、Sonnet は 12 回すべて、Opus は 12 回中 1 回落とした。</li>
+    <li>ローカルで H3（型推論）と H5（最小 DFA）を満点にしたモデルは無い。最高は H3 が gemma4:31b-it-qat の 32%、H5 も同じモデルの 84%。</li>
+    <li>qwen3.8:27b は 9 問中 6 問が正常に終わらなかった（思考の途中で止まった 4 問と、生成の上限の 2 問）。
+      qwen3.8-flash-next:IQ4_XS は 9 問中 6 問が生成の上限に達し、9 問の合計は 3.3 時間かかった。</li>
+    <li>1 モデルの累計時間の上限は、はじめ 70 分だった。10-19 00:47 に利用者の指示で期限と上限を外し、上限に届いて飛ばした 8 問（qwen3.8:27b 3 問・IQ4_XS 5 問）を流し直した。</li>
+    <li>採点の精度のために、計測の途中で採点器と隠しテストを 5 回直した（問題文は変えていない。理由は <code>frozen.json</code>）。直したあと、全 297 件を 2 回続けて採点し直し、点は一致した。</li>
+  </ul>
+</div>
+
+<div class="callout opinion">
+  <div class="head"><span class="tag">意見</span>どう読むか</div>
+  <ul class="points">
+    <li>この 9 問は Claude にはほぼ解けてしまう難しさだった。ローカルとの差は、この問題の選び方で大きく見えている面がある。ふだんの作業での差は、これより小さいかもしれない（測っていない）。</li>
+    <li>ローカルの中では Strata 公式 IQ3_XXS が最もよい。IQ3_S や Swift 1.5 より点が高いのは、各 1 回しか解かせていないので、揺れの範囲かもしれない。</li>
+    <li>qwen3.8:27b の点が低い主な原因は、時間ではなく思考中の停止。先読み（MTP）との関係を疑っているが、確かめていない（MTP を切って同じ問を流せば切り分けられる）。</li>
+    <li>速さで Sonnet に近いのは gemma4:e4b だけで、能力は 2 割以下。実用になる能力（5 割以上）のローカルは、どれも Sonnet の 4 倍前後の時間がかかる。</li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+
+<h2 id="ctx">6. 文脈長と KV キャッシュ（文章の AI 9 モデル）</h2>
 <p><strong>文脈長（コンテキスト長）</strong>は、1 回の会話で扱えるトークン数の上限です。入力・会話の履歴・思考・答えをすべて合わせた長さで、
 これを超える文章は読めません。<strong>KV キャッシュ</strong>は、読んだトークンの途中の計算結果を残しておくメモリです。文脈長を長くするほど
 KV キャッシュも比例して大きくなり、VRAM を使います。2026-10-18 に、9 モデルとも「A30 に収まる最大」にそろえました。</p>
@@ -532,7 +634,7 @@ KV キャッシュも比例して大きくなり、VRAM を使います。2026-1
   <div class="cat-ollama"><strong>gemma4:e4b / IQ4_XS</strong><br><span class="from">f16・65,536 で 1,084 / 1,728 MiB</span> → <span class="to">q8_0・131,072 で 1,109 / 2,040 MiB</span><br>
     どちらも長さが 2 倍。e4b はモデルの上限まで届いた。</div>
   <div class="cat-strata"><strong>Strata 5 モデル</strong><br><span class="from">int8・131,072 で約 1.7 GiB（計算）</span> → <span class="to">int8・262,144 で 3.35 GiB</span><br>
-    長さが 2 倍でモデルの上限。使った分だけ取る方式と KV を RAM に置く方式で、短い会話の速さは落ちていない（第 9 節）。</div>
+    長さが 2 倍でモデルの上限。使った分だけ取る方式と KV を RAM に置く方式で、短い会話の速さは落ちていない（第 10 節）。</div>
 </div>
 
 <div class="callout warn">
@@ -548,7 +650,7 @@ KV キャッシュも比例して大きくなり、VRAM を使います。2026-1
 </div>
 
 <!-- ================================================================ -->
-<h2 id="d3">6. 3D を生成する AI（3 サービス）</h2>
+<h2 id="d3">7. 3D を生成する AI（3 サービス）</h2>
 <p>画像から 3D のメッシュ（形）を作ります。どれも VRAM を大きく使うので、同時には動かせません。文章の AI とも GPU を取り合います。</p>
 <div class="cards2">
 <section class="card cat-3d"><header><h3>Hunyuan3D-2mv</h3><span class="port">ポート 7860・unit hunyuan3d</span></header>
@@ -579,7 +681,7 @@ KV キャッシュも比例して大きくなり、VRAM を使います。2026-1
 </div>
 
 <!-- ================================================================ -->
-<h2 id="tools">7. 画面・連携の道具（5 つ）</h2>
+<h2 id="tools">8. 画面・連携の道具（5 つ）</h2>
 <p>これ自体はモデルを持ちません。上の AI を人や Claude Code が使うための入口です。</p>
 <div class="cards2">
 <section class="card cat-tool"><header><h3>入口ページ（portal）</h3><span class="port">ポート 8080・<span class="st on">起動中</span></span></header>
@@ -611,7 +713,7 @@ KV キャッシュも比例して大きくなり、VRAM を使います。2026-1
 </div>
 
 <!-- ================================================================ -->
-<h2 id="status">8. いまの状態（2026-10-18 に確認）</h2>
+<h2 id="status">9. いまの状態（2026-10-19 に確認）</h2>
 <table class="data">
   <thead><tr><th>サービス</th><th>ポート</th><th>自動で起動</th><th>いま</th><th>補足</th></tr></thead>
   <tbody>
@@ -620,7 +722,7 @@ KV キャッシュも比例して大きくなり、VRAM を使います。2026-1
     <tr class="cat-row cat-tool"><td>Open WebUI</td><td>8081</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
     <tr class="cat-row cat-strata"><td>Strata 汎用版 RVN</td><td>8082</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
     <tr class="cat-row cat-strata"><td>Strata Coder</td><td>8083</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
-    <tr class="cat-row cat-strata"><td>Strata 公式 IQ3_XXS</td><td>8084</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note">設定は計測のための仮の状態（通常モード）</td></tr>
+    <tr class="cat-row cat-strata"><td>Strata 公式 IQ3_XXS</td><td>8084</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note">通常モード（<code>--adapt-async</code>・<code>--kv-grow</code>）が正式な設定（第 10 節）</td></tr>
     <tr class="cat-row cat-strata"><td>Strata 公式 IQ3_S <span class="new">今回追加</span></td><td>8085</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
     <tr class="cat-row cat-strata"><td>Strata Swift 1.5 <span class="new">今回追加</span></td><td>8086</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
     <tr class="cat-row cat-3d"><td>Hunyuan3D-2mv</td><td>7860</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
@@ -628,11 +730,11 @@ KV キャッシュも比例して大きくなり、VRAM を使います。2026-1
     <tr class="cat-row cat-3d"><td>ComfyUI</td><td>8188</td><td>しない</td><td><span class="st off">停止中</span></td><td class="note"></td></tr>
   </tbody>
 </table>
-<p class="caption">GPU を使っているプロセスは無し（<code>nvidia-smi</code>）。「自動で起動しない」サービスは、入口ページか
+<p class="caption">このリポジトリのサービスで GPU を使っているものは無し。別の作業の Python プロセスが GPU を約 3.3 GiB 使っている（<code>nvidia-smi</code>、2026-10-19）。「自動で起動しない」サービスは、入口ページか
 <code>systemctl --user start &lt;unit&gt;</code> で起動します。</p>
 
 <!-- ================================================================ -->
-<h2 id="work">9. Strata の速さの設定と文脈長 262,144（2026-10-18 に反映）</h2>
+<h2 id="work">10. Strata の速さの設定と文脈長 262,144（2026-10-18 に反映）</h2>
 <p>「A30 に収まるように、文脈長と KV キャッシュを最大に」という指示で、Strata の 5 モデルの文脈長をモデルの上限 262,144 にしました。
 あわせて、Strata の新しい速さの設定をこの機体で測り、効いたものを正式な設定（<code>tools/strata/stra/config.py</code>）に入れました。</p>
 <ul class="points">
@@ -661,12 +763,12 @@ RAM の落とせない分は、採った形で 公式・Swift 約 42.3 GiB、Cod
   <div class="head">残っていること</div>
   <ul class="points">
     <li>上流の自動調整（<code>calibrate.py</code>: PCIe 経由の割合・投機の閾値・CPU のワーカー数）はまだ試していない。</li>
-    <li>評価（第 3・4 節の表）の測り直しは、測り方の指示を待っている。新しい 2 モデルと新しい設定での点数はまだ無い。</li>
+    <li>評価（第 3・4 節の表の 10-08 の列）の測り直しは、10-18〜19 に難問 9 問で行った（第 5 節）。問題が違うので、10-08 の点数とは直接比べられない。</li>
   </ul>
 </div>
 
 <!-- ================================================================ -->
-<h2 id="terms">10. 用語集</h2>
+<h2 id="terms">11. 用語集</h2>
 <dl class="terms">
   <dt>トークン</dt><dd>AI が文章を区切って扱う単位。単語や文字のかけら</dd>
   <dt>tok/s</dt><dd>1 秒に作るトークンの数。大きいほど速い</dd>
@@ -675,14 +777,15 @@ RAM の落とせない分は、採った形で 公式・Swift 約 42.3 GiB、Cod
   <dt>KV キャッシュ</dt><dd>読んだトークンの途中の計算結果（Key と Value）を残しておくメモリ。これがあるので、1 トークン作るたびに過去を全部計算し直さずに済む。
     大きさはトークン数に比例し、文脈長を長くするほど VRAM を使う</dd>
   <dt>f16 / q8_0 / int8</dt><dd>KV キャッシュの数値の持ち方。f16 は 16 ビット（Ollama の既定）。q8_0（Ollama）と int8（Strata）はどちらも 8 ビットの整数と
-    ブロックごとの倍率で、大きさが f16 の約半分。違いは倍率をかける単位（q8_0 は 32 個、int8 は 64 個）で、精度はどちらも f16 とほぼ同じ。第 5 節の「KV の型」</dd>
+    ブロックごとの倍率で、大きさが f16 の約半分。違いは倍率をかける単位（q8_0 は 32 個、int8 は 64 個）で、精度はどちらも f16 とほぼ同じ。第 6 節の「KV の型」</dd>
   <dt>k8v4 / q4_0（KV）</dt><dd>Strata で選べる、さらに小さい KV の型。k8v4 は K を 8 ビット・V を 4 ビット（int8 より 23% 小さい）、q4_0 は全部 4 ビット（約半分。長い文書で精度が落ちる）。
-    k8v4 は 2026-10-18 に測り、速さがほとんど変わらないので採らなかった（第 5 節）。q4_0 は測っていない</dd>
+    k8v4 は 2026-10-18 に測り、速さがほとんど変わらないので採らなかった（第 6 節）。q4_0 は測っていない</dd>
   <dt>窓付きの注意（sliding window）</dt><dd>直近の一定数（Gemma 4 では 1,024〜1,536）のトークンだけを見る層。KV の大きさが文脈長に関係なく一定で済む</dd>
   <dt>kv-grow / KV ストリーミング</dt><dd>Strata の KV の置き方。kv-grow は使った分だけ VRAM に取る（通常モード限定）。KV ストリーミングは KV を RAM に置き、VRAM には直近の一部だけを残す。
     どちらも空いた VRAM をエキスパートのキャッシュに回して速くするため</dd>
   <dt>思考（thinking）</dt><dd>答える前に、AI が内部で考える文章を書く機能。正確になるが、長いと答えまで時間がかかる</dd>
   <dt>思考の上限（予算）</dt><dd>思考の長さの上限。達すると、思考を打ち切って答えを書かせる</dd>
+  <dt>B（10 億）・Dense・活性パラメータ</dt><dd>B はパラメータ（モデルの重みの数）の単位で、27B は 270 億。Dense（密）は 1 トークンごとに全部のパラメータを使う作りで、qwen3.8:27b と Gemma 4 がこれ。MoE は一部のエキスパートだけを使うので、実際に使う量を活性パラメータと呼ぶ（Qwen3.8-Flash-Next 125B は活性 6B）</dd>
   <dt>MoE</dt><dd>Mixture of Experts。モデルの中に多数の専門家（エキスパート）があり、1 トークンごとに一部だけを使う形。全体は大きいが、1 回の計算は軽い</dd>
   <dt>量子化</dt><dd>モデルの数値を少ないビット数に丸めて小さくすること。ビットが少ないほど小さく速いが、元のモデルから離れる。
     目安は Q4_K_M・Q4_0・IQ4_XS が約 4〜5 ビット、IQ3_S が約 3.4、IQ3_XXS が約 3.1、IQ1_M が約 1.75 ビット</dd>
@@ -697,11 +800,12 @@ RAM の落とせない分は、採った形で 公式・Swift 約 42.3 GiB、Cod
 </dl>
 
 <!-- ================================================================ -->
-<h2 id="source">11. 出典と調べ方</h2>
+<h2 id="source">12. 出典と調べ方</h2>
 <ul class="points">
   <li>入っているモデルと状態: <code>ollama list</code>・<code>ollama show</code>・<code>systemctl --user list-unit-files</code>・
     <code>du -sh tools/*/models</code>・<code>nvidia-smi</code>（2026-10-18 に実行）</li>
-  <li>評価: <code>Documents/AIモデル評価_2026-10-08.html</code>・<code>docs/portfolio.md</code>・<code>Documents/3D問題_実施モデル一覧_2026-10-08.md</code></li>
+  <li>評価（10-18）: <code>Documents/AIモデル評価_2026-10-18.html</code>・<code>Documents/AIモデル評価_出題内容_2026-10-18.html</code>・<code>tools/model-eval/results/2026-10-18/summary.json</code>（能力は 9 問の平均、時間は 1 問の中央値）。パラメータ数は Ollama の <code>/api/show</code> と、Strata の重みのファイル（GGUF）の見出し</li>
+  <li>評価（10-08）: <code>Documents/AIモデル評価_2026-10-08.html</code>・<code>docs/portfolio.md</code>・<code>Documents/3D問題_実施モデル一覧_2026-10-08.md</code></li>
   <li>Strata の速さと各モデルの記録: <code>tools/strata/README.md</code>・<code>tools/strata/stra/config.py</code></li>
   <li>速さの調整: <code>tools/strata/logs/phase2-20261017/summary.tsv</code>・<code>tools/strata/logs/ctx262k-20261018/summary.tsv</code>（git では追跡していない）</li>
   <li>文脈長と KV キャッシュ: Ollama は <code>journalctl -u ollama</code> の llama-server のログ（<code>llama_kv_cache: size</code>・<code>offloaded N/N layers</code>）と
